@@ -1,5 +1,9 @@
-import { useState, useMemo } from "react";
-import { ChevronDown, ChevronRight, BookOpen, FileText, GraduationCap, Lock, Eye } from "lucide-react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { ChevronDown, ChevronRight, BookOpen, FileText, GraduationCap, Lock, Brain } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -99,74 +103,336 @@ const COURSE_DATA: ExplorerCourse[] = [
   },
 ];
 
-type PreviewItem = {
-  type: "chapter-hub" | "practice";
+type PreviewSection = "cram" | "be" | "ex" | "p";
+
+interface PreviewState {
   chapterId: string;
   chapterNumber: number;
   chapterName: string;
-};
+  section: PreviewSection;
+  problemId?: string;
+}
+
+interface CramCounts {
+  formulas: number;
+  jes: number;
+  keyTerms: number;
+  accounts: number;
+  mistakes: number;
+}
+
+interface ProblemRow {
+  id: string;
+  source_ref: string;
+  problem_title: string | null;
+}
 
 interface CourseExplorerSectionProps {
   onCtaClick: () => void;
 }
 
+/* ─── Highlight flash keyframes (injected once) ─── */
+const HIGHLIGHT_STYLE_ID = "explorer-highlight-style";
+function ensureHighlightStyle() {
+  if (document.getElementById(HIGHLIGHT_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = HIGHLIGHT_STYLE_ID;
+  style.textContent = `
+    @keyframes explorer-glow {
+      0% { background-color: rgba(206,17,38,0.10); }
+      100% { background-color: transparent; }
+    }
+    .explorer-highlight {
+      animation: explorer-glow 1.5s ease-out forwards;
+      border-radius: 8px;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSectionProps) {
   const [selectedCourseId, setSelectedCourseId] = useState(COURSE_DATA[0].id);
   const [expandedChapterId, setExpandedChapterId] = useState<string | null>(null);
-  const [preview, setPreview] = useState<PreviewItem | null>(null);
+  const [expandedPractice, setExpandedPractice] = useState<string | null>(null); // chapterId that has practice expanded
+  const [preview, setPreview] = useState<PreviewState | null>(null);
+  const previewPaneRef = useRef<HTMLDivElement>(null);
 
   const selectedCourse = useMemo(
     () => COURSE_DATA.find((c) => c.id === selectedCourseId)!,
     [selectedCourseId],
   );
-
   const isLive = selectedCourse.status === "live";
 
+  // ─── Data fetching for selected chapter ───
+  const activeChapterId = preview?.chapterId || null;
+
+  const { data: cramCounts } = useQuery({
+    queryKey: ["explorer-cram", activeChapterId],
+    enabled: !!activeChapterId && isLive,
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const chId = activeChapterId!;
+      const [formulas, jes, keyTerms, accounts, mistakes] = await Promise.all([
+        supabase.from("chapter_formulas").select("id", { count: "exact", head: true }).eq("chapter_id", chId).eq("is_approved", true),
+        supabase.from("chapter_journal_entries").select("id", { count: "exact", head: true }).eq("chapter_id", chId).eq("is_approved", true),
+        supabase.from("chapter_key_terms").select("id", { count: "exact", head: true }).eq("chapter_id", chId).eq("is_approved", true),
+        supabase.from("chapter_accounts").select("id", { count: "exact", head: true }).eq("chapter_id", chId).eq("is_approved", true),
+        (supabase as any).from("chapter_exam_mistakes").select("id", { count: "exact", head: true }).eq("chapter_id", chId).eq("is_approved", true),
+      ]);
+      return {
+        formulas: formulas.count || 0,
+        jes: jes.count || 0,
+        keyTerms: keyTerms.count || 0,
+        accounts: accounts.count || 0,
+        mistakes: mistakes.count || 0,
+      } as CramCounts;
+    },
+  });
+
+  const { data: problems } = useQuery({
+    queryKey: ["explorer-problems", activeChapterId],
+    enabled: !!activeChapterId && isLive,
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("teaching_assets")
+        .select("id, source_ref, problem_title")
+        .eq("chapter_id", activeChapterId!)
+        .eq("status", "approved")
+        .order("source_ref");
+      return (data || []) as ProblemRow[];
+    },
+  });
+
+  const groupedProblems = useMemo(() => {
+    const g: Record<string, ProblemRow[]> = { be: [], ex: [], p: [] };
+    (problems || []).forEach((p) => {
+      const s = (p.source_ref || "").toUpperCase();
+      if (s.startsWith("BE") || s.startsWith("QS")) g.be.push(p);
+      else if (s.startsWith("E")) g.ex.push(p);
+      else g.p.push(p);
+    });
+    return g;
+  }, [problems]);
+
+  // ─── Highlight + scroll logic ───
+  useEffect(() => { ensureHighlightStyle(); }, []);
+
+  const flashAndScroll = useCallback((targetId: string) => {
+    requestAnimationFrame(() => {
+      const el = document.getElementById(targetId);
+      if (!el || !previewPaneRef.current) return;
+      // scroll within preview pane
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.remove("explorer-highlight");
+      void el.offsetWidth; // reflow
+      el.classList.add("explorer-highlight");
+    });
+  }, []);
+
+  const handleSidebarClick = useCallback(
+    (chId: string, chNum: number, chName: string, section: PreviewSection, problemId?: string) => {
+      setPreview({ chapterId: chId, chapterNumber: chNum, chapterName: chName, section, problemId });
+      const targetId = problemId ? `prob-${problemId}` : `section-${section}`;
+      setTimeout(() => flashAndScroll(targetId), 120);
+    },
+    [flashAndScroll],
+  );
+
   const handleChapterToggle = (chapterId: string) => {
-    setExpandedChapterId((prev) => (prev === chapterId ? null : chapterId));
-  };
-
-  const handlePreviewClick = (item: PreviewItem) => {
-    setPreview(item);
-  };
-
-  const previewUrl = useMemo(() => {
-    if (!preview) return null;
-    if (preview.type === "chapter-hub") {
-      return `/cram/${preview.chapterId}?preview=true`;
+    if (expandedChapterId === chapterId) {
+      setExpandedChapterId(null);
+      setExpandedPractice(null);
+    } else {
+      setExpandedChapterId(chapterId);
+      setExpandedPractice(null);
     }
-    return `/cram/${preview.chapterId}?preview=true`;
-  }, [preview]);
+  };
+
+  const togglePractice = (chapterId: string) => {
+    setExpandedPractice((prev) => (prev === chapterId ? null : chapterId));
+  };
+
+  // ─── Preview content rendering ───
+  const renderCramPreview = () => {
+    if (!cramCounts) {
+      return (
+        <div className="space-y-3 p-1">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-lg" />
+          ))}
+        </div>
+      );
+    }
+    const items = [
+      { label: "Formulas", count: cramCounts.formulas, icon: "📐" },
+      { label: "Journal Entries", count: cramCounts.jes, icon: "📒" },
+      { label: "Key Terms", count: cramCounts.keyTerms, icon: "📖" },
+      { label: "Accounts", count: cramCounts.accounts, icon: "🏦" },
+      { label: "Exam Mistakes", count: cramCounts.mistakes, icon: "⚠️" },
+    ].filter((i) => i.count > 0);
+
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-1">
+        {items.map((item) => (
+          <div
+            key={item.label}
+            className="rounded-xl p-4 transition-all"
+            style={{ background: "#F8F9FA", border: "1px solid #E5E7EB" }}
+          >
+            <div className="text-xl mb-1">{item.icon}</div>
+            <p className="text-2xl font-bold" style={{ color: NAVY }}>{item.count}</p>
+            <p className="text-[11px] mt-0.5" style={{ color: "#6B7280" }}>{item.label}</p>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderProblemList = (type: "be" | "ex" | "p", label: string) => {
+    const items = groupedProblems[type];
+    if (!items || items.length === 0) return null;
+    return (
+      <div>
+        <p className="text-[12px] font-semibold mb-2 flex items-center gap-2" style={{ color: NAVY }}>
+          {label}
+          <span
+            className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+            style={{ background: RED, color: "#fff", minWidth: 20, textAlign: "center" }}
+          >
+            {items.length}
+          </span>
+        </p>
+        <div className="space-y-0.5 max-h-[200px] overflow-y-auto pr-1">
+          {items.map((p) => (
+            <div
+              key={p.id}
+              id={`prob-${p.id}`}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] transition-colors cursor-default"
+              style={{
+                background: preview?.problemId === p.id ? "rgba(20,33,61,0.06)" : "transparent",
+                color: "#4B5563",
+              }}
+            >
+              <span className="font-mono text-[11px] shrink-0 w-[52px]" style={{ color: "#9CA3AF" }}>
+                {p.source_ref || "—"}
+              </span>
+              <span className="truncate">{p.problem_title ? p.problem_title.slice(0, 55) : p.source_ref}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderPreviewContent = () => {
+    if (!preview) {
+      return (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-3">
+            <BookOpen className="w-10 h-10 mx-auto" style={{ color: "#D1D5DB" }} />
+            <p className="text-[16px] font-semibold" style={{ color: NAVY }}>
+              Select a chapter to preview
+            </p>
+            <p className="text-[13px] max-w-[300px]" style={{ color: "#9CA3AF" }}>
+              Click any chapter on the left, then explore the content.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    if (!isLive) {
+      return (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-3">
+            <Lock className="w-10 h-10 mx-auto" style={{ color: "#D1D5DB" }} />
+            <p className="text-[16px] font-semibold" style={{ color: NAVY }}>Coming Soon</p>
+            <p className="text-[13px] max-w-[300px]" style={{ color: "#9CA3AF" }}>
+              This course is still being built. Sign up to get notified when it launches.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    const totalProblems = (groupedProblems.be?.length || 0) + (groupedProblems.ex?.length || 0) + (groupedProblems.p?.length || 0);
+
+    return (
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full">
+          <div ref={previewPaneRef} className="p-5 space-y-6">
+            {/* Chapter header */}
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
+                Chapter {preview.chapterNumber}
+              </p>
+              <h3 className="text-[20px] font-bold" style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}>
+                {preview.chapterName}
+              </h3>
+            </div>
+
+            {/* Cram Tools */}
+            <div id="section-cram">
+              <p className="text-[13px] font-semibold mb-3 flex items-center gap-2" style={{ color: NAVY }}>
+                <Brain className="w-4 h-4" />
+                Chapter Cram Tools
+              </p>
+              {renderCramPreview()}
+            </div>
+
+            {/* Practice Problems */}
+            <div id="section-be">
+              <p className="text-[13px] font-semibold mb-3 flex items-center gap-2" style={{ color: NAVY }}>
+                <FileText className="w-4 h-4" />
+                Practice Problems
+                {totalProblems > 0 && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(20,33,61,0.08)", color: NAVY }}>
+                    {totalProblems} total
+                  </span>
+                )}
+              </p>
+              {!problems ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div id="section-be">{renderProblemList("be", "Brief Exercises")}</div>
+                  <div id="section-ex">{renderProblemList("ex", "Exercises")}</div>
+                  <div id="section-p">{renderProblemList("p", "Problems")}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </ScrollArea>
+      </div>
+    );
+  };
 
   return (
     <section className="py-16 sm:py-20 px-4 sm:px-6" style={{ background: "#EDEEF1" }}>
       <div className="mx-auto max-w-[1000px]">
         {/* Header */}
         <div className="text-center mb-10">
-          <p
-            className="text-[14px] sm:text-[15px] font-medium mb-2"
-            style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-          >
-            Click around — this is the actual course.
-          </p>
-          <p
-            className="text-[13px] sm:text-[14px] mb-1"
-            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
-          >
-            No demos. No marketing version. This is exactly what you'll use.
-          </p>
-          <p
-            className="text-[12px] sm:text-[13px] italic mb-6"
-            style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}
-          >
-            I've been building and refining this since 2020 based on real student sessions.
-          </p>
           <h2
-            className="text-[24px] sm:text-[30px] font-bold tracking-tight"
+            className="text-[24px] sm:text-[30px] font-bold tracking-tight mb-2"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
           >
-            Explore the course
+            Preview before you buy
           </h2>
+          <p
+            className="text-[14px] sm:text-[15px] font-medium mb-1"
+            style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+          >
+            Click around — this is the real course.
+          </p>
+          <p
+            className="text-[13px] sm:text-[14px]"
+            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
+          >
+            No demos. This is exactly what you'll use.
+          </p>
         </div>
 
         {/* Explorer */}
@@ -178,7 +444,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
             border: "1px solid rgba(0,0,0,0.06)",
           }}
         >
-          <div className="flex flex-col lg:flex-row min-h-[480px]">
+          <div className="flex flex-col lg:flex-row" style={{ minHeight: 520 }}>
             {/* Left sidebar */}
             <div
               className="w-full lg:w-[300px] shrink-0 flex flex-col"
@@ -198,6 +464,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                     onChange={(e) => {
                       setSelectedCourseId(e.target.value);
                       setExpandedChapterId(null);
+                      setExpandedPractice(null);
                       setPreview(null);
                     }}
                     className="w-full appearance-none rounded-lg px-3 py-2.5 pr-8 text-[14px] font-semibold cursor-pointer outline-none focus:ring-2"
@@ -223,9 +490,13 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
               </div>
 
               {/* Chapter list */}
-              <div className="flex-1 overflow-y-auto p-2" style={{ maxHeight: 420 }}>
+              <div className="flex-1 overflow-y-auto p-2" style={{ maxHeight: 460 }}>
                 {selectedCourse.chapters.map((ch) => {
                   const isExpanded = expandedChapterId === ch.id;
+                  const isPracticeExpanded = expandedPractice === ch.id;
+                  const isCramActive = preview?.chapterId === ch.id && preview?.section === "cram";
+                  const isPracticeActive = preview?.chapterId === ch.id && ["be", "ex", "p"].includes(preview?.section || "");
+
                   return (
                     <div key={ch.id} className="mb-0.5">
                       <button
@@ -249,54 +520,65 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
 
                       {isExpanded && (
                         <div className="ml-6 pl-3 py-1 space-y-0.5" style={{ borderLeft: "2px solid #E5E7EB" }}>
+                          {/* Chapter Cram Tools */}
                           <button
-                            onClick={() =>
-                              handlePreviewClick({
-                                type: "chapter-hub",
-                                chapterId: ch.id,
-                                chapterNumber: ch.number,
-                                chapterName: ch.name,
-                              })
-                            }
+                            onClick={() => handleSidebarClick(ch.id, ch.number, ch.name, "cram")}
                             className="w-full text-left flex items-center gap-2 px-2.5 py-2 rounded-md transition-colors text-[12px] hover:bg-gray-50"
                             style={{
-                              color: preview?.chapterId === ch.id && preview?.type === "chapter-hub" ? NAVY : "#6B7280",
-                              fontWeight: preview?.chapterId === ch.id && preview?.type === "chapter-hub" ? 600 : 400,
+                              color: isCramActive ? NAVY : "#6B7280",
+                              fontWeight: isCramActive ? 600 : 400,
                               fontFamily: "Inter, sans-serif",
                             }}
                           >
-                            <GraduationCap className="w-3.5 h-3.5 shrink-0" />
-                            <span>Survive This Chapter</span>
-                            {isLive ? (
-                              <Eye className="w-3 h-3 ml-auto shrink-0" style={{ color: "#22C55E" }} />
-                            ) : (
-                              <Lock className="w-3 h-3 ml-auto shrink-0" style={{ color: "#D1D5DB" }} />
-                            )}
+                            <Brain className="w-3.5 h-3.5 shrink-0" />
+                            <span>Chapter Cram Tools</span>
                           </button>
+
+                          {/* Practice Problems (expandable) */}
                           <button
-                            onClick={() =>
-                              handlePreviewClick({
-                                type: "practice",
-                                chapterId: ch.id,
-                                chapterNumber: ch.number,
-                                chapterName: ch.name,
-                              })
-                            }
+                            onClick={() => {
+                              togglePractice(ch.id);
+                              handleSidebarClick(ch.id, ch.number, ch.name, "be");
+                            }}
                             className="w-full text-left flex items-center gap-2 px-2.5 py-2 rounded-md transition-colors text-[12px] hover:bg-gray-50"
                             style={{
-                              color: preview?.chapterId === ch.id && preview?.type === "practice" ? NAVY : "#6B7280",
-                              fontWeight: preview?.chapterId === ch.id && preview?.type === "practice" ? 600 : 400,
+                              color: isPracticeActive ? NAVY : "#6B7280",
+                              fontWeight: isPracticeActive ? 600 : 400,
                               fontFamily: "Inter, sans-serif",
                             }}
                           >
                             <FileText className="w-3.5 h-3.5 shrink-0" />
                             <span>Practice Problems</span>
-                            {isLive ? (
-                              <Eye className="w-3 h-3 ml-auto shrink-0" style={{ color: "#22C55E" }} />
-                            ) : (
-                              <Lock className="w-3 h-3 ml-auto shrink-0" style={{ color: "#D1D5DB" }} />
-                            )}
+                            <ChevronRight
+                              className="w-3 h-3 ml-auto shrink-0 transition-transform duration-200"
+                              style={{
+                                color: "#9CA3AF",
+                                transform: isPracticeExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                              }}
+                            />
                           </button>
+
+                          {/* Practice subcategories */}
+                          {isPracticeExpanded && (
+                            <div className="ml-5 pl-2 py-0.5 space-y-0.5" style={{ borderLeft: "1px solid #E5E7EB" }}>
+                              {([["be", "Brief Exercises"], ["ex", "Exercises"], ["p", "Problems"]] as const).map(
+                                ([key, label]) => (
+                                  <button
+                                    key={key}
+                                    onClick={() => handleSidebarClick(ch.id, ch.number, ch.name, key)}
+                                    className="w-full text-left px-2 py-1.5 rounded text-[11px] transition-colors hover:bg-gray-50"
+                                    style={{
+                                      color: preview?.section === key && preview?.chapterId === ch.id ? NAVY : "#9CA3AF",
+                                      fontWeight: preview?.section === key && preview?.chapterId === ch.id ? 600 : 400,
+                                      fontFamily: "Inter, sans-serif",
+                                    }}
+                                  >
+                                    {label}
+                                  </button>
+                                ),
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -305,83 +587,10 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
               </div>
             </div>
 
-            {/* Right preview */}
+            {/* Right preview pane */}
             <div className="flex-1 flex flex-col min-h-[300px] lg:min-h-0">
-              {preview && previewUrl ? (
-                <>
-                  {/* Preview header */}
-                  <div
-                    className="px-4 py-3 flex items-center justify-between"
-                    style={{ borderBottom: "1px solid #F0F0F0" }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full text-white"
-                        style={{ background: isLive ? "#22C55E" : "#9CA3AF" }}
-                      >
-                        {isLive ? "Preview available" : "Coming soon"}
-                      </span>
-                      <span
-                        className="text-[13px] font-medium"
-                        style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-                      >
-                        Ch {preview.chapterNumber} · {preview.chapterName}
-                      </span>
-                    </div>
-                    <span className="text-[11px]" style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}>
-                      This is exactly how the course is structured.
-                    </span>
-                  </div>
-
-                  {/* Preview content */}
-                  {isLive ? (
-                    <div className="flex-1 relative">
-                      <iframe
-                        key={previewUrl}
-                        src={previewUrl}
-                        className="absolute inset-0 w-full h-full"
-                        style={{ border: "none" }}
-                        title={`Preview: Ch ${preview.chapterNumber}`}
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center p-8">
-                      <div className="text-center space-y-3">
-                        <Lock className="w-10 h-10 mx-auto" style={{ color: "#D1D5DB" }} />
-                        <p className="text-[16px] font-semibold" style={{ color: NAVY }}>
-                          Coming Soon
-                        </p>
-                        <p className="text-[13px] max-w-[300px]" style={{ color: "#9CA3AF" }}>
-                          This course is still being built. Sign up to get notified when it launches.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center p-8">
-                  <div className="text-center space-y-3">
-                    <BookOpen className="w-10 h-10 mx-auto" style={{ color: "#D1D5DB" }} />
-                    <p className="text-[16px] font-semibold" style={{ color: NAVY }}>
-                      Select a chapter to preview
-                    </p>
-                    <p className="text-[13px] max-w-[300px]" style={{ color: "#9CA3AF" }}>
-                      Click any chapter on the left, then choose what you'd like to explore.
-                    </p>
-                  </div>
-                </div>
-              )}
+              {renderPreviewContent()}
             </div>
-          </div>
-
-          {/* Debug strip */}
-          <div
-            className="px-4 py-2 text-[10px] font-mono flex flex-wrap gap-x-4 gap-y-1"
-            style={{ background: "#F5F5F5", borderTop: "1px solid #E5E7EB", color: "#9CA3AF" }}
-          >
-            <span>🛠 course: {selectedCourse.name}</span>
-            <span>chapter: {preview ? `Ch ${preview.chapterNumber}` : "—"}</span>
-            <span>preview: {previewUrl || "—"}</span>
           </div>
         </div>
 
