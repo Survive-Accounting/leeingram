@@ -96,7 +96,7 @@ export default function HowItWorksSection({ onCtaClick }: HowItWorksSectionProps
               fontFamily: "Inter, sans-serif",
             }}
           >
-            Get Started →
+            Start Studying Smarter →
           </button>
         </div>
       </div>
