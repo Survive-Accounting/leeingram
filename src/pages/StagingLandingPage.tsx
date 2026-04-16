@@ -6,9 +6,6 @@ import ContactForm from "@/components/landing/ContactForm";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { useEventTracking } from "@/hooks/useEventTracking";
 import StagingHero from "@/components/landing/StagingHero";
-import ThisIsForYouSection from "@/components/landing/ThisIsForYouSection";
-import OutcomesSection from "@/components/landing/OutcomesSection";
-import HowItWorksSection from "@/components/landing/HowItWorksSection";
 import CourseExplorerSection from "@/components/landing/CourseExplorerSection";
 import ClosingCtaSection from "@/components/landing/ClosingCtaSection";
 import StagingCtaModal, { type CtaModalIntent, type CtaCourse } from "@/components/landing/StagingCtaModal";
@@ -94,25 +91,9 @@ export default function StagingLandingPage() {
         onNotifyClick={(c) => openWithCourse(c)}
       />
 
-      <ThisIsForYouSection onCtaClick={() => openWithCourse(liveCourse)} />
-
-      {/* Brand positioning line */}
-      <div className="py-8 px-4 sm:px-6 text-center" style={{ background: "#F8F8FA" }}>
-        <p
-          className="text-[15px] sm:text-[16px] italic"
-          style={{ color: "#9CA3AF", fontFamily: "'DM Serif Display', serif" }}
-        >
-          Accounting doesn't have to feel like a different language.
-        </p>
-      </div>
-
-      <OutcomesSection onCtaClick={() => openWithCourse(liveCourse)} />
-
-      <HowItWorksSection onCtaClick={() => openCourseSelect()} />
+      <StagingTestimonialsSection onCtaClick={() => openWithCourse(liveCourse)} />
 
       <CourseExplorerSection onCtaClick={() => openWithCourse(liveCourse)} />
-
-      <StagingTestimonialsSection onCtaClick={() => openWithCourse(liveCourse)} />
 
       <ClosingCtaSection onCtaClick={() => openWithCourse(liveCourse)} />
 
