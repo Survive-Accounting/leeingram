@@ -153,6 +153,7 @@ Deno.serve(async (req) => {
 
       const sessionParams: any = {
         mode: "payment",
+        payment_method_types: ["card", "link"],
         line_items: [{
           price_data: {
             currency: "usd",
@@ -177,6 +178,13 @@ Deno.serve(async (req) => {
       }
 
       const session = await stripe.checkout.sessions.create(sessionParams);
+
+      console.log("Checkout session created:", {
+        session_id: session.id,
+        ui_mode: isEmbedded ? "embedded" : "hosted",
+        payment_method_types: ["card", "link"],
+        has_client_secret: !!session.client_secret,
+      });
 
       return new Response(
         JSON.stringify(isEmbedded ? { clientSecret: session.client_secret } : { url: session.url }),
@@ -217,6 +225,7 @@ Deno.serve(async (req) => {
 
     const sessionParams2: any = {
       mode: "payment",
+      payment_method_types: ["card", "link"],
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: email,
       metadata: sessionMetadata,
@@ -231,6 +240,13 @@ Deno.serve(async (req) => {
     }
 
     const session = await stripe.checkout.sessions.create(sessionParams2);
+
+    console.log("Checkout session created:", {
+      session_id: session.id,
+      ui_mode: isEmbedded ? "embedded" : "hosted",
+      payment_method_types: ["card", "link"],
+      has_client_secret: !!session.client_secret,
+    });
 
     return new Response(
       JSON.stringify(isEmbedded ? { clientSecret: session.client_secret } : { url: session.url }),
