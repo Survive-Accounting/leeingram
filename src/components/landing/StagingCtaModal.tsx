@@ -272,12 +272,17 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
 
               {/* Lee avatar + title */}
               <div className="flex items-center gap-3.5 pt-1">
-                <img
-                  src="https://i.ibb.co/nNmPgMws/Lee-About-Me-Image.jpg"
-                  alt="Lee Ingram"
-                  className="w-12 h-12 rounded-full object-cover shrink-0"
-                  style={{ border: "2px solid #E5E7EB", objectPosition: "center 20%", transform: "scale(1.15)" }}
-                />
+                <div className="flex flex-col items-center shrink-0">
+                  <img
+                    src="https://i.ibb.co/nNmPgMws/Lee-About-Me-Image.jpg"
+                    alt="Lee Ingram"
+                    className="w-14 h-14 rounded-full object-cover"
+                    style={{ border: "2px solid #E5E7EB", objectPosition: "center 20%" }}
+                  />
+                  <span className="text-[10px] mt-1 whitespace-nowrap" style={{ color: "#9CA3AF" }}>
+                    Ole Miss alum • Tutor
+                  </span>
+                </div>
                 <div>
                   <h2
                     className="text-[18px] font-semibold leading-tight"
@@ -286,7 +291,7 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
                     Enter your school email
                   </h2>
                   <p className="text-[13px] mt-1" style={{ color: "#6B7280" }}>
-                    I'll match you to your course and get you to the right study tools.
+                    I'll get you straight to the material you actually need.
                   </p>
                 </div>
               </div>
@@ -325,7 +330,7 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
 
               {/* Reassurance */}
               <p className="text-[11px] text-center pt-1" style={{ color: "#9CA3AF" }}>
-                No spam. Just access to the study tools you need.
+                No spam. Just access to what you need.
               </p>
             </form>
           </div>
