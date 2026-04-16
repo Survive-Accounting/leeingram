@@ -44,7 +44,20 @@ const FUNCTIONAL_AREAS = [
   "Bookkeeping & Financials",
 ];
 
-const CURRENT_VIDEO_ID = "8uX94STBhKQ";
+const DEFAULT_MEETINGS = [
+  { number: 1, title: "Welcome & Vision Overview", date: "April 2026", videoId: "8uX94STBhKQ" },
+];
+
+function extractVideoId(input: string): string {
+  const trimmed = input.trim();
+  const shortMatch = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+  if (shortMatch) return shortMatch[1];
+  const longMatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]+)/);
+  if (longMatch) return longMatch[1];
+  const embedMatch = trimmed.match(/embed\/([a-zA-Z0-9_-]+)/);
+  if (embedMatch) return embedMatch[1];
+  return trimmed;
+}
 
 /* ── Sortable Item ─────────────────────────────────── */
 function SortableItem({ id, index }: { id: string; index: number }) {
