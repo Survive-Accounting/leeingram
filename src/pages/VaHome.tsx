@@ -140,6 +140,7 @@ export default function VaHome() {
             },
             { icon: <StickyNote className="w-4 h-4" />, label: "Meeting Minutes", content: <MeetingMinutes meetingNumber={1} /> },
             { icon: <HelpCircle className="w-4 h-4" />, label: "Questions for Lee", content: <QuestionsForLee meetingNumber={1} /> },
+            { icon: <Lock className="w-4 h-4" />, label: "Responses 🔒", content: <ResponsesViewer /> },
           ]}
         />
       </div>
