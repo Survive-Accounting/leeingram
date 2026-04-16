@@ -250,45 +250,47 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
 
         {/* ── Step 2: Enroll (live course) ── */}
         {intent.type === "enroll" && !transitioning && (
-          <div className="p-6 animate-in fade-in-0 duration-200">
-            <form onSubmit={handleEnrollSubmit} className="space-y-4">
-              <div>
-                <button
-                  type="button"
-                  onClick={() => onIntentChange({ type: "select-course" })}
-                  className="text-[12px] font-medium mb-3 hover:underline"
-                  style={{ color: "#9CA3AF" }}
-                >
-                  ← Change course
-                </button>
-                <div className="flex items-center gap-2 mb-1">
+          <div className="p-7 animate-in fade-in-0 duration-200">
+            <form onSubmit={handleEnrollSubmit} className="space-y-5">
+              {/* Selected course + change link */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4" style={{ color: "#22C55E" }} />
                   <span className="text-[13px] font-semibold" style={{ color: NAVY }}>
                     {intent.course.name}
                   </span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => onIntentChange({ type: "select-course" })}
+                  className="text-[11px] font-medium hover:underline"
+                  style={{ color: "#9CA3AF" }}
+                >
+                  Change
+                </button>
+              </div>
 
-                {/* Lee avatar + title */}
-                <div className="flex items-center gap-3 mt-4">
-                  <img
-                    src="https://i.ibb.co/9HhgJrS/Lee-Ingram-Headshot.jpg"
-                    alt="Lee Ingram"
-                    className="w-10 h-10 rounded-full object-cover shrink-0"
-                    style={{ border: "2px solid #E5E7EB" }}
-                  />
-                  <div>
-                    <h2
-                      className="text-[18px] font-semibold leading-tight"
-                      style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-                    >
-                      Enter your school email
-                    </h2>
-                    <p className="text-[13px] mt-0.5" style={{ color: "#6B7280" }}>
-                      I'll match you to your course and get you to the right material.
-                    </p>
-                  </div>
+              {/* Lee avatar + title */}
+              <div className="flex items-center gap-3.5 pt-1">
+                <img
+                  src="https://i.ibb.co/nNmPgMws/Lee-About-Me-Image.jpg"
+                  alt="Lee Ingram"
+                  className="w-12 h-12 rounded-full object-cover shrink-0"
+                  style={{ border: "2px solid #E5E7EB", objectPosition: "center 20%", transform: "scale(1.15)" }}
+                />
+                <div>
+                  <h2
+                    className="text-[18px] font-semibold leading-tight"
+                    style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                  >
+                    Enter your school email
+                  </h2>
+                  <p className="text-[13px] mt-1" style={{ color: "#6B7280" }}>
+                    I'll match you to your course and get you to the right study tools.
+                  </p>
                 </div>
               </div>
+
               <input
                 type="email"
                 value={email}
@@ -296,9 +298,9 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
                 placeholder="your@university.edu"
                 required
                 disabled={loading}
-                className="w-full rounded-lg px-4 text-[15px] outline-none transition-all focus:ring-2"
+                className="w-full rounded-xl px-4 text-[15px] outline-none transition-all focus:ring-2"
                 style={{
-                  minHeight: 48,
+                  minHeight: 50,
                   background: "#F8F9FA",
                   border: "1px solid #E5E7EB",
                   color: NAVY,
@@ -308,8 +310,8 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-lg text-white text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                style={{ minHeight: 48, background: NAVY, fontFamily: "Inter, sans-serif" }}
+                className="w-full rounded-xl text-white text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                style={{ minHeight: 50, background: NAVY, fontFamily: "Inter, sans-serif" }}
               >
                 {loading ? (
                   <>
@@ -321,23 +323,9 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
                 )}
               </button>
 
-              {/* Microcopy */}
-              <p className="text-[11px] text-center" style={{ color: "#9CA3AF" }}>
-                No spam. Just access to your course.
-              </p>
-
-              {/* Secondary link */}
-              <p className="text-[12px] text-center">
-                <button
-                  type="button"
-                  className="font-medium hover:underline"
-                  style={{ color: "#6B7280" }}
-                  onClick={() => {
-                    toast.info("Contact lee@surviveaccounting.com for gift purchases.");
-                  }}
-                >
-                  Buying for someone else?
-                </button>
+              {/* Reassurance */}
+              <p className="text-[11px] text-center pt-1" style={{ color: "#9CA3AF" }}>
+                No spam. Just access to the study tools you need.
               </p>
             </form>
           </div>
