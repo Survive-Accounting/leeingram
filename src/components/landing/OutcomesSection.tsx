@@ -1,4 +1,4 @@
-import { ListChecks, BookOpen, Target, Zap, ShieldCheck } from "lucide-react";
+import { ListChecks, BookOpen, Brain, Zap, ShieldCheck } from "lucide-react";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -7,27 +7,27 @@ const OUTCOMES = [
   {
     icon: ListChecks,
     title: "Solve problems step-by-step",
-    text: "No more guessing. Follow clear, repeatable steps.",
+    text: "Follow clear, repeatable steps instead of guessing.",
   },
   {
     icon: BookOpen,
     title: "Understand journal entries",
-    text: "Know exactly what's happening — not just memorize.",
+    text: "See what's actually happening — not just what to write.",
   },
   {
-    icon: Target,
-    title: "Recognize exam patterns",
-    text: "Learn what professors actually test — and what they don't.",
+    icon: Brain,
+    title: "Think like an accountant",
+    text: "Start recognizing patterns and asking better questions.",
   },
   {
     icon: Zap,
-    title: "Move faster with confidence",
-    text: "Stop second-guessing and trust your process.",
+    title: "Study more efficiently",
+    text: "Focus your time on what actually helps you improve.",
   },
   {
     icon: ShieldCheck,
-    title: "Walk into exams prepared",
-    text: "Feel calm knowing you've seen problems like this before.",
+    title: "Feel more confident in class and on exams",
+    text: "Not perfect — just more prepared and less lost.",
   },
 ];
 
@@ -44,13 +44,13 @@ export default function OutcomesSection({ onCtaClick }: OutcomesSectionProps) {
             className="text-[24px] sm:text-[30px] font-bold tracking-tight"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
           >
-            What you'll be able to do
+            What this helps you do
           </h2>
           <p
             className="mt-2 text-[14px] sm:text-[15px]"
             style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
           >
-            Not just watch videos — actually understand what shows up on your exam.
+            This isn't about shortcuts — it's about actually understanding what you're doing.
           </p>
         </div>
 
