@@ -127,27 +127,21 @@ export default function ThisIsForYouSection({ onCtaClick }: ThisIsForYouSectionP
         {/* Transition Statement */}
         <div className="mt-16 text-center">
           <p
-            className="text-[17px] sm:text-[19px] font-medium leading-relaxed"
-            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
+            className="text-[17px] sm:text-[19px] leading-relaxed"
+            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
           >
-            You don't necessarily need more studying.
+            You don't need more studying.
           </p>
           <p
-            className="mt-2 text-[15px] sm:text-[16px] italic"
-            style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}
-          >
-            Sounds miserable anyway.
-          </p>
-          <p
-            className="mt-6 text-[17px] sm:text-[19px] font-medium leading-relaxed max-w-[600px] mx-auto"
+            className="mt-1 text-[19px] sm:text-[22px] font-semibold leading-relaxed"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
           >
-            You need a more effective way to study — in less time — so you can actually enjoy being a student again.
+            You need a better way to study.
           </p>
         </div>
 
         {/* CTA Button */}
-        <div className="mt-10 flex justify-center">
+        <div className="mt-8 flex justify-center">
           <button
             onClick={onCtaClick}
             className="rounded-xl px-8 py-4 text-[16px] font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -157,7 +151,7 @@ export default function ThisIsForYouSection({ onCtaClick }: ThisIsForYouSectionP
               fontFamily: "Inter, sans-serif",
             }}
           >
-            Start Studying Smarter →
+            Start Studying →
           </button>
         </div>
       </div>
