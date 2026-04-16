@@ -12,11 +12,15 @@ export default function StagingNavbar({ onCtaClick }: StagingNavbarProps) {
   const navigate = useNavigate();
 
   return (
-    <nav
-      className="sticky top-7 z-50 px-4 sm:px-6"
-      style={{ background: "rgba(255,255,255,0.97)", borderBottom: "1px solid rgba(0,0,0,0.06)", backdropFilter: "blur(8px)" }}
-    >
-      <div className="mx-auto max-w-[1000px] h-14 flex items-center justify-between">
+    <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-4">
+      <nav
+        className="mx-auto max-w-[1000px] rounded-xl px-5 h-14 flex items-center justify-between"
+        style={{ 
+          background: "rgba(255,255,255,0.98)", 
+          boxShadow: "0 4px 20px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)",
+          backdropFilter: "blur(12px)",
+        }}
+      >
         {/* Logo */}
         <button
           onClick={() => navigate("/staging")}
@@ -50,13 +54,13 @@ export default function StagingNavbar({ onCtaClick }: StagingNavbarProps) {
             style={{
               background: RED,
               fontFamily: "Inter, sans-serif",
-              boxShadow: "0 2px 8px rgba(206,17,38,0.2)",
+              boxShadow: "0 2px 8px rgba(206,17,38,0.25)",
             }}
           >
             Start Studying →
           </button>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </div>
   );
 }

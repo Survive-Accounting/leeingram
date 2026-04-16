@@ -81,7 +81,9 @@ export default function StagingLandingPage() {
       <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 text-black text-center text-xs font-bold py-1 tracking-wide">
         ⚠️ STAGING — Changes here won't affect the live homepage
       </div>
-      <div style={{ height: 28 }} />
+
+      {/* Floating navbar spacer */}
+      <div style={{ height: 80 }} />
 
       <StagingNavbar onCtaClick={() => openWithCourse(liveCourse)} />
 
