@@ -3,7 +3,9 @@
  * They cannot be used to make charges or access sensitive data.
  */
 export const STRIPE_PK_TEST = "pk_test_51TM9RCHyiFzd8XWggqI14jVV69b6HvGUcXqXYAGg3wyRP3RxjZeD97lLxQVl9uTCyWG8JirXbdLemCkOloJhgOnu00lyllwa8U";
-export const STRIPE_PK_LIVE = "pk_live_51TM9RCHyiFzd8XWgLpXxLYqnHwsVnXYVOxmhflhBQZXKxO0gZXxfkWxGkxJkpwJ0JaP3F1jJxn0jLpVN1i1bTc3g00DNYHxw6";
+
+// TODO: Replace with live publishable key when ready to go live
+export const STRIPE_PK_LIVE = STRIPE_PK_TEST;
 
 /**
  * Returns the correct Stripe publishable key based on test mode.
