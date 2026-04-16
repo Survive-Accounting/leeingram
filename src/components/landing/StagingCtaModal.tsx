@@ -250,74 +250,89 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
 
         {/* ── Step 2: Enroll (live course) ── */}
         {intent.type === "enroll" && !transitioning && (
-          <div className="p-7 animate-in fade-in-0 duration-200">
-            <form onSubmit={handleEnrollSubmit} className="space-y-5">
-              {/* Selected course + change link */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" style={{ color: "#22C55E" }} />
-                  <span className="text-[13px] font-semibold" style={{ color: NAVY }}>
-                    {intent.course.name}
-                  </span>
+          <div className="p-8 animate-in fade-in-0 duration-200">
+            {/* Red accent line at top */}
+            <div className="absolute top-0 left-0 right-0 h-1" style={{ background: RED }} />
+            
+            <form onSubmit={handleEnrollSubmit} className="space-y-6">
+              {/* Logo centered at top */}
+              <div className="flex justify-center mb-2">
+                <div className="text-[20px] font-bold tracking-tight" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
+                  Survive<span style={{ color: RED }}>.</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onIntentChange({ type: "select-course" })}
-                  className="text-[11px] font-medium hover:underline"
-                  style={{ color: "#9CA3AF" }}
-                >
-                  Change
-                </button>
               </div>
 
-              {/* Trust label */}
-              <p className="text-[11px]" style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}>
-                Survive Accounting — by Lee Ingram
-              </p>
-
-              <div className="pt-1">
+              {/* Main copy */}
+              <div className="space-y-2">
                 <h2
-                  className="text-[18px] font-semibold leading-tight"
+                  className="text-[20px] font-semibold leading-tight text-center"
                   style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
                 >
                   Enter your school email
                 </h2>
-                <p className="text-[13px] mt-1" style={{ color: "#6B7280" }}>
-                  Takes you straight to <span className="font-medium" style={{ color: NAVY }}>Lee's Intermediate Accounting 2</span> study tools.
+                <p className="text-[14px] text-center leading-relaxed" style={{ color: "#6B7280" }}>
+                  Takes you straight to <span className="font-semibold" style={{ color: NAVY }}>Survive Accounting: Intermediate 2</span> study tools.
                 </p>
               </div>
 
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@university.edu"
-                required
-                disabled={loading}
-                className="w-full rounded-xl px-4 text-[15px] outline-none transition-all focus:ring-2"
-                style={{
-                  minHeight: 50,
-                  background: "#F8F9FA",
-                  border: "1px solid #E5E7EB",
-                  color: NAVY,
-                  fontFamily: "Inter, sans-serif",
-                }}
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-xl text-white text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                style={{ minHeight: 50, background: NAVY, fontFamily: "Inter, sans-serif" }}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Getting your course ready…
-                  </>
-                ) : (
-                  "Continue →"
-                )}
-              </button>
+              <div className="space-y-4">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@university.edu"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-xl px-4 text-[15px] outline-none transition-all duration-200"
+                  style={{
+                    minHeight: 52,
+                    background: "#FDF9F3",
+                    border: "1px solid #E8DDD0",
+                    color: NAVY,
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = NAVY;
+                    e.target.style.boxShadow = `0 0 0 3px rgba(20, 33, 61, 0.08)`;
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "#E8DDD0";
+                    e.target.style.boxShadow = "none";
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full rounded-xl text-white text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition-all duration-200"
+                  style={{ 
+                    minHeight: 52, 
+                    background: NAVY, 
+                    fontFamily: "Inter, sans-serif",
+                    boxShadow: "0 4px 14px -4px rgba(20, 33, 61, 0.25)",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading) {
+                      e.currentTarget.style.background = "#1a2a4a";
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                      e.currentTarget.style.boxShadow = "0 6px 20px -4px rgba(20, 33, 61, 0.35)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = NAVY;
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 4px 14px -4px rgba(20, 33, 61, 0.25)";
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Getting your course ready…
+                    </>
+                  ) : (
+                    "Continue →"
+                  )}
+                </button>
+              </div>
             </form>
           </div>
         )}
