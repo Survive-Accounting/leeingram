@@ -449,6 +449,13 @@ function SurveyForm({ session }: { session: any }) {
     const { error } = await supabase.from("va_survey_responses" as any).insert({
       user_id: session.user.id,
       name: name.trim(),
+      study_background: studyBackground.trim() || null,
+      location_timezone: locationTimezone.trim() || null,
+      work_hours: workHours.trim() || null,
+      instruction_preference: instructionPreference.trim() || null,
+      software_tools: softwareTools.trim() || null,
+      edtech_experience: edtechExperience.trim() || null,
+      hours_per_week: hoursPerWeek.trim() || null,
       ranked_interests: rankedItems,
       focus_area_answer: focusArea.trim() || null,
       unlisted_skills: unlistedSkills.trim() || null,
