@@ -489,13 +489,22 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
 
         {/* Explorer */}
         <div
-          className="rounded-2xl overflow-hidden"
+          className="rounded-2xl overflow-hidden relative"
           style={{
             background: "#fff",
             boxShadow: "0 8px 40px rgba(0,0,0,0.08)",
             border: "1px solid rgba(0,0,0,0.06)",
           }}
         >
+          {/* Have questions? link */}
+          <button
+            onClick={() => setQuestionOpen(true)}
+            className="absolute top-3 right-4 z-10 flex items-center gap-1.5 text-[12px] font-medium transition-colors hover:underline"
+            style={{ color: "#6B7280" }}
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            Have questions?
+          </button>
           <div className="flex flex-col lg:flex-row" style={{ minHeight: 520 }}>
             {/* Left sidebar */}
             <div
@@ -660,6 +669,45 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
             Start Studying →
           </button>
         </div>
+
+        {/* Questions modal */}
+        {questionOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.4)" }}>
+            <div
+              className="relative w-full max-w-sm rounded-2xl p-6 space-y-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-300"
+              style={{ background: "#fff", boxShadow: "0 25px 60px -12px rgba(20,33,61,0.25)" }}
+            >
+              <button
+                onClick={() => setQuestionOpen(false)}
+                className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-4 h-4" style={{ color: "#9CA3AF" }} />
+              </button>
+              <div>
+                <h3 className="text-[18px] font-semibold" style={{ color: NAVY }}>Have a question?</h3>
+                <p className="text-[13px] mt-1" style={{ color: "#6B7280" }}>Ask anything — I'll get back to you personally.</p>
+              </div>
+              <textarea
+                value={questionText}
+                onChange={(e) => setQuestionText(e.target.value)}
+                placeholder="What would you like to know?"
+                rows={4}
+                className="w-full rounded-xl px-4 py-3 text-[14px] outline-none resize-none transition-all"
+                style={{ background: "#F8F9FA", border: "1px solid #E5E7EB", color: NAVY }}
+                onFocus={(e) => { e.target.style.borderColor = NAVY; }}
+                onBlur={(e) => { e.target.style.borderColor = "#E5E7EB"; }}
+              />
+              <button
+                onClick={handleQuestionSubmit}
+                disabled={questionSending || !questionText.trim()}
+                className="w-full rounded-xl text-white text-[14px] font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition-all hover:brightness-110"
+                style={{ minHeight: 44, background: NAVY }}
+              >
+                {questionSending ? "Sending…" : <><Send className="w-4 h-4" /> Send Question</>}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
