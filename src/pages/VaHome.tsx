@@ -108,9 +108,6 @@ export default function VaHome() {
           <p className="text-sm leading-relaxed max-w-md mx-auto" style={{ color: "#4B5563" }}>
             I'm excited to build this together and create something that genuinely helps students succeed in accounting.
           </p>
-          <p className="text-sm leading-relaxed max-w-md mx-auto mt-2" style={{ color: "#6B7280" }}>
-            This page is our home base — everything you need for each meeting is here.
-          </p>
         </div>
       </div>
 
