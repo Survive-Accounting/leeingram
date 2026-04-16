@@ -1,5 +1,4 @@
 import { CheckCircle2 } from "lucide-react";
-import leeHeadshot from "@/assets/lee-headshot-styled.png";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -31,16 +30,30 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
           style={{
             backgroundImage: "url('https://i.ibb.co/Qj8d4Hhs/Survive-Accounting-Hero-Image.jpg')",
             backgroundSize: "cover",
-            backgroundPosition: "60% 40%",
+            backgroundPosition: "25% 35%",
             backgroundRepeat: "no-repeat",
             transform: "scaleX(-1)",
-            filter: "blur(1px)",
           }}
         />
+        {/* Brightness on face area, darken surroundings */}
         <div
           className="absolute inset-0"
           style={{
-            background: "linear-gradient(90deg, rgba(20,33,61,0.82) 0%, rgba(20,33,61,0.72) 45%, rgba(20,33,61,0.45) 70%, rgba(20,33,61,0.35) 100%)",
+            background: "radial-gradient(ellipse 40% 70% at 75% 45%, rgba(255,255,255,0.06) 0%, transparent 60%)",
+          }}
+        />
+        {/* Blur overlay for non-face areas */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backdropFilter: "blur(0.5px)",
+          }}
+        />
+        {/* Gradient overlay for text readability */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "linear-gradient(90deg, rgba(20,33,61,0.78) 0%, rgba(20,33,61,0.68) 40%, rgba(20,33,61,0.35) 65%, rgba(20,33,61,0.25) 100%)",
           }}
         />
       </div>
@@ -59,30 +72,17 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
               Start passing your accounting exams with confidence.
             </h1>
 
-            {/* Block 2 — Authority */}
-            <div className="mt-7 flex items-center gap-3">
-              <div
-                className="rounded-full overflow-hidden shrink-0"
-                style={{
-                  width: 50,
-                  height: 50,
-                  border: "2px solid rgba(255,255,255,0.25)",
-                  boxShadow: "0 0 20px rgba(255,255,255,0.15), 0 4px 12px rgba(0,0,0,0.2)",
-                }}
-              >
-                <img src={leeHeadshot} alt="Lee Ingram" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <p className="text-[13px] font-semibold text-white/85">
-                  Exam prep by Lee Ingram
-                </p>
-                <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
-                  Accounting tutor · Helping students since 2015
-                </p>
-              </div>
+            {/* Block 2 — Authority (text only, no headshot) */}
+            <div className="mt-7">
+              <p className="text-[13px] font-semibold text-white/85">
+                Exam prep by Lee Ingram
+              </p>
+              <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
+                Accounting tutor · Helping students since 2015
+              </p>
             </div>
 
-            {/* Block 3 — Message + Value (subtle container) */}
+            {/* Block 3 — Message + Value */}
             <div
               className="mt-7 rounded-2xl px-6 py-6"
               style={{
@@ -103,12 +103,6 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
                 style={{ color: "rgba(255,255,255,0.9)", fontFamily: "Inter, sans-serif" }}
               >
                 Built for students who want to do well, not just survive.
-              </p>
-              <p
-                className="mt-1 text-[14px] sm:text-[15px] leading-[1.7]"
-                style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif" }}
-              >
-                This isn't a replacement for your class — it's what makes it (and your exams) finally click.
               </p>
             </div>
           </div>
@@ -161,44 +155,52 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
               </div>
             </button>
 
-            {/* Separator */}
-            <div className="flex items-center gap-3 mt-5 mb-4">
-              <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.12)" }} />
-              <p className="text-[12px] font-medium whitespace-nowrap" style={{ color: "rgba(255,255,255,0.35)", fontFamily: "Inter, sans-serif" }}>
+            {/* More courses — frosted container */}
+            <div
+              className="mt-5 rounded-2xl p-4"
+              style={{
+                background: "rgba(255,255,255,0.06)",
+                backdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+              }}
+            >
+              <p
+                className="text-[12px] font-medium text-center mb-3"
+                style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}
+              >
                 More courses launching soon
               </p>
-              <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.12)" }} />
-            </div>
 
-            {/* Secondary course cards */}
-            <div className="space-y-2.5">
-              {futureCourses.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => onNotifyClick(c)}
-                  className="w-full text-left rounded-xl p-3.5 transition-all hover:scale-[1.01] active:scale-[0.98] flex items-center justify-between gap-3"
-                  style={{
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  <div className="min-w-0">
-                    <span className="text-[13px] font-semibold text-white/85 leading-snug block">{c.name}</span>
-                    <span className="text-[11px] block mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
-                      {c.availability}
-                    </span>
-                  </div>
-                  <span
-                    className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap"
+              <div className="space-y-2">
+                {futureCourses.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => onNotifyClick(c)}
+                    className="w-full text-left rounded-xl p-3 transition-all hover:scale-[1.01] active:scale-[0.98] flex items-center justify-between gap-3"
                     style={{
-                      border: "1px solid rgba(255,255,255,0.15)",
-                      color: "rgba(255,255,255,0.6)",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.06)",
                     }}
                   >
-                    Get early access →
-                  </span>
-                </button>
-              ))}
+                    <div className="min-w-0">
+                      <span className="text-[13px] font-semibold text-white/85 leading-snug block">{c.name}</span>
+                      <span className="text-[11px] block mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
+                        {c.availability}
+                      </span>
+                    </div>
+                    <span
+                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap"
+                      style={{
+                        border: "1px solid rgba(255,255,255,0.15)",
+                        color: "rgba(255,255,255,0.6)",
+                      }}
+                    >
+                      Get early access →
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
