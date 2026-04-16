@@ -94,6 +94,21 @@ function SortableItem({ id, index }: { id: string; index: number }) {
 /* ── Main Page ─────────────────────────────────────── */
 export default function VaHome() {
   const { session } = useAuth();
+  const [meetings, setMeetings] = useState(DEFAULT_MEETINGS);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsDraft, setSettingsDraft] = useState("");
+  const [editingMeeting, setEditingMeeting] = useState<number | null>(null);
+
+  const updateVideoId = (meetingNumber: number, url: string) => {
+    const videoId = extractVideoId(url);
+    if (!videoId) { toast.error("Could not extract video ID."); return; }
+    setMeetings((prev) =>
+      prev.map((m) => (m.number === meetingNumber ? { ...m, videoId } : m))
+    );
+    toast.success(`Video updated for Meeting #${meetingNumber}`);
+    setEditingMeeting(null);
+    setSettingsDraft("");
+  };
 
   return (
     <div className="min-h-screen" style={{ background: "#FAFAF8" }}>
@@ -128,13 +143,68 @@ export default function VaHome() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-10 space-y-4">
+        {/* Settings Toggle */}
+        <div className="flex justify-end">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors"
+            style={{ color: showSettings ? "#FFFFFF" : "#9CA3AF", background: showSettings ? NAVY : "transparent" }}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Meeting Settings
+          </button>
+        </div>
+
+        {showSettings && (
+          <div className="bg-white border rounded-xl p-5 space-y-4" style={{ borderColor: "#E5E2DD" }}>
+            <p className="text-xs font-medium" style={{ color: NAVY }}>Meeting Video Links</p>
+            {meetings.map((m) => (
+              <div key={m.number} className="flex items-center gap-3">
+                <span className="text-xs font-medium w-24 shrink-0" style={{ color: "#6B7280" }}>Meeting #{m.number}</span>
+                {editingMeeting === m.number ? (
+                  <div className="flex gap-2 flex-1">
+                    <Input
+                      value={settingsDraft}
+                      onChange={(e) => setSettingsDraft(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && updateVideoId(m.number, settingsDraft)}
+                      placeholder="Paste YouTube URL…"
+                      className="bg-[#FAFAF8] text-xs flex-1"
+                      autoFocus
+                    />
+                    <Button size="sm" onClick={() => updateVideoId(m.number, settingsDraft)} disabled={!settingsDraft.trim()} style={{ background: NAVY }}>
+                      Save
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => { setEditingMeeting(null); setSettingsDraft(""); }}>
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-xs truncate flex-1" style={{ color: m.videoId ? "#4B5563" : "#CBD5E1" }}>
+                      {m.videoId ? `youtu.be/${m.videoId}` : "No video set"}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs"
+                      onClick={() => { setEditingMeeting(m.number); setSettingsDraft(m.videoId ? `https://youtu.be/${m.videoId}` : ""); }}
+                    >
+                      {m.videoId ? "Change" : "Add"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Meeting #1 */}
         <MeetingToggle
           number={1}
           title="Welcome & Vision Overview"
           date="April 2026"
           items={[
-            { icon: <Video className="w-4 h-4" />, label: "Watch Intro →", content: <VideoEmbed videoId={CURRENT_VIDEO_ID} /> },
+            { icon: <Video className="w-4 h-4" />, label: "Watch Intro →", content: <VideoEmbed videoId={meetings[0]?.videoId || ""} /> },
             { icon: <FileText className="w-4 h-4" />, label: "Fill Out Form →", content: <SurveyForm session={session} /> },
             {
               icon: <ClipboardList className="w-4 h-4" />,
