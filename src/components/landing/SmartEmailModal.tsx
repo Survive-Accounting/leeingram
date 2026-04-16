@@ -36,11 +36,8 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return;
 
-    // No warning needed for pricing modal
-
     setLoading(true);
     try {
-      // Check if student exists
       const { data: student } = await (supabase as any)
         .from("students")
         .select("id")
@@ -48,12 +45,10 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
         .maybeSingle();
 
       if (student) {
-        // Returning student → send magic link
         const { error } = await supabase.auth.signInWithOtp({ email: trimmed });
         if (error) throw error;
         setStep("magic-link-sent");
       } else {
-        // New student → show course selector
         setStep("course-select");
       }
     } catch {
@@ -65,7 +60,6 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
 
   const handleCourseSelect = async (course: typeof COURSES[0]) => {
     const trimmed = email.trim().toLowerCase();
-    // Store email so PurchaseBar can use it on campus page
     sessionStorage.setItem("student_email", trimmed);
     setStep("resolving");
     try {
@@ -89,14 +83,17 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="max-w-sm p-6 [&>button]:hidden" style={{ borderRadius: 16 }}>
-        {/* Step 1: Email entry */}
-        {step === "email" && (
-          <form onSubmit={handleEmailSubmit} className="space-y-4">
-            <h2 className="text-lg font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
-              Enter your school email to see pricing
-            </h2>
-            <div className="space-y-1.5">
+      <DialogContent
+        className="max-w-sm p-0 [&>button]:hidden overflow-hidden animate-in fade-in-0 slide-in-from-bottom-4 duration-300"
+        style={{ borderRadius: 20, boxShadow: "0 25px 60px -12px rgba(20,33,61,0.25), 0 0 0 1px rgba(0,0,0,0.04)" }}
+      >
+        <div className="p-6">
+          {/* Step 1: Email entry */}
+          {step === "email" && (
+            <form onSubmit={handleEmailSubmit} className="space-y-5">
+              <h2 className="text-[18px] font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
+                Enter your school email to see pricing
+              </h2>
               <input
                 type="email"
                 value={email}
@@ -104,78 +101,80 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
                 placeholder="your@university.edu"
                 required
                 disabled={loading}
-                className="w-full rounded-lg px-4 text-[15px] outline-none transition-all focus:ring-2"
-                style={{ minHeight: 48, background: "#F8F9FA", border: "1px solid #E5E7EB", color: NAVY, fontFamily: "Inter, sans-serif" }}
+                className="w-full rounded-xl px-4 text-[15px] outline-none transition-all focus:ring-2 focus:ring-blue-200"
+                style={{ minHeight: 50, background: "#F8F9FA", border: "1px solid #E5E7EB", color: NAVY, fontFamily: "Inter, sans-serif" }}
               />
-              
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-xl text-white text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                style={{ minHeight: 50, background: "#CE1126", fontFamily: "Inter, sans-serif" }}
+              >
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue →"}
+              </button>
+            </form>
+          )}
+
+          {/* Step 2a: Magic link sent (returning student) */}
+          {step === "magic-link-sent" && (
+            <div className="text-center space-y-4 py-4">
+              <CheckCircle className="w-12 h-12 mx-auto" style={{ color: "#22C55E" }} />
+              <h2 className="text-[18px] font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
+                Welcome back!
+              </h2>
+              <p className="text-[14px]" style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>
+                Check your email for a login link.
+              </p>
+              <button
+                onClick={handleClose}
+                className="text-[13px] font-medium hover:underline"
+                style={{ color: NAVY }}
+              >
+                Close
+              </button>
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg text-white text-[15px] font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
-              style={{ minHeight: 48, background: "#CE1126", fontFamily: "Inter, sans-serif" }}
-            >
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue →"}
-            </button>
-          </form>
-        )}
+          )}
 
-        {/* Step 2a: Magic link sent (returning student) */}
-        {step === "magic-link-sent" && (
-          <div className="text-center space-y-4 py-4">
-            <CheckCircle className="w-12 h-12 mx-auto" style={{ color: "#22C55E" }} />
-            <h2 className="text-lg font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
-              Welcome back!
-            </h2>
-            <p className="text-[14px]" style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>
-              Check your email for a login link.
-            </p>
-            <button
-              onClick={handleClose}
-              className="text-[13px] font-medium hover:underline"
-              style={{ color: NAVY }}
-            >
-              Close
-            </button>
-          </div>
-        )}
-
-        {/* Step 2b: Course selector (new student) */}
-        {step === "course-select" && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
-              What course are you studying?
-            </h2>
-            <div className="space-y-2">
-              {COURSES.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => handleCourseSelect(c)}
-                  className="w-full text-left rounded-lg px-4 py-3 text-[14px] font-medium transition-colors hover:bg-gray-100"
-                  style={{ border: "1px solid #E5E7EB", color: NAVY, fontFamily: "Inter, sans-serif" }}
-                >
-                  {c.name}
-                  {c.status === "live" && (
-                    <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: "#22C55E", color: "white" }}>LIVE</span>
-                  )}
-                  {c.status === "upcoming" && (
-                    <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: "#F97316", color: "white" }}>COMING SOON</span>
-                  )}
-                </button>
-              ))}
+          {/* Step 2b: Course selector (new student) */}
+          {step === "course-select" && (
+            <div className="space-y-5">
+              <h2 className="text-[18px] font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
+                What course are you studying?
+              </h2>
+              <div className="space-y-2.5">
+                {COURSES.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => handleCourseSelect(c)}
+                    className="w-full text-left rounded-xl px-4 py-3.5 text-[14px] font-medium transition-all duration-200 hover:scale-[1.01] hover:shadow-sm active:scale-[0.99]"
+                    style={{ border: "1px solid #E5E7EB", color: NAVY, fontFamily: "Inter, sans-serif" }}
+                  >
+                    {c.name}
+                    {c.status === "live" && (
+                      <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#22C55E", color: "white" }}>LIVE</span>
+                    )}
+                    {c.status === "upcoming" && (
+                      <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "#F97316", color: "white" }}>COMING SOON</span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Resolving state */}
-        {step === "resolving" && (
-          <div className="flex flex-col items-center justify-center py-8 gap-3">
-            <Loader2 className="h-8 w-8 animate-spin" style={{ color: NAVY }} />
-            <p className="text-[14px]" style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>
-              Finding your school...
-            </p>
-          </div>
-        )}
+          {/* Resolving state */}
+          {step === "resolving" && (
+            <div className="flex flex-col items-center justify-center py-10 gap-4">
+              <div
+                className="w-10 h-10 rounded-full animate-spin"
+                style={{ border: "3px solid #E5E7EB", borderTopColor: NAVY }}
+              />
+              <p className="text-[14px]" style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>
+                Finding your school...
+              </p>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
