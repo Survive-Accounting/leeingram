@@ -26,6 +26,8 @@ interface Props {
 }
 
 export default function EmbeddedCheckoutModal({ open, onOpenChange, clientSecret, courseName, priceDisplay }: Props) {
+  const stripePromise = useMemo(() => loadStripe(getStripePk()), []);
+
   const fetchClientSecret = useCallback(() => {
     return Promise.resolve(clientSecret!);
   }, [clientSecret]);
