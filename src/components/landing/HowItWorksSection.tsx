@@ -8,19 +8,19 @@ const STEPS = [
     number: "1",
     icon: BookOpen,
     title: "Choose your course",
-    text: "We'll match you to the exact material you need.",
+    text: "We'll point you to the material that matches what you're learning.",
   },
   {
     number: "2",
     icon: Layers,
-    title: "Study what actually matters",
-    text: "Use targeted videos, problems, and tools built around real exams.",
+    title: "Work through targeted explanations and problems",
+    text: "Use videos, practice, and breakdowns to go deeper than lectures.",
   },
   {
     number: "3",
     icon: CheckCircle2,
-    title: "Walk into your exam confident",
-    text: "You'll know what to expect — and how to solve it.",
+    title: "Build real understanding over time",
+    text: "So exams feel more familiar — and less overwhelming.",
   },
 ];
 
@@ -32,6 +32,12 @@ export default function HowItWorksSection({ onCtaClick }: HowItWorksSectionProps
   return (
     <section className="py-16 sm:py-20 px-4 sm:px-6" style={{ background: "#F8F8FA" }}>
       <div className="mx-auto max-w-[900px]">
+        <p
+          className="text-center mb-3 text-[13px] sm:text-[14px]"
+          style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}
+        >
+          This works alongside your class — not instead of it.
+        </p>
         <h2
           className="text-center text-[24px] sm:text-[30px] font-bold tracking-tight mb-14"
           style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
@@ -90,7 +96,7 @@ export default function HowItWorksSection({ onCtaClick }: HowItWorksSectionProps
               fontFamily: "Inter, sans-serif",
             }}
           >
-            Get Started →
+            Start Studying Smarter →
           </button>
         </div>
       </div>
