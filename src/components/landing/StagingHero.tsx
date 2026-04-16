@@ -67,11 +67,16 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
             fontFamily: "Inter, sans-serif",
           }}
         >
-          I built this from years of real tutoring sessions — helping students go from
-          <span className="italic text-white/90"> "I don't get this" </span>
-          to <span className="italic text-white/90">"ohhh that makes sense."</span>
-          <br className="hidden sm:block" />
-          It's not a replacement for your class. It's what helps it finally click.
+          I built Survive Accounting from years of real tutoring sessions — helping students go from completely lost to passing (and even acing) exams.
+        </p>
+        <p
+          className="mt-3 text-[14px] sm:text-[16px] text-center leading-relaxed max-w-[600px] mx-auto"
+          style={{
+            color: "rgba(255,255,255,0.7)",
+            fontFamily: "Inter, sans-serif",
+          }}
+        >
+          It's not a replacement for your class — it's what makes class (and exams) finally click.
         </p>
 
         {/* Micro-proof row */}
