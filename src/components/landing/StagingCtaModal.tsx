@@ -283,7 +283,7 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
                   Enter your school email
                 </h2>
                 <p className="text-[13px] mt-1" style={{ color: "#6B7280" }}>
-                  I'll get you straight to the material you actually need.
+                  Takes you straight to <span className="font-medium" style={{ color: NAVY }}>Lee's Intermediate Accounting 2</span> study tools.
                 </p>
               </div>
 
@@ -318,11 +318,6 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
                   "Continue →"
                 )}
               </button>
-
-              {/* Reassurance */}
-              <p className="text-[11px] text-center pt-1" style={{ color: "#9CA3AF" }}>
-                No spam. Just access to what you need.
-              </p>
             </form>
           </div>
         )}
