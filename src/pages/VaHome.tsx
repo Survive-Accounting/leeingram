@@ -210,7 +210,7 @@ function VideoEmbed({ videoId }: { videoId: string }) {
       <div className="aspect-video rounded-lg overflow-hidden border flex items-center justify-center" style={{ borderColor: "#E5E2DD", background: "#F3F4F6" }}>
         <div className="text-center space-y-2">
           <Video className="h-8 w-8 mx-auto" style={{ color: "#CBD5E1" }} />
-          <p className="text-sm" style={{ color: "#9CA3AF" }}>Video coming soon</p>
+          <p className="text-sm" style={{ color: "#9CA3AF" }}>Video will appear here</p>
         </div>
       </div>
     );
