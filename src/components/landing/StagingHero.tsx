@@ -46,11 +46,12 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
       </div>
 
       {/* Content — 2 column desktop, stacked mobile */}
-      <div className="relative z-10 mx-auto max-w-[1000px] px-4 sm:px-6 pt-10 sm:pt-14 pb-12 sm:pb-16">
-        <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-start">
+      <div className="relative z-10 mx-auto max-w-[1000px] px-4 sm:px-6 pt-12 sm:pt-16 pb-14 sm:pb-20">
+        <div className="flex flex-col md:flex-row gap-10 md:gap-14 items-start">
 
           {/* LEFT — Message */}
-          <div className="flex-1 min-w-0 md:pt-2">
+          <div className="flex-1 min-w-0">
+            {/* Block 1 — Headline */}
             <h1
               className="text-[24px] sm:text-[32px] md:text-[38px] text-white leading-[1.15] tracking-tight"
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
@@ -58,13 +59,13 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
               Start passing your accounting exams with confidence.
             </h1>
 
-            {/* Byline */}
-            <div className="mt-4 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full overflow-hidden border-2 shrink-0" style={{ borderColor: "rgba(255,255,255,0.15)" }}>
+            {/* Block 2 — Authority */}
+            <div className="mt-7 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full overflow-hidden border-2 shrink-0" style={{ borderColor: "rgba(255,255,255,0.2)" }}>
                 <img src={leeHeadshot} alt="Lee Ingram" className="w-full h-full object-cover" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-white/85" style={{ fontFamily: "Inter, sans-serif" }}>
+                <p className="text-[13px] font-semibold text-white/80" style={{ fontFamily: "Inter, sans-serif" }}>
                   Exam prep by Lee Ingram
                 </p>
                 <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
@@ -73,33 +74,41 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
               </div>
             </div>
 
-            {/* Core message */}
-            <p
-              className="mt-5 text-[14px] sm:text-[15px] leading-relaxed"
-              style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif" }}
+            {/* Block 3 — Message + Value (subtle container) */}
+            <div
+              className="mt-7 rounded-xl px-5 py-5"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.06)",
+              }}
             >
-              I built this platform from years of real tutoring sessions — helping students go from completely lost to actually getting it.
-            </p>
-            <p
-              className="mt-2.5 text-[14px] sm:text-[15px] leading-relaxed"
-              style={{ color: "rgba(255,255,255,0.65)", fontFamily: "Inter, sans-serif" }}
-            >
-              It's not a replacement for your class — it's what makes things finally click.
-            </p>
+              <p
+                className="text-[14px] sm:text-[15px] leading-[1.7]"
+                style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif" }}
+              >
+                I built this platform from years of real tutoring sessions — helping students go from completely lost to actually getting it.
+              </p>
+              <p
+                className="mt-4 text-[14px] sm:text-[15px] leading-[1.7]"
+                style={{ color: "rgba(255,255,255,0.65)", fontFamily: "Inter, sans-serif" }}
+              >
+                It's not a replacement for your class — it's what makes things finally click.
+              </p>
 
-            {/* Value bullets */}
-            <ul className="mt-5 space-y-2">
-              {[
-                "Built for students who want to do well — not just get by",
-                "Helps you actually understand what you're doing",
-                "Helps you stop wasting time on the wrong material",
-              ].map((text) => (
-                <li key={text} className="flex items-start gap-2 text-[12px] sm:text-[13px]" style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}>
-                  <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "rgba(255,255,255,0.35)" }} />
-                  {text}
-                </li>
-              ))}
-            </ul>
+              {/* Value bullets */}
+              <ul className="mt-5 space-y-3">
+                {[
+                  "Built for students who want to do well — not just get by",
+                  "Helps you actually understand what you're doing",
+                  "Helps you stop wasting time on the wrong material",
+                ].map((text) => (
+                  <li key={text} className="flex items-start gap-2.5 text-[12px] sm:text-[13px]" style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Inter, sans-serif" }}>
+                    <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "rgba(255,255,255,0.4)" }} />
+                    {text}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
           {/* RIGHT — Course cards */}
