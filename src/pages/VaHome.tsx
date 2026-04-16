@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, ChevronDown, GripVertical, Video, FileText, ClipboardList, StickyNote, HelpCircle, Plus, X, Lock } from "lucide-react";
+import { Loader2, CheckCircle2, ChevronDown, GripVertical, Video, FileText, ClipboardList, StickyNote, HelpCircle, Plus, X, Lock, Settings } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DndContext,
