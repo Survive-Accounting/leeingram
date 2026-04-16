@@ -156,16 +156,6 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
   const liveCourses = courses.filter((c) => c.status === "live");
   const upcomingCourses = courses.filter((c) => c.status !== "live");
 
-  // Current step label for debug
-  const stepLabel =
-    intent.type === "select-course"
-      ? "Step 1: Course Selection"
-      : intent.type === "enroll"
-        ? "Step 2: Email (Enroll)"
-        : intent.type === "notify"
-          ? "Step 2: Email (Notify)"
-          : "—";
-
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
@@ -450,16 +440,6 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
           </div>
         )}
 
-        {/* Debug strip */}
-        <div
-          className="px-4 py-2 text-[10px] font-mono flex items-center gap-3"
-          style={{ background: "#F5F5F5", borderTop: "1px solid #E5E7EB", color: "#9CA3AF" }}
-        >
-          <span>🛠 {stepLabel}</span>
-          {intent.type !== "none" && intent.type !== "select-course" && (
-            <span>· {intent.course.name}</span>
-          )}
-        </div>
       </DialogContent>
     </Dialog>
   );
