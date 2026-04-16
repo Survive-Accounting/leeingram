@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, ChevronDown, GripVertical, Video, FileText, ClipboardList, StickyNote, HelpCircle, Plus, X } from "lucide-react";
+import { Loader2, CheckCircle2, ChevronDown, GripVertical, Video, FileText, ClipboardList, StickyNote, HelpCircle, Plus, X, Lock } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DndContext,
@@ -140,6 +140,7 @@ export default function VaHome() {
             },
             { icon: <StickyNote className="w-4 h-4" />, label: "Meeting Minutes", content: <MeetingMinutes meetingNumber={1} /> },
             { icon: <HelpCircle className="w-4 h-4" />, label: "Questions for Lee", content: <QuestionsForLee meetingNumber={1} /> },
+            { icon: <Lock className="w-4 h-4" />, label: "Responses 🔒", content: <ResponsesViewer /> },
           ]}
         />
       </div>
@@ -438,5 +439,115 @@ function SurveyForm({ session }: { session: any }) {
         )}
       </Button>
     </form>
+  );
+}
+
+/* ── Password-Protected Responses Viewer ──────────── */
+const RESPONSES_PW = "SurviveAdmin123!";
+
+function ResponsesViewer() {
+  const [unlocked, setUnlocked] = useState(false);
+  const [pw, setPw] = useState("");
+  const [responses, setResponses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const handleUnlock = () => {
+    if (pw === RESPONSES_PW) {
+      setUnlocked(true);
+      loadResponses();
+    } else {
+      toast.error("Incorrect password.");
+    }
+  };
+
+  const loadResponses = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("va_survey_responses" as any)
+      .select("*")
+      .order("created_at", { ascending: false });
+    setLoading(false);
+    if (error) { console.error(error); return; }
+    setResponses(data || []);
+  };
+
+  if (!unlocked) {
+    return (
+      <div className="text-center py-8 space-y-4">
+        <Lock className="h-8 w-8 mx-auto" style={{ color: "#CBD5E1" }} />
+        <p className="text-sm" style={{ color: "#6B7280" }}>Enter password to view responses</p>
+        <div className="flex gap-2 max-w-xs mx-auto">
+          <Input
+            type="password"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleUnlock()}
+            placeholder="Password"
+            className="bg-[#FAFAF8] text-sm"
+          />
+          <Button size="sm" onClick={handleUnlock} style={{ background: NAVY }}>
+            Unlock
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <Loader2 className="h-5 w-5 animate-spin mx-auto" style={{ color: "#9CA3AF" }} />
+      </div>
+    );
+  }
+
+  if (responses.length === 0) {
+    return <p className="text-sm text-center py-6" style={{ color: "#9CA3AF" }}>No responses yet.</p>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <p className="text-xs" style={{ color: "#9CA3AF" }}>{responses.length} response{responses.length !== 1 ? "s" : ""}</p>
+      {responses.map((r: any, i: number) => (
+        <div key={r.id || i} className="border rounded-lg p-4 space-y-3" style={{ borderColor: "#E5E2DD" }}>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold" style={{ color: NAVY }}>{r.name}</p>
+            <p className="text-[11px]" style={{ color: "#9CA3AF" }}>
+              {new Date(r.created_at).toLocaleDateString()}
+            </p>
+          </div>
+
+          {r.ranked_interests && (
+            <div>
+              <p className="text-xs font-medium mb-1" style={{ color: "#6B7280" }}>Interest Ranking</p>
+              <ol className="text-xs space-y-0.5 pl-4" style={{ color: "#4B5563" }}>
+                {(r.ranked_interests as any[]).slice(0, 5).map((item: any, j: number) => (
+                  <li key={j} className="list-decimal">{item.area}</li>
+                ))}
+              </ol>
+              {(r.ranked_interests as any[]).length > 5 && (
+                <p className="text-[11px] mt-1 pl-4" style={{ color: "#9CA3AF" }}>
+                  + {(r.ranked_interests as any[]).length - 5} more
+                </p>
+              )}
+            </div>
+          )}
+
+          {r.focus_area_answer && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>If only ONE area for 3 months</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.focus_area_answer}</p>
+            </div>
+          )}
+
+          {r.unlisted_skills && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Unlisted skills</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.unlisted_skills}</p>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
