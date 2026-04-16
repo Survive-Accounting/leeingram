@@ -261,6 +261,7 @@ const AppRoutes = () => {
         <Route path="/accy304-admin" element={<ProtectedRoute><ACCY304Admin /></ProtectedRoute>} />
         <Route path="/payment-links-admin" element={<ProtectedRoute><PaymentLinksAdmin /></ProtectedRoute>} />
         <Route path="/va-dashboard" element={<ProtectedRoute><VaDashboard /></ProtectedRoute>} />
+        <Route path="/va-home" element={<ProtectedRoute><VaHome /></ProtectedRoute>} />
         <Route path="/chapter-complete" element={<ProtectedRoute><ChapterComplete /></ProtectedRoute>} />
         <Route path="/survive-chapter" element={<ProtectedRoute><SurviveChapterAdmin /></ProtectedRoute>} />
         <Route path="/chapter-je" element={<ProtectedRoute><ChapterJEManager /></ProtectedRoute>} />
