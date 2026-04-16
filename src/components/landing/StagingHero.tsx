@@ -155,48 +155,50 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
               </div>
             </button>
 
-            {/* More courses — frosted container */}
+            {/* More courses — solid container */}
             <div
-              className="mt-5 rounded-2xl p-4"
+              className="mt-6 rounded-2xl p-4"
               style={{
-                background: "rgba(255,255,255,0.06)",
-                backdropFilter: "blur(12px)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                background: "#F3F4F6",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
               }}
             >
               <p
                 className="text-[12px] font-medium text-center mb-3"
-                style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}
+                style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}
               >
                 More courses launching soon
               </p>
 
               <div className="space-y-2">
-                {futureCourses.map((c) => (
+                {[...futureCourses].sort((a, b) => {
+                  const order: Record<string, number> = { "intro-accounting-1": 0, "intro-accounting-2": 1, "intermediate-accounting-1": 2 };
+                  return (order[a.slug] ?? 9) - (order[b.slug] ?? 9);
+                }).map((c) => (
                   <button
                     key={c.id}
                     onClick={() => onNotifyClick(c)}
                     className="w-full text-left rounded-xl p-3 transition-all hover:scale-[1.01] active:scale-[0.98] flex items-center justify-between gap-3"
                     style={{
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(255,255,255,0.06)",
+                      background: "#fff",
+                      border: "1px solid #E5E7EB",
                     }}
                   >
                     <div className="min-w-0">
-                      <span className="text-[13px] font-semibold text-white/85 leading-snug block">{c.name}</span>
-                      <span className="text-[11px] block mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
+                      <span className="text-[13px] font-semibold leading-snug block" style={{ color: NAVY }}>{c.name}</span>
+                      <span className="text-[11px] block mt-0.5" style={{ color: "#9CA3AF" }}>
                         {c.availability}
                       </span>
                     </div>
                     <span
                       className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap"
                       style={{
-                        border: "1px solid rgba(255,255,255,0.15)",
-                        color: "rgba(255,255,255,0.6)",
+                        border: `1px solid ${NAVY}30`,
+                        color: NAVY,
+                        opacity: 0.7,
                       }}
                     >
-                      Get early access →
+                      Join waitlist →
                     </span>
                   </button>
                 ))}
