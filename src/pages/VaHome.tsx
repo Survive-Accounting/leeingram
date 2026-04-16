@@ -411,6 +411,13 @@ function SurveyForm({ session }: { session: any }) {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
+  const [studyBackground, setStudyBackground] = useState("");
+  const [locationTimezone, setLocationTimezone] = useState("");
+  const [workHours, setWorkHours] = useState("");
+  const [instructionPreference, setInstructionPreference] = useState("");
+  const [softwareTools, setSoftwareTools] = useState("");
+  const [edtechExperience, setEdtechExperience] = useState("");
+  const [hoursPerWeek, setHoursPerWeek] = useState("");
   const [focusArea, setFocusArea] = useState("");
   const [unlistedSkills, setUnlistedSkills] = useState("");
   const [orderedAreas, setOrderedAreas] = useState(FUNCTIONAL_AREAS);
@@ -442,6 +449,13 @@ function SurveyForm({ session }: { session: any }) {
     const { error } = await supabase.from("va_survey_responses" as any).insert({
       user_id: session.user.id,
       name: name.trim(),
+      study_background: studyBackground.trim() || null,
+      location_timezone: locationTimezone.trim() || null,
+      work_hours: workHours.trim() || null,
+      instruction_preference: instructionPreference.trim() || null,
+      software_tools: softwareTools.trim() || null,
+      edtech_experience: edtechExperience.trim() || null,
+      hours_per_week: hoursPerWeek.trim() || null,
       ranked_interests: rankedItems,
       focus_area_answer: focusArea.trim() || null,
       unlisted_skills: unlistedSkills.trim() || null,
@@ -472,6 +486,48 @@ function SurveyForm({ session }: { session: any }) {
       <label className="block space-y-1.5">
         <span className="text-sm font-medium" style={{ color: NAVY }}>Name <span style={{ color: RED }}>*</span></span>
         <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="bg-[#FAFAF8]" />
+      </label>
+
+      {/* Background */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium" style={{ color: NAVY }}>What did you study in school? (or currently studying)</span>
+        <Input value={studyBackground} onChange={(e) => setStudyBackground(e.target.value)} placeholder="e.g. Marketing major, graduated 2024" className="bg-[#FAFAF8]" />
+      </label>
+
+      {/* Location */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium" style={{ color: NAVY }}>Where are you based? (City/Country + timezone)</span>
+        <Input value={locationTimezone} onChange={(e) => setLocationTimezone(e.target.value)} placeholder="e.g. Manila, Philippines — GMT+8" className="bg-[#FAFAF8]" />
+      </label>
+
+      {/* Work Hours */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium" style={{ color: NAVY }}>What hours do you typically work? (morning person vs night owl)</span>
+        <Input value={workHours} onChange={(e) => setWorkHours(e.target.value)} placeholder="e.g. Night owl — usually 8pm–2am my time" className="bg-[#FAFAF8]" />
+      </label>
+
+      {/* Hours Per Week */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium" style={{ color: NAVY }}>How many hours per week are you available?</span>
+        <Input value={hoursPerWeek} onChange={(e) => setHoursPerWeek(e.target.value)} placeholder="e.g. 15–20 hours" className="bg-[#FAFAF8]" />
+      </label>
+
+      {/* Instruction Preference */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium" style={{ color: NAVY }}>Do you prefer detailed instructions or figuring things out independently?</span>
+        <Input value={instructionPreference} onChange={(e) => setInstructionPreference(e.target.value)} placeholder="e.g. Mix of both — I like clear goals but freedom in execution" className="bg-[#FAFAF8]" />
+      </label>
+
+      {/* Software Tools */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium" style={{ color: NAVY }}>Any software tools you're already comfortable with?</span>
+        <Textarea value={softwareTools} onChange={(e) => setSoftwareTools(e.target.value)} rows={2} placeholder="e.g. Canva, Notion, Google Sheets, Slack, Figma…" className="bg-[#FAFAF8]" />
+      </label>
+
+      {/* Ed-tech Experience */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium" style={{ color: NAVY }}>Have you worked with online courses or ed-tech before?</span>
+        <Textarea value={edtechExperience} onChange={(e) => setEdtechExperience(e.target.value)} rows={2} placeholder="e.g. Helped build a Teachable course for a client" className="bg-[#FAFAF8]" />
       </label>
 
       {/* Drag & Drop Ranking */}
@@ -596,6 +652,55 @@ function ResponsesViewer() {
               {new Date(r.created_at).toLocaleDateString()}
             </p>
           </div>
+
+          {r.study_background && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Background</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.study_background}</p>
+            </div>
+          )}
+
+          {r.location_timezone && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Location / Timezone</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.location_timezone}</p>
+            </div>
+          )}
+
+          {r.work_hours && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Work hours</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.work_hours}</p>
+            </div>
+          )}
+
+          {r.hours_per_week && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Hours / week</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.hours_per_week}</p>
+            </div>
+          )}
+
+          {r.instruction_preference && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Instruction preference</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.instruction_preference}</p>
+            </div>
+          )}
+
+          {r.software_tools && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Software tools</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.software_tools}</p>
+            </div>
+          )}
+
+          {r.edtech_experience && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Ed-tech experience</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.edtech_experience}</p>
+            </div>
+          )}
 
           {r.ranked_interests && (
             <div>

@@ -6070,38 +6070,59 @@ export type Database = {
         Row: {
           background: string | null
           created_at: string
+          edtech_experience: string | null
           focus_area_answer: string | null
+          hours_per_week: string | null
           id: string
+          instruction_preference: string | null
           location: string | null
+          location_timezone: string | null
           name: string
           outside_interest: string | null
           ranked_interests: Json
+          software_tools: string | null
+          study_background: string | null
           unlisted_skills: string | null
           user_id: string
+          work_hours: string | null
         }
         Insert: {
           background?: string | null
           created_at?: string
+          edtech_experience?: string | null
           focus_area_answer?: string | null
+          hours_per_week?: string | null
           id?: string
+          instruction_preference?: string | null
           location?: string | null
+          location_timezone?: string | null
           name: string
           outside_interest?: string | null
           ranked_interests?: Json
+          software_tools?: string | null
+          study_background?: string | null
           unlisted_skills?: string | null
           user_id: string
+          work_hours?: string | null
         }
         Update: {
           background?: string | null
           created_at?: string
+          edtech_experience?: string | null
           focus_area_answer?: string | null
+          hours_per_week?: string | null
           id?: string
+          instruction_preference?: string | null
           location?: string | null
+          location_timezone?: string | null
           name?: string
           outside_interest?: string | null
           ranked_interests?: Json
+          software_tools?: string | null
+          study_background?: string | null
           unlisted_skills?: string | null
           user_id?: string
+          work_hours?: string | null
         }
         Relationships: []
       }
