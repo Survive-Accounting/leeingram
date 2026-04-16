@@ -57,12 +57,15 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug,
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-sm p-6 [&>button]:hidden" style={{ borderRadius: 16 }}>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <h2 className="text-lg font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
-            Enter your school email
-          </h2>
-          <div className="space-y-1.5">
+      <DialogContent
+        className="max-w-sm p-0 [&>button]:hidden overflow-hidden animate-in fade-in-0 slide-in-from-bottom-4 duration-300"
+        style={{ borderRadius: 20, boxShadow: "0 25px 60px -12px rgba(20,33,61,0.25), 0 0 0 1px rgba(0,0,0,0.04)" }}
+      >
+        <div className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <h2 className="text-[18px] font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
+              Enter your school email
+            </h2>
             <input
               type="email"
               value={email}
@@ -70,25 +73,25 @@ export default function EmailCaptureModal({ open, onClose, courseId, courseSlug,
               placeholder="your@university.edu"
               required
               disabled={loading}
-              className="w-full rounded-lg px-4 text-[15px] outline-none transition-all focus:ring-2"
+              className="w-full rounded-xl px-4 text-[15px] outline-none transition-all focus:ring-2 focus:ring-blue-200"
               style={{
-                minHeight: 48,
+                minHeight: 50,
                 background: "#F8F9FA",
                 border: "1px solid #E5E7EB",
                 color: NAVY,
                 fontFamily: "Inter, sans-serif",
               }}
             />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg text-white text-[15px] font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
-            style={{ minHeight: 48, background: NAVY, fontFamily: "Inter, sans-serif" }}
-          >
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue →"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-xl text-white text-[15px] font-semibold flex items-center justify-center gap-2 disabled:opacity-60 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              style={{ minHeight: 50, background: NAVY, fontFamily: "Inter, sans-serif" }}
+            >
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue →"}
+            </button>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
