@@ -65,10 +65,10 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
               </div>
               <div>
                 <p className="text-[13px] font-semibold text-white/85" style={{ fontFamily: "Inter, sans-serif" }}>
-                  Lee Ingram — Accounting tutor
+                  Exam prep by Lee Ingram
                 </p>
                 <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
-                  Helping students since 2015
+                  Accounting tutor · Helping students since 2015
                 </p>
               </div>
             </div>
@@ -78,24 +78,21 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
               className="mt-5 text-[14px] sm:text-[15px] leading-relaxed"
               style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif" }}
             >
-              I built this from years of real tutoring sessions — helping students go from
-              <span className="text-white/90"> "I don't get this" </span>
-              to
-              <span className="text-white/90"> "ohhh that makes sense."</span>
+              I built this platform from years of real tutoring sessions — helping students go from completely lost to actually getting it.
             </p>
             <p
               className="mt-2.5 text-[14px] sm:text-[15px] leading-relaxed"
               style={{ color: "rgba(255,255,255,0.65)", fontFamily: "Inter, sans-serif" }}
             >
-              It's not a replacement for your class — it's what makes it finally click.
+              It's not a replacement for your class — it's what makes things finally click.
             </p>
 
             {/* Value bullets */}
             <ul className="mt-5 space-y-2">
               {[
-                "Built from real tutoring sessions",
-                "Helps you understand — not just memorize",
-                "Designed to make class and exams finally click",
+                "Built for students who want to do well — not just get by",
+                "Helps you actually understand what you're doing",
+                "Helps you stop wasting time on the wrong material",
               ].map((text) => (
                 <li key={text} className="flex items-start gap-2 text-[12px] sm:text-[13px]" style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}>
                   <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "rgba(255,255,255,0.35)" }} />
@@ -129,7 +126,7 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
                     {liveCourse.name}
                   </h3>
                   <p className="text-[12px] mt-0.5" style={{ color: "#6B7280" }}>
-                    Ch 13–22 · Finals prep
+                    Ch 13–22 · Full course prep
                   </p>
                 </div>
                 <CheckCircle2 className="w-5 h-5 mt-1 shrink-0" style={{ color: "#22C55E" }} />
