@@ -61,11 +61,19 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
 
             {/* Block 2 — Authority */}
             <div className="mt-7 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden border-2 shrink-0" style={{ borderColor: "rgba(255,255,255,0.2)" }}>
+              <div
+                className="rounded-full overflow-hidden shrink-0"
+                style={{
+                  width: 50,
+                  height: 50,
+                  border: "2px solid rgba(255,255,255,0.25)",
+                  boxShadow: "0 0 20px rgba(255,255,255,0.15), 0 4px 12px rgba(0,0,0,0.2)",
+                }}
+              >
                 <img src={leeHeadshot} alt="Lee Ingram" className="w-full h-full object-cover" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-white/80" style={{ fontFamily: "Inter, sans-serif" }}>
+                <p className="text-[13px] font-semibold text-white/85">
                   Exam prep by Lee Ingram
                 </p>
                 <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
