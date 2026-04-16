@@ -653,6 +653,55 @@ function ResponsesViewer() {
             </p>
           </div>
 
+          {r.study_background && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Background</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.study_background}</p>
+            </div>
+          )}
+
+          {r.location_timezone && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Location / Timezone</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.location_timezone}</p>
+            </div>
+          )}
+
+          {r.work_hours && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Work hours</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.work_hours}</p>
+            </div>
+          )}
+
+          {r.hours_per_week && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Hours / week</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.hours_per_week}</p>
+            </div>
+          )}
+
+          {r.instruction_preference && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Instruction preference</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.instruction_preference}</p>
+            </div>
+          )}
+
+          {r.software_tools && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Software tools</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.software_tools}</p>
+            </div>
+          )}
+
+          {r.edtech_experience && (
+            <div>
+              <p className="text-xs font-medium" style={{ color: "#6B7280" }}>Ed-tech experience</p>
+              <p className="text-sm" style={{ color: "#4B5563" }}>{r.edtech_experience}</p>
+            </div>
+          )}
+
           {r.ranked_interests && (
             <div>
               <p className="text-xs font-medium mb-1" style={{ color: "#6B7280" }}>Interest Ranking</p>
