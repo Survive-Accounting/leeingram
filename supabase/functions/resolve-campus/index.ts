@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
       campusSlug = campus.slug;
       campusName = campus.name;
     } else {
-      // 2. Try HIPOLABS API
+      // 2. Try HIPOLABS API, then fall back to domain-based name
       let hipoResult: { name: string } | null = null;
       try {
         const hipoResp = await fetch(
@@ -137,7 +137,20 @@ Deno.serve(async (req) => {
           }
         }
       } catch {
-        // HIPOLABS unavailable — fall through to general
+        // HIPOLABS unavailable — fall through to domain-based fallback
+      }
+
+      // If HIPOLABS failed/returned nothing but domain is .edu, derive a name
+      if (!hipoResult && domain.endsWith(".edu")) {
+        const baseName = domain.replace(/\.edu$/, "").split(".").pop() || "";
+        if (baseName.length >= 2) {
+          // Capitalize: "lsu" → "LSU" (if ≤4 chars, treat as acronym), else title-case
+          const displayName = baseName.length <= 4
+            ? baseName.toUpperCase()
+            : baseName.charAt(0).toUpperCase() + baseName.slice(1);
+          hipoResult = { name: displayName };
+          console.log(`HIPOLABS unavailable — derived campus name "${displayName}" from domain ${domain}`);
+        }
       }
 
       if (hipoResult) {
