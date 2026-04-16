@@ -411,6 +411,13 @@ function SurveyForm({ session }: { session: any }) {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
+  const [studyBackground, setStudyBackground] = useState("");
+  const [locationTimezone, setLocationTimezone] = useState("");
+  const [workHours, setWorkHours] = useState("");
+  const [instructionPreference, setInstructionPreference] = useState("");
+  const [softwareTools, setSoftwareTools] = useState("");
+  const [edtechExperience, setEdtechExperience] = useState("");
+  const [hoursPerWeek, setHoursPerWeek] = useState("");
   const [focusArea, setFocusArea] = useState("");
   const [unlistedSkills, setUnlistedSkills] = useState("");
   const [orderedAreas, setOrderedAreas] = useState(FUNCTIONAL_AREAS);
