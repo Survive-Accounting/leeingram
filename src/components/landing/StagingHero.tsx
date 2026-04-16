@@ -40,7 +40,7 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
         <div
           className="absolute inset-0"
           style={{
-            background: "linear-gradient(180deg, rgba(20,33,61,0.75) 0%, rgba(20,33,61,0.85) 50%, rgba(20,33,61,0.95) 100%)",
+            background: "linear-gradient(90deg, rgba(20,33,61,0.82) 0%, rgba(20,33,61,0.72) 45%, rgba(20,33,61,0.45) 70%, rgba(20,33,61,0.35) 100%)",
           }}
         />
       </div>
