@@ -62,6 +62,7 @@ const DeploymentChecklist = lazy(() => import("./pages/DeploymentChecklist"));
 const Phase2Review = lazy(() => import("./pages/Phase2Review"));
 const VaAdmin = lazy(() => import("./pages/VaAdmin"));
 const VaDashboard = lazy(() => import("./pages/VaDashboard"));
+const VaHome = lazy(() => import("./pages/VaHome"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const StudentInboxPage = lazy(() => import("./pages/StudentInboxPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
