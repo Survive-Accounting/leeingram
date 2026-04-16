@@ -96,6 +96,16 @@ export default function StagingLandingPage() {
 
       <ThisIsForYouSection onCtaClick={() => openWithCourse(liveCourse)} />
 
+      {/* Brand positioning line */}
+      <div className="py-8 px-4 sm:px-6 text-center" style={{ background: "#F8F8FA" }}>
+        <p
+          className="text-[15px] sm:text-[16px] italic"
+          style={{ color: "#9CA3AF", fontFamily: "'DM Serif Display', serif" }}
+        >
+          Accounting doesn't have to feel like a different language.
+        </p>
+      </div>
+
       <OutcomesSection onCtaClick={() => openWithCourse(liveCourse)} />
 
       <HowItWorksSection onCtaClick={() => openCourseSelect()} />
