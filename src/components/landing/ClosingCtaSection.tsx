@@ -14,12 +14,14 @@ export default function ClosingCtaSection({ onCtaClick }: ClosingCtaSectionProps
           style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
         >
           Your exam is coming up.
+          <br />
+          Let's do more than just survive it.
         </h2>
         <p
           className="mt-3 text-[16px] sm:text-[18px]"
           style={{ color: "rgba(255,255,255,0.7)", fontFamily: "Inter, sans-serif" }}
         >
-          If you want a clearer way to study — this will help.
+          A clearer, more effective way to study — built from real tutoring.
         </p>
 
         <button
