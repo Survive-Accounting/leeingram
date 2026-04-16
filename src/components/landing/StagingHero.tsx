@@ -95,27 +95,20 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
                 className="text-[14px] sm:text-[15px] leading-[1.7]"
                 style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif" }}
               >
-                Since 2015, I've helped students go from feeling completely lost to actually getting it.
-              </p>
-              <p
-                className="mt-4 text-[14px] sm:text-[15px] leading-[1.7]"
-                style={{ color: "rgba(255,255,255,0.65)", fontFamily: "Inter, sans-serif" }}
-              >
-                I built Survive Accounting to make that kind of help more accessible.
-              </p>
-              <p
-                className="mt-4 text-[14px] sm:text-[15px] leading-[1.7] font-semibold"
-                style={{ color: "rgba(255,255,255,0.9)", fontFamily: "Inter, sans-serif" }}
-              >
-                This isn't a replacement for your class — it's what makes it finally click.
+                Since 2015, I've helped students go from feeling completely lost to actually getting it. I created Survive Accounting to bring my teaching style to more students.
               </p>
 
-              {/* Single value prop */}
               <p
-                className="mt-5 text-[13px] sm:text-[14px] leading-[1.6]"
-                style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif" }}
+                className="mt-5 text-[14px] sm:text-[15px] leading-[1.7] font-semibold"
+                style={{ color: "rgba(255,255,255,0.9)", fontFamily: "Inter, sans-serif" }}
               >
                 Built for students who want to do well, not just survive.
+              </p>
+              <p
+                className="mt-1 text-[14px] sm:text-[15px] leading-[1.7]"
+                style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif" }}
+              >
+                This isn't a replacement for your class — it's what makes it (and your exams) finally click.
               </p>
             </div>
           </div>
