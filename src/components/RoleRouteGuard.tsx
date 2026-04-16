@@ -15,7 +15,7 @@ const ALWAYS_ALLOWED = [
   "/admin", "/auth", "/domains", "/va-dashboard", "/va-admin", "/dashboard",
   "/landing", "/focus", "/marketing", "/writing", "/leeingram", "/prof-ingram",
   "/travel", "/chart-of-accounts", "/style-guide", "/ideas", "/pipeline",
-  "/template-manager", "/export-sets", "/tutoring", "/filming",
+  "/template-manager", "/export-sets", "/tutoring", "/filming", "/va-home",
   "/solutions-upload", "/screenshot-capture", "/batch-run", "/bulk-fix-tool",
   "/study-tools", ...PUBLIC_PREFIXES,
 ];
