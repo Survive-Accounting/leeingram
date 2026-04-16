@@ -46,7 +46,7 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
       </div>
 
       {/* Content — 2 column desktop, stacked mobile */}
-      <div className="relative z-10 mx-auto max-w-[1000px] px-4 sm:px-6 pt-12 sm:pt-16 pb-14 sm:pb-20">
+      <div className="relative z-10 mx-auto max-w-[1000px] px-4 sm:px-6 pt-10 sm:pt-14 pb-12 sm:pb-16">
         <div className="flex flex-col md:flex-row gap-10 md:gap-14 items-start">
 
           {/* LEFT — Message */}
