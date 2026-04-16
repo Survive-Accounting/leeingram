@@ -32,6 +32,12 @@ export default function HowItWorksSection({ onCtaClick }: HowItWorksSectionProps
   return (
     <section className="py-16 sm:py-20 px-4 sm:px-6" style={{ background: "#F8F8FA" }}>
       <div className="mx-auto max-w-[900px]">
+        <p
+          className="text-center mb-3 text-[13px] sm:text-[14px]"
+          style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}
+        >
+          This works alongside your class — not instead of it.
+        </p>
         <h2
           className="text-center text-[24px] sm:text-[30px] font-bold tracking-tight mb-14"
           style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
