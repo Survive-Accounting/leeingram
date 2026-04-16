@@ -13,32 +13,32 @@ const PAIN_POINTS: PainPoint[] = [
   {
     icon: Brain,
     title: "You feel lost during lectures",
-    text: "Your professor moves so fast that you don't know what you're even learning.",
+    text: "The professor is explaining it… but it's just not clicking.",
   },
   {
     icon: Clock,
-    title: "You're cramming (hard) before exams",
-    text: "You wait until the last minute and hope something clicks, until it doesn't.",
+    title: "You're cramming before exams",
+    text: "You wait until the last minute and hope something sticks.",
   },
   {
     icon: PenLine,
     title: "Homework problems don't make sense",
-    text: 'You look at solutions and still don\'t understand the "why" behind the steps.',
+    text: "You look at the solution and still don't understand the steps.",
   },
   {
     icon: RotateCw,
     title: "You memorize instead of understanding",
-    text: "Things feel familiar — but you can't apply them on exams.",
+    text: "It feels familiar — until you have to actually do it.",
   },
   {
     icon: Target,
-    title: "You don't know what will be tested",
-    text: "It feels like guessing what actually matters vs. what doesn't.",
+    title: "You don't know what to focus on",
+    text: "Everything feels important… which makes it hard to know where to start.",
   },
   {
     icon: AlertCircle,
     title: "You've already struggled on a test",
-    text: "And you don't want to go through that again.",
+    text: "And you want to turn things around before the next one.",
   },
 ];
 
