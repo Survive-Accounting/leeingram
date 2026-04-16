@@ -154,8 +154,11 @@ function ensureHighlightStyle() {
 export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSectionProps) {
   const [selectedCourseId, setSelectedCourseId] = useState(COURSE_DATA[0].id);
   const [expandedChapterId, setExpandedChapterId] = useState<string | null>(null);
-  const [expandedPractice, setExpandedPractice] = useState<string | null>(null); // chapterId that has practice expanded
+  const [expandedPractice, setExpandedPractice] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewState | null>(null);
+  const [questionOpen, setQuestionOpen] = useState(false);
+  const [questionText, setQuestionText] = useState("");
+  const [questionSending, setQuestionSending] = useState(false);
   const previewPaneRef = useRef<HTMLDivElement>(null);
 
   const selectedCourse = useMemo(
@@ -360,9 +363,9 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
     const totalProblems = (groupedProblems.be?.length || 0) + (groupedProblems.ex?.length || 0) + (groupedProblems.p?.length || 0);
 
     return (
-      <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full">
-          <div ref={previewPaneRef} className="p-5 space-y-6">
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <ScrollArea className="flex-1">
+          <div ref={previewPaneRef} className="p-5 space-y-6 pb-20">
             {/* Chapter header */}
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
@@ -380,6 +383,14 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                 Chapter Cram Tools
               </p>
               {renderCramPreview()}
+              {/* Paywall signal */}
+              <div
+                className="mt-3 rounded-lg px-4 py-2.5 flex items-center gap-2 text-[12px]"
+                style={{ background: "rgba(20,33,61,0.03)", border: "1px dashed #D1D5DB", color: "#6B7280" }}
+              >
+                <Lock className="w-3.5 h-3.5 shrink-0" style={{ color: "#9CA3AF" }} />
+                Full interactive cram tools available after purchase
+              </div>
             </div>
 
             {/* Practice Problems */}
@@ -404,11 +415,57 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                   <div id="section-p">{renderProblemList("p", "Problems")}</div>
                 </div>
               )}
+              {/* Paywall signal */}
+              <div
+                className="mt-3 rounded-lg px-4 py-2.5 flex items-center gap-2 text-[12px]"
+                style={{ background: "rgba(20,33,61,0.03)", border: "1px dashed #D1D5DB", color: "#6B7280" }}
+              >
+                <Lock className="w-3.5 h-3.5 shrink-0" style={{ color: "#9CA3AF" }} />
+                Unlock full walkthroughs and step-by-step explanations
+              </div>
             </div>
           </div>
         </ScrollArea>
+
+        {/* Sticky CTA inside preview pane */}
+        <div
+          className="px-4 py-3 flex items-center justify-between gap-3"
+          style={{ borderTop: "1px solid #E5E7EB", background: "rgba(248,249,250,0.95)", backdropFilter: "blur(8px)" }}
+        >
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold" style={{ color: NAVY }}>
+              <span className="text-[12px] line-through mr-1.5" style={{ color: "#9CA3AF" }}>$250</span>
+              $99 one-time
+            </p>
+            <p className="text-[11px]" style={{ color: "#9CA3AF" }}>Access through finals week</p>
+          </div>
+          <button
+            onClick={onCtaClick}
+            className="shrink-0 rounded-lg px-5 py-2.5 text-[13px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.97]"
+            style={{ background: RED, boxShadow: "0 2px 8px rgba(206,17,38,0.2)" }}
+          >
+            Get Access →
+          </button>
+        </div>
       </div>
     );
+  };
+
+  const handleQuestionSubmit = async () => {
+    if (!questionText.trim()) return;
+    setQuestionSending(true);
+    try {
+      await supabase.functions.invoke("send-contact-notification", {
+        body: { name: "Course Preview Visitor", email: "anonymous@preview", message: questionText.trim() },
+      });
+      toast.success("Question sent — we'll get back to you!");
+      setQuestionText("");
+      setQuestionOpen(false);
+    } catch {
+      toast.error("Couldn't send. Try again.");
+    } finally {
+      setQuestionSending(false);
+    }
   };
 
   return (
