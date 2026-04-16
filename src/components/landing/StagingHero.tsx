@@ -56,29 +56,30 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
             textShadow: "0 2px 20px rgba(0,0,0,0.4)",
           }}
         >
-          Stop guessing.{" "}
-          <span className="block sm:inline">Start passing your accounting exams.</span>
+          Start passing your accounting exams with confidence.
         </h1>
 
         {/* Subheadline */}
         <p
-          className="mt-4 text-[14px] sm:text-[16px] text-center leading-relaxed max-w-[560px] mx-auto"
+          className="mt-4 text-[14px] sm:text-[16px] text-center leading-relaxed max-w-[600px] mx-auto"
           style={{
-            color: "rgba(255,255,255,0.75)",
+            color: "rgba(255,255,255,0.8)",
             fontFamily: "Inter, sans-serif",
           }}
         >
-          Step-by-step exam prep built from real student struggles and real exams.
+          I built this from years of real tutoring sessions — helping students go from
+          <span className="italic text-white/90"> "I don't get this" </span>
+          to <span className="italic text-white/90">"ohhh that makes sense."</span>
           <br className="hidden sm:block" />
-          No fluff. Just what actually shows up.
+          It's not a replacement for your class. It's what helps it finally click.
         </p>
 
         {/* Micro-proof row */}
         <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
           {[
-            { icon: Users, text: "1,000+ students" },
-            { icon: BookOpen, text: "Built from real exams" },
-            { icon: Zap, text: "No fluff — just what matters" },
+            { icon: Users, text: "1,000+ students helped" },
+            { icon: BookOpen, text: "Built from real tutoring sessions since 2020" },
+            { icon: Zap, text: "Designed to help you actually understand — not just memorize" },
           ].map((item) => (
             <span
               key={item.text}
