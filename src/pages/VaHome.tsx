@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, ChevronDown, GripVertical, Video, FileText, ClipboardList, StickyNote } from "lucide-react";
+import { Loader2, CheckCircle2, ChevronDown, GripVertical, Video, FileText, ClipboardList, StickyNote, HelpCircle, Plus, X } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DndContext,
@@ -138,7 +138,8 @@ export default function VaHome() {
                 </div>
               ),
             },
-            { icon: <StickyNote className="w-4 h-4" />, label: "Meeting Notes", content: <MeetingNotes meetingNumber={1} /> },
+            { icon: <StickyNote className="w-4 h-4" />, label: "Meeting Minutes", content: <MeetingMinutes meetingNumber={1} /> },
+            { icon: <HelpCircle className="w-4 h-4" />, label: "Questions for Lee", content: <QuestionsForLee meetingNumber={1} /> },
           ]}
         />
       </div>
@@ -228,20 +229,98 @@ function VideoEmbed({ videoId }: { videoId: string }) {
   );
 }
 
-/* ── Meeting Notes ─────────────────────────────────── */
-function MeetingNotes({ meetingNumber }: { meetingNumber: number }) {
-  const [notes, setNotes] = useState("");
+/* ── Meeting Minutes (bullet points) ───────────────── */
+function MeetingMinutes({ meetingNumber }: { meetingNumber: number }) {
+  const [bullets, setBullets] = useState<string[]>([]);
+  const [draft, setDraft] = useState("");
+
+  const addBullet = () => {
+    const text = draft.trim();
+    if (!text) return;
+    setBullets((prev) => [...prev, text]);
+    setDraft("");
+  };
+
+  const removeBullet = (index: number) => {
+    setBullets((prev) => prev.filter((_, i) => i !== index));
+  };
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs" style={{ color: "#9CA3AF" }}>Anyone can add notes here during or after the meeting.</p>
-      <Textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        rows={6}
-        placeholder="Type meeting notes here…"
-        className="bg-[#FAFAF8] text-sm"
-      />
+    <div className="space-y-3">
+      <p className="text-xs" style={{ color: "#9CA3AF" }}>Add concise bullet-point notes during or after the meeting.</p>
+      {bullets.length > 0 && (
+        <ul className="space-y-1.5">
+          {bullets.map((b, i) => (
+            <li key={i} className="flex items-start gap-2 text-sm group" style={{ color: "#4B5563" }}>
+              <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: NAVY }} />
+              <span className="flex-1">{b}</span>
+              <button onClick={() => removeBullet(i)} className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5">
+                <X className="w-3.5 h-3.5" style={{ color: "#9CA3AF" }} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex gap-2">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addBullet()}
+          placeholder="Type a note and press Enter…"
+          className="bg-[#FAFAF8] text-sm flex-1"
+        />
+        <Button type="button" size="sm" variant="outline" onClick={addBullet} disabled={!draft.trim()} className="shrink-0">
+          <Plus className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Questions for Lee ─────────────────────────────── */
+function QuestionsForLee({ meetingNumber }: { meetingNumber: number }) {
+  const [items, setItems] = useState<string[]>([]);
+  const [draft, setDraft] = useState("");
+
+  const addItem = () => {
+    const text = draft.trim();
+    if (!text) return;
+    setItems((prev) => [...prev, text]);
+    setDraft("");
+  };
+
+  const removeItem = (index: number) => {
+    setItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs" style={{ color: "#9CA3AF" }}>Drop any questions, ideas, or things you want to discuss with Lee.</p>
+      {items.length > 0 && (
+        <ul className="space-y-1.5">
+          {items.map((item, i) => (
+            <li key={i} className="flex items-start gap-2 text-sm group" style={{ color: "#4B5563" }}>
+              <span className="mt-0.5 text-xs" style={{ color: RED }}>?</span>
+              <span className="flex-1">{item}</span>
+              <button onClick={() => removeItem(i)} className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5">
+                <X className="w-3.5 h-3.5" style={{ color: "#9CA3AF" }} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex gap-2">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addItem()}
+          placeholder="Type a question or idea…"
+          className="bg-[#FAFAF8] text-sm flex-1"
+        />
+        <Button type="button" size="sm" variant="outline" onClick={addItem} disabled={!draft.trim()} className="shrink-0">
+          <Plus className="w-4 h-4" />
+        </Button>
+      </div>
     </div>
   );
 }
