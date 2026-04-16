@@ -62,6 +62,7 @@ const DeploymentChecklist = lazy(() => import("./pages/DeploymentChecklist"));
 const Phase2Review = lazy(() => import("./pages/Phase2Review"));
 const VaAdmin = lazy(() => import("./pages/VaAdmin"));
 const VaDashboard = lazy(() => import("./pages/VaDashboard"));
+const VaHome = lazy(() => import("./pages/VaHome"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const StudentInboxPage = lazy(() => import("./pages/StudentInboxPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -260,6 +261,7 @@ const AppRoutes = () => {
         <Route path="/accy304-admin" element={<ProtectedRoute><ACCY304Admin /></ProtectedRoute>} />
         <Route path="/payment-links-admin" element={<ProtectedRoute><PaymentLinksAdmin /></ProtectedRoute>} />
         <Route path="/va-dashboard" element={<ProtectedRoute><VaDashboard /></ProtectedRoute>} />
+        <Route path="/va-home" element={<ProtectedRoute><VaHome /></ProtectedRoute>} />
         <Route path="/chapter-complete" element={<ProtectedRoute><ChapterComplete /></ProtectedRoute>} />
         <Route path="/survive-chapter" element={<ProtectedRoute><SurviveChapterAdmin /></ProtectedRoute>} />
         <Route path="/chapter-je" element={<ProtectedRoute><ChapterJEManager /></ProtectedRoute>} />

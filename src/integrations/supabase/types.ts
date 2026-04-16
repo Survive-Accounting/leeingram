@@ -6066,6 +6066,45 @@ export type Database = {
           },
         ]
       }
+      va_survey_responses: {
+        Row: {
+          background: string | null
+          created_at: string
+          focus_area_answer: string | null
+          id: string
+          location: string | null
+          name: string
+          outside_interest: string | null
+          ranked_interests: Json
+          unlisted_skills: string | null
+          user_id: string
+        }
+        Insert: {
+          background?: string | null
+          created_at?: string
+          focus_area_answer?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          outside_interest?: string | null
+          ranked_interests?: Json
+          unlisted_skills?: string | null
+          user_id: string
+        }
+        Update: {
+          background?: string | null
+          created_at?: string
+          focus_area_answer?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          outside_interest?: string | null
+          ranked_interests?: Json
+          unlisted_skills?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       variant_feedback: {
         Row: {
           created_at: string
