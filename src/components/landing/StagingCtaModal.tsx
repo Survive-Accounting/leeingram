@@ -270,6 +270,11 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
                 </button>
               </div>
 
+              {/* Trust label */}
+              <p className="text-[11px]" style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}>
+                Survive Accounting — by Lee Ingram
+              </p>
+
               <div className="pt-1">
                 <h2
                   className="text-[18px] font-semibold leading-tight"
@@ -307,7 +312,7 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Finding your course...
+                    Getting your course ready…
                   </>
                 ) : (
                   "Continue →"
