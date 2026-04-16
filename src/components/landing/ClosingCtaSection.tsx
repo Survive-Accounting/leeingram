@@ -19,7 +19,7 @@ export default function ClosingCtaSection({ onCtaClick }: ClosingCtaSectionProps
           className="mt-3 text-[16px] sm:text-[18px]"
           style={{ color: "rgba(255,255,255,0.7)", fontFamily: "Inter, sans-serif" }}
         >
-          Start preparing the right way.
+          If you want a clearer way to study — this will help.
         </p>
 
         <button
@@ -38,7 +38,7 @@ export default function ClosingCtaSection({ onCtaClick }: ClosingCtaSectionProps
           className="mt-5 text-[13px]"
           style={{ color: "rgba(255,255,255,0.4)", fontFamily: "Inter, sans-serif" }}
         >
-          No fluff. Just what actually shows up.
+          Built from real tutoring. Designed to actually help.
         </p>
       </div>
     </section>
