@@ -150,7 +150,7 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
                     {liveCourse.name}
                   </h3>
                   <p className="text-[12px] mt-0.5" style={{ color: "#6B7280" }}>
-                    Ch 13–22 · Full course prep
+                    Exam prep for the full course
                   </p>
                 </div>
                 <CheckCircle2 className="w-5 h-5 mt-1 shrink-0" style={{ color: "#22C55E" }} />
