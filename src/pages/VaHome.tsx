@@ -488,6 +488,48 @@ function SurveyForm({ session }: { session: any }) {
         <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="bg-[#FAFAF8]" />
       </label>
 
+      {/* Background */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium" style={{ color: NAVY }}>What did you study in school? (or currently studying)</span>
+        <Input value={studyBackground} onChange={(e) => setStudyBackground(e.target.value)} placeholder="e.g. Marketing major, graduated 2024" className="bg-[#FAFAF8]" />
+      </label>
+
+      {/* Location */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium" style={{ color: NAVY }}>Where are you based? (City/Country + timezone)</span>
+        <Input value={locationTimezone} onChange={(e) => setLocationTimezone(e.target.value)} placeholder="e.g. Manila, Philippines — GMT+8" className="bg-[#FAFAF8]" />
+      </label>
+
+      {/* Work Hours */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium" style={{ color: NAVY }}>What hours do you typically work? (morning person vs night owl)</span>
+        <Input value={workHours} onChange={(e) => setWorkHours(e.target.value)} placeholder="e.g. Night owl — usually 8pm–2am my time" className="bg-[#FAFAF8]" />
+      </label>
+
+      {/* Hours Per Week */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium" style={{ color: NAVY }}>How many hours per week are you available?</span>
+        <Input value={hoursPerWeek} onChange={(e) => setHoursPerWeek(e.target.value)} placeholder="e.g. 15–20 hours" className="bg-[#FAFAF8]" />
+      </label>
+
+      {/* Instruction Preference */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium" style={{ color: NAVY }}>Do you prefer detailed instructions or figuring things out independently?</span>
+        <Input value={instructionPreference} onChange={(e) => setInstructionPreference(e.target.value)} placeholder="e.g. Mix of both — I like clear goals but freedom in execution" className="bg-[#FAFAF8]" />
+      </label>
+
+      {/* Software Tools */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium" style={{ color: NAVY }}>Any software tools you're already comfortable with?</span>
+        <Textarea value={softwareTools} onChange={(e) => setSoftwareTools(e.target.value)} rows={2} placeholder="e.g. Canva, Notion, Google Sheets, Slack, Figma…" className="bg-[#FAFAF8]" />
+      </label>
+
+      {/* Ed-tech Experience */}
+      <label className="block space-y-1.5">
+        <span className="text-sm font-medium" style={{ color: NAVY }}>Have you worked with online courses or ed-tech before?</span>
+        <Textarea value={edtechExperience} onChange={(e) => setEdtechExperience(e.target.value)} rows={2} placeholder="e.g. Helped build a Teachable course for a client" className="bg-[#FAFAF8]" />
+      </label>
+
       {/* Drag & Drop Ranking */}
       <div className="space-y-3">
         <p className="text-sm font-medium" style={{ color: NAVY }}>
