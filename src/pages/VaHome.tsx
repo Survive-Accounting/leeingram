@@ -121,8 +121,8 @@ export default function VaHome() {
           title="Welcome & Vision Overview"
           date="April 2026"
           items={[
-            { icon: <Video className="w-4 h-4" />, label: "Watch Video Intro", content: <VideoEmbed videoId={CURRENT_VIDEO_ID} /> },
-            { icon: <FileText className="w-4 h-4" />, label: "Form to Fill Out", content: <SurveyForm session={session} /> },
+            { icon: <Video className="w-4 h-4" />, label: "Watch Intro →", content: <VideoEmbed videoId={CURRENT_VIDEO_ID} /> },
+            { icon: <FileText className="w-4 h-4" />, label: "Fill Out Form →", content: <SurveyForm session={session} /> },
             {
               icon: <ClipboardList className="w-4 h-4" />,
               label: "Meeting Agenda",
