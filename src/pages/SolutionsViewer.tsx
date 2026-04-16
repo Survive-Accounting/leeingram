@@ -449,8 +449,7 @@ const EMAIL_BYPASS_LIST = [
   "jking.cim@gmail.com",
 ];
 
-const STRIPE_PK_LIVE = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_LIVE || "";
-const STRIPE_PK_TEST = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY_TEST || "";
+import { STRIPE_PK_LIVE, STRIPE_PK_TEST } from "@/lib/stripeConfig";
 
 function TieredPaywallCard({
   theme,

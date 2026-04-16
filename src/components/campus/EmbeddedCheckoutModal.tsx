@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -6,9 +6,7 @@ import {
   EmbeddedCheckout,
 } from "@stripe/react-stripe-js";
 import { Check } from "lucide-react";
-
-const STRIPE_PK = "pk_test_51TM9RCHyiFzd8XWggqI14jVV69b6HvGUcXqXYAGg3wyRP3RxjZeD97lLxQVl9uTCyWG8JirXbdLemCkOloJhgOnu00lyllwa8U";
-const stripePromise = loadStripe(STRIPE_PK);
+import { getStripePk } from "@/lib/stripeConfig";
 
 const NAVY = "#14213D";
 
