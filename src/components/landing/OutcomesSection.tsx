@@ -44,13 +44,13 @@ export default function OutcomesSection({ onCtaClick }: OutcomesSectionProps) {
             className="text-[24px] sm:text-[30px] font-bold tracking-tight"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
           >
-            What you'll be able to do
+            What this helps you do
           </h2>
           <p
             className="mt-2 text-[14px] sm:text-[15px]"
             style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
           >
-            Not just watch videos — actually understand what shows up on your exam.
+            This isn't about shortcuts — it's about actually understanding what you're doing.
           </p>
         </div>
 
