@@ -84,18 +84,35 @@ export default function VaHome() {
 
   return (
     <div className="min-h-screen" style={{ background: "#FAFAF8" }}>
-      {/* Header */}
-      <header className="w-full py-14 px-6 text-center" style={{ background: NAVY }}>
-        <p className="text-[11px] tracking-[0.2em] uppercase mb-2" style={{ color: "rgba(255,255,255,0.4)" }}>
-          Survive Accounting
-        </p>
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-3" style={{ fontFamily: "'DM Serif Display', serif" }}>
-          Meeting Room
-        </h1>
-        <p className="text-sm md:text-base max-w-lg mx-auto" style={{ color: "rgba(255,255,255,0.65)" }}>
-          I'm excited to grow Survive Accounting together to help students at universities all over the world.
-        </p>
-      </header>
+      {/* Hero Image */}
+      <div className="relative w-full h-48 md:h-64 overflow-hidden">
+        <img
+          src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1920&q=80"
+          alt="Mountain landscape"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(20,33,61,0.3), rgba(20,33,61,0.7))" }} />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-wide" style={{ fontFamily: "'DM Serif Display', serif" }}>
+            Meeting Room
+          </h1>
+        </div>
+      </div>
+
+      {/* Callout Box */}
+      <div className="max-w-2xl mx-auto -mt-8 relative z-10 px-4">
+        <div className="bg-white rounded-xl shadow-md border px-8 py-7 text-center" style={{ borderColor: "#E8E4DF" }}>
+          <p className="text-[11px] tracking-[0.18em] uppercase mb-2" style={{ color: RED }}>
+            Survive Accounting — Team Hub
+          </p>
+          <p className="text-sm leading-relaxed max-w-md mx-auto" style={{ color: "#4B5563" }}>
+            I'm excited to build this together and create something that genuinely helps students succeed in accounting.
+          </p>
+          <p className="text-sm leading-relaxed max-w-md mx-auto mt-2" style={{ color: "#6B7280" }}>
+            This page is our home base — everything you need for each meeting is here.
+          </p>
+        </div>
+      </div>
 
       <div className="max-w-3xl mx-auto px-4 py-10 space-y-4">
         {/* Meeting #1 */}
