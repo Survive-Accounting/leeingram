@@ -44,7 +44,7 @@ const FUNCTIONAL_AREAS = [
   "Bookkeeping & Financials",
 ];
 
-const CURRENT_VIDEO_ID = "";
+const CURRENT_VIDEO_ID = "8uX94STBhKQ";
 
 /* ── Sortable Item ─────────────────────────────────── */
 function SortableItem({ id, index }: { id: string; index: number }) {
