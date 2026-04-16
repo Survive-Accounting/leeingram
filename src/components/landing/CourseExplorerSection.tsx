@@ -143,18 +143,30 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
       <div className="mx-auto max-w-[1000px]">
         {/* Header */}
         <div className="text-center mb-10">
+          <p
+            className="text-[14px] sm:text-[15px] font-medium mb-2"
+            style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+          >
+            Click around — this is the actual course.
+          </p>
+          <p
+            className="text-[13px] sm:text-[14px] mb-1"
+            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
+          >
+            No demos. No marketing version. This is exactly what you'll use.
+          </p>
+          <p
+            className="text-[12px] sm:text-[13px] italic mb-6"
+            style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}
+          >
+            I've been building and refining this since 2020 based on real student sessions.
+          </p>
           <h2
             className="text-[24px] sm:text-[30px] font-bold tracking-tight"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
           >
-            Explore the course before you buy
+            Explore the course
           </h2>
-          <p
-            className="mt-2 text-[14px] sm:text-[15px]"
-            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
-          >
-            Preview real lessons, chapters, and practice problems — exactly how you'll use it.
-          </p>
         </div>
 
         {/* Explorer */}
