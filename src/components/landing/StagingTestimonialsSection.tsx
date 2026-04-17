@@ -34,14 +34,12 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
   return (
     <section style={{ background: NAVY }} className="py-16 sm:py-20 px-4 sm:px-6">
       <div className="mx-auto max-w-[800px]">
-        <div className="text-center mb-10">
-          <h2
-            className="text-[24px] sm:text-[30px] text-white tracking-tight"
-            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
-          >
-            Students are already seeing results
-          </h2>
-        </div>
+        <p
+          className="text-center mb-8 text-[13px]"
+          style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Inter, sans-serif" }}
+        >
+          Trusted by 1,000+ students since 2020
+        </p>
 
         <iframe
           ref={iframeRef}
