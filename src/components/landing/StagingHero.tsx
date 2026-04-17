@@ -69,46 +69,43 @@ export default function StagingHero({ liveCourse, futureCourses, onLiveCourseCli
               className="text-[24px] sm:text-[32px] md:text-[38px] text-white leading-[1.15] tracking-tight"
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
             >
-              Start passing your accounting exams with confidence.
+              Your exam is coming. Let's get you ready.
             </h1>
 
-            {/* Block 2 — Authority (text only, no headshot) */}
-            <div className="mt-7">
-              <p className="text-[13px] font-semibold text-white/85">
-                Exam prep by Lee Ingram
-              </p>
-              <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
-                Accounting tutor · Helping students since 2015
+            {/* Block 2 — Headshot + one-line authority */}
+            <div className="mt-6 flex items-center gap-3">
+              <img
+                src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg"
+                alt="Lee Ingram"
+                className="w-10 h-10 rounded-full object-cover shrink-0"
+              />
+              <p
+                className="text-[14px]"
+                style={{ color: "rgba(255,255,255,0.7)", fontFamily: "Inter, sans-serif" }}
+              >
+                Lee Ingram — Ole Miss accounting tutor since 2015
               </p>
             </div>
 
-            {/* Block 3 — Message + Value */}
-            <div
-              className="mt-7 rounded-2xl px-6 py-6"
-              style={{
-                background: "rgba(255,255,255,0.03)",
-                backdropFilter: "blur(8px)",
-                border: "1px solid rgba(255,255,255,0.04)",
-              }}
+            {/* Block 3 — Stats strip */}
+            <p
+              className="mt-5 text-[13px] whitespace-nowrap"
+              style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Inter, sans-serif" }}
             >
-              <p
-                className="text-[14px] sm:text-[15px] leading-[1.7]"
-                style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif" }}
-              >
-                Since 2015, I've helped students go from feeling completely lost to actually getting it. I created Survive Accounting to bring my teaching style to more students.
-              </p>
-
-              <p
-                className="mt-5 text-[14px] sm:text-[15px] leading-[1.7] font-semibold"
-                style={{ color: "rgba(255,255,255,0.9)", fontFamily: "Inter, sans-serif" }}
-              >
-                Built for students who want to do well, not just survive.
-              </p>
-            </div>
+              2,500+ Problems · 46 Chapters · 4 Courses
+            </p>
           </div>
 
           {/* RIGHT — Course cards */}
           <div className="w-full md:w-[340px] shrink-0">
+            {/* Trust signal */}
+            <p
+              className="text-[13px] text-center mb-3"
+              style={{ color: "rgba(255,255,255,0.65)", fontFamily: "Inter, sans-serif" }}
+            >
+              Trusted by 1,000+ accounting students
+            </p>
+
             {/* Primary course card */}
             <button
               onClick={onLiveCourseClick}
