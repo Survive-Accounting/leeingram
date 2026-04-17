@@ -6,7 +6,7 @@ import ContactForm from "@/components/landing/ContactForm";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { useEventTracking } from "@/hooks/useEventTracking";
 import StagingHero from "@/components/landing/StagingHero";
-import CourseExplorerSection from "@/components/landing/CourseExplorerSection";
+import StagingCoursesSection from "@/components/landing/StagingCoursesSection";
 import ClosingCtaSection from "@/components/landing/ClosingCtaSection";
 import StagingCtaModal, { type CtaModalIntent, type CtaCourse } from "@/components/landing/StagingCtaModal";
 
@@ -93,7 +93,14 @@ export default function StagingLandingPage() {
 
       <StagingTestimonialsSection onCtaClick={() => openWithCourse(liveCourse)} />
 
-      <CourseExplorerSection onCtaClick={() => openWithCourse(liveCourse)} />
+      <div ref={coursesRef}>
+        <StagingCoursesSection
+          liveCourse={liveCourse}
+          futureCourses={futureCourses}
+          onLiveCourseClick={() => openWithCourse(liveCourse)}
+          onNotifyClick={(c) => openWithCourse(c)}
+        />
+      </div>
 
       <ClosingCtaSection onCtaClick={() => openWithCourse(liveCourse)} />
 

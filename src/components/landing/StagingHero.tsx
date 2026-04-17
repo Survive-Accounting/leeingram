@@ -1,7 +1,4 @@
-import { CheckCircle2 } from "lucide-react";
-
 const NAVY = "#14213D";
-const RED = "#CE1126";
 
 interface Course {
   id: string;
@@ -20,190 +17,51 @@ interface StagingHeroProps {
   onNotifyClick: (course: Course) => void;
 }
 
-export default function StagingHero({ liveCourse, futureCourses, onLiveCourseClick, onNotifyClick }: StagingHeroProps) {
+// Note: liveCourse / futureCourses / handlers kept in props for backward compat with parent,
+// but the hero is now a pure split-card brand intro. Course cards render in a separate section.
+export default function StagingHero(_props: StagingHeroProps) {
   return (
-    <div className="relative overflow-hidden">
-      {/* Background image + overlay */}
-      <div className="absolute inset-0">
+    <section className="px-0 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-[1100px] overflow-hidden sm:rounded-2xl shadow-lg flex flex-col md:flex-row">
+        {/* LEFT — Photo */}
+        <div className="w-full md:w-1/3 shrink-0">
+          <img
+            src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg"
+            alt="Lee Ingram"
+            className="w-full h-[200px] md:h-full object-cover"
+            style={{ objectPosition: "center top" }}
+          />
+        </div>
+
+        {/* RIGHT — Text */}
         <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: "url('https://i.ibb.co/Qj8d4Hhs/Survive-Accounting-Hero-Image.jpg')",
-            backgroundSize: "cover",
-            backgroundPosition: "25% 35%",
-            backgroundRepeat: "no-repeat",
-            transform: "scaleX(-1)",
-          }}
-        />
-        {/* Brightness on face area, darken surroundings */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "radial-gradient(ellipse 40% 70% at 75% 45%, rgba(255,255,255,0.06) 0%, transparent 60%)",
-          }}
-        />
-        {/* Blur overlay for non-face areas */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backdropFilter: "blur(0.5px)",
-          }}
-        />
-        {/* Gradient overlay for text readability */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "linear-gradient(90deg, rgba(20,33,61,0.78) 0%, rgba(20,33,61,0.68) 40%, rgba(20,33,61,0.35) 65%, rgba(20,33,61,0.25) 100%)",
-          }}
-        />
-      </div>
+          className="flex-1 p-5 md:p-6"
+          style={{ background: NAVY }}
+        >
+          <h1
+            className="text-white leading-[1.15] tracking-tight text-[26px] sm:text-[34px] md:text-[40px]"
+            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+          >
+            Your exam is coming.
+            <br />
+            Let's get you ready.
+          </h1>
 
-      {/* Content — 2 column desktop, stacked mobile */}
-      <div className="relative z-10 mx-auto max-w-[1000px] px-4 sm:px-6 pt-10 sm:pt-14 pb-12 sm:pb-16">
-        <div className="flex flex-col md:flex-row gap-10 md:gap-14 items-start">
+          <p
+            className="mt-4 text-[14px] leading-relaxed"
+            style={{ color: "rgba(255,255,255,0.78)", fontFamily: "Inter, sans-serif" }}
+          >
+            Ole Miss accounting alum, turned full-time tutor. I genuinely love helping college students understand accounting — not just survive it.
+          </p>
 
-          {/* LEFT — Message */}
-          <div className="flex-1 min-w-0">
-            {/* Block 1 — Headline */}
-            <h1
-              className="text-[24px] sm:text-[32px] md:text-[38px] text-white leading-[1.15] tracking-tight"
-              style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
-            >
-              Your exam is coming. Let's get you ready.
-            </h1>
-
-            {/* Block 2 — Headshot + one-line authority */}
-            <div className="mt-6 flex items-center gap-3">
-              <img
-                src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg"
-                alt="Lee Ingram"
-                className="w-10 h-10 rounded-full object-cover shrink-0"
-              />
-              <p
-                className="text-[14px]"
-                style={{ color: "rgba(255,255,255,0.7)", fontFamily: "Inter, sans-serif" }}
-              >
-                Lee Ingram — Ole Miss accounting tutor since 2015
-              </p>
-            </div>
-
-            {/* Block 3 — Stats strip */}
-            <p
-              className="mt-5 text-[13px] whitespace-nowrap"
-              style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Inter, sans-serif" }}
-            >
-              2,500+ Problems · 46 Chapters · 4 Courses
-            </p>
-          </div>
-
-          {/* RIGHT — Course cards */}
-          <div className="w-full md:w-[340px] shrink-0">
-            {/* Trust signal */}
-            <p
-              className="text-[13px] text-center mb-3"
-              style={{ color: "rgba(255,255,255,0.65)", fontFamily: "Inter, sans-serif" }}
-            >
-              Trusted by 1,000+ accounting students
-            </p>
-
-            {/* Primary course card */}
-            <button
-              onClick={onLiveCourseClick}
-              className="w-full text-left rounded-2xl p-5 transition-all hover:scale-[1.01] active:scale-[0.99] group"
-              style={{
-                background: "#fff",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.08)",
-              }}
-            >
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div>
-                  <span
-                    className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full text-white mb-2"
-                    style={{ background: "#22C55E" }}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                    AVAILABLE NOW
-                  </span>
-                  <h3 className="text-[18px] sm:text-[20px] font-bold" style={{ color: NAVY }}>
-                    {liveCourse.name}
-                  </h3>
-                  <p className="text-[12px] mt-0.5" style={{ color: "#6B7280" }}>
-                    Exam prep for the full course
-                  </p>
-                </div>
-                <CheckCircle2 className="w-5 h-5 mt-1 shrink-0" style={{ color: "#22C55E" }} />
-              </div>
-
-              <span
-                className="block rounded-xl px-5 py-3 text-[14px] font-bold text-center text-white transition-all group-hover:brightness-110"
-                style={{ background: RED }}
-              >
-                Start Studying →
-              </span>
-
-              {/* Pricing */}
-              <div className="mt-3 text-center">
-                <p className="text-[14px] font-semibold" style={{ color: NAVY }}>
-                  <span className="text-[13px] line-through" style={{ color: "#9CA3AF" }}>$250</span>
-                  {" "}
-                  <span className="text-[16px] font-bold" style={{ color: NAVY }}>$99 one-time</span>
-                </p>
-                <p className="text-[11px] mt-0.5" style={{ color: "#9CA3AF" }}>Full access through finals week</p>
-              </div>
-            </button>
-
-            {/* More courses — solid container */}
-            <div
-              className="mt-6 rounded-2xl p-4"
-              style={{
-                background: "#F3F4F6",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              }}
-            >
-              <p
-                className="text-[12px] font-medium text-center mb-3"
-                style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}
-              >
-                More courses launching soon
-              </p>
-
-              <div className="space-y-2">
-                {[...futureCourses].sort((a, b) => {
-                  const order: Record<string, number> = { "intro-accounting-1": 0, "intro-accounting-2": 1, "intermediate-accounting-1": 2 };
-                  return (order[a.slug] ?? 9) - (order[b.slug] ?? 9);
-                }).map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => onNotifyClick(c)}
-                    className="w-full text-left rounded-xl p-3 transition-all hover:scale-[1.01] active:scale-[0.98] flex items-center justify-between gap-3"
-                    style={{
-                      background: "#fff",
-                      border: "1px solid #E5E7EB",
-                    }}
-                  >
-                    <div className="min-w-0">
-                      <span className="text-[13px] font-semibold leading-snug block" style={{ color: NAVY }}>{c.name}</span>
-                      <span className="text-[11px] block mt-0.5" style={{ color: "#9CA3AF" }}>
-                        {c.availability}
-                      </span>
-                    </div>
-                    <span
-                      className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap"
-                      style={{
-                        border: `1px solid ${NAVY}30`,
-                        color: NAVY,
-                        opacity: 0.7,
-                      }}
-                    >
-                      Join waitlist →
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          <p
+            className="mt-3 text-[13px]"
+            style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
+          >
+            Study tools for serious accounting students.
+          </p>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
