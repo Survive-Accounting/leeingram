@@ -69,32 +69,21 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           z-index: 2;
           pointer-events: none;
         }
-        .staging-hero-abacus {
-          position: absolute;
-          top: 8%;
-          left: 50%;
-          transform: translateX(-50%);
-          z-index: 2;
-          opacity: 0.6;
-          filter: drop-shadow(0 0 12px ${GOLD}88);
-          pointer-events: none;
-        }
-        .staging-hero-cap {
-          position: absolute;
-          top: 12%;
-          right: 8%;
-          z-index: 2;
-          opacity: 0.4;
+        .staging-hero-cap-inline {
+          display: inline-block;
+          vertical-align: top;
+          margin-left: 12px;
+          opacity: 0.7;
           transform: rotate(15deg);
           animation: heroCapFloat 3s ease-in-out infinite;
-          pointer-events: none;
+          filter: drop-shadow(0 0 8px ${GOLD}cc);
         }
         @keyframes heroCapFloat {
           0%, 100% { transform: rotate(15deg) translateY(0); }
-          50% { transform: rotate(15deg) translateY(-10px); }
+          50% { transform: rotate(15deg) translateY(-6px); }
         }
         @media (max-width: 768px) {
-          .staging-hero-abacus, .staging-hero-cap { display: none; }
+          .staging-hero-cap-inline { display: none; }
         }
 
         /* Entrance animations */
@@ -125,35 +114,12 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             animation: none !important;
             transform: none !important;
           }
-          .staging-hero-cap { animation: none !important; }
+          .staging-hero-cap-inline { animation: none !important; }
         }
       `}</style>
 
       <div className="staging-hero-bg" />
       <div className="staging-hero-overlay-left" />
-
-      {/* Abacus SVG at mountain peak */}
-      <svg className="staging-hero-abacus" width="80" height="56" viewBox="0 0 80 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="4" y="4" width="72" height="48" rx="3" stroke={GOLD} strokeWidth="2" fill="none" />
-        <line x1="4" y1="18" x2="76" y2="18" stroke={GOLD} strokeWidth="1.5" />
-        <line x1="4" y1="32" x2="76" y2="32" stroke={GOLD} strokeWidth="1.5" />
-        <line x1="4" y1="46" x2="76" y2="46" stroke={GOLD} strokeWidth="1.5" />
-        {[14, 24, 34, 44, 54, 64].map((cx, i) => (
-          <g key={i}>
-            <circle cx={cx} cy="11" r="3" fill={GOLD} />
-            <circle cx={cx} cy="25" r="3" fill={GOLD} />
-            <circle cx={cx} cy="39" r="3" fill={GOLD} />
-          </g>
-        ))}
-      </svg>
-
-      {/* Floating grad cap */}
-      <svg className="staging-hero-cap" width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M28 8 L52 20 L28 32 L4 20 Z" fill="white" stroke={GOLD} strokeWidth="1.5" />
-        <path d="M14 24 V36 C14 36 20 42 28 42 C36 42 42 36 42 36 V24" stroke="white" strokeWidth="1.5" fill="none" />
-        <line x1="50" y1="21" x2="50" y2="34" stroke={GOLD} strokeWidth="1.5" />
-        <circle cx="50" cy="36" r="2.5" fill={GOLD} />
-      </svg>
 
       <div className="relative z-[3] mx-auto max-w-[1100px] px-4 sm:px-6 py-12 md:py-20 w-full">
         <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
@@ -177,7 +143,15 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               className="text-white leading-[1.15] tracking-tight text-[28px] sm:text-[36px] md:text-[44px]"
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
-              <span className="block hero-anim-line1">Your exam is coming.</span>
+              <span className="block hero-anim-line1">
+                Your exam is coming.
+                <svg className="staging-hero-cap-inline" width="44" height="44" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M28 8 L52 20 L28 32 L4 20 Z" fill="white" stroke={GOLD} strokeWidth="1.5" />
+                  <path d="M14 24 V36 C14 36 20 42 28 42 C36 42 42 36 42 36 V24" stroke="white" strokeWidth="1.5" fill="none" />
+                  <line x1="50" y1="21" x2="50" y2="34" stroke={GOLD} strokeWidth="1.5" />
+                  <circle cx="50" cy="36" r="2.5" fill={GOLD} />
+                </svg>
+              </span>
               <span className="block hero-anim-line2">Let's get you ready.</span>
             </h1>
 
