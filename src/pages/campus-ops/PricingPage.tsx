@@ -109,134 +109,242 @@ function ExpansionPricingStrategies() {
         </Button>
       </div>
 
-      {/* Two columns: Configs + Assignments */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* LEFT — Configs */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Pricing Configs
-          </h3>
-          {MOCK_CONFIGS.map(cfg => (
-            <Card key={cfg.id} className="relative">
-              <MockBadge />
-              <CardContent className="p-5 space-y-3">
-                <div className="flex items-start gap-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-base font-bold">{cfg.name}</h4>
-                      {cfg.is_default && (
-                        <Badge className="bg-green-600 hover:bg-green-600 text-white text-xs">Default</Badge>
-                      )}
+      <Tabs defaultValue="individual">
+        <TabsList>
+          <TabsTrigger value="individual"><Users className="w-3.5 h-3.5 mr-1.5" /> Individual Students</TabsTrigger>
+          <TabsTrigger value="greek"><Crown className="w-3.5 h-3.5 mr-1.5" /> Greek Organizations</TabsTrigger>
+        </TabsList>
+
+        {/* ── INDIVIDUAL STUDENTS TAB ─────────────────────────────────── */}
+        <TabsContent value="individual" className="space-y-6 mt-4">
+          {/* Two columns: Configs + Assignments */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* LEFT — Configs */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Pricing Configs
+              </h3>
+              {MOCK_CONFIGS.map(cfg => (
+                <Card key={cfg.id} className="relative">
+                  <MockBadge />
+                  <CardContent className="p-5 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-base font-bold">{cfg.name}</h4>
+                          {cfg.is_default && (
+                            <Badge className="bg-green-600 hover:bg-green-600 text-white text-xs">Default</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">{cfg.description}</p>
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{cfg.description}</p>
-                  </div>
-                </div>
 
-                <div className="flex flex-wrap gap-1.5">
-                  {cfg.tiers.map(t => (
-                    <span
-                      key={t.label}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-xs font-medium"
-                    >
-                      <span className="text-muted-foreground">{t.label}:</span>
-                      <span>${t.price}</span>
-                    </span>
-                  ))}
-                </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {cfg.tiers.map(t => (
+                        <span
+                          key={t.label}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-xs font-medium"
+                        >
+                          <span className="text-muted-foreground">{t.label}:</span>
+                          <span>${t.price}</span>
+                        </span>
+                      ))}
+                    </div>
 
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <Button size="sm" variant="outline">
-                    <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <ArrowRightLeft className="w-3.5 h-3.5 mr-1" /> Assign to Campus
-                  </Button>
-                  <Button size="sm" variant="ghost">
-                    <Copy className="w-3.5 h-3.5 mr-1" /> Duplicate
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <Button size="sm" variant="outline">
+                        <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                      </Button>
+                      <Button size="sm" variant="outline">
+                        <ArrowRightLeft className="w-3.5 h-3.5 mr-1" /> Assign to Campus
+                      </Button>
+                      <Button size="sm" variant="ghost">
+                        <Copy className="w-3.5 h-3.5 mr-1" /> Duplicate
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-        {/* RIGHT — Campus Assignments */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Campus Assignments
-          </h3>
-          <Card className="relative">
+            {/* RIGHT — Campus Assignments */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Campus Assignments
+              </h3>
+              <Card className="relative">
+                <MockBadge />
+                <CardContent className="p-0 pt-6">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Campus</TableHead>
+                        <TableHead>Config</TableHead>
+                        <TableHead className="text-center">Enrolled</TableHead>
+                        <TableHead>Current Tier</TableHead>
+                        <TableHead className="w-32" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {MOCK_ASSIGNMENTS.map(a => (
+                        <TableRow key={a.campus}>
+                          <TableCell className="font-medium">{a.campus}</TableCell>
+                          <TableCell className="text-sm">{a.config}</TableCell>
+                          <TableCell className="text-center">{a.enrolled}</TableCell>
+                          <TableCell className="text-sm">
+                            {a.tier} <span className="text-muted-foreground">(${a.price})</span>
+                          </TableCell>
+                          <TableCell>
+                            <Button size="sm" variant="outline">Change Config</Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Performance Scoring */}
+          <Card className="relative overflow-hidden">
             <MockBadge />
-            <CardContent className="p-0 pt-6">
+            <div className="bg-[#14213D] text-white px-6 py-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                <h3 className="text-lg font-semibold">Config Performance</h3>
+              </div>
+              <p className="text-sm text-white/70 mt-1">Which strategy converts fastest?</p>
+            </div>
+            <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Campus</TableHead>
-                    <TableHead>Config</TableHead>
-                    <TableHead className="text-center">Enrolled</TableHead>
-                    <TableHead>Current Tier</TableHead>
-                    <TableHead className="w-32" />
+                    <TableHead>Config Name</TableHead>
+                    <TableHead className="text-center">Campuses Using</TableHead>
+                    <TableHead className="text-center">Avg Students/Week</TableHead>
+                    <TableHead className="text-center">Avg Revenue/Campus</TableHead>
+                    <TableHead className="text-center">Score</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {MOCK_ASSIGNMENTS.map(a => (
-                    <TableRow key={a.campus}>
-                      <TableCell className="font-medium">{a.campus}</TableCell>
-                      <TableCell className="text-sm">{a.config}</TableCell>
-                      <TableCell className="text-center">{a.enrolled}</TableCell>
-                      <TableCell className="text-sm">
-                        {a.tier} <span className="text-muted-foreground">(${a.price})</span>
-                      </TableCell>
-                      <TableCell>
-                        <Button size="sm" variant="outline">Change Config</Button>
-                      </TableCell>
+                  {MOCK_PERFORMANCE.map(p => (
+                    <TableRow key={p.config}>
+                      <TableCell className="font-medium">{p.config}</TableCell>
+                      <TableCell className="text-center">{p.campuses}</TableCell>
+                      <TableCell className="text-center">{p.weekly.toFixed(1)}</TableCell>
+                      <TableCell className="text-center">${p.revenue}</TableCell>
+                      <TableCell className="text-center text-muted-foreground">{p.score}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              <p className="text-xs text-muted-foreground px-6 py-3 border-t">
+                * Scoring activates at 50+ students
+              </p>
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </TabsContent>
 
-      {/* Performance Scoring */}
-      <Card className="relative overflow-hidden">
-        <MockBadge />
-        <div className="bg-[#14213D] text-white px-6 py-4">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" />
-            <h3 className="text-lg font-semibold">Config Performance</h3>
+        {/* ── GREEK ORGANIZATIONS TAB ─────────────────────────────────── */}
+        <TabsContent value="greek" className="space-y-6 mt-4">
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Greek Org Pricing Configs
+            </h3>
+            {MOCK_GREEK_CONFIGS.map(cfg => (
+              <Card key={cfg.id} className="relative">
+                <MockBadge />
+                <CardContent className="p-5 space-y-4">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-base font-bold">{cfg.name}</h4>
+                        {cfg.is_default && (
+                          <Badge className="bg-green-600 hover:bg-green-600 text-white text-xs">Default</Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">{cfg.description}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div className="rounded-md bg-muted/50 p-3">
+                      <p className="font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Per-Seat Tiers</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {cfg.tiers.map(t => (
+                          <span key={t.label} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-background border text-xs font-medium">
+                            <span className="text-muted-foreground">{t.label}:</span>
+                            <span>${t.price}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="rounded-md bg-muted/50 p-3 space-y-1">
+                      <p className="font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Settings</p>
+                      <p><span className="text-muted-foreground">Min seats / org:</span> <span className="font-medium">{cfg.min_seats}</span></p>
+                      <p><span className="text-muted-foreground">Founding org discount:</span> <span className="font-medium">{cfg.founding_discount}</span></p>
+                      <p><span className="text-muted-foreground">Founding badge:</span> <span className="font-medium">{cfg.includes_badge ? "Included" : "—"}</span></p>
+                    </div>
+                  </div>
+
+                  <ul className="text-xs space-y-1 text-muted-foreground">
+                    {cfg.rules.map((r, i) => (
+                      <li key={i}>• {r}</li>
+                    ))}
+                  </ul>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button size="sm" variant="outline"><Pencil className="w-3.5 h-3.5 mr-1" /> Edit</Button>
+                    <Button size="sm" variant="outline"><ArrowRightLeft className="w-3.5 h-3.5 mr-1" /> Assign to Campus</Button>
+                    <Button size="sm" variant="ghost"><Copy className="w-3.5 h-3.5 mr-1" /> Duplicate</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-          <p className="text-sm text-white/70 mt-1">Which strategy converts fastest?</p>
-        </div>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Config Name</TableHead>
-                <TableHead className="text-center">Campuses Using</TableHead>
-                <TableHead className="text-center">Avg Students/Week</TableHead>
-                <TableHead className="text-center">Avg Revenue/Campus</TableHead>
-                <TableHead className="text-center">Score</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {MOCK_PERFORMANCE.map(p => (
-                <TableRow key={p.config}>
-                  <TableCell className="font-medium">{p.config}</TableCell>
-                  <TableCell className="text-center">{p.campuses}</TableCell>
-                  <TableCell className="text-center">{p.weekly.toFixed(1)}</TableCell>
-                  <TableCell className="text-center">${p.revenue}</TableCell>
-                  <TableCell className="text-center text-muted-foreground">{p.score}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <p className="text-xs text-muted-foreground px-6 py-3 border-t">
-            * Scoring activates at 50+ students
-          </p>
-        </CardContent>
-      </Card>
+
+          {/* Founding Greek Orgs — Ole Miss */}
+          <Card className="relative overflow-hidden">
+            <MockBadge />
+            <div className="bg-[#14213D] text-white px-6 py-4">
+              <div className="flex items-center gap-2">
+                <Crown className="w-5 h-5" />
+                <h3 className="text-lg font-semibold">Founding Greek Orgs — Ole Miss</h3>
+              </div>
+              <p className="text-sm text-white/70 mt-1">First fraternity & sorority to onboard get founding status.</p>
+            </div>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Founding Fraternity — claimed */}
+                <div className="rounded-lg border-2 border-green-600/30 bg-green-50 p-5 space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Founding Fraternity</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-bold">DKE</span>
+                    <Badge className="bg-green-600 hover:bg-green-600 text-white text-xs">🏅 Founding Frat</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> Claimed Apr 2026
+                  </p>
+                </div>
+
+                {/* Founding Sorority — available */}
+                <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-5 space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Founding Sorority</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-base font-medium text-muted-foreground">Not yet claimed</span>
+                    <Badge variant="outline" className="border-amber-500 text-amber-700 text-xs">Available</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground italic">
+                    First sorority to sign up gets founding status + free first month.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
