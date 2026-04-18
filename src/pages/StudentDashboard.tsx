@@ -33,7 +33,7 @@ function MockBadge() {
 }
 
 function FoundingSection() {
-  const n = MOCK_STUDENT_NUMBER;
+  const n: number = MOCK_STUDENT_NUMBER;
   const campus = MOCK_CAMPUS_NAME;
   const isFirst = n === 1;
   const isFoundingTen = n <= 10;
