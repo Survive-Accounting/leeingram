@@ -1,6 +1,10 @@
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Link } from "react-router-dom";
+
 const NAVY = "#14213D";
 const BLUE = "#4A90D9";
 const RED = "#CE1126";
+const GREEN = "#16A34A";
 
 interface Course {
   id: string;
@@ -39,6 +43,7 @@ export default function StagingCoursesSection({
     .filter(Boolean) as Array<{ course: Course; group: "intro" | "intermediate"; subtitle?: string }>;
 
   return (
+    <TooltipProvider delayDuration={150}>
     <section className="px-4 sm:px-6 py-12 sm:py-16" style={{ background: "#F8F8FA" }}>
       <div className="mx-auto max-w-[860px]">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
@@ -54,12 +59,20 @@ export default function StagingCoursesSection({
                   boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)",
                 }}
               >
-                <span
-                  className="self-start inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full text-white mb-3"
-                  style={{ background: accent }}
-                >
-                  Live at Ole Miss
-                </span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="self-start inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full text-white mb-3 cursor-help"
+                      style={{ background: GREEN }}
+                    >
+                      Live across the SEC<span aria-hidden>*</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[240px] text-[12px]">
+                    Currently live at Ole Miss. Expanding to additional SEC schools August 2026.
+                  </TooltipContent>
+                </Tooltip>
 
                 <h3
                   className="text-[18px] sm:text-[20px] font-bold leading-tight"
@@ -89,17 +102,17 @@ export default function StagingCoursesSection({
           className="mt-8 text-center text-[14px]"
           style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}
         >
-          Expanding to new campuses August 2026.{" "}
-          <button
-            type="button"
-            onClick={onExpansionClick}
-            className="underline-offset-2 hover:underline"
-            style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}
+          Expanding across the SEC — August 2026.{" "}
+          <Link
+            to="/lees-story"
+            className="font-medium underline underline-offset-2 hover:opacity-80"
+            style={{ color: RED, fontFamily: "Inter, sans-serif" }}
           >
             Is your school next? →
-          </button>
+          </Link>
         </p>
       </div>
     </section>
+    </TooltipProvider>
   );
 }

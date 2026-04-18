@@ -128,6 +128,7 @@ const ProfessorsPage = lazy(() => import("./pages/campus-ops/ProfessorsPage"));
 const CampusAnalyticsPage = lazy(() => import("./pages/campus-ops/AnalyticsPage"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const LeesStory = lazy(() => import("./pages/LeesStory"));
 
 // ── Suspense fallback ────────────────────────────────────────────────
 const PageLoader = () => (
@@ -193,6 +194,7 @@ const AppRoutes = () => {
         <Route path="/campus/:campusSlug/:courseSlug/:chapterNumber/:problemCode" element={<ProblemPreviewPage />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/lees-story" element={<LeesStory />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/my-dashboard" element={<StudentDashboard />} />
