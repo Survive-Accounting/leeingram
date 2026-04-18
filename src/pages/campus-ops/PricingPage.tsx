@@ -87,6 +87,64 @@ const MOCK_PERFORMANCE = [
   { config: "Greek Org Special", campuses: 0, weekly: 0, revenue: 0, score: "—" },
 ];
 
+interface MockGreekConfig {
+  id: string;
+  name: string;
+  description: string;
+  is_default: boolean;
+  tiers: { label: string; price: number }[];
+  min_seats: number;
+  founding_discount: string;
+  includes_badge: boolean;
+  rules: string[];
+}
+
+const MOCK_GREEK_CONFIGS: MockGreekConfig[] = [
+  {
+    id: "greek-standard",
+    name: "Standard Greek Founding",
+    description: "Founding fraternity & sorority unlock free first month, then per-seat pricing.",
+    is_default: true,
+    tiers: [
+      { label: "5-9 seats", price: 22 },
+      { label: "10-19 seats", price: 18 },
+      { label: "20-49 seats", price: 15 },
+      { label: "50+ seats", price: 12 },
+    ],
+    min_seats: 5,
+    founding_discount: "Free first month",
+    includes_badge: true,
+    rules: [
+      "First fraternity: FREE first month, then per-seat pricing",
+      "First sorority: FREE first month, then per-seat pricing",
+      "Orgs 3-5: 50% off first semester",
+      "Orgs 6+: standard per-seat pricing",
+      "Founding badge: included for first 2 orgs",
+    ],
+  },
+  {
+    id: "greek-aggressive",
+    name: "Aggressive Greek Founding",
+    description: "Steeper discounts to land Greek orgs faster on new campuses.",
+    is_default: false,
+    tiers: [
+      { label: "5-9 seats", price: 15 },
+      { label: "10-19 seats", price: 12 },
+      { label: "20-49 seats", price: 10 },
+      { label: "50+ seats", price: 8 },
+    ],
+    min_seats: 5,
+    founding_discount: "Free first 2 months",
+    includes_badge: true,
+    rules: [
+      "First 4 orgs: FREE first 2 months",
+      "Orgs 5-10: 60% off first semester",
+      "Orgs 11+: 25% off semester pricing",
+      "Founding badge: included for first 4 orgs",
+    ],
+  },
+];
+
 const MockBadge = () => (
   <span className="absolute top-2 right-2 text-[10px] uppercase tracking-wide font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
     Mock Data
