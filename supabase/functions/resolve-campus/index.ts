@@ -292,11 +292,44 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Determine paid student count + founding status
+    let paidCount = 0;
+    let mascotCheer: string | null = null;
+    let foundingStudent = false;
+    let foundingCouponCode: string | null = null;
+
+    if (campusId) {
+      const { count } = await sb
+        .from("student_purchases")
+        .select("email", { count: "exact", head: true })
+        .eq("campus_id", campusId);
+      paidCount = count ?? 0;
+
+      const { data: campusRow } = await sb
+        .from("campuses")
+        .select("mascot_cheer")
+        .eq("id", campusId)
+        .maybeSingle();
+      mascotCheer = (campusRow as any)?.mascot_cheer ?? null;
+
+      // Founding = first paid student at a non-Ole-Miss campus with zero paid purchases yet
+      if (paidCount === 0 && campusSlug !== "ole-miss" && campusSlug !== "general") {
+        foundingStudent = true;
+        const couponRow = await ensureFoundingCoupon(campusSlug, campusName, campusId);
+        if (couponRow) foundingCouponCode = (couponRow as any).code;
+      }
+    }
+
     // Save to student_emails (lead capture) — upsert by email + course_id
     await sb
       .from("student_emails")
       .upsert(
-        { email: cleanEmail, course_id: courseId, attempted_at: new Date().toISOString() },
+        {
+          email: cleanEmail,
+          course_id: courseId,
+          attempted_at: new Date().toISOString(),
+          founding_student: foundingStudent,
+        } as any,
         { onConflict: "email,course_id" }
       );
 
@@ -323,6 +356,11 @@ Deno.serve(async (req) => {
         is_new: isNew,
         is_test_mode: isTestMode,
         email_override: isTestMode ? "lee@surviveaccounting.com" : null,
+        paid_student_count: paidCount,
+        student_number: paidCount + 1,
+        mascot_cheer: mascotCheer,
+        founding_student: foundingStudent,
+        founding_coupon_code: foundingCouponCode,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
