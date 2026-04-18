@@ -1,4 +1,5 @@
 const NAVY = "#14213D";
+const RED = "#CE1126";
 
 interface Course {
   id: string;
@@ -15,11 +16,12 @@ interface StagingHeroProps {
   futureCourses: Course[];
   onLiveCourseClick: () => void;
   onNotifyClick: (course: Course) => void;
+  onGetStartedClick?: () => void;
 }
 
 // Note: liveCourse / futureCourses / handlers kept in props for backward compat with parent,
 // but the hero is now a pure split-card brand intro. Course cards render in a separate section.
-export default function StagingHero(_props: StagingHeroProps) {
+export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
   return (
     <section className="px-0 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-[1100px] overflow-hidden sm:rounded-2xl shadow-lg flex flex-col md:flex-row">
@@ -51,14 +53,24 @@ export default function StagingHero(_props: StagingHeroProps) {
             className="mt-4 text-[14px] leading-relaxed"
             style={{ color: "rgba(255,255,255,0.78)", fontFamily: "Inter, sans-serif" }}
           >
-            Ole Miss accounting alum, turned full-time tutor. I genuinely love helping college students understand accounting — not just survive it.
+            I'm Lee Ingram — Ole Miss accounting alum, turned full-time tutor. I built this platform out of a love for helping college students understand accounting — not just survive it.
           </p>
 
+          <div className="mt-5 flex justify-center">
+            <button
+              onClick={onGetStartedClick}
+              className="rounded-lg px-6 py-3 text-[14px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
+              style={{ background: RED, fontFamily: "Inter, sans-serif" }}
+            >
+              Get Started →
+            </button>
+          </div>
+
           <p
-            className="mt-3 text-[13px]"
-            style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
+            className="mt-5 text-center text-[18px] sm:text-[22px] md:text-[26px]"
+            style={{ color: "#E8E8E8", fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
           >
-            Study tools for serious accounting students.
+            Trusted by Ole Miss accounting students
           </p>
         </div>
       </div>
