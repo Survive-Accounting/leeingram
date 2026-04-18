@@ -93,21 +93,24 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           width: 100%;
           height: 100%;
           pointer-events: none;
-          opacity: 0;
-          animation: annotationFloat 2s ease-in-out infinite, annotationFadeIn 0.3s ease-out 1.2s forwards;
-          filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.6));
           z-index: 4;
-        }
-        @keyframes annotationFadeIn {
-          to { opacity: 1; }
+          animation: annotationFloat 2.5s ease-in-out infinite;
         }
         @keyframes annotationFloat {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
+          50% { transform: translateY(-5px); }
+        }
+        .photo-annotation-svg {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          overflow: visible;
+          filter: drop-shadow(1px 1px 3px rgba(0,0,0,0.9));
         }
         .photo-annotation-path {
-          stroke-dasharray: 200;
-          stroke-dashoffset: 200;
+          stroke-dasharray: 220;
+          stroke-dashoffset: 220;
           animation: drawPath 0.8s ease-out 1s forwards;
         }
         @keyframes drawPath {
@@ -115,16 +118,30 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         }
         .photo-annotation-arrowhead {
           opacity: 0;
-          animation: arrowheadIn 0.2s ease-out 1.7s forwards;
+          animation: arrowheadIn 0.2s ease-out 1.75s forwards;
         }
         @keyframes arrowheadIn {
           to { opacity: 1; }
         }
-        .photo-annotation-text {
+        .photo-annotation-label {
+          position: absolute;
+          left: 63%;
+          top: 12%;
+          transform: rotate(-15deg);
+          transform-origin: left center;
+          font-family: Inter, sans-serif;
+          font-weight: 600;
+          font-size: 13px;
+          color: white;
+          background: rgba(0,0,0,0.25);
+          padding: 2px 6px;
+          border-radius: 4px;
+          text-shadow: 1px 1px 4px rgba(0,0,0,0.9);
+          white-space: nowrap;
           opacity: 0;
-          animation: annotationTextIn 0.3s ease-out 1.8s forwards;
+          animation: annotationLabelIn 0.3s ease-out 2s forwards;
         }
-        @keyframes annotationTextIn {
+        @keyframes annotationLabelIn {
           to { opacity: 1; }
         }
         @media (max-width: 768px) {
@@ -134,7 +151,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           .photo-annotation,
           .photo-annotation-path,
           .photo-annotation-arrowhead,
-          .photo-annotation-text {
+          .photo-annotation-label {
             opacity: 1 !important;
             animation: none !important;
             stroke-dashoffset: 0 !important;
