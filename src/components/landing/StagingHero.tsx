@@ -137,7 +137,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                       * We're counting — this updates as students join. Last verified April 2026.
                     </TooltipContent>
                   </Tooltip>
-                  {" "}Ole Miss students have survived their exam with this since 2020.{" "}
+                  {" "}students across the SEC have survived their exam with this.{" "}
                   <span style={{ color: RED, fontWeight: 700 }}>Want in?</span>
                 </p>
                 {semesterCount !== null && semesterCount > 0 && (
