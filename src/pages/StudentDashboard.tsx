@@ -162,6 +162,9 @@ export default function StudentDashboard() {
           </p>
         </div>
 
+        {/* 1b. Founding Student Section [Mock] */}
+        <FoundingSection />
+
         {/* 2. Active Study Passes */}
         <section className="space-y-3">
           <h2 className="text-[13px] font-semibold uppercase tracking-wider" style={{ color: "#999" }}>
