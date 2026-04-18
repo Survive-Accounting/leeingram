@@ -965,6 +965,7 @@ export type Database = {
           domains: string[]
           id: string
           is_active: boolean
+          mascot_cheer: string | null
           name: string
           semester_end: string | null
           semester_start: string | null
@@ -978,6 +979,7 @@ export type Database = {
           domains?: string[]
           id?: string
           is_active?: boolean
+          mascot_cheer?: string | null
           name: string
           semester_end?: string | null
           semester_start?: string | null
@@ -991,6 +993,7 @@ export type Database = {
           domains?: string[]
           id?: string
           is_active?: boolean
+          mascot_cheer?: string | null
           name?: string
           semester_end?: string | null
           semester_start?: string | null
@@ -4953,6 +4956,7 @@ export type Database = {
           converted: boolean | null
           course_id: string | null
           email: string
+          founding_student: boolean
           id: string
         }
         Insert: {
@@ -4961,6 +4965,7 @@ export type Database = {
           converted?: boolean | null
           course_id?: string | null
           email: string
+          founding_student?: boolean
           id?: string
         }
         Update: {
@@ -4969,6 +4974,7 @@ export type Database = {
           converted?: boolean | null
           course_id?: string | null
           email?: string
+          founding_student?: boolean
           id?: string
         }
         Relationships: [
@@ -6567,6 +6573,14 @@ export type Database = {
       count_student_devices: { Args: { p_student_id: string }; Returns: number }
       get_campus_price: {
         Args: { p_campus_slug: string; p_product_type: string }
+        Returns: number
+      }
+      get_paid_student_count_for_campus: {
+        Args: { p_campus_slug: string }
+        Returns: number
+      }
+      get_semester_enrollment_count: {
+        Args: { p_campus_slug: string }
         Returns: number
       }
       increment_practice_views: {
