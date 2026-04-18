@@ -13,6 +13,7 @@ import StagingCoursesSection from "@/components/landing/StagingCoursesSection";
 import ClosingCtaSection from "@/components/landing/ClosingCtaSection";
 import StagingWaitlistModal from "@/components/landing/StagingWaitlistModal";
 import StagingEmailPromptModal, { type CelebrationData } from "@/components/landing/StagingEmailPromptModal";
+import StagingStickyBar from "@/components/landing/StagingStickyBar";
 import type { CtaCourse } from "@/components/landing/StagingCtaModal";
 
 const COURSES: CtaCourse[] = [
