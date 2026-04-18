@@ -118,18 +118,46 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               I'm Lee Ingram. Ole Miss accounting alum & tutor. I built this out of a love for helping students master their accounting course — not just survive it.
             </p>
 
-            <p
-              className="text-[17px] md:text-[19px] leading-snug mx-auto md:mx-0 max-w-[520px] text-center md:text-left"
-              style={{
-                color: "rgba(255,255,255,0.9)",
-                fontFamily: "Inter, sans-serif",
-                fontWeight: 600,
-                marginTop: 16,
-                marginBottom: 24,
-              }}
-            >
-              1,000+ Ole Miss students have survived their exam with this. Want in?
-            </p>
+            <TooltipProvider delayDuration={150}>
+              <div style={{ marginTop: 16, marginBottom: 24 }} className="mx-auto md:mx-0 max-w-[560px] text-center md:text-left">
+                <p
+                  className="text-[20px] md:text-[24px] leading-snug"
+                  style={{
+                    color: "rgba(255,255,255,0.9)",
+                    fontFamily: "'DM Serif Display', serif",
+                    fontWeight: 400,
+                  }}
+                >
+                  {headlineCount.toLocaleString()}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <sup className="cursor-help" style={{ color: "rgba(255,255,255,0.9)" }}>*</sup>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[260px] text-xs">
+                      * We're counting — this updates as students join. Last verified April 2026.
+                    </TooltipContent>
+                  </Tooltip>
+                  {" "}Ole Miss students have survived their exam with this since 2020.{" "}
+                  <span style={{ color: RED, fontWeight: 700 }}>Want in?</span>
+                </p>
+                {semesterCount !== null && semesterCount > 0 && (
+                  <p
+                    className="mt-2 text-[13px]"
+                    style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Inter, sans-serif" }}
+                  >
+                    {semesterCount} student{semesterCount === 1 ? "" : "s"} enrolled this semester
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <sup className="cursor-help">*</sup>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[260px] text-xs">
+                        * We're counting — this updates as students join. Last verified April 2026.
+                      </TooltipContent>
+                    </Tooltip>
+                  </p>
+                )}
+              </div>
+            </TooltipProvider>
 
             <div className="flex justify-center md:justify-start">
               <button
