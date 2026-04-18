@@ -89,10 +89,9 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         /* Photo annotation */
         .photo-annotation {
           position: absolute;
-          top: -8px;
-          right: -10px;
-          width: 140px;
-          height: 120px;
+          inset: 0;
+          width: 100%;
+          height: 100%;
           pointer-events: none;
           opacity: 0;
           animation: annotationFloat 2s ease-in-out infinite, annotationFadeIn 0.3s ease-out 1.2s forwards;
@@ -195,41 +194,46 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               {/* Hand-drawn annotation pointing at Lee */}
               <svg
                 className="photo-annotation"
-                viewBox="0 0 140 120"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
                 aria-hidden="true"
               >
+                {/* "That's me" text at origin (62%, 8%) */}
                 <text
                   className="photo-annotation-text"
-                  x="78"
-                  y="22"
+                  x="62"
+                  y="8"
                   fill="white"
+                  textAnchor="start"
                   style={{
                     fontFamily: "Inter, sans-serif",
                     fontWeight: 600,
-                    fontSize: "14px",
+                    fontSize: "3.2px",
                     textShadow: "1px 1px 3px rgba(0,0,0,0.8)",
                   }}
                 >
                   That's me
                 </text>
-                {/* Curved arrow from text down-left toward Lee's face */}
+                {/* Curved arrow from origin (62, 11) down-left to tip (35, 30) */}
                 <path
                   className="photo-annotation-path"
-                  d="M 95 32 Q 110 60, 80 80 T 50 105"
+                  d="M 62 11 Q 70 22, 55 24 T 35 30"
                   stroke="white"
-                  strokeWidth="2.5"
+                  strokeWidth="0.7"
                   strokeLinecap="round"
+                  vectorEffect="non-scaling-stroke"
                   fill="none"
                 />
-                {/* Arrowhead at tip (~50,105) */}
+                {/* Arrowhead at tip (35, 30) */}
                 <path
                   className="photo-annotation-arrowhead"
-                  d="M 50 105 L 56 97 M 50 105 L 58 108"
+                  d="M 35 30 L 39 26 M 35 30 L 40 31"
                   stroke="white"
-                  strokeWidth="2.5"
+                  strokeWidth="0.7"
                   strokeLinecap="round"
+                  vectorEffect="non-scaling-stroke"
                   fill="none"
                 />
               </svg>
