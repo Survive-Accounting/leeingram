@@ -49,7 +49,9 @@ Deno.serve(async (req) => {
 
     const cleanEmail = email.trim().toLowerCase();
     const isTestMode = cleanEmail.startsWith("satest@");
-    const domain = cleanEmail.split("@")[1];
+    // Test bypass: lee+anything@survivestudios.com is treated as if it were @olemiss.edu
+    const isLeeTestEmail = /^lee\+[^@]+@survivestudios\.com$/.test(cleanEmail);
+    const domain = isLeeTestEmail ? "olemiss.edu" : cleanEmail.split("@")[1];
 
     // Resolve course_id from slug
     const { data: course, error: courseErr } = await sb
