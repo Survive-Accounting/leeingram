@@ -159,7 +159,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               className="mt-5 text-[15px] md:text-[16px] leading-relaxed mx-auto md:mx-0 max-w-[520px] hero-anim-sub"
               style={{ color: "rgba(255,255,255,0.85)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
             >
-              I'm Lee Ingram. Ole Miss accounting alum & tutor. I built this out of a love for helping students master their accounting course — not just survive it.
+              I'm Lee Ingram. Ole Miss accounting alum & tutor. I built Survive Accounting out of a love for helping students master their accounting course — not just survive it.
             </p>
 
             <TooltipProvider delayDuration={150}>
