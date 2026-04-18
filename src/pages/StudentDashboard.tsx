@@ -18,6 +18,143 @@ interface Purchase {
   chapter_name?: string;
 }
 
+// ─── Founding Student Section (Mock Data) ──────────────────────────────────
+const MOCK_STUDENT_NUMBER = 5;
+const MOCK_CAMPUS_NAME = "Ole Miss";
+const MOCK_GLOBAL_COUNT = 47;
+const LEADERBOARD_TARGET = 50;
+
+function MockBadge() {
+  return (
+    <span className="text-[10px] uppercase tracking-wide font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
+      Mock
+    </span>
+  );
+}
+
+function FoundingSection() {
+  const n = MOCK_STUDENT_NUMBER;
+  const campus = MOCK_CAMPUS_NAME;
+  const isFirst = n === 1;
+  const isFoundingTen = n <= 10;
+
+  const handleShare = async () => {
+    const text = `Just joined Survive Accounting — student #${n} at ${campus} 🎉 Be in the first 10 and get in at $25: surviveaccounting.com`;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied! Share it with your study group 📲");
+    } catch {
+      toast.error("Couldn't copy — try again");
+    }
+  };
+
+  const headline = isFirst
+    ? `🏅 You're #1 at ${campus}!`
+    : isFoundingTen
+      ? `🎉 You're #${n} at ${campus}!`
+      : `Member #${n} at ${campus}`;
+
+  const subtext = isFirst
+    ? "You're the founding student at your campus. You got in at $25."
+    : isFoundingTen
+      ? `You're one of the first 10 founding students at ${campus}.`
+      : `Welcome to the ${campus} community.`;
+
+  const progressPct = Math.min(100, (MOCK_GLOBAL_COUNT / LEADERBOARD_TARGET) * 100);
+
+  return (
+    <section className="space-y-4">
+      {/* Founding Moment Card */}
+      <div
+        className="relative rounded-xl p-6 text-white overflow-hidden"
+        style={{ background: NAVY }}
+      >
+        <div className="absolute top-3 right-3"><MockBadge /></div>
+        <div className="space-y-3">
+          <h2
+            className={isFoundingTen ? "text-3xl font-bold" : "text-xl font-semibold"}
+            style={{ fontFamily: isFoundingTen ? "'DM Serif Display', Georgia, serif" : undefined }}
+          >
+            {headline}
+          </h2>
+          <p className="text-[14px] text-white/80 max-w-lg">{subtext}</p>
+          <span
+            className="inline-block text-[12px] font-semibold px-3 py-1 rounded-full text-white"
+            style={{ background: "#16A34A" }}
+          >
+            Founding Student — {campus}
+          </span>
+        </div>
+      </div>
+
+      {/* Share Your Spot */}
+      <button
+        onClick={handleShare}
+        className="text-[14px] font-semibold hover:underline"
+        style={{ color: RED }}
+      >
+        Share your spot →
+      </button>
+
+      {/* Global Counter */}
+      <p className="text-[13px]" style={{ color: "#666" }}>
+        You're part of a growing community —{" "}
+        <span className="font-semibold" style={{ color: NAVY }}>
+          {MOCK_GLOBAL_COUNT} students
+        </span>{" "}
+        across the SEC are surviving their exams with this.
+      </p>
+
+      {/* Leaderboard Placeholder */}
+      <div
+        className="relative rounded-xl border p-5 space-y-3"
+        style={{ background: "#F3F4F6", borderColor: "#E5E7EB" }}
+      >
+        <div className="absolute top-3 right-3"><MockBadge /></div>
+        <div>
+          <h3 className="text-[15px] font-semibold" style={{ color: NAVY }}>
+            Campus Leaderboard
+          </h3>
+          <p className="text-[13px] mt-1" style={{ color: "#666" }}>
+            🏆 Coming soon — which SEC campus can build the biggest study community?
+          </p>
+          <p className="text-[12px] mt-1" style={{ color: "#999" }}>
+            Activates at {LEADERBOARD_TARGET} students. You're helping us get there.
+          </p>
+        </div>
+        <div>
+          <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: "#E5E7EB" }}>
+            <div
+              className="h-full rounded-full transition-all"
+              style={{ width: `${progressPct}%`, background: NAVY }}
+            />
+          </div>
+          <p className="text-[12px] mt-1.5 font-medium" style={{ color: "#666" }}>
+            {MOCK_GLOBAL_COUNT}/{LEADERBOARD_TARGET} students
+          </p>
+        </div>
+      </div>
+
+      {/* Study Time Tracker Placeholder */}
+      <div
+        className="relative rounded-xl border p-5"
+        style={{ background: "#F3F4F6", borderColor: "#E5E7EB" }}
+      >
+        <div className="absolute top-3 right-3"><MockBadge /></div>
+        <h3 className="text-[15px] font-semibold" style={{ color: NAVY }}>
+          Study Time Tracker
+        </h3>
+        <p className="text-[13px] mt-1" style={{ color: "#666" }}>
+          Coming soon — track your study sessions and compete with your campus.
+        </p>
+        <p className="text-[12px] mt-1" style={{ color: "#999" }}>
+          The more you study, the better you score.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 const COURSES = [
   {
     id: "44444444-4444-4444-4444-444444444444",
