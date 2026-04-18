@@ -6,116 +6,6 @@ const BLUE = "#4A90D9";
 const RED = "#CE1126";
 const GREEN = "#16A34A";
 
-// ─── Price Ladder (Mock Data) ──────────────────────────────────────────────
-const PRICE_TIERS = [
-  { price: 25, threshold: 1 },
-  { price: 50, threshold: 2 },
-  { price: 75, threshold: 6 },
-  { price: 100, threshold: 11 },
-  { price: 125, threshold: 26 },
-  { price: 150, threshold: 51 },
-  { price: 175, threshold: 101 },
-  { price: 250, threshold: 201 },
-];
-const MOCK_ENROLLED = 5;
-
-function getTierIndex(enrolled: number): number {
-  let idx = 0;
-  for (let i = 0; i < PRICE_TIERS.length; i++) {
-    if (enrolled >= PRICE_TIERS[i].threshold) idx = i;
-  }
-  return idx;
-}
-
-function PriceLadder() {
-  const enrolled: number = MOCK_ENROLLED;
-  const activeIdx = getTierIndex(enrolled);
-  const currentPrice = PRICE_TIERS[activeIdx].price;
-  const nextTier = PRICE_TIERS[activeIdx + 1];
-  const foundingLeft = Math.max(0, 10 - enrolled);
-
-  return (
-    <div className="mx-auto max-w-[700px] mb-10 px-2">
-      <p
-        className="text-center text-[14px] font-medium mb-5"
-        style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-      >
-        Price increases as more students join. Lock in your rate today.
-      </p>
-
-      {/* Number line */}
-      <div className="relative px-3 py-6">
-        {/* Track */}
-        <div className="absolute left-3 right-3 top-1/2 -translate-y-1/2 h-1 rounded-full" style={{ background: "#E5E7EB" }} />
-        {/* Filled portion up to active */}
-        <div
-          className="absolute left-3 top-1/2 -translate-y-1/2 h-1 rounded-full transition-all"
-          style={{
-            background: GREEN,
-            width: `calc((100% - 24px) * ${activeIdx / (PRICE_TIERS.length - 1)})`,
-          }}
-        />
-        {/* Dots */}
-        <div className="relative flex justify-between items-center">
-          {PRICE_TIERS.map((t, i) => {
-            const isActive = i === activeIdx;
-            const isPast = i < activeIdx;
-            const dotColor = isActive ? GREEN : isPast ? "#9CA3AF" : "#D1D5DB";
-            const size = isActive ? 18 : 10;
-            return (
-              <div key={t.price} className="flex flex-col items-center" style={{ width: 1 }}>
-                <div
-                  className={isActive ? "rounded-full ring-4 ring-green-200 animate-pulse" : "rounded-full"}
-                  style={{
-                    width: size,
-                    height: size,
-                    background: dotColor,
-                  }}
-                />
-                <span
-                  className="absolute mt-6 text-[11px] font-semibold whitespace-nowrap"
-                  style={{
-                    color: isActive ? GREEN : isPast ? "#6B7280" : "#9CA3AF",
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                >
-                  ${t.price}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Status line */}
-      <p
-        className="text-center text-[13px] mt-6"
-        style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}
-      >
-        <span className="font-semibold" style={{ color: NAVY }}>{enrolled} students enrolled</span>
-        <span style={{ color: "#9CA3AF" }}> · </span>
-        <span>Current price: <span className="font-semibold" style={{ color: GREEN }}>${currentPrice}</span></span>
-        {nextTier && (
-          <>
-            <span style={{ color: "#9CA3AF" }}> · </span>
-            <span>Next price increase at <span className="font-semibold">{nextTier.threshold} students</span></span>
-          </>
-        )}
-      </p>
-
-      {/* Founding spots counter */}
-      {enrolled < 10 && (
-        <p
-          className="text-center text-[14px] font-bold mt-3 animate-fade-in"
-          style={{ color: RED, fontFamily: "Inter, sans-serif" }}
-        >
-          {enrolled} founding spot{enrolled === 1 ? "" : "s"} claimed · {foundingLeft} left at this price
-        </p>
-      )}
-    </div>
-  );
-}
-
 interface Course {
   id: string;
   name: string;
@@ -156,7 +46,6 @@ export default function StagingCoursesSection({
     <TooltipProvider delayDuration={150}>
     <section className="px-4 sm:px-6 py-12 sm:py-16" style={{ background: "#F8F8FA" }}>
       <div className="mx-auto max-w-[860px]">
-        <PriceLadder />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
           {ordered.map(({ course, group, subtitle }) => {
             const accent = group === "intro" ? BLUE : NAVY;

@@ -134,10 +134,10 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                       <sup className="cursor-help" style={{ color: "rgba(255,255,255,0.9)" }}>*</sup>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[260px] text-xs">
-                      Updates as students join. Placeholder until launch.
+                      * We're counting — this updates as students join. Last verified April 2026.
                     </TooltipContent>
                   </Tooltip>
-                  {" "}students across the SEC have survived their exam with this.{" "}
+                  {" "}Ole Miss students have survived their exam with this since 2020.{" "}
                   <span style={{ color: RED, fontWeight: 700 }}>Want in?</span>
                 </p>
                 {semesterCount !== null && semesterCount > 0 && (
