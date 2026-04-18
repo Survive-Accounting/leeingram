@@ -101,7 +101,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 marginBottom: 24,
               }}
             >
-              1,000+ Ole Miss students have survived their exam with this.
+              1,000+ Ole Miss students have survived their exam with this. Want in?
             </p>
 
             <div className="flex justify-center md:justify-start">
