@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -59,6 +60,17 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Detect ?checkout=success and show success toast
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") === "success") {
+      toast.success("You're in! Welcome to Survive Accounting 🎉");
+      params.delete("checkout");
+      const newSearch = params.toString();
+      const newUrl =
+        window.location.pathname + (newSearch ? `?${newSearch}` : "") + window.location.hash;
+      window.history.replaceState({}, "", newUrl);
+    }
+
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.email) {

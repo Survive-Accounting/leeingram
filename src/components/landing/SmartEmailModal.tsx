@@ -173,35 +173,41 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
     const trimmed = email.trim().toLowerCase();
     setLaunching(kind);
     try {
+      // Resolve campus_id from slug for metadata
+      let universityId: string | null = null;
+      if (pricing.campusSlug && pricing.campusSlug !== "general") {
+        const { data: campusRow } = await (supabase as any)
+          .from("campuses").select("id").eq("slug", pricing.campusSlug).maybeSingle();
+        universityId = campusRow?.id || null;
+      }
+
       const body: any = {
         email: trimmed,
         return_url: window.location.origin,
-        ui_mode: "redirect",
         is_test_mode: sessionStorage.getItem("sa_test_mode") === "true",
         email_override: sessionStorage.getItem("sa_email_override") || "",
-        campus_slug: pricing.campusSlug,
-        course_slug: pricing.course.slug,
+        university_id: universityId,
       };
 
       if (kind === "full" && pricing.fullPass) {
-        body.product_id = pricing.fullPass.productId;
         body.product_type = "semester_pass";
         body.course_id = pricing.course.id;
       } else if (kind === "bundle" && pricing.bundle) {
-        body.product_id = pricing.bundle.productId;
         body.product_type = "bundle";
+        body.bundle_id = pricing.bundle.productId;
       } else {
         throw new Error("Missing product");
       }
 
       const { data, error } = await supabase.functions.invoke("create-checkout-session", { body });
       if (error) throw error;
-      if (!data?.url) throw new Error("No checkout URL returned");
+      const checkoutUrl = data?.checkout_url || data?.url;
+      if (!checkoutUrl) throw new Error("No checkout URL returned");
 
-      // Open the Stripe payment link in a new tab
-      window.open(data.url, "_blank", "noopener,noreferrer");
+      // Stripe hosted checkout — same tab, Stripe handles redirect back
+      window.open(checkoutUrl, "_self");
     } catch {
-      toast.error("Couldn't start checkout. Try again.");
+      toast.error("Something went wrong. Try again.");
     } finally {
       setLaunching(null);
     }
@@ -323,9 +329,19 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
                   className="w-full rounded-lg text-white text-[15px] font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
                   style={{ minHeight: 56, background: RED, fontFamily: "Inter, sans-serif" }}
                 >
-                  {launching === "full"
-                    ? <Loader2 className="h-5 w-5 animate-spin" />
-                    : `Get Full Access — ${fmt(pricing.fullPass.finalCents)} →`}
+                  {launching === "full" ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Setting up your checkout...
+                    </span>
+                  ) : pricing.fullPass.couponCode && pricing.fullPass.savingsCents > 0 ? (
+                    <span className="flex items-center gap-2">
+                      <span className="line-through opacity-60 text-[13px]">{fmt(pricing.fullPass.anchorCents)}</span>
+                      <span>Get Full Access — {fmt(pricing.fullPass.finalCents)} →</span>
+                    </span>
+                  ) : (
+                    `Get Full Access — ${fmt(pricing.fullPass.finalCents)} →`
+                  )}
                 </button>
               )}
 
@@ -349,7 +365,7 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
             </div>
 
             <p className="text-[11px] text-center" style={{ color: "#9CA3AF" }}>
-              Opens secure checkout in a new tab.
+              Secure checkout powered by Stripe.
             </p>
           </div>
         )}

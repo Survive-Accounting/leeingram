@@ -112,6 +112,7 @@ const QuizRating = lazy(() => import("./pages/QuizRating"));
 const LegacyNotionPage = lazy(() => import("./pages/LegacyNotionPage"));
 const Preview = lazy(() => import("./pages/Preview"));
 const CheckoutComplete = lazy(() => import("./pages/CheckoutComplete"));
+const CheckoutCancelled = lazy(() => import("./pages/CheckoutCancelled"));
 const Login = lazy(() => import("./pages/Login"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
@@ -186,6 +187,7 @@ const AppRoutes = () => {
         <Route path="/legacy/:pageId" element={<LegacyNotionPage />} />
         <Route path="/preview" element={<Preview />} />
         <Route path="/checkout/complete" element={<CheckoutComplete />} />
+        <Route path="/checkout/cancelled" element={<CheckoutCancelled />} />
         <Route path="/campus/:campusSlug/:courseSlug" element={<CampusLandingPage />} />
         <Route path="/campus/:campusSlug/:courseSlug/:chapterNumber" element={<CampusChapterPage />} />
         <Route path="/campus/:campusSlug/:courseSlug/:chapterNumber/:problemCode" element={<ProblemPreviewPage />} />
