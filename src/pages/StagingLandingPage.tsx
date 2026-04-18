@@ -170,6 +170,7 @@ export default function StagingLandingPage() {
         futureCourses={[]}
         onLiveCourseClick={() => handleCardClick(defaultCourse)}
         onNotifyClick={() => handleCardClick(defaultCourse)}
+        onGetStartedClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })}
       />
 
       <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />

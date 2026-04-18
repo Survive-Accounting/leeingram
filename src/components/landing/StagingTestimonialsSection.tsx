@@ -35,8 +35,8 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
     <section style={{ background: NAVY }} className="py-16 sm:py-20 px-4 sm:px-6">
       <div className="mx-auto max-w-[800px]">
         <p
-          className="text-center mb-8 text-[13px]"
-          style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Inter, sans-serif" }}
+          className="text-center mb-8 text-[22px] sm:text-[26px] md:text-[30px] leading-tight"
+          style={{ color: "#E8E8E8", fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
         >
           Trusted by 1,000+ students since 2020
         </p>
