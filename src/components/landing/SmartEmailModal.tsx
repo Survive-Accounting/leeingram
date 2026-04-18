@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle } from "lucide-react";
+import { Loader2, CheckCircle, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const NAVY = "#14213D";
+const RED = "#CE1126";
 
 const COURSES = [
   { id: "11111111-1111-1111-1111-111111111111", name: "Introductory Accounting 1", slug: "intro-accounting-1", status: "future" },
@@ -19,7 +20,28 @@ interface SmartEmailModalProps {
   onClose: () => void;
 }
 
-type Step = "email" | "magic-link-sent" | "course-select" | "resolving";
+type Step = "email" | "magic-link-sent" | "course-select" | "resolving-campus" | "resolving-coupon" | "pricing";
+
+interface PricingState {
+  course: typeof COURSES[0];
+  campusSlug: string;
+  fullPass: {
+    productId: string;
+    anchorCents: number;
+    finalCents: number;
+    savingsCents: number;
+    couponCode: string | null;
+    couponName: string | null;
+    discountPercent: number;
+  } | null;
+  bundle: {
+    productId: string;
+    name: string;
+    finalCents: number;
+    anchorCents: number;
+    savingsCents: number;
+  } | null;
+}
 
 export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps) {
   const navigate = useNavigate();
@@ -27,8 +49,13 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
   const [warning, setWarning] = useState("");
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<Step>("email");
+  const [pricing, setPricing] = useState<PricingState | null>(null);
+  const [launching, setLaunching] = useState<"full" | "bundle" | null>(null);
 
-  const reset = () => { setEmail(""); setWarning(""); setStep("email"); setLoading(false); };
+  const reset = () => {
+    setEmail(""); setWarning(""); setStep("email"); setLoading(false);
+    setPricing(null); setLaunching(null);
+  };
   const handleClose = () => { reset(); onClose(); };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -36,24 +63,16 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return;
 
-    // No warning needed for pricing modal
-
     setLoading(true);
     try {
-      // Check if student exists
       const { data: student } = await (supabase as any)
-        .from("students")
-        .select("id")
-        .eq("email", trimmed)
-        .maybeSingle();
+        .from("students").select("id").eq("email", trimmed).maybeSingle();
 
       if (student) {
-        // Returning student → send magic link
         const { error } = await supabase.auth.signInWithOtp({ email: trimmed });
         if (error) throw error;
         setStep("magic-link-sent");
       } else {
-        // New student → show course selector
         setStep("course-select");
       }
     } catch {
@@ -65,32 +84,134 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
 
   const handleCourseSelect = async (course: typeof COURSES[0]) => {
     const trimmed = email.trim().toLowerCase();
-    // Store email so PurchaseBar can use it on campus page
     sessionStorage.setItem("student_email", trimmed);
-    setStep("resolving");
+    setStep("resolving-campus");
+
     try {
-      const { data, error } = await supabase.functions.invoke("resolve-campus", {
+      // Resolve campus
+      const { data: campusData, error: cErr } = await supabase.functions.invoke("resolve-campus", {
         body: { email: trimmed, course_slug: course.slug },
       });
-      if (error) throw error;
-      const slug = data?.campus_slug || "general";
-      sessionStorage.setItem("student_email", trimmed);
-      if (data?.is_test_mode) {
+      if (cErr) throw cErr;
+      const campusSlug = campusData?.campus_slug || "general";
+      if (campusData?.is_test_mode) {
         sessionStorage.setItem("sa_test_mode", "true");
-        sessionStorage.setItem("sa_email_override", data.email_override || "");
+        sessionStorage.setItem("sa_email_override", campusData.email_override || "");
       }
-      handleClose();
-      navigate(`/campus/${slug}/${course.slug}`);
+
+      setStep("resolving-coupon");
+
+      // Look up the active full-pass course_product for this course
+      const { data: cp } = await (supabase as any)
+        .from("course_products")
+        .select("id, anchor_price_cents")
+        .eq("course_id", course.id)
+        .eq("product_type", "semester_pass")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let fullPass: PricingState["fullPass"] = null;
+      if (cp?.id) {
+        // Resolve campus_id from slug for coupon scoping
+        let campusId: string | null = null;
+        if (campusSlug && campusSlug !== "general") {
+          const { data: campusRow } = await (supabase as any)
+            .from("campuses").select("id").eq("slug", campusSlug).maybeSingle();
+          campusId = campusRow?.id || null;
+        }
+
+        const { data: coupon } = await supabase.functions.invoke("resolve-coupon", {
+          body: {
+            email: trimmed,
+            product_id: cp.id,
+            product_type: "semester_pass",
+            university_id: campusId,
+          },
+        });
+
+        fullPass = {
+          productId: cp.id,
+          anchorCents: coupon?.anchor_price_cents ?? cp.anchor_price_cents ?? 25000,
+          finalCents: coupon?.final_price_cents ?? cp.anchor_price_cents ?? 25000,
+          savingsCents: coupon?.savings_cents ?? 0,
+          couponCode: coupon?.coupon_applied?.code ?? null,
+          couponName: coupon?.coupon_applied?.name ?? null,
+          discountPercent: coupon?.coupon_applied?.discount_percent ?? 0,
+        };
+      }
+
+      // Auto-pick best active bundle that includes this course
+      const { data: bundles } = await (supabase as any)
+        .from("bundle_products")
+        .select("id, name, final_price_cents, anchor_price_cents, course_ids")
+        .eq("is_active", true);
+
+      let bundle: PricingState["bundle"] = null;
+      const match = (bundles || []).find((b: any) => Array.isArray(b.course_ids) && b.course_ids.includes(course.id));
+      if (match) {
+        bundle = {
+          productId: match.id,
+          name: match.name,
+          finalCents: match.final_price_cents ?? match.anchor_price_cents ?? 0,
+          anchorCents: match.anchor_price_cents ?? 0,
+          savingsCents: Math.max(0, (match.anchor_price_cents ?? 0) - (match.final_price_cents ?? 0)),
+        };
+      }
+
+      setPricing({ course, campusSlug, fullPass, bundle });
+      setStep("pricing");
     } catch {
       toast.error("Something went wrong. Try again.");
       setStep("course-select");
     }
   };
 
+  const launchCheckout = async (kind: "full" | "bundle") => {
+    if (!pricing) return;
+    const trimmed = email.trim().toLowerCase();
+    setLaunching(kind);
+    try {
+      const body: any = {
+        email: trimmed,
+        return_url: window.location.origin,
+        ui_mode: "redirect",
+        is_test_mode: sessionStorage.getItem("sa_test_mode") === "true",
+        email_override: sessionStorage.getItem("sa_email_override") || "",
+        campus_slug: pricing.campusSlug,
+        course_slug: pricing.course.slug,
+      };
+
+      if (kind === "full" && pricing.fullPass) {
+        body.product_id = pricing.fullPass.productId;
+        body.product_type = "semester_pass";
+        body.course_id = pricing.course.id;
+      } else if (kind === "bundle" && pricing.bundle) {
+        body.product_id = pricing.bundle.productId;
+        body.product_type = "bundle";
+      } else {
+        throw new Error("Missing product");
+      }
+
+      const { data, error } = await supabase.functions.invoke("create-checkout-session", { body });
+      if (error) throw error;
+      if (!data?.url) throw new Error("No checkout URL returned");
+
+      // Open the Stripe payment link in a new tab
+      window.open(data.url, "_blank", "noopener,noreferrer");
+    } catch {
+      toast.error("Couldn't start checkout. Try again.");
+    } finally {
+      setLaunching(null);
+    }
+  };
+
+  const fmt = (cents: number) => `$${Math.round(cents / 100)}`;
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent className="max-w-sm p-6 [&>button]:hidden" style={{ borderRadius: 16 }}>
-        {/* Step 1: Email entry */}
         {step === "email" && (
           <form onSubmit={handleEmailSubmit} className="space-y-4">
             <h2 className="text-lg font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
@@ -107,20 +228,18 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
                 className="w-full rounded-lg px-4 text-[15px] outline-none transition-all focus:ring-2"
                 style={{ minHeight: 48, background: "#F8F9FA", border: "1px solid #E5E7EB", color: NAVY, fontFamily: "Inter, sans-serif" }}
               />
-              
             </div>
             <button
               type="submit"
               disabled={loading}
               className="w-full rounded-lg text-white text-[15px] font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
-              style={{ minHeight: 48, background: "#CE1126", fontFamily: "Inter, sans-serif" }}
+              style={{ minHeight: 48, background: RED, fontFamily: "Inter, sans-serif" }}
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue →"}
             </button>
           </form>
         )}
 
-        {/* Step 2a: Magic link sent (returning student) */}
         {step === "magic-link-sent" && (
           <div className="text-center space-y-4 py-4">
             <CheckCircle className="w-12 h-12 mx-auto" style={{ color: "#22C55E" }} />
@@ -130,17 +249,12 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
             <p className="text-[14px]" style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>
               Check your email for a login link.
             </p>
-            <button
-              onClick={handleClose}
-              className="text-[13px] font-medium hover:underline"
-              style={{ color: NAVY }}
-            >
+            <button onClick={handleClose} className="text-[13px] font-medium hover:underline" style={{ color: NAVY }}>
               Close
             </button>
           </div>
         )}
 
-        {/* Step 2b: Course selector (new student) */}
         {step === "course-select" && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
@@ -167,12 +281,75 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
           </div>
         )}
 
-        {/* Resolving state */}
-        {step === "resolving" && (
+        {(step === "resolving-campus" || step === "resolving-coupon") && (
           <div className="flex flex-col items-center justify-center py-8 gap-3">
             <Loader2 className="h-8 w-8 animate-spin" style={{ color: NAVY }} />
             <p className="text-[14px]" style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>
-              Finding your school...
+              {step === "resolving-campus" ? "Finding your school..." : "Finding your best price..."}
+            </p>
+          </div>
+        )}
+
+        {step === "pricing" && pricing && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
+                {pricing.course.name}
+              </h2>
+              {pricing.fullPass && (
+                <div className="mt-2">
+                  {pricing.fullPass.couponCode && pricing.fullPass.savingsCents > 0 ? (
+                    <div className="flex items-center gap-2 text-[13px]" style={{ color: "#16A34A", fontFamily: "Inter, sans-serif" }}>
+                      <Sparkles className="h-4 w-4" />
+                      <span>
+                        Your price: <strong>{fmt(pricing.fullPass.finalCents)}</strong> ({pricing.fullPass.discountPercent}% off
+                        {pricing.fullPass.couponName ? ` with ${pricing.fullPass.couponName}` : ""})
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-[13px]" style={{ color: "#6B7280" }}>
+                      Your price: <strong>{fmt(pricing.fullPass.finalCents)}</strong>
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2.5">
+              {pricing.fullPass && (
+                <button
+                  onClick={() => launchCheckout("full")}
+                  disabled={launching !== null}
+                  className="w-full rounded-lg text-white text-[15px] font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
+                  style={{ minHeight: 56, background: RED, fontFamily: "Inter, sans-serif" }}
+                >
+                  {launching === "full"
+                    ? <Loader2 className="h-5 w-5 animate-spin" />
+                    : `Get Full Access — ${fmt(pricing.fullPass.finalCents)} →`}
+                </button>
+              )}
+
+              {pricing.bundle && (
+                <button
+                  onClick={() => launchCheckout("bundle")}
+                  disabled={launching !== null}
+                  className="w-full rounded-lg text-white text-[15px] font-semibold flex flex-col items-center justify-center gap-0.5 transition-opacity hover:opacity-90 disabled:opacity-60"
+                  style={{ minHeight: 56, background: NAVY, fontFamily: "Inter, sans-serif" }}
+                >
+                  {launching === "bundle" ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <span>Bundle &amp; Save — {fmt(pricing.bundle.finalCents)} →</span>
+                      <span className="text-[11px] font-normal opacity-80">{pricing.bundle.name}</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+
+            <p className="text-[11px] text-center" style={{ color: "#9CA3AF" }}>
+              Opens secure checkout in a new tab.
             </p>
           </div>
         )}
