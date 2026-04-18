@@ -218,22 +218,30 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                   xmlns="http://www.w3.org/2000/svg"
                   aria-hidden="true"
                 >
-                  {/* Curved arrow: start (65, 18) → end (42, 38) */}
+                  <defs>
+                    <marker
+                      id="annotation-arrowhead"
+                      viewBox="0 0 10 10"
+                      refX="8"
+                      refY="5"
+                      markerWidth="5"
+                      markerHeight="5"
+                      orient="auto-start-reverse"
+                      markerUnits="strokeWidth"
+                    >
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="white" />
+                    </marker>
+                  </defs>
+                  {/* Curved arrow: from label (65, 18) curving down-left to Lee's face (38, 40) */}
                   <path
                     className="photo-annotation-path"
-                    d="M 65 18 C 72 26, 60 30, 50 32 S 45 36, 42 38"
+                    d="M 65 18 Q 72 35, 55 38 T 38 40"
                     stroke="white"
                     strokeWidth="3"
                     strokeLinecap="round"
                     vectorEffect="non-scaling-stroke"
                     fill="none"
-                  />
-                  {/* Solid arrowhead triangle at (42, 38), rotated to match arrow direction */}
-                  <polygon
-                    className="photo-annotation-arrowhead"
-                    points="0,-5 10,0 0,5"
-                    fill="white"
-                    transform="translate(42 38) rotate(150)"
+                    markerEnd="url(#annotation-arrowhead)"
                   />
                 </svg>
                 <span className="photo-annotation-label">That's me</span>
