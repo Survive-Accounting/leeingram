@@ -1,6 +1,11 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 const RED = "#CE1126";
 const NAVY = "#14213D";
 const HERO_IMAGE = "https://i.ibb.co/Qj8d4Hhs/Survive-Accounting-Hero-Image.jpg";
+const BASELINE_OLE_MISS = 597;
 
 interface Course {
   id: string;
@@ -21,6 +26,28 @@ interface StagingHeroProps {
 }
 
 export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
+  const [semesterCount, setSemesterCount] = useState<number | null>(null);
+  const [totalPaid, setTotalPaid] = useState<number>(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [semRes, totRes] = await Promise.all([
+          supabase.rpc("get_semester_enrollment_count" as any, { p_campus_slug: "ole-miss" }),
+          supabase.rpc("get_paid_student_count_for_campus" as any, { p_campus_slug: "ole-miss" }),
+        ]);
+        if (cancelled) return;
+        if (typeof semRes.data === "number") setSemesterCount(semRes.data);
+        if (typeof totRes.data === "number") setTotalPaid(totRes.data);
+      } catch {
+        // fail silent
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const headlineCount = BASELINE_OLE_MISS + totalPaid;
   return (
     <section className="relative w-full overflow-hidden staging-hero">
       <style>{`
