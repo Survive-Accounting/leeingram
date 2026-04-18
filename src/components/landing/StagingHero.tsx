@@ -209,51 +209,35 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 }}
               />
               {/* Hand-drawn annotation pointing at Lee */}
-              <svg
-                className="photo-annotation"
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
-                {/* "That's me" text at origin (62%, 8%) */}
-                <text
-                  className="photo-annotation-text"
-                  x="62"
-                  y="8"
-                  fill="white"
-                  textAnchor="start"
-                  style={{
-                    fontFamily: "Inter, sans-serif",
-                    fontWeight: 600,
-                    fontSize: "3.2px",
-                    textShadow: "1px 1px 3px rgba(0,0,0,0.8)",
-                  }}
+              <div className="photo-annotation">
+                <svg
+                  className="photo-annotation-svg"
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
                 >
-                  That's me
-                </text>
-                {/* Curved arrow from origin (62, 11) down-left to tip (35, 30) */}
-                <path
-                  className="photo-annotation-path"
-                  d="M 62 11 Q 70 22, 55 24 T 35 30"
-                  stroke="white"
-                  strokeWidth="0.7"
-                  strokeLinecap="round"
-                  vectorEffect="non-scaling-stroke"
-                  fill="none"
-                />
-                {/* Arrowhead at tip (35, 30) */}
-                <path
-                  className="photo-annotation-arrowhead"
-                  d="M 35 30 L 39 26 M 35 30 L 40 31"
-                  stroke="white"
-                  strokeWidth="0.7"
-                  strokeLinecap="round"
-                  vectorEffect="non-scaling-stroke"
-                  fill="none"
-                />
-              </svg>
+                  {/* Curved arrow: start (65, 18) → end (42, 38) */}
+                  <path
+                    className="photo-annotation-path"
+                    d="M 65 18 C 72 26, 60 30, 50 32 S 45 36, 42 38"
+                    stroke="white"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                    fill="none"
+                  />
+                  {/* Solid arrowhead triangle at (42, 38), rotated to match arrow direction */}
+                  <polygon
+                    className="photo-annotation-arrowhead"
+                    points="0,-5 10,0 0,5"
+                    fill="white"
+                    transform="translate(42 38) rotate(150)"
+                  />
+                </svg>
+                <span className="photo-annotation-label">That's me</span>
+              </div>
             </div>
           </div>
 
