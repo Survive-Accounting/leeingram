@@ -89,10 +89,9 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         /* Photo annotation */
         .photo-annotation {
           position: absolute;
-          top: -8px;
-          right: -10px;
-          width: 140px;
-          height: 120px;
+          inset: 0;
+          width: 100%;
+          height: 100%;
           pointer-events: none;
           opacity: 0;
           animation: annotationFloat 2s ease-in-out infinite, annotationFadeIn 0.3s ease-out 1.2s forwards;
