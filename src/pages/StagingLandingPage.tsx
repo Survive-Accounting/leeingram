@@ -87,23 +87,23 @@ export default function StagingLandingPage() {
     if (stored) setCapturedEmail(stored);
   }, [trackPageView]);
 
-  /** Route an email + course through the gating logic. */
-  const routeEmailToCourse = async (email: string, course: CtaCourse) => {
+  /** Resolve email + course. Returns celebration data for in-modal display, or null if non-Ole-Miss (waitlist shown). */
+  const resolveEmail = async (email: string, course: CtaCourse): Promise<CelebrationData | null> => {
     const trimmed = email.trim().toLowerCase();
-    if (!trimmed) return;
+    if (!trimmed) return null;
 
     if (!isOleMissEmail(trimmed)) {
-      // Non-Ole Miss → waitlist
       trackEvent("non_ole_miss_email_blocked", {
         email_domain: trimmed.split("@")[1] || "",
         course_slug: course.slug,
       });
+      // Close prompt, show waitlist
+      setEmailPromptOpen(false);
       setWaitlistInitialEmail(trimmed);
       setWaitlistOpen(true);
-      return;
+      return null;
     }
 
-    // Ole Miss → resolve campus and proceed to chapter selector inline (campus page)
     setResolving(true);
     try {
       sessionStorage.setItem("student_email", trimmed);
@@ -118,42 +118,35 @@ export default function StagingLandingPage() {
         body: { email: trimmed, course_slug: course.slug },
       });
       if (error) throw error;
-      const slug = data?.campus_slug || "ole-miss";
       if (data?.is_test_mode) {
         sessionStorage.setItem("sa_test_mode", "true");
         sessionStorage.setItem("sa_email_override", data.email_override || "");
       }
-      navigate(`/campus/${slug}/${course.slug}`);
+      return data as CelebrationData;
     } catch {
       toast.error("Something went wrong. Try again.");
+      return null;
     } finally {
       setResolving(false);
     }
   };
 
-  /** Card / CTA click handler. Prompts for email if needed, then gates by domain. */
+  /** Card / CTA click handler. */
   const handleCardClick = async (course: CtaCourse) => {
     setPendingCourse(course);
     if (capturedEmail) {
-      await routeEmailToCourse(capturedEmail, course);
+      // Already captured — skip celebration, route directly
+      const data = await resolveEmail(capturedEmail, course);
+      if (data) navigate(`/campus/${data.campus_slug}/${course.slug}`);
     } else {
       setEmailPromptOpen(true);
     }
   };
 
-  const handleEmailPromptSubmit = async (email: string) => {
-    if (!pendingCourse) {
-      setEmailPromptOpen(false);
-      return;
-    }
-    setEmailPromptLoading(true);
-    try {
-      // Close the prompt first so it doesn't stack on top of waitlist/transition
-      setEmailPromptOpen(false);
-      await routeEmailToCourse(email, pendingCourse);
-    } finally {
-      setEmailPromptLoading(false);
-    }
+  const handleContinue = (data: CelebrationData) => {
+    if (!pendingCourse) return;
+    setEmailPromptOpen(false);
+    navigate(`/campus/${data.campus_slug}/${pendingCourse.slug}`);
   };
 
   // Pick a default course for navbar/hero/closing CTAs (IA2 — original live flagship)
