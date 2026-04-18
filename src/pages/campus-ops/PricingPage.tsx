@@ -14,7 +14,8 @@ import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, CalendarIcon, Copy, Pencil, ArrowRightLeft, TrendingUp } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Plus, Trash2, CalendarIcon, Copy, Pencil, ArrowRightLeft, TrendingUp, Users, Crown, CheckCircle2 } from "lucide-react";
 
 // ─── Expansion Pricing Strategies (Mock Data) ──────────────────────────────
 interface MockConfig {
