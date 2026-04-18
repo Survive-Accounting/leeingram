@@ -104,12 +104,12 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
       <div className="mx-auto max-w-[800px]">
         <TooltipProvider delayDuration={150}>
           <p
-            className="text-center mb-8 text-[20px] sm:text-[24px] md:text-[28px] leading-tight"
-            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+            className="text-center mb-8 text-[22px] sm:text-[28px] md:text-[34px] leading-tight"
+            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 700 }}
           >
             <span
               ref={counterRef}
-              className="inline-block text-[36px] sm:text-[44px] md:text-[52px] font-bold align-middle"
+              className="inline-block align-baseline"
               style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
             >
               {digits.map((d, i) => (
@@ -118,13 +118,20 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
             </span>
             <Tooltip>
               <TooltipTrigger asChild>
-                <sup className="cursor-help" style={{ color: NAVY, fontSize: "0.5em", marginLeft: 2 }}>*</sup>
+                <sup className="cursor-help" style={{ color: NAVY, fontSize: "0.45em", marginLeft: 2, fontWeight: 400 }}>*</sup>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[260px] text-xs">
-                Updated as students join. Placeholder until launch.
+                Updated as students join.
               </TooltipContent>
             </Tooltip>
-            <span className="block mt-2">Ole Miss students have survived (and thrived) since 2020</span>
+            {" "}Ole Miss students{" "}
+            <span style={{ color: "#888888", opacity: 0.5, fontStyle: "italic", textDecoration: "line-through", fontWeight: 400 }}>
+              survived
+            </span>{" "}
+            <span style={{ color: RED, fontWeight: 700, fontSize: "1.08em" }}>
+              thrived
+            </span>{" "}
+            <span style={{ fontWeight: 400 }}>in accounting since 2020.</span>
           </p>
         </TooltipProvider>
 
