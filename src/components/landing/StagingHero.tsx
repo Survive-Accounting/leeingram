@@ -65,13 +65,6 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               Get Started →
             </button>
           </div>
-
-          <p
-            className="mt-5 text-center text-[18px] sm:text-[22px] md:text-[26px]"
-            style={{ color: "#E8E8E8", fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
-          >
-            Trusted by Ole Miss accounting students
-          </p>
         </div>
       </div>
     </section>
