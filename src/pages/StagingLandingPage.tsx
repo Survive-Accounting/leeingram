@@ -1,76 +1,157 @@
 // Staging clone of LandingPage.tsx — experiment here, then push changes live
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import StagingTestimonialsSection from "@/components/landing/StagingTestimonialsSection";
 import ContactForm from "@/components/landing/ContactForm";
 import LandingFooter from "@/components/landing/LandingFooter";
-import { useEventTracking } from "@/hooks/useEventTracking";
+import { useEventTracking, setStoredEmail } from "@/hooks/useEventTracking";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import StagingHero from "@/components/landing/StagingHero";
 import StagingCoursesSection from "@/components/landing/StagingCoursesSection";
 import ClosingCtaSection from "@/components/landing/ClosingCtaSection";
-import StagingCtaModal, { type CtaModalIntent, type CtaCourse } from "@/components/landing/StagingCtaModal";
+import StagingWaitlistModal from "@/components/landing/StagingWaitlistModal";
+import StagingEmailPromptModal from "@/components/landing/StagingEmailPromptModal";
+import type { CtaCourse } from "@/components/landing/StagingCtaModal";
 
 const COURSES: CtaCourse[] = [
+  {
+    id: "11111111-1111-1111-1111-111111111111",
+    name: "Intro Accounting 1",
+    subtext: "Financial Principles",
+    availability: "",
+    cta: "Start Studying →",
+    status: "live",
+    slug: "intro-accounting-1",
+  },
+  {
+    id: "22222222-2222-2222-2222-222222222222",
+    name: "Intro Accounting 2",
+    subtext: "Managerial Principles",
+    availability: "",
+    cta: "Start Studying →",
+    status: "live",
+    slug: "intro-accounting-2",
+  },
+  {
+    id: "33333333-3333-3333-3333-333333333333",
+    name: "Intermediate Accounting 1",
+    availability: "",
+    cta: "Start Studying →",
+    status: "live",
+    slug: "intermediate-accounting-1",
+  },
   {
     id: "44444444-4444-4444-4444-444444444444",
     name: "Intermediate Accounting 2",
     availability: "",
     cta: "Start Studying →",
-    status: "live" as const,
+    status: "live",
     slug: "intermediate-accounting-2",
-  },
-  {
-    id: "22222222-2222-2222-2222-222222222222",
-    name: "Intro 2",
-    subtext: "Managerial Principles",
-    availability: "Launching April 27th",
-    cta: "Join waitlist →",
-    status: "upcoming" as const,
-    slug: "intro-accounting-2",
-  },
-  {
-    id: "11111111-1111-1111-1111-111111111111",
-    name: "Intro 1",
-    subtext: "Financial Principles",
-    availability: "Fall 2026",
-    cta: "Join waitlist →",
-    status: "future" as const,
-    slug: "intro-accounting-1",
-  },
-  {
-    id: "33333333-3333-3333-3333-333333333333",
-    name: "Intermediate Accounting 1",
-    availability: "Fall 2026",
-    cta: "Join waitlist →",
-    status: "future" as const,
-    slug: "intermediate-accounting-1",
   },
 ];
 
+const OLE_MISS_DOMAINS = ["olemiss.edu", "go.olemiss.edu"];
+
+function isOleMissEmail(email: string): boolean {
+  const lower = email.trim().toLowerCase();
+  const domain = lower.split("@")[1] || "";
+  return OLE_MISS_DOMAINS.some((d) => domain === d || domain.endsWith(`.${d}`));
+}
+
 export default function StagingLandingPage() {
-  const [intent, setIntent] = useState<CtaModalIntent>({ type: "none" });
+  const navigate = useNavigate();
   const contactRef = useRef<HTMLDivElement>(null);
   const coursesRef = useRef<HTMLDivElement>(null);
-  const { trackPageView } = useEventTracking();
+  const { trackPageView, trackEvent } = useEventTracking();
 
-  useEffect(() => { trackPageView('staging_landing'); }, [trackPageView]);
+  const [capturedEmail, setCapturedEmail] = useState<string>("");
+  const [pendingCourse, setPendingCourse] = useState<CtaCourse | null>(null);
+  const [emailPromptOpen, setEmailPromptOpen] = useState(false);
+  const [emailPromptLoading, setEmailPromptLoading] = useState(false);
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [waitlistInitialEmail, setWaitlistInitialEmail] = useState("");
+  const [resolving, setResolving] = useState(false);
 
-  const liveCourse = COURSES.find(c => c.status === "live")!;
-  const futureCourses = COURSES.filter(c => c.status !== "live");
+  useEffect(() => {
+    trackPageView("staging_landing");
+    const stored = sessionStorage.getItem("student_email");
+    if (stored) setCapturedEmail(stored);
+  }, [trackPageView]);
 
-  /** Open modal with a specific course pre-selected */
-  const openWithCourse = (course: CtaCourse) => {
-    if (course.status === "live") {
-      setIntent({ type: "enroll", course });
-    } else {
-      setIntent({ type: "notify", course });
+  /** Route an email + course through the gating logic. */
+  const routeEmailToCourse = async (email: string, course: CtaCourse) => {
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed) return;
+
+    if (!isOleMissEmail(trimmed)) {
+      // Non-Ole Miss → waitlist
+      trackEvent("non_ole_miss_email_blocked", {
+        email_domain: trimmed.split("@")[1] || "",
+        course_slug: course.slug,
+      });
+      setWaitlistInitialEmail(trimmed);
+      setWaitlistOpen(true);
+      return;
+    }
+
+    // Ole Miss → resolve campus and proceed to chapter selector inline (campus page)
+    setResolving(true);
+    try {
+      sessionStorage.setItem("student_email", trimmed);
+      setStoredEmail(trimmed);
+      setCapturedEmail(trimmed);
+      trackEvent("email_captured", {
+        course_slug: course.slug,
+        email_domain: trimmed.split("@")[1] || "",
+      });
+
+      const { data, error } = await supabase.functions.invoke("resolve-campus", {
+        body: { email: trimmed, course_slug: course.slug },
+      });
+      if (error) throw error;
+      const slug = data?.campus_slug || "ole-miss";
+      if (data?.is_test_mode) {
+        sessionStorage.setItem("sa_test_mode", "true");
+        sessionStorage.setItem("sa_email_override", data.email_override || "");
+      }
+      navigate(`/campus/${slug}/${course.slug}`);
+    } catch {
+      toast.error("Something went wrong. Try again.");
+    } finally {
+      setResolving(false);
     }
   };
 
-  /** Open modal at course selection step (no course context) */
-  const openCourseSelect = () => {
-    setIntent({ type: "select-course" });
+  /** Card / CTA click handler. Prompts for email if needed, then gates by domain. */
+  const handleCardClick = async (course: CtaCourse) => {
+    setPendingCourse(course);
+    if (capturedEmail) {
+      await routeEmailToCourse(capturedEmail, course);
+    } else {
+      setEmailPromptOpen(true);
+    }
   };
+
+  const handleEmailPromptSubmit = async (email: string) => {
+    if (!pendingCourse) {
+      setEmailPromptOpen(false);
+      return;
+    }
+    setEmailPromptLoading(true);
+    try {
+      // Close the prompt first so it doesn't stack on top of waitlist/transition
+      setEmailPromptOpen(false);
+      await routeEmailToCourse(email, pendingCourse);
+    } finally {
+      setEmailPromptLoading(false);
+    }
+  };
+
+  // Pick a default course for navbar/hero/closing CTAs (IA2 — original live flagship)
+  const defaultCourse =
+    COURSES.find((c) => c.slug === "intermediate-accounting-2") || COURSES[0];
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8F8FA" }}>
@@ -82,27 +163,22 @@ export default function StagingLandingPage() {
       {/* Floating navbar spacer */}
       <div style={{ height: 80 }} />
 
-      <StagingNavbar onCtaClick={() => openWithCourse(liveCourse)} />
+      <StagingNavbar onCtaClick={() => handleCardClick(defaultCourse)} />
 
       <StagingHero
-        liveCourse={liveCourse}
-        futureCourses={futureCourses}
-        onLiveCourseClick={() => openWithCourse(liveCourse)}
-        onNotifyClick={(c) => openWithCourse(c)}
+        liveCourse={defaultCourse}
+        futureCourses={[]}
+        onLiveCourseClick={() => handleCardClick(defaultCourse)}
+        onNotifyClick={() => handleCardClick(defaultCourse)}
       />
 
-      <StagingTestimonialsSection onCtaClick={() => openWithCourse(liveCourse)} />
+      <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />
 
       <div ref={coursesRef}>
-        <StagingCoursesSection
-          liveCourse={liveCourse}
-          futureCourses={futureCourses}
-          onLiveCourseClick={() => openWithCourse(liveCourse)}
-          onNotifyClick={(c) => openWithCourse(c)}
-        />
+        <StagingCoursesSection courses={COURSES} onCardClick={handleCardClick} />
       </div>
 
-      <ClosingCtaSection onCtaClick={() => openWithCourse(liveCourse)} />
+      <ClosingCtaSection onCtaClick={() => handleCardClick(defaultCourse)} />
 
       <div ref={contactRef}>
         <ContactForm />
@@ -113,11 +189,18 @@ export default function StagingLandingPage() {
         onScrollToContact={() => contactRef.current?.scrollIntoView({ behavior: "smooth" })}
       />
 
-      <StagingCtaModal
-        intent={intent}
-        onClose={() => setIntent({ type: "none" })}
-        courses={COURSES}
-        onIntentChange={setIntent}
+      <StagingEmailPromptModal
+        open={emailPromptOpen}
+        onClose={() => setEmailPromptOpen(false)}
+        onSubmit={handleEmailPromptSubmit}
+        courseName={pendingCourse?.name}
+        loading={emailPromptLoading || resolving}
+      />
+
+      <StagingWaitlistModal
+        open={waitlistOpen}
+        onClose={() => setWaitlistOpen(false)}
+        initialEmail={waitlistInitialEmail}
       />
     </div>
   );
