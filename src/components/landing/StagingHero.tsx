@@ -93,21 +93,24 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           width: 100%;
           height: 100%;
           pointer-events: none;
-          opacity: 0;
-          animation: annotationFloat 2s ease-in-out infinite, annotationFadeIn 0.3s ease-out 1.2s forwards;
-          filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.6));
           z-index: 4;
-        }
-        @keyframes annotationFadeIn {
-          to { opacity: 1; }
+          animation: annotationFloat 2.5s ease-in-out infinite;
         }
         @keyframes annotationFloat {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
+          50% { transform: translateY(-5px); }
+        }
+        .photo-annotation-svg {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          overflow: visible;
+          filter: drop-shadow(1px 1px 3px rgba(0,0,0,0.9));
         }
         .photo-annotation-path {
-          stroke-dasharray: 200;
-          stroke-dashoffset: 200;
+          stroke-dasharray: 220;
+          stroke-dashoffset: 220;
           animation: drawPath 0.8s ease-out 1s forwards;
         }
         @keyframes drawPath {
@@ -115,16 +118,30 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         }
         .photo-annotation-arrowhead {
           opacity: 0;
-          animation: arrowheadIn 0.2s ease-out 1.7s forwards;
+          animation: arrowheadIn 0.2s ease-out 1.75s forwards;
         }
         @keyframes arrowheadIn {
           to { opacity: 1; }
         }
-        .photo-annotation-text {
+        .photo-annotation-label {
+          position: absolute;
+          left: 63%;
+          top: 12%;
+          transform: rotate(-15deg);
+          transform-origin: left center;
+          font-family: Inter, sans-serif;
+          font-weight: 600;
+          font-size: 13px;
+          color: white;
+          background: rgba(0,0,0,0.25);
+          padding: 2px 6px;
+          border-radius: 4px;
+          text-shadow: 1px 1px 4px rgba(0,0,0,0.9);
+          white-space: nowrap;
           opacity: 0;
-          animation: annotationTextIn 0.3s ease-out 1.8s forwards;
+          animation: annotationLabelIn 0.3s ease-out 2s forwards;
         }
-        @keyframes annotationTextIn {
+        @keyframes annotationLabelIn {
           to { opacity: 1; }
         }
         @media (max-width: 768px) {
@@ -134,7 +151,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           .photo-annotation,
           .photo-annotation-path,
           .photo-annotation-arrowhead,
-          .photo-annotation-text {
+          .photo-annotation-label {
             opacity: 1 !important;
             animation: none !important;
             stroke-dashoffset: 0 !important;
@@ -192,51 +209,35 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 }}
               />
               {/* Hand-drawn annotation pointing at Lee */}
-              <svg
-                className="photo-annotation"
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
-                {/* "That's me" text at origin (62%, 8%) */}
-                <text
-                  className="photo-annotation-text"
-                  x="62"
-                  y="8"
-                  fill="white"
-                  textAnchor="start"
-                  style={{
-                    fontFamily: "Inter, sans-serif",
-                    fontWeight: 600,
-                    fontSize: "3.2px",
-                    textShadow: "1px 1px 3px rgba(0,0,0,0.8)",
-                  }}
+              <div className="photo-annotation">
+                <svg
+                  className="photo-annotation-svg"
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
                 >
-                  That's me
-                </text>
-                {/* Curved arrow from origin (62, 11) down-left to tip (35, 30) */}
-                <path
-                  className="photo-annotation-path"
-                  d="M 62 11 Q 70 22, 55 24 T 35 30"
-                  stroke="white"
-                  strokeWidth="0.7"
-                  strokeLinecap="round"
-                  vectorEffect="non-scaling-stroke"
-                  fill="none"
-                />
-                {/* Arrowhead at tip (35, 30) */}
-                <path
-                  className="photo-annotation-arrowhead"
-                  d="M 35 30 L 39 26 M 35 30 L 40 31"
-                  stroke="white"
-                  strokeWidth="0.7"
-                  strokeLinecap="round"
-                  vectorEffect="non-scaling-stroke"
-                  fill="none"
-                />
-              </svg>
+                  {/* Curved arrow: start (65, 18) → end (42, 38) */}
+                  <path
+                    className="photo-annotation-path"
+                    d="M 65 18 C 72 26, 60 30, 50 32 S 45 36, 42 38"
+                    stroke="white"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                    fill="none"
+                  />
+                  {/* Solid arrowhead triangle at (42, 38), rotated to match arrow direction */}
+                  <polygon
+                    className="photo-annotation-arrowhead"
+                    points="0,-5 10,0 0,5"
+                    fill="white"
+                    transform="translate(42 38) rotate(150)"
+                  />
+                </svg>
+                <span className="photo-annotation-label">That's me</span>
+              </div>
             </div>
           </div>
 
