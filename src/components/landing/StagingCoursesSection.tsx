@@ -15,6 +15,7 @@ interface Course {
 interface StagingCoursesSectionProps {
   courses: Course[];
   onCardClick: (course: Course) => void;
+  onExpansionClick?: () => void;
 }
 
 // Display order + color group + subtitle override per spec
@@ -28,6 +29,7 @@ const DISPLAY_ORDER: Array<{ slug: string; group: "intro" | "intermediate"; subt
 export default function StagingCoursesSection({
   courses,
   onCardClick,
+  onExpansionClick,
 }: StagingCoursesSectionProps) {
   const ordered = DISPLAY_ORDER
     .map((d) => {
@@ -82,6 +84,21 @@ export default function StagingCoursesSection({
             );
           })}
         </div>
+
+        <p
+          className="mt-8 text-center text-[14px]"
+          style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}
+        >
+          Expanding to new campuses August 2026.{" "}
+          <button
+            type="button"
+            onClick={onExpansionClick}
+            className="underline-offset-2 hover:underline"
+            style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}
+          >
+            Is your school next? →
+          </button>
+        </p>
       </div>
     </section>
   );

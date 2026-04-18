@@ -183,7 +183,14 @@ export default function StagingLandingPage() {
       <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />
 
       <div ref={coursesRef}>
-        <StagingCoursesSection courses={COURSES} onCardClick={handleCardClick} />
+        <StagingCoursesSection
+          courses={COURSES}
+          onCardClick={handleCardClick}
+          onExpansionClick={() => {
+            setWaitlistInitialEmail("");
+            setWaitlistOpen(true);
+          }}
+        />
       </div>
 
       <ClosingCtaSection onCtaClick={() => handleCardClick(defaultCourse)} />

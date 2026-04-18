@@ -88,10 +88,23 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               className="mt-5 text-[15px] md:text-[16px] leading-relaxed mx-auto md:mx-0 max-w-[520px]"
               style={{ color: "rgba(255,255,255,0.85)", fontFamily: "Inter, sans-serif" }}
             >
-              I'm Lee Ingram — Ole Miss accounting alum, turned full-time tutor. I built this platform out of a love for helping college students understand accounting — not just survive it.
+              I'm Lee Ingram. Ole Miss accounting alum & tutor. I built this out of a love for helping students master their accounting course — not just survive it.
             </p>
 
-            <div className="mt-7 flex justify-center md:justify-start">
+            <p
+              className="text-[17px] md:text-[19px] leading-snug mx-auto md:mx-0 max-w-[520px] text-center md:text-left"
+              style={{
+                color: "rgba(255,255,255,0.9)",
+                fontFamily: "Inter, sans-serif",
+                fontWeight: 600,
+                marginTop: 16,
+                marginBottom: 24,
+              }}
+            >
+              1,000+ Ole Miss students have survived their exam with this.
+            </p>
+
+            <div className="flex justify-center md:justify-start">
               <button
                 onClick={onGetStartedClick}
                 className="rounded-lg px-7 py-3.5 text-[15px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
