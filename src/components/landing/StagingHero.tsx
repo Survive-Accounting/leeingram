@@ -86,6 +86,62 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           .staging-hero-cap-inline { display: none; }
         }
 
+        /* Photo annotation */
+        .photo-annotation {
+          position: absolute;
+          top: -8px;
+          right: -10px;
+          width: 140px;
+          height: 120px;
+          pointer-events: none;
+          opacity: 0;
+          animation: annotationFloat 2s ease-in-out infinite, annotationFadeIn 0.3s ease-out 1.2s forwards;
+          filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.6));
+          z-index: 4;
+        }
+        @keyframes annotationFadeIn {
+          to { opacity: 1; }
+        }
+        @keyframes annotationFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+        .photo-annotation-path {
+          stroke-dasharray: 200;
+          stroke-dashoffset: 200;
+          animation: drawPath 0.8s ease-out 1s forwards;
+        }
+        @keyframes drawPath {
+          to { stroke-dashoffset: 0; }
+        }
+        .photo-annotation-arrowhead {
+          opacity: 0;
+          animation: arrowheadIn 0.2s ease-out 1.7s forwards;
+        }
+        @keyframes arrowheadIn {
+          to { opacity: 1; }
+        }
+        .photo-annotation-text {
+          opacity: 0;
+          animation: annotationTextIn 0.3s ease-out 1.8s forwards;
+        }
+        @keyframes annotationTextIn {
+          to { opacity: 1; }
+        }
+        @media (max-width: 768px) {
+          .photo-annotation { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .photo-annotation,
+          .photo-annotation-path,
+          .photo-annotation-arrowhead,
+          .photo-annotation-text {
+            opacity: 1 !important;
+            animation: none !important;
+            stroke-dashoffset: 0 !important;
+          }
+        }
+
         /* Entrance animations */
         @keyframes heroPhotoIn {
           from { opacity: 0; transform: scale(0.97); }
@@ -125,16 +181,59 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
           {/* LEFT — Photo */}
           <div className="w-full md:w-[42%] flex justify-center md:justify-start">
-            <img
-              src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg"
-              alt="Lee Ingram"
-              className="w-full max-w-[300px] md:max-w-none rounded-lg hero-anim-photo"
-              style={{
-                borderRadius: 8,
-                boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-                border: "1px solid rgba(255,255,255,0.1)",
-              }}
-            />
+            <div className="relative w-full max-w-[300px] md:max-w-none">
+              <img
+                src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg"
+                alt="Lee Ingram"
+                className="w-full rounded-lg hero-anim-photo"
+                style={{
+                  borderRadius: 8,
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}
+              />
+              {/* Hand-drawn annotation pointing at Lee */}
+              <svg
+                className="photo-annotation"
+                viewBox="0 0 140 120"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <text
+                  className="photo-annotation-text"
+                  x="78"
+                  y="22"
+                  fill="white"
+                  style={{
+                    fontFamily: "Inter, sans-serif",
+                    fontWeight: 600,
+                    fontSize: "14px",
+                    textShadow: "1px 1px 3px rgba(0,0,0,0.8)",
+                  }}
+                >
+                  That's me
+                </text>
+                {/* Curved arrow from text down-left toward Lee's face */}
+                <path
+                  className="photo-annotation-path"
+                  d="M 95 32 Q 110 60, 80 80 T 50 105"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                {/* Arrowhead at tip (~50,105) */}
+                <path
+                  className="photo-annotation-arrowhead"
+                  d="M 50 105 L 56 97 M 50 105 L 58 108"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+              </svg>
+            </div>
           </div>
 
           {/* RIGHT — Text */}
@@ -144,10 +243,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
               <span className="block hero-anim-line1">Your exam is coming.</span>
-              <span className="block hero-anim-line2">
-                Let's get you ready.{" "}
-                <span style={{ verticalAlign: "middle", display: "inline-block" }} aria-hidden="true">🎓</span>
-              </span>
+              <span className="block hero-anim-line2">I'll get you ready.</span>
             </h1>
 
             <p
