@@ -4,7 +4,7 @@ import {
   Home, LogOut, PanelLeftClose, PanelLeft,
   LayoutDashboard, Building2, Plus, DollarSign,
   Users, ShoppingCart, GraduationCap, BarChart3,
-  ArrowLeft, ChevronRight,
+  ArrowLeft, ChevronRight, Trophy,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -179,6 +179,7 @@ export function CampusOpsSidebarLayout({ children }: { children: React.ReactNode
           {renderTopLabel("Analytics")}
           <div className="space-y-0.5">
             {renderItem("Overview", "/campus-ops/analytics", BarChart3)}
+            {renderItem("Leaderboard", "/campus-ops/leaderboard", Trophy)}
           </div>
 
           {/* BACK */}

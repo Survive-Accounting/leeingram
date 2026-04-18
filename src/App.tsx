@@ -126,6 +126,7 @@ const StudentsPage = lazy(() => import("./pages/campus-ops/StudentsPage"));
 const PurchasesPage = lazy(() => import("./pages/campus-ops/PurchasesPage"));
 const ProfessorsPage = lazy(() => import("./pages/campus-ops/ProfessorsPage"));
 const CampusAnalyticsPage = lazy(() => import("./pages/campus-ops/AnalyticsPage"));
+const CampusLeaderboardPage = lazy(() => import("./pages/campus-ops/LeaderboardPage"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const LeesStory = lazy(() => import("./pages/LeesStory"));
@@ -283,6 +284,7 @@ const AppRoutes = () => {
         <Route path="/campus-ops/purchases" element={<ProtectedRoute><CampusOperations><PurchasesPage /></CampusOperations></ProtectedRoute>} />
         <Route path="/campus-ops/professors" element={<ProtectedRoute><CampusOperations><ProfessorsPage /></CampusOperations></ProtectedRoute>} />
         <Route path="/campus-ops/analytics" element={<ProtectedRoute><CampusOperations><CampusAnalyticsPage /></CampusOperations></ProtectedRoute>} />
+        <Route path="/campus-ops/leaderboard" element={<ProtectedRoute><CampusOperations><CampusLeaderboardPage /></CampusOperations></ProtectedRoute>} />
         <Route path="/solutions-qa" element={<ProtectedRoute><SolutionsQAReview /></ProtectedRoute>} />
         <Route path="/solutions-qa-admin" element={<ProtectedRoute><SolutionsQAAdmin /></ProtectedRoute>} />
         <Route path="/admin/chapter-qa" element={<ProtectedRoute><ChapterContentQA /></ProtectedRoute>} />
