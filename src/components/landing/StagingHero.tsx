@@ -1,12 +1,9 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const RED = "#CE1126";
 const NAVY = "#14213D";
 const GOLD = "#D4AF37";
 const HERO_IMAGE = "https://i.ibb.co/Qj8d4Hhs/Survive-Accounting-Hero-Image.jpg";
-const BASELINE_OLE_MISS = 597;
 
 interface Course {
   id: string;
@@ -27,24 +24,6 @@ interface StagingHeroProps {
 }
 
 export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
-  const [totalPaid, setTotalPaid] = useState<number>(0);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const totRes = await supabase.rpc("get_paid_student_count_for_campus" as any, { p_campus_slug: "ole-miss" });
-        if (cancelled) return;
-        if (typeof totRes.data === "number") setTotalPaid(totRes.data);
-      } catch {
-        // fail silent
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  const headlineCount = BASELINE_OLE_MISS + totalPaid;
-
   const headlineShadow = "2px 2px 8px rgba(0,0,0,0.8)";
   const subtextShadow = "1px 1px 4px rgba(0,0,0,0.6)";
 
@@ -71,9 +50,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           z-index: 0;
         }
         @media (max-width: 768px) {
-          .staging-hero-bg {
-            background-attachment: scroll;
-          }
+          .staging-hero-bg { background-attachment: scroll; }
         }
         .staging-hero-overlay-left {
           position: absolute;
@@ -119,6 +96,37 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         @media (max-width: 768px) {
           .staging-hero-abacus, .staging-hero-cap { display: none; }
         }
+
+        /* Entrance animations */
+        @keyframes heroPhotoIn {
+          from { opacity: 0; transform: scale(0.97); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes heroFadeUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes heroFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes heroBtnIn {
+          from { opacity: 0; transform: translateY(8px) scale(0.98); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .hero-anim-photo { opacity: 0; animation: heroPhotoIn 0.6s ease-out forwards; }
+        .hero-anim-line1 { opacity: 0; animation: heroFadeUp 0.5s ease-out 0.2s forwards; }
+        .hero-anim-line2 { opacity: 0; animation: heroFadeUp 0.5s ease-out 0.4s forwards; }
+        .hero-anim-sub { opacity: 0; animation: heroFadeIn 0.4s ease-out 0.6s forwards; }
+        .hero-anim-btn { opacity: 0; animation: heroBtnIn 0.4s ease-out 0.8s forwards; }
+        @media (prefers-reduced-motion: reduce) {
+          .hero-anim-photo, .hero-anim-line1, .hero-anim-line2, .hero-anim-sub, .hero-anim-btn {
+            opacity: 1 !important;
+            animation: none !important;
+            transform: none !important;
+          }
+          .staging-hero-cap { animation: none !important; }
+        }
       `}</style>
 
       <div className="staging-hero-bg" />
@@ -154,7 +162,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             <img
               src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg"
               alt="Lee Ingram"
-              className="w-full max-w-[300px] md:max-w-none rounded-lg"
+              className="w-full max-w-[300px] md:max-w-none rounded-lg hero-anim-photo"
               style={{
                 borderRadius: 8,
                 boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
@@ -169,62 +177,30 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               className="text-white leading-[1.15] tracking-tight text-[28px] sm:text-[36px] md:text-[44px]"
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
-              Your exam is coming.
-              <br />
-              Let's get you ready.
+              <span className="block hero-anim-line1">Your exam is coming.</span>
+              <span className="block hero-anim-line2">Let's get you ready.</span>
             </h1>
 
             <p
-              className="mt-5 text-[15px] md:text-[16px] leading-relaxed mx-auto md:mx-0 max-w-[520px]"
+              className="mt-5 text-[15px] md:text-[16px] leading-relaxed mx-auto md:mx-0 max-w-[520px] hero-anim-sub"
               style={{ color: "rgba(255,255,255,0.85)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
             >
               I'm Lee Ingram. Ole Miss accounting alum & tutor. I built this out of a love for helping students master their accounting course — not just survive it.
             </p>
 
             <TooltipProvider delayDuration={150}>
-              <div style={{ marginTop: 16, marginBottom: 24 }} className="mx-auto md:mx-0 max-w-[560px] text-center md:text-left">
-                <p
-                  className="leading-snug"
-                  style={{
-                    fontFamily: "'DM Serif Display', serif",
-                    fontWeight: 400,
-                    textShadow: subtextShadow,
-                  }}
+              <div className="mt-8 flex justify-center md:justify-start hero-anim-btn">
+                <button
+                  onClick={onGetStartedClick}
+                  className="rounded-lg px-7 py-3.5 text-[15px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
+                  style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.35)" }}
                 >
-                  <span
-                    className="text-white text-[34px] md:text-[42px] font-bold"
-                    style={{ textShadow: headlineShadow }}
-                  >
-                    {headlineCount.toLocaleString()}
-                  </span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <sup className="cursor-help text-white text-[18px]" style={{ marginLeft: 2 }}>*</sup>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-[260px] text-xs">
-                      Updated as students join. Placeholder until launch.
-                    </TooltipContent>
-                  </Tooltip>
-                  <span
-                    className="text-[18px] md:text-[22px] block mt-1"
-                    style={{ color: "rgba(255,255,255,0.9)" }}
-                  >
-                    Ole Miss students have climbed this mountain with me.{" "}
-                    <span style={{ color: RED, fontWeight: 700 }}>Your turn.</span>
-                  </span>
-                </p>
+                  Get Started →
+                </button>
               </div>
+              {/* Hidden tooltip provider preserved for future use */}
+              <Tooltip><TooltipTrigger asChild><span /></TooltipTrigger><TooltipContent /></Tooltip>
             </TooltipProvider>
-
-            <div className="flex justify-center md:justify-start">
-              <button
-                onClick={onGetStartedClick}
-                className="rounded-lg px-7 py-3.5 text-[15px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
-                style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.35)" }}
-              >
-                Get Started →
-              </button>
-            </div>
           </div>
         </div>
       </div>
