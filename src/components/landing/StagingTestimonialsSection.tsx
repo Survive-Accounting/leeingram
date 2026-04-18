@@ -32,11 +32,11 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
   }, []);
 
   return (
-    <section style={{ background: NAVY }} className="py-16 sm:py-20 px-4 sm:px-6">
+    <section style={{ background: "#F8F8F8" }} className="py-16 sm:py-20 px-4 sm:px-6">
       <div className="mx-auto max-w-[800px]">
         <p
-          className="text-center mb-8 text-[22px] sm:text-[26px] md:text-[30px] leading-tight"
-          style={{ color: "#E8E8E8", fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+          className="text-center mb-8 text-[20px] sm:text-[24px] md:text-[26px] leading-tight"
+          style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
         >
           Trusted by 1,000+ students since 2020
         </p>
