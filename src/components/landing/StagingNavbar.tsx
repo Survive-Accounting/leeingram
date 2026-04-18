@@ -31,33 +31,30 @@ export default function StagingNavbar({ onCtaClick }: StagingNavbarProps) {
         </button>
 
         {/* Right side */}
-        <div className="flex items-center gap-3 sm:gap-5">
+        <div className="flex items-center gap-4 sm:gap-5">
           <button
             onClick={() => navigate("/greek-landing")}
-            className="hidden sm:inline text-[12px] font-medium transition-colors hover:opacity-80"
-            style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}
+            className="text-[13px] font-medium transition-opacity hover:opacity-70"
+            style={{ color: NAVY, opacity: 0.7, fontFamily: "Inter, sans-serif" }}
           >
-            Greek Orgs
+            For Greek Orgs
           </button>
 
           <button
             onClick={() => navigate("/login")}
-            className="text-[12px] font-medium transition-colors hover:opacity-80"
-            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
-          >
-            Log in
-          </button>
-
-          <button
-            onClick={onCtaClick}
-            className="rounded-lg px-4 py-2 text-[13px] font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="text-[13px] font-medium transition-colors"
             style={{
-              background: RED,
+              background: "#BFDBFE",
+              color: NAVY,
+              border: "none",
+              borderRadius: 6,
+              padding: "8px 16px",
               fontFamily: "Inter, sans-serif",
-              boxShadow: "0 2px 8px rgba(206,17,38,0.25)",
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#93C5FD")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#BFDBFE")}
           >
-            Start Studying →
+            Log In →
           </button>
         </div>
       </nav>

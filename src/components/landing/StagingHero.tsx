@@ -143,23 +143,18 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               className="text-white leading-[1.15] tracking-tight text-[28px] sm:text-[36px] md:text-[44px]"
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
-              <span className="block hero-anim-line1">
-                Your exam is coming.
-                <svg className="staging-hero-cap-inline" width="44" height="44" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M28 8 L52 20 L28 32 L4 20 Z" fill="white" stroke={GOLD} strokeWidth="1.5" />
-                  <path d="M14 24 V36 C14 36 20 42 28 42 C36 42 42 36 42 36 V24" stroke="white" strokeWidth="1.5" fill="none" />
-                  <line x1="50" y1="21" x2="50" y2="34" stroke={GOLD} strokeWidth="1.5" />
-                  <circle cx="50" cy="36" r="2.5" fill={GOLD} />
-                </svg>
+              <span className="block hero-anim-line1">Your exam is coming.</span>
+              <span className="block hero-anim-line2">
+                Let's get you ready.{" "}
+                <span style={{ verticalAlign: "middle", display: "inline-block" }} aria-hidden="true">🎓</span>
               </span>
-              <span className="block hero-anim-line2">Let's get you ready.</span>
             </h1>
 
             <p
               className="mt-5 text-[15px] md:text-[16px] leading-relaxed mx-auto md:mx-0 max-w-[520px] hero-anim-sub"
               style={{ color: "rgba(255,255,255,0.85)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
             >
-              I'm Lee Ingram. Ole Miss accounting alum & tutor. I built Survive Accounting out of a love for helping students master their accounting course — not just survive it.
+              I'm Lee Ingram. Ole Miss accounting alum & tutor. I built Survive Accounting out of a love for helping students master their accounting courses — not just survive them.
             </p>
 
             <TooltipProvider delayDuration={150}>
