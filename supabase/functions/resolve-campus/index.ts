@@ -53,6 +53,74 @@ Deno.serve(async (req) => {
     const isLeeTestEmail = /^lee\+[^@]+@survivestudios\.com$/.test(cleanEmail);
     const domain = isLeeTestEmail ? "olemiss.edu" : cleanEmail.split("@")[1];
 
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE") ?? Deno.env.get("STRIPE_SECRET_KEY_TEST");
+    const stripeKeyTest = Deno.env.get("STRIPE_SECRET_KEY_TEST");
+
+    async function createStripeCoupon(key: string, code: string, name: string, percent: number): Promise<string | null> {
+      try {
+        const body = new URLSearchParams({
+          id: code,
+          name,
+          percent_off: String(percent),
+          duration: "once",
+        });
+        const r = await fetch("https://api.stripe.com/v1/coupons", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/x-www-form-urlencoded" },
+          body,
+        });
+        if (r.ok) {
+          const j = await r.json();
+          return j.id as string;
+        }
+        // Already exists
+        if (r.status === 400) {
+          const j = await r.json().catch(() => null);
+          if (j?.error?.code === "resource_already_exists") return code;
+        }
+        console.error("Stripe coupon create failed", r.status, await r.text());
+        return null;
+      } catch (e) {
+        console.error("Stripe coupon create error", e);
+        return null;
+      }
+    }
+
+    async function ensureFoundingCoupon(campusSlug: string, campusName: string, campusId: string) {
+      const code = `FOUNDING_${campusSlug.toUpperCase().replace(/-/g, "_")}`;
+      const { data: existing } = await sb.from("coupons").select("*").eq("code", code).maybeSingle();
+      if (existing) return existing;
+
+      let liveId: string | null = null;
+      let testId: string | null = null;
+      if (stripeKey) liveId = await createStripeCoupon(stripeKey, code, `Founding Student — ${campusName}`, 50);
+      if (stripeKeyTest && stripeKeyTest !== stripeKey) {
+        testId = await createStripeCoupon(stripeKeyTest, code, `Founding Student — ${campusName}`, 50);
+      } else if (stripeKeyTest === stripeKey) {
+        testId = liveId;
+      }
+
+      const validUntil = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+      const { data: inserted } = await sb
+        .from("coupons")
+        .insert({
+          code,
+          name: `Founding Student — ${campusName}`,
+          type: "campus",
+          discount_percent: 50,
+          applicable_to: "all",
+          university_id: campusId,
+          valid_until: validUntil,
+          stripe_coupon_id_live: liveId,
+          stripe_coupon_id_test: testId,
+          priority: 50,
+          is_active: true,
+        })
+        .select()
+        .maybeSingle();
+      return inserted;
+    }
+
     // Resolve course_id from slug
     const { data: course, error: courseErr } = await sb
       .from("courses")
