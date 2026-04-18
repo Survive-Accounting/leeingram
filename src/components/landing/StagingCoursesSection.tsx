@@ -156,6 +156,7 @@ export default function StagingCoursesSection({
     <TooltipProvider delayDuration={150}>
     <section className="px-4 sm:px-6 py-12 sm:py-16" style={{ background: "#F8F8FA" }}>
       <div className="mx-auto max-w-[860px]">
+        <PriceLadder />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
           {ordered.map(({ course, group, subtitle }) => {
             const accent = group === "intro" ? BLUE : NAVY;
