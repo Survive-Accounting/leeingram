@@ -605,6 +605,8 @@ export default function PricingPage() {
           </div>
         )}
       </div>
+
+      <ExpansionPricingStrategies />
     </div>
   );
 }
