@@ -28,7 +28,7 @@ function getTierIndex(enrolled: number): number {
 }
 
 function PriceLadder() {
-  const enrolled = MOCK_ENROLLED;
+  const enrolled: number = MOCK_ENROLLED;
   const activeIdx = getTierIndex(enrolled);
   const currentPrice = PRICE_TIERS[activeIdx].price;
   const nextTier = PRICE_TIERS[activeIdx + 1];
