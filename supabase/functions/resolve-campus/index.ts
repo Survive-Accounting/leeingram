@@ -53,6 +53,74 @@ Deno.serve(async (req) => {
     const isLeeTestEmail = /^lee\+[^@]+@survivestudios\.com$/.test(cleanEmail);
     const domain = isLeeTestEmail ? "olemiss.edu" : cleanEmail.split("@")[1];
 
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE") ?? Deno.env.get("STRIPE_SECRET_KEY_TEST");
+    const stripeKeyTest = Deno.env.get("STRIPE_SECRET_KEY_TEST");
+
+    async function createStripeCoupon(key: string, code: string, name: string, percent: number): Promise<string | null> {
+      try {
+        const body = new URLSearchParams({
+          id: code,
+          name,
+          percent_off: String(percent),
+          duration: "once",
+        });
+        const r = await fetch("https://api.stripe.com/v1/coupons", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/x-www-form-urlencoded" },
+          body,
+        });
+        if (r.ok) {
+          const j = await r.json();
+          return j.id as string;
+        }
+        // Already exists
+        if (r.status === 400) {
+          const j = await r.json().catch(() => null);
+          if (j?.error?.code === "resource_already_exists") return code;
+        }
+        console.error("Stripe coupon create failed", r.status, await r.text());
+        return null;
+      } catch (e) {
+        console.error("Stripe coupon create error", e);
+        return null;
+      }
+    }
+
+    async function ensureFoundingCoupon(campusSlug: string, campusName: string, campusId: string) {
+      const code = `FOUNDING_${campusSlug.toUpperCase().replace(/-/g, "_")}`;
+      const { data: existing } = await sb.from("coupons").select("*").eq("code", code).maybeSingle();
+      if (existing) return existing;
+
+      let liveId: string | null = null;
+      let testId: string | null = null;
+      if (stripeKey) liveId = await createStripeCoupon(stripeKey, code, `Founding Student — ${campusName}`, 50);
+      if (stripeKeyTest && stripeKeyTest !== stripeKey) {
+        testId = await createStripeCoupon(stripeKeyTest, code, `Founding Student — ${campusName}`, 50);
+      } else if (stripeKeyTest === stripeKey) {
+        testId = liveId;
+      }
+
+      const validUntil = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+      const { data: inserted } = await sb
+        .from("coupons")
+        .insert({
+          code,
+          name: `Founding Student — ${campusName}`,
+          type: "campus",
+          discount_percent: 50,
+          applicable_to: "all",
+          university_id: campusId,
+          valid_until: validUntil,
+          stripe_coupon_id_live: liveId,
+          stripe_coupon_id_test: testId,
+          priority: 50,
+          is_active: true,
+        })
+        .select()
+        .maybeSingle();
+      return inserted;
+    }
+
     // Resolve course_id from slug
     const { data: course, error: courseErr } = await sb
       .from("courses")
@@ -224,11 +292,44 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Determine paid student count + founding status
+    let paidCount = 0;
+    let mascotCheer: string | null = null;
+    let foundingStudent = false;
+    let foundingCouponCode: string | null = null;
+
+    if (campusId) {
+      const { count } = await sb
+        .from("student_purchases")
+        .select("email", { count: "exact", head: true })
+        .eq("campus_id", campusId);
+      paidCount = count ?? 0;
+
+      const { data: campusRow } = await sb
+        .from("campuses")
+        .select("mascot_cheer")
+        .eq("id", campusId)
+        .maybeSingle();
+      mascotCheer = (campusRow as any)?.mascot_cheer ?? null;
+
+      // Founding = first paid student at a non-Ole-Miss campus with zero paid purchases yet
+      if (paidCount === 0 && campusSlug !== "ole-miss" && campusSlug !== "general") {
+        foundingStudent = true;
+        const couponRow = await ensureFoundingCoupon(campusSlug, campusName, campusId);
+        if (couponRow) foundingCouponCode = (couponRow as any).code;
+      }
+    }
+
     // Save to student_emails (lead capture) — upsert by email + course_id
     await sb
       .from("student_emails")
       .upsert(
-        { email: cleanEmail, course_id: courseId, attempted_at: new Date().toISOString() },
+        {
+          email: cleanEmail,
+          course_id: courseId,
+          attempted_at: new Date().toISOString(),
+          founding_student: foundingStudent,
+        } as any,
         { onConflict: "email,course_id" }
       );
 
@@ -255,6 +356,11 @@ Deno.serve(async (req) => {
         is_new: isNew,
         is_test_mode: isTestMode,
         email_override: isTestMode ? "lee@surviveaccounting.com" : null,
+        paid_student_count: paidCount,
+        student_number: paidCount + 1,
+        mascot_cheer: mascotCheer,
+        founding_student: foundingStudent,
+        founding_coupon_code: foundingCouponCode,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
