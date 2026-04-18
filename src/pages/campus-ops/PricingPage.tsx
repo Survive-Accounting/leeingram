@@ -140,7 +140,132 @@ const MockBadge = () => (
   </span>
 );
 
-function ExpansionPricingStrategies() {
+function ExpansionPricingBody() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Pricing Configs
+          </h3>
+          {MOCK_CONFIGS.map(cfg => (
+            <Card key={cfg.id} className="relative">
+              <MockBadge />
+              <CardContent className="p-5 space-y-3">
+                <div className="flex items-start gap-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-base font-bold">{cfg.name}</h4>
+                      {cfg.is_default && (
+                        <Badge className="bg-green-600 hover:bg-green-600 text-white text-xs">Default</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{cfg.description}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {cfg.tiers.map(t => (
+                    <span
+                      key={t.label}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-xs font-medium"
+                    >
+                      <span className="text-muted-foreground">{t.label}:</span>
+                      <span>${t.price}</span>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button size="sm" variant="outline">
+                    <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                  </Button>
+                  <Button size="sm" variant="outline">
+                    <ArrowRightLeft className="w-3.5 h-3.5 mr-1" /> Assign to Campus
+                  </Button>
+                  <Button size="sm" variant="ghost">
+                    <Copy className="w-3.5 h-3.5 mr-1" /> Duplicate
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Campus Assignments
+          </h3>
+          <Card className="relative">
+            <MockBadge />
+            <CardContent className="p-0 pt-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Campus</TableHead>
+                    <TableHead>Config</TableHead>
+                    <TableHead className="text-center">Enrolled</TableHead>
+                    <TableHead>Current Tier</TableHead>
+                    <TableHead className="w-32" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {MOCK_ASSIGNMENTS.map(a => (
+                    <TableRow key={a.campus}>
+                      <TableCell className="font-medium">{a.campus}</TableCell>
+                      <TableCell className="text-sm">{a.config}</TableCell>
+                      <TableCell className="text-center">{a.enrolled}</TableCell>
+                      <TableCell className="text-sm">
+                        {a.tier} <span className="text-muted-foreground">(${a.price})</span>
+                      </TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="outline">Change Config</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PerformanceBody() {
+  return (
+    <Card className="relative overflow-hidden">
+      <MockBadge />
+      <CardContent className="p-0 pt-6">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Config Name</TableHead>
+              <TableHead className="text-center">Campuses Using</TableHead>
+              <TableHead className="text-center">Avg Students/Week</TableHead>
+              <TableHead className="text-center">Avg Revenue/Campus</TableHead>
+              <TableHead className="text-center">Score</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {MOCK_PERFORMANCE.map(p => (
+              <TableRow key={p.config}>
+                <TableCell className="font-medium">{p.config}</TableCell>
+                <TableCell className="text-center">{p.campuses}</TableCell>
+                <TableCell className="text-center">{p.weekly.toFixed(1)}</TableCell>
+                <TableCell className="text-center">${p.revenue}</TableCell>
+                <TableCell className="text-center text-muted-foreground">{p.score}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <p className="text-xs text-muted-foreground px-6 py-3 border-t">
+          * Scoring activates at 50+ students
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function _Unused_ExpansionPricingStrategies() {
   return (
     <div className="space-y-6">
       {/* Section Header */}
