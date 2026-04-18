@@ -38,7 +38,7 @@ function PricingSection({
         <CollapsibleTrigger asChild>
           <button
             type="button"
-            className="w-full bg-[#14213D] text-white px-6 py-5 flex items-center justify-between hover:bg-[#1a2a४d] transition-colors text-left"
+            className="w-full bg-[#14213D] text-white px-6 py-5 flex items-center justify-between hover:bg-[#1a2a4d] transition-colors text-left"
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
