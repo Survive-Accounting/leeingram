@@ -430,19 +430,19 @@ export default function PricingPage() {
   if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <div>
         <h1 className="text-lg font-semibold">Pricing</h1>
-        <p className="text-sm text-muted-foreground">Manage global and campus-specific pricing</p>
+        <p className="text-sm text-muted-foreground">Manage global and campus-specific pricing. Click any section to expand.</p>
       </div>
 
-      {/* Global Pricing & Discounts */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Global Pricing & Discounts</CardTitle>
-          <p className="text-xs text-muted-foreground">Applied when no campus-specific price exists</p>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      {/* 1. Global Pricing & Discounts */}
+      <PricingSection
+        title="Global Pricing & Discounts"
+        subtitle="Default semester and chapter pass pricing applied when no campus override exists."
+        defaultOpen
+      >
+        <div className="space-y-6">
           {globals.map(g => {
             const e = globalEdits[g.id];
             if (!e) return null;
@@ -459,7 +459,6 @@ export default function PricingPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* Base Price */}
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Base Price</Label>
                     <div className="flex items-center gap-1">
@@ -472,7 +471,6 @@ export default function PricingPage() {
                     </div>
                   </div>
 
-                  {/* Discount */}
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Discount</Label>
                     <Select value={e.discount} onValueChange={v => updateEdit(g.id, { discount: v })}>
@@ -491,7 +489,6 @@ export default function PricingPage() {
                     </Select>
                   </div>
 
-                  {/* Expiry */}
                   {pct > 0 && (
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Discount Expires</Label>
@@ -515,7 +512,6 @@ export default function PricingPage() {
                   )}
                 </div>
 
-                {/* Discount Label */}
                 {pct > 0 && (
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Discount Label</Label>
@@ -528,7 +524,6 @@ export default function PricingPage() {
                   </div>
                 )}
 
-                {/* Final Price */}
                 <div className="flex items-center gap-2 pt-1">
                   <span className="text-xs text-muted-foreground">Final price:</span>
                   {pct > 0 && !isExpired && (
@@ -545,16 +540,19 @@ export default function PricingPage() {
           <Button size="sm" onClick={handleSaveGlobals} disabled={saving}>
             {saving ? "Saving…" : "Save Global Pricing"}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </PricingSection>
 
-      {/* Campus Overrides */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold">Campus Pricing Overrides</h2>
+      {/* 2. Campus Pricing Overrides */}
+      <PricingSection
+        title="Campus Pricing Overrides"
+        subtitle="Per-campus price exceptions that win over the global defaults above."
+        action={
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
-              <Button size="sm"><Plus className="w-4 h-4 mr-1" /> Add Campus Pricing</Button>
+              <Button size="sm" className="bg-white text-[#14213D] hover:bg-white/90">
+                <Plus className="w-4 h-4 mr-1" /> Add Campus Pricing
+              </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Add Campus Pricing</DialogTitle></DialogHeader>
@@ -596,8 +594,8 @@ export default function PricingPage() {
               </div>
             </DialogContent>
           </Dialog>
-        </div>
-
+        }
+      >
         {overrides.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">No campus-specific pricing yet.</p>
         ) : (
@@ -636,9 +634,29 @@ export default function PricingPage() {
             </Table>
           </div>
         )}
-      </div>
+      </PricingSection>
 
-      <ExpansionPricingStrategies />
+      {/* 3. Expansion Pricing Strategies */}
+      <PricingSection
+        title="Expansion Pricing Strategies"
+        subtitle="Configure founding student pricing per campus. This is your primary growth lever."
+        action={
+          <Button className="bg-white text-[#14213D] hover:bg-white/90">
+            <Plus className="w-4 h-4 mr-1" /> New Config
+          </Button>
+        }
+      >
+        <ExpansionPricingBody />
+      </PricingSection>
+
+      {/* 4. Pricing Config Performance */}
+      <PricingSection
+        title="Pricing Config Performance"
+        subtitle="Configure founding student pricing per campus. This is your primary growth lever."
+        action={<TrendingUp className="w-5 h-5 text-white/70" />}
+      >
+        <PerformanceBody />
+      </PricingSection>
     </div>
   );
 }
