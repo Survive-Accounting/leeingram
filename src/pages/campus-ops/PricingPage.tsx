@@ -14,7 +14,231 @@ import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, CalendarIcon } from "lucide-react";
+import { Plus, Trash2, CalendarIcon, Copy, Pencil, ArrowRightLeft, TrendingUp } from "lucide-react";
+
+// ─── Expansion Pricing Strategies (Mock Data) ──────────────────────────────
+interface MockConfig {
+  id: string;
+  name: string;
+  description: string;
+  is_default: boolean;
+  tiers: { label: string; price: number }[];
+}
+
+const MOCK_CONFIGS: MockConfig[] = [
+  {
+    id: "standard",
+    name: "Standard Founding",
+    description: "Default ladder for new campuses. First student $25, scales to $250.",
+    is_default: true,
+    tiers: [
+      { label: "#1", price: 25 },
+      { label: "#2-5", price: 50 },
+      { label: "#6-10", price: 75 },
+      { label: "#11-25", price: 100 },
+      { label: "#26-50", price: 125 },
+      { label: "#51-100", price: 150 },
+      { label: "#101-200", price: 175 },
+      { label: "#201+", price: 250 },
+    ],
+  },
+  {
+    id: "aggressive",
+    name: "Aggressive Founding",
+    description: "$10 cheaper at every tier — for campuses that need a stronger pull.",
+    is_default: false,
+    tiers: [
+      { label: "#1", price: 15 },
+      { label: "#2-5", price: 40 },
+      { label: "#6-10", price: 65 },
+      { label: "#11-25", price: 90 },
+      { label: "#26-50", price: 115 },
+      { label: "#51-100", price: 140 },
+      { label: "#101-200", price: 165 },
+      { label: "#201+", price: 240 },
+    ],
+  },
+  {
+    id: "greek",
+    name: "Greek Org Special",
+    description: "Bulk pricing for sororities & fraternities buying in cohorts.",
+    is_default: false,
+    tiers: [
+      { label: "#1", price: 20 },
+      { label: "#2-5", price: 45 },
+      { label: "#6-10", price: 70 },
+      { label: "#11-25", price: 95 },
+      { label: "#26-50", price: 120 },
+      { label: "#51-100", price: 145 },
+      { label: "#101-200", price: 170 },
+      { label: "#201+", price: 245 },
+    ],
+  },
+];
+
+const MOCK_ASSIGNMENTS = [
+  { campus: "Ole Miss", config: "Standard Founding", enrolled: 5, tier: "Tier 2", price: 50 },
+];
+
+const MOCK_PERFORMANCE = [
+  { config: "Standard Founding", campuses: 1, weekly: 2.4, revenue: 245, score: "—" },
+  { config: "Aggressive Founding", campuses: 0, weekly: 0, revenue: 0, score: "—" },
+  { config: "Greek Org Special", campuses: 0, weekly: 0, revenue: 0, score: "—" },
+];
+
+const MockBadge = () => (
+  <span className="absolute top-2 right-2 text-[10px] uppercase tracking-wide font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
+    Mock Data
+  </span>
+);
+
+function ExpansionPricingStrategies() {
+  return (
+    <div className="space-y-6">
+      {/* Section Header */}
+      <div className="rounded-lg bg-[#14213D] text-white px-6 py-5 flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">Expansion Pricing Strategies</h2>
+          <p className="text-sm text-white/70 mt-1">
+            Configure founding student pricing per campus. This is your primary growth lever.
+          </p>
+        </div>
+        <Button className="bg-white text-[#14213D] hover:bg-white/90">
+          <Plus className="w-4 h-4 mr-1" /> New Config
+        </Button>
+      </div>
+
+      {/* Two columns: Configs + Assignments */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* LEFT — Configs */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Pricing Configs
+          </h3>
+          {MOCK_CONFIGS.map(cfg => (
+            <Card key={cfg.id} className="relative">
+              <MockBadge />
+              <CardContent className="p-5 space-y-3">
+                <div className="flex items-start gap-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-base font-bold">{cfg.name}</h4>
+                      {cfg.is_default && (
+                        <Badge className="bg-green-600 hover:bg-green-600 text-white text-xs">Default</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{cfg.description}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {cfg.tiers.map(t => (
+                    <span
+                      key={t.label}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-xs font-medium"
+                    >
+                      <span className="text-muted-foreground">{t.label}:</span>
+                      <span>${t.price}</span>
+                    </span>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button size="sm" variant="outline">
+                    <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                  </Button>
+                  <Button size="sm" variant="outline">
+                    <ArrowRightLeft className="w-3.5 h-3.5 mr-1" /> Assign to Campus
+                  </Button>
+                  <Button size="sm" variant="ghost">
+                    <Copy className="w-3.5 h-3.5 mr-1" /> Duplicate
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* RIGHT — Campus Assignments */}
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Campus Assignments
+          </h3>
+          <Card className="relative">
+            <MockBadge />
+            <CardContent className="p-0 pt-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Campus</TableHead>
+                    <TableHead>Config</TableHead>
+                    <TableHead className="text-center">Enrolled</TableHead>
+                    <TableHead>Current Tier</TableHead>
+                    <TableHead className="w-32" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {MOCK_ASSIGNMENTS.map(a => (
+                    <TableRow key={a.campus}>
+                      <TableCell className="font-medium">{a.campus}</TableCell>
+                      <TableCell className="text-sm">{a.config}</TableCell>
+                      <TableCell className="text-center">{a.enrolled}</TableCell>
+                      <TableCell className="text-sm">
+                        {a.tier} <span className="text-muted-foreground">(${a.price})</span>
+                      </TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="outline">Change Config</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Performance Scoring */}
+      <Card className="relative overflow-hidden">
+        <MockBadge />
+        <div className="bg-[#14213D] text-white px-6 py-4">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" />
+            <h3 className="text-lg font-semibold">Config Performance</h3>
+          </div>
+          <p className="text-sm text-white/70 mt-1">Which strategy converts fastest?</p>
+        </div>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Config Name</TableHead>
+                <TableHead className="text-center">Campuses Using</TableHead>
+                <TableHead className="text-center">Avg Students/Week</TableHead>
+                <TableHead className="text-center">Avg Revenue/Campus</TableHead>
+                <TableHead className="text-center">Score</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {MOCK_PERFORMANCE.map(p => (
+                <TableRow key={p.config}>
+                  <TableCell className="font-medium">{p.config}</TableCell>
+                  <TableCell className="text-center">{p.campuses}</TableCell>
+                  <TableCell className="text-center">{p.weekly.toFixed(1)}</TableCell>
+                  <TableCell className="text-center">${p.revenue}</TableCell>
+                  <TableCell className="text-center text-muted-foreground">{p.score}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <p className="text-xs text-muted-foreground px-6 py-3 border-t">
+            * Scoring activates at 50+ students
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 interface PricingRow {
   id: string;
@@ -381,6 +605,8 @@ export default function PricingPage() {
           </div>
         )}
       </div>
+
+      <ExpansionPricingStrategies />
     </div>
   );
 }
