@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import EmbeddedCheckoutModal from "./EmbeddedCheckoutModal";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -20,8 +19,6 @@ interface PurchaseBarProps {
 
 export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel, campusId, campusSlug, courseId, courseSlug, studentEmail }: PurchaseBarProps) {
   const [loading, setLoading] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [showCheckout, setShowCheckout] = useState(false);
 
   const priceDisplay = `$${Math.round(priceCents / 100)}`;
   const originalDisplay = originalPriceCents ? `$${Math.round(originalPriceCents / 100)}` : null;
@@ -44,17 +41,16 @@ export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel,
           course_slug: courseSlug || "",
           product_type: "semester_pass",
           return_url: window.location.origin,
-          ui_mode: "embedded",
+          ui_mode: "redirect",
           is_test_mode: sessionStorage.getItem("sa_test_mode") === "true",
           email_override: sessionStorage.getItem("sa_email_override") || "",
         },
       });
       if (error) throw error;
-      if (data?.clientSecret) {
-        setClientSecret(data.clientSecret);
-        setShowCheckout(true);
+      if (data?.url) {
+        window.open(data.url, "_blank", "noopener,noreferrer");
       } else {
-        throw new Error("No client secret returned");
+        throw new Error("No checkout URL returned");
       }
     } catch {
       toast.error("Couldn't start checkout. Try again.");
@@ -64,42 +60,31 @@ export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel,
   };
 
   return (
-    <>
-      <div
-        className="fixed bottom-0 left-0 right-0 z-50 border-t"
-        style={{ background: "#fff", borderColor: "#E5E7EB" }}
-      >
-        <div className="max-w-[780px] mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[18px] font-bold" style={{ color: NAVY }}>{priceDisplay}</span>
-              {originalDisplay && (
-                <span className="text-[14px] line-through" style={{ color: "#9CA3AF" }}>{originalDisplay}</span>
-              )}
-            </div>
-            {saleLabel && (
-              <p className="text-[11px] font-medium" style={{ color: RED }}>{saleLabel}</p>
+    <div
+      className="fixed bottom-0 left-0 right-0 z-50 border-t"
+      style={{ background: "#fff", borderColor: "#E5E7EB" }}
+    >
+      <div className="max-w-[780px] mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-[18px] font-bold" style={{ color: NAVY }}>{priceDisplay}</span>
+            {originalDisplay && (
+              <span className="text-[14px] line-through" style={{ color: "#9CA3AF" }}>{originalDisplay}</span>
             )}
           </div>
-          <button
-            onClick={handleClick}
-            disabled={loading}
-            className="rounded-lg px-6 py-2.5 text-[14px] font-semibold text-white flex items-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60 shrink-0"
-            style={{ background: RED }}
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : `Get Full Access – ${priceDisplay}`}
-          </button>
+          {saleLabel && (
+            <p className="text-[11px] font-medium" style={{ color: RED }}>{saleLabel}</p>
+          )}
         </div>
+        <button
+          onClick={handleClick}
+          disabled={loading}
+          className="rounded-lg px-6 py-2.5 text-[14px] font-semibold text-white flex items-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60 shrink-0"
+          style={{ background: RED, minHeight: 56 }}
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : `Get Full Access – ${priceDisplay}`}
+        </button>
       </div>
-
-      <EmbeddedCheckoutModal
-        open={showCheckout}
-        onOpenChange={(open) => {
-          setShowCheckout(open);
-          if (!open) setClientSecret(null);
-        }}
-        clientSecret={clientSecret}
-      />
-    </>
+    </div>
   );
 }
