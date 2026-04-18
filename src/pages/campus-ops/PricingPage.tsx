@@ -14,7 +14,55 @@ import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, CalendarIcon, Copy, Pencil, ArrowRightLeft, TrendingUp } from "lucide-react";
+import { Plus, Trash2, CalendarIcon, Copy, Pencil, ArrowRightLeft, TrendingUp, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+// ─── Reusable collapsible navy section header ─────────────────────────────
+function PricingSection({
+  title,
+  subtitle,
+  defaultOpen = false,
+  action,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  defaultOpen?: boolean;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <div className="rounded-lg overflow-hidden border border-[#14213D]/20">
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="w-full bg-[#14213D] text-white px-6 py-5 flex items-center justify-between hover:bg-[#1a2a४d] transition-colors text-left"
+          >
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <ChevronDown
+                  className={cn("w-4 h-4 transition-transform shrink-0", open ? "rotate-0" : "-rotate-90")}
+                />
+                <h2 className="text-xl font-semibold truncate">{title}</h2>
+              </div>
+              <p className="text-sm text-white/70 mt-1 ml-6">{subtitle}</p>
+            </div>
+            {action && (
+              <div onClick={(e) => e.stopPropagation()} className="ml-4 shrink-0">
+                {action}
+              </div>
+            )}
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="p-6 bg-background">{children}</div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+}
 
 // ─── Expansion Pricing Strategies (Mock Data) ──────────────────────────────
 interface MockConfig {
