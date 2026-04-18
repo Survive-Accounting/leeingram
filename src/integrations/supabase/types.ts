@@ -757,6 +757,60 @@ export type Database = {
           },
         ]
       }
+      bundle_products: {
+        Row: {
+          anchor_price_cents: number
+          course_ids: string[]
+          created_at: string | null
+          description: string | null
+          discount_percent: number
+          final_price_cents: number
+          id: string
+          is_active: boolean | null
+          is_preset: boolean | null
+          name: string
+          semester_ids: string[]
+          stripe_price_id_live: string | null
+          stripe_price_id_test: string | null
+          stripe_product_id_live: string | null
+          stripe_product_id_test: string | null
+        }
+        Insert: {
+          anchor_price_cents: number
+          course_ids: string[]
+          created_at?: string | null
+          description?: string | null
+          discount_percent: number
+          final_price_cents: number
+          id?: string
+          is_active?: boolean | null
+          is_preset?: boolean | null
+          name: string
+          semester_ids: string[]
+          stripe_price_id_live?: string | null
+          stripe_price_id_test?: string | null
+          stripe_product_id_live?: string | null
+          stripe_product_id_test?: string | null
+        }
+        Update: {
+          anchor_price_cents?: number
+          course_ids?: string[]
+          created_at?: string | null
+          description?: string | null
+          discount_percent?: number
+          final_price_cents?: number
+          id?: string
+          is_active?: boolean | null
+          is_preset?: boolean | null
+          name?: string
+          semester_ids?: string[]
+          stripe_price_id_live?: string | null
+          stripe_price_id_test?: string | null
+          stripe_product_id_live?: string | null
+          stripe_product_id_test?: string | null
+        }
+        Relationships: []
+      }
       campus_courses: {
         Row: {
           campus_id: string
@@ -2224,8 +2278,106 @@ export type Database = {
         }
         Relationships: []
       }
+      coupon_resolutions: {
+        Row: {
+          coupon_applied: string | null
+          coupons_considered: Json | null
+          created_at: string | null
+          email: string
+          id: string
+          product_id: string | null
+          resolution_reason: string | null
+        }
+        Insert: {
+          coupon_applied?: string | null
+          coupons_considered?: Json | null
+          created_at?: string | null
+          email: string
+          id?: string
+          product_id?: string | null
+          resolution_reason?: string | null
+        }
+        Update: {
+          coupon_applied?: string | null
+          coupons_considered?: Json | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          product_id?: string | null
+          resolution_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_resolutions_coupon_applied_fkey"
+            columns: ["coupon_applied"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          applicable_to: string | null
+          code: string
+          created_at: string | null
+          discount_percent: number
+          id: string
+          is_active: boolean | null
+          name: string
+          priority: number
+          stripe_coupon_id_live: string | null
+          stripe_coupon_id_test: string | null
+          type: string
+          university_id: string | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          applicable_to?: string | null
+          code: string
+          created_at?: string | null
+          discount_percent: number
+          id?: string
+          is_active?: boolean | null
+          name: string
+          priority?: number
+          stripe_coupon_id_live?: string | null
+          stripe_coupon_id_test?: string | null
+          type: string
+          university_id?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          applicable_to?: string | null
+          code?: string
+          created_at?: string | null
+          discount_percent?: number
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          priority?: number
+          stripe_coupon_id_live?: string | null
+          stripe_coupon_id_test?: string | null
+          type?: string
+          university_id?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_products: {
         Row: {
+          anchor_price_cents: number
           chapter_id: string | null
           course_id: string
           created_at: string | null
@@ -2237,11 +2389,15 @@ export type Database = {
           product_type: string
           sale_expires_at: string | null
           sale_label: string | null
+          semester_id: string | null
           stripe_price_id_live: string | null
           stripe_price_id_test: string | null
+          stripe_product_id_live: string | null
+          stripe_product_id_test: string | null
           updated_at: string | null
         }
         Insert: {
+          anchor_price_cents?: number
           chapter_id?: string | null
           course_id: string
           created_at?: string | null
@@ -2253,11 +2409,15 @@ export type Database = {
           product_type: string
           sale_expires_at?: string | null
           sale_label?: string | null
+          semester_id?: string | null
           stripe_price_id_live?: string | null
           stripe_price_id_test?: string | null
+          stripe_product_id_live?: string | null
+          stripe_product_id_test?: string | null
           updated_at?: string | null
         }
         Update: {
+          anchor_price_cents?: number
           chapter_id?: string | null
           course_id?: string
           created_at?: string | null
@@ -2269,8 +2429,11 @@ export type Database = {
           product_type?: string
           sale_expires_at?: string | null
           sale_label?: string | null
+          semester_id?: string | null
           stripe_price_id_live?: string | null
           stripe_price_id_test?: string | null
+          stripe_product_id_live?: string | null
+          stripe_product_id_test?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -2286,6 +2449,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_products_semester_id_fkey"
+            columns: ["semester_id"]
+            isOneToOne: false
+            referencedRelation: "semesters"
             referencedColumns: ["id"]
           },
         ]
@@ -3608,6 +3778,39 @@ export type Database = {
           },
         ]
       }
+      lifetime_products: {
+        Row: {
+          anchor_price_cents: number | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          stripe_price_id_live: string | null
+          stripe_price_id_test: string | null
+          stripe_product_id_live: string | null
+          stripe_product_id_test: string | null
+        }
+        Insert: {
+          anchor_price_cents?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          stripe_price_id_live?: string | null
+          stripe_price_id_test?: string | null
+          stripe_product_id_live?: string | null
+          stripe_product_id_test?: string | null
+        }
+        Update: {
+          anchor_price_cents?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          stripe_price_id_live?: string | null
+          stripe_price_id_test?: string | null
+          stripe_product_id_live?: string | null
+          stripe_product_id_test?: string | null
+        }
+        Relationships: []
+      }
       lw_items: {
         Row: {
           answer_1: string
@@ -4232,6 +4435,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      semesters: {
+        Row: {
+          created_at: string | null
+          default_discount_percent: number | null
+          end_date: string
+          id: string
+          is_active: boolean | null
+          name: string
+          start_date: string
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          default_discount_percent?: number | null
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          start_date: string
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          default_discount_percent?: number | null
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          start_date?: string
+          year?: number
+        }
+        Relationships: []
       }
       sharing_warnings: {
         Row: {
