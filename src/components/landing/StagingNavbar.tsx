@@ -33,11 +33,11 @@ export default function StagingNavbar({ onCtaClick }: StagingNavbarProps) {
         {/* Right side */}
         <div className="flex items-center gap-3 sm:gap-5">
           <button
-            onClick={() => navigate("/greek")}
+            onClick={() => navigate("/greek-landing")}
             className="hidden sm:inline text-[12px] font-medium transition-colors hover:opacity-80"
             style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}
           >
-            For Greek Orgs
+            Greek Orgs
           </button>
 
           <button
