@@ -208,10 +208,10 @@ export function AISolutionRegenerationPanel() {
 
     for (let i = 0; i < assets.length; i++) {
       if (stopRequested) {
-        setLogs((l) => [
+        setLogs((l) => ([
           ...l,
-          { ts: new Date().toLocaleTimeString(), status: "skip", label: "—", detail: "Stopped by user" },
-        ].slice(-20));
+          { ts: new Date().toLocaleTimeString(), status: "skip" as const, label: "—", detail: "Stopped by user" },
+        ].slice(-20)));
         break;
       }
       const asset = assets[i];
