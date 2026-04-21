@@ -39,6 +39,8 @@ type AssetRow = {
   id: string;
   asset_name: string | null;
   problem_title: string | null;
+  source_ref: string | null;
+  source_number: string | null;
   ai_generation_status: string | null;
 };
 
