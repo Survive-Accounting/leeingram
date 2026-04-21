@@ -718,6 +718,8 @@ function RevealToggle({
   onReportClick,
   controlledOpen,
   onControlledToggle,
+  headerBadge,
+  headerSubtitle,
 }: {
   label: string;
   children: React.ReactNode;
@@ -738,6 +740,8 @@ function RevealToggle({
   onReportClick?: () => void;
   controlledOpen?: boolean;
   onControlledToggle?: (sectionName: string) => void;
+  headerBadge?: React.ReactNode;
+  headerSubtitle?: React.ReactNode;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
