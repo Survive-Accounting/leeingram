@@ -344,26 +344,23 @@ Deno.serve(async (req) => {
     );
   }
 
-  // ---- STEP 1: Fetch asset with joined chapter / topic / course context ----
-  const selectCols =
-    "*,chapters(chapter_name,chapter_number),chapter_topics(topic_name),courses(code,course_name)";
-  const fetchUrl = `${SUPABASE_URL}/rest/v1/teaching_assets?id=eq.${asset_id}&select=${
-    encodeURIComponent(selectCols)
-  }`;
+  // ---- STEP 1: Fetch asset, then chapter / topic / course context separately ----
+  // (teaching_assets has no declared FKs, so PostgREST embedding fails — fetch each table directly.)
+  const fetchUrl = `${SUPABASE_URL}/rest/v1/teaching_assets?id=eq.${asset_id}&select=*`;
 
   let asset: any;
   try {
-    const r = await fetch(fetchUrl, {
-      headers: {
-        apikey: SERVICE_ROLE,
-        Authorization: `Bearer ${SERVICE_ROLE}`,
-      },
-    });
+    const headers = {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+    };
+
+    const r = await fetch(fetchUrl, { headers });
     if (!r.ok) {
       const t = await r.text();
       console.error("Fetch asset failed:", r.status, t);
       return new Response(
-        JSON.stringify({ error: "Failed to fetch asset" }),
+        JSON.stringify({ error: "Failed to fetch asset", details: t }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -378,13 +375,31 @@ Deno.serve(async (req) => {
       });
     }
     const row = rows[0];
+
+    // Parallel-fetch related rows (each may be null)
+    const [chapterRes, topicRes, courseRes] = await Promise.all([
+      row.chapter_id
+        ? fetch(`${SUPABASE_URL}/rest/v1/chapters?id=eq.${row.chapter_id}&select=chapter_name,chapter_number`, { headers })
+        : Promise.resolve(null),
+      row.topic_id
+        ? fetch(`${SUPABASE_URL}/rest/v1/chapter_topics?id=eq.${row.topic_id}&select=topic_name`, { headers })
+        : Promise.resolve(null),
+      row.course_id
+        ? fetch(`${SUPABASE_URL}/rest/v1/courses?id=eq.${row.course_id}&select=code,course_name`, { headers })
+        : Promise.resolve(null),
+    ]);
+
+    const chapter = chapterRes && chapterRes.ok ? (await chapterRes.json())[0] ?? null : null;
+    const topic = topicRes && topicRes.ok ? (await topicRes.json())[0] ?? null : null;
+    const course = courseRes && courseRes.ok ? (await courseRes.json())[0] ?? null : null;
+
     asset = {
       ...row,
-      chapter_name: row.chapters?.chapter_name ?? null,
-      chapter_number: row.chapters?.chapter_number ?? null,
-      topic_name: row.chapter_topics?.topic_name ?? null,
-      course_code: row.courses?.code ?? null,
-      course_name: row.courses?.course_name ?? null,
+      chapter_name: chapter?.chapter_name ?? null,
+      chapter_number: chapter?.chapter_number ?? null,
+      topic_name: topic?.topic_name ?? null,
+      course_code: course?.code ?? null,
+      course_name: course?.course_name ?? null,
     };
   } catch (err: any) {
     console.error("Fetch asset error:", err);
