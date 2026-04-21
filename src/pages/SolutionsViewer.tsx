@@ -4571,6 +4571,22 @@ export default function SolutionsViewer() {
                   onBuyClick={handleBuyClick}
                   controlledOpen={openSection === "Explanation"}
                   onControlledToggle={handleToggleSection}
+                  headerBadge={explainLoading ? (
+                    <span style={{
+                      background: "#FEF3C7",
+                      color: "#92400E",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "2px 8px",
+                      borderRadius: 999,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}>
+                      <Sparkles className="h-3 w-3" />
+                      Generating...
+                    </span>
+                  ) : undefined}
                 >
                   {isQaMode && (
                     <div className="flex items-center gap-2 mb-3">
@@ -4598,11 +4614,18 @@ export default function SolutionsViewer() {
                         refetchAsset();
                       }}
                     />
+                  ) : ((Array.isArray((asset as any)?.survive_solution_json?.parts) && (asset as any).survive_solution_json.parts.length > 0) ? (
+                    <StructuredSolutionDisplay asset={asset as any} />
                   ) : (
                     <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} isJEOnly={isJEOnly} aiGenerated={asset.ai_generation_status === "complete"} onSuggestFix={() => setReportOpen(true)} />
-                  )}
+                  ))}
                 </RevealToggle>
-              )}
+                );
+              })()}
+
+              {/* 2. Journal Entries */}
+              {hasJE && (
+                <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} courseId={asset.course_id} chapterId={asset.chapter_id} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Journal Entries"} onControlledToggle={handleToggleSection} headerSubtitle="Quick reference — open Explanation for full context">
 
               {/* 2. Journal Entries */}
               {hasJE && (
