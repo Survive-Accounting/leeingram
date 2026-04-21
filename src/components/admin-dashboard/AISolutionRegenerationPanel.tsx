@@ -4,7 +4,7 @@
  * via the `regenerate-solution` edge function. Supports per-chapter or
  * per-course scope, dry-run preview, live progress, and full-run revert.
  */
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,8 @@ export function AISolutionRegenerationPanel() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [chapterRunId, setChapterRunId] = useState<string>("");
   const [stopRequested, setStopRequested] = useState(false);
+  const stopRequestedRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [dryPreviews, setDryPreviews] = useState<Array<{ label: string; preview: string }>>([]);
   const [reverting, setReverting] = useState(false);
   const [revertConfirmOpen, setRevertConfirmOpen] = useState(false);
@@ -229,23 +231,30 @@ export function AISolutionRegenerationPanel() {
     setTokensTotal(0);
     setLogs([]);
     setStopRequested(false);
+    stopRequestedRef.current = false;
     setDryPreviews([]);
 
     let s = 0, f = 0, sk = 0, tokens = 0;
     const previews: Array<{ label: string; preview: string }> = [];
 
     for (let i = 0; i < assets.length; i++) {
-      if (stopRequested) {
+      if (stopRequestedRef.current) {
         setLogs((l) => [
           ...l,
-          { ts: new Date().toLocaleTimeString(), status: "skip" as const, label: "—", detail: "Stopped by user" },
+          { ts: new Date().toLocaleTimeString(), status: "skip" as const, label: "—", detail: `Stopped by user (${assets.length - i} skipped)` },
         ]);
+        sk = assets.length - i;
         break;
       }
       const asset = assets[i];
       const label = buildLabel(asset);
       setCurrentLabel(label);
       setProgressIndex(i + 1);
+
+      // Per-asset abort controller — also enforces a 2-min ceiling per request.
+      const ac = new AbortController();
+      abortControllerRef.current = ac;
+      const timeout = setTimeout(() => ac.abort(), 120_000);
 
       try {
         const { data, error } = await supabase.functions.invoke("regenerate-solution", {
@@ -254,7 +263,9 @@ export function AISolutionRegenerationPanel() {
             chapter_run_id: runId,
             dry_run: dryRun,
           },
+          signal: ac.signal,
         });
+        clearTimeout(timeout);
         if (error) throw new Error(error.message);
         if (data?.success === false) throw new Error(data?.error || "Unknown error");
 
@@ -276,6 +287,16 @@ export function AISolutionRegenerationPanel() {
           },
         ]);
       } catch (err: any) {
+        clearTimeout(timeout);
+        const aborted = ac.signal.aborted;
+        if (aborted && stopRequestedRef.current) {
+          setLogs((l) => [
+            ...l,
+            { ts: new Date().toLocaleTimeString(), status: "skip" as const, label, detail: "Cancelled mid-request" },
+          ]);
+          sk = assets.length - i;
+          break;
+        }
         f++;
         setFailed(f);
         setLogs((l) => [
@@ -289,13 +310,25 @@ export function AISolutionRegenerationPanel() {
         ]);
       }
 
-      if (i < assets.length - 1) {
+      if (i < assets.length - 1 && !stopRequestedRef.current) {
         await new Promise((r) => setTimeout(r, DELAY_MS));
       }
     }
 
+    abortControllerRef.current = null;
     setSkipped(sk);
     setPhase("complete");
+  };
+
+  const requestStop = (hard: boolean) => {
+    stopRequestedRef.current = true;
+    setStopRequested(true);
+    if (hard && abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      toast.warning("Cancelling current request…");
+    } else {
+      toast.info("Will stop after current asset finishes.");
+    }
   };
 
   const handleRevertRun = async () => {
@@ -489,14 +522,25 @@ export function AISolutionRegenerationPanel() {
               )}
             </div>
 
-            <Button
-              variant="outline"
-              className="w-full border-destructive/40 text-destructive hover:bg-destructive/10"
-              onClick={() => setStopRequested(true)}
-              disabled={stopRequested}
-            >
-              {stopRequested ? "Stopping after current…" : "Stop After Current →"}
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                onClick={() => requestStop(false)}
+                disabled={stopRequested}
+              >
+                {stopRequested ? "Stopping…" : "Stop After Current"}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => requestStop(true)}
+              >
+                ⛔ Cancel Now
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground text-center">
+              "Cancel Now" aborts the in-flight request — you may still be billed for tokens already generated by OpenAI.
+            </p>
           </div>
         )}
 
