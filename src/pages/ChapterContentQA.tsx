@@ -425,6 +425,8 @@ export default function ChapterContentQA() {
           </CollapsibleContent>
         </Collapsible>
 
+        <AISolutionRegenerationPanel />
+
         <div className="space-y-2">
           {courseGroups.map(cg => (
             <CourseGroupBlock
