@@ -38,12 +38,16 @@ export function useBackgroundJobs() {
 
       if (!jobItems) return;
 
+      // Use actual row count from DB, not the cached `total` — handles cases where
+      // sessionStorage has a stale total or jobs were deleted/reset.
+      const actualTotal = Math.max((jobItems as any[]).length, total);
       const completed = (jobItems as any[]).filter((i: any) => i.status === "done" || i.status === "failed").length;
       const failedCount = (jobItems as any[]).filter((i: any) => i.status === "failed").length;
-      const isComplete = completed >= total;
+      const isComplete = (jobItems as any[]).length > 0 && completed >= (jobItems as any[]).length;
 
       setActiveBatch(prev => prev?.batchId === batchId ? {
         ...prev,
+        total: actualTotal,
         done: completed,
         failed: failedCount,
         isComplete,
