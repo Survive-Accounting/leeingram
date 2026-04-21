@@ -15,6 +15,7 @@ import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 
 // ── Lazy-loaded pages ────────────────────────────────────────────────
 const Landing = lazy(() => import("./pages/Landing"));
+const AboutSolutions = lazy(() => import("./pages/AboutSolutions"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const StagingLandingPage = lazy(() => import("./pages/StagingLandingPage"));
 const GreekLandingPage = lazy(() => import("./pages/GreekLandingPage"));
@@ -196,6 +197,7 @@ const AppRoutes = () => {
         <Route path="/campus/:campusSlug/:courseSlug/:chapterNumber/:problemCode" element={<ProblemPreviewPage />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/about-solutions" element={<AboutSolutions />} />
         <Route path="/lees-story" element={<LeesStory />} />
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />

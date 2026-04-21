@@ -1087,7 +1087,7 @@ function renderBoldMarkdown(text: string): React.ReactNode {
 
 // ── Answer Summary ──────────────────────────────────────────────────
 
-function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[]; isJEOnly?: boolean }) {
+function AnswerSummarySection({ text, theme, instructions, isJEOnly, aiGenerated, onSuggestFix }: { text: string; theme: Theme; instructions?: { instruction_number: number; instruction_text: string }[]; isJEOnly?: boolean; aiGenerated?: boolean; onSuggestFix?: () => void }) {
   const subSections = text.split(/(?=\([a-z]\))/i).filter(s => s.trim());
 
   // Dark mode detection: if pageBg is dark, use dark-optimised colors
@@ -1356,9 +1356,88 @@ function AnswerSummarySection({ text, theme, instructions, isJEOnly }: { text: s
         </p>
       )}
       {partCards}
+      {aiGenerated && <AIDisclosureRow onSuggestFix={onSuggestFix} />}
     </div>
   );
 }
+
+// ── AI Transparency Disclosure ──────────────────────────────────────
+
+function AIDisclosureRow({ onSuggestFix }: { onSuggestFix?: () => void }) {
+  return (
+    <>
+      <div style={{ borderTop: "1px solid #E5E7EB", marginTop: 16 }} />
+      <div
+        className="ai-disclosure-row"
+        style={{
+          padding: "12px 0",
+          width: "100%",
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          gap: 8,
+          fontSize: 13,
+          lineHeight: 1.5,
+          color: "#9CA3AF",
+          fontFamily: "Inter, sans-serif",
+          fontWeight: 400,
+          transition: "background-color 120ms ease",
+          cursor: "default",
+        }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "#F8F9FA"; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent"; }}
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 14,
+            height: 14,
+            borderRadius: "50%",
+            border: "1px solid #9CA3AF",
+            fontSize: 10,
+            color: "#9CA3AF",
+            flexShrink: 0,
+          }}
+        >
+          i
+        </span>
+        <span style={{ flex: "1 1 240px", minWidth: 0 }}>
+          This explanation was generated with AI and reviewed for accuracy by the
+          Survive Accounting team.{" "}
+          <a
+            href="/about-solutions"
+            style={{ color: "#9CA3AF", textDecoration: "underline" }}
+          >
+            Learn more →
+          </a>
+        </span>
+        <button
+          type="button"
+          onClick={onSuggestFix}
+          style={{
+            background: "none",
+            border: "none",
+            padding: 0,
+            color: "#CE1126",
+            fontSize: 13,
+            fontFamily: "Inter, sans-serif",
+            cursor: "pointer",
+            textDecoration: "none",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.textDecoration = "underline"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.textDecoration = "none"; }}
+        >
+          Suggest a fix →
+        </button>
+      </div>
+    </>
+  );
+}
+
 
 // ── Report Issue Modal ──────────────────────────────────────────────
 
@@ -3635,6 +3714,7 @@ export default function SolutionsViewer() {
           id, asset_name, source_ref, source_number, problem_title,
           problem_context, survive_problem_text, problem_text_ht_backup,
           survive_solution_text, journal_entry_completed_json, journal_entry_block,
+          ai_generation_status,
           important_formulas, concept_notes, exam_traps,
           lw_quiz_url, sheet_master_url, lw_video_url,
           solutions_page_views, practice_page_views,
@@ -4488,7 +4568,7 @@ export default function SolutionsViewer() {
                       }}
                     />
                   ) : (
-                    <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} isJEOnly={isJEOnly} />
+                    <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} isJEOnly={isJEOnly} aiGenerated={asset.ai_generation_status === "complete"} onSuggestFix={() => setReportOpen(true)} />
                   )}
                 </RevealToggle>
               )}
