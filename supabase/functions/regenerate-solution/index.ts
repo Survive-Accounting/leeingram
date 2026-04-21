@@ -382,7 +382,7 @@ Deno.serve(async (req) => {
       ...row,
       chapter_name: row.chapters?.chapter_name ?? null,
       chapter_number: row.chapters?.chapter_number ?? null,
-      topic_name: row.topics?.topic_name ?? null,
+      topic_name: row.chapter_topics?.topic_name ?? null,
       course_code: row.courses?.code ?? null,
       course_name: row.courses?.course_name ?? null,
     };
