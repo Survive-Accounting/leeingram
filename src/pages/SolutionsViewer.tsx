@@ -4626,10 +4626,6 @@ export default function SolutionsViewer() {
               {/* 2. Journal Entries */}
               {hasJE && (
                 <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} courseId={asset.course_id} chapterId={asset.chapter_id} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Journal Entries"} onControlledToggle={handleToggleSection} headerSubtitle="Quick reference — open Explanation for full context">
-
-              {/* 2. Journal Entries */}
-              {hasJE && (
-                <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} courseId={asset.course_id} chapterId={asset.chapter_id} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Journal Entries"} onControlledToggle={handleToggleSection}>
                   {isPreview ? (
                     <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
                   ) : (
