@@ -236,14 +236,14 @@ export function AISolutionRegenerationPanel() {
 
     for (let i = 0; i < assets.length; i++) {
       if (stopRequested) {
-        setLogs((l) => ([
+        setLogs((l) => [
           ...l,
           { ts: new Date().toLocaleTimeString(), status: "skip" as const, label: "—", detail: "Stopped by user" },
-        ].slice(-20)));
+        ]);
         break;
       }
       const asset = assets[i];
-      const label = asset.asset_name || asset.problem_title || asset.id.slice(0, 8);
+      const label = buildLabel(asset);
       setCurrentLabel(label);
       setProgressIndex(i + 1);
 
@@ -266,7 +266,7 @@ export function AISolutionRegenerationPanel() {
           previews.push({ label, preview: String(data.generated).slice(0, 600) });
           setDryPreviews([...previews]);
         }
-        setLogs((l) => ([
+        setLogs((l) => [
           ...l,
           {
             ts: new Date().toLocaleTimeString(),
@@ -274,19 +274,19 @@ export function AISolutionRegenerationPanel() {
             label,
             detail: `complete (${data?.tokens_used ?? 0} tokens)`,
           },
-        ].slice(-20)));
+        ]);
       } catch (err: any) {
         f++;
         setFailed(f);
-        setLogs((l) => ([
+        setLogs((l) => [
           ...l,
           {
             ts: new Date().toLocaleTimeString(),
             status: "fail" as const,
             label,
-            detail: `failed: ${String(err.message ?? err).slice(0, 80)}`,
+            detail: `failed: ${String(err.message ?? err).slice(0, 240)}`,
           },
-        ].slice(-20)));
+        ]);
       }
 
       if (i < assets.length - 1) {
