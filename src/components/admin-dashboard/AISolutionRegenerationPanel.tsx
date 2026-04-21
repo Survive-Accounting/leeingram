@@ -263,7 +263,6 @@ export function AISolutionRegenerationPanel() {
             chapter_run_id: runId,
             dry_run: dryRun,
           },
-          // @ts-expect-error supabase-js v2 forwards AbortSignal to fetch
           signal: ac.signal,
         });
         clearTimeout(timeout);
