@@ -39,6 +39,8 @@ type AssetRow = {
   id: string;
   asset_name: string | null;
   problem_title: string | null;
+  source_ref: string | null;
+  source_number: string | null;
   ai_generation_status: string | null;
 };
 
@@ -190,7 +192,7 @@ export function AISolutionRegenerationPanel() {
   const fetchAssetsToProcess = async (): Promise<AssetRow[]> => {
     let q = supabase
       .from("teaching_assets")
-      .select("id, asset_name, problem_title, ai_generation_status")
+      .select("id, asset_name, problem_title, source_ref, source_number, ai_generation_status")
       .limit(10000);
     if (scope === "chapter") q = q.eq("chapter_id", chapterId);
     else q = q.eq("course_id", courseId);
@@ -201,6 +203,11 @@ export function AISolutionRegenerationPanel() {
       rows = rows.filter((r) => r.ai_generation_status !== "complete");
     }
     return rows;
+  };
+
+  const buildLabel = (a: AssetRow): string => {
+    const parts = [a.source_ref, a.source_number].filter(Boolean).join(" ").trim();
+    return parts || a.problem_title || a.asset_name || a.id.slice(0, 8);
   };
 
   const startRun = async () => {
@@ -229,14 +236,14 @@ export function AISolutionRegenerationPanel() {
 
     for (let i = 0; i < assets.length; i++) {
       if (stopRequested) {
-        setLogs((l) => ([
+        setLogs((l) => [
           ...l,
           { ts: new Date().toLocaleTimeString(), status: "skip" as const, label: "—", detail: "Stopped by user" },
-        ].slice(-20)));
+        ]);
         break;
       }
       const asset = assets[i];
-      const label = asset.asset_name || asset.problem_title || asset.id.slice(0, 8);
+      const label = buildLabel(asset);
       setCurrentLabel(label);
       setProgressIndex(i + 1);
 
@@ -259,7 +266,7 @@ export function AISolutionRegenerationPanel() {
           previews.push({ label, preview: String(data.generated).slice(0, 600) });
           setDryPreviews([...previews]);
         }
-        setLogs((l) => ([
+        setLogs((l) => [
           ...l,
           {
             ts: new Date().toLocaleTimeString(),
@@ -267,19 +274,19 @@ export function AISolutionRegenerationPanel() {
             label,
             detail: `complete (${data?.tokens_used ?? 0} tokens)`,
           },
-        ].slice(-20)));
+        ]);
       } catch (err: any) {
         f++;
         setFailed(f);
-        setLogs((l) => ([
+        setLogs((l) => [
           ...l,
           {
             ts: new Date().toLocaleTimeString(),
             status: "fail" as const,
             label,
-            detail: `failed: ${String(err.message ?? err).slice(0, 80)}`,
+            detail: `failed: ${String(err.message ?? err).slice(0, 240)}`,
           },
-        ].slice(-20)));
+        ]);
       }
 
       if (i < assets.length - 1) {
@@ -466,7 +473,7 @@ export function AISolutionRegenerationPanel() {
               <p className="text-xs text-muted-foreground">Processing: {currentLabel}</p>
             )}
 
-            <div className="bg-zinc-950 text-zinc-100 rounded-md p-2 max-h-[200px] overflow-y-auto font-mono text-[12px] leading-relaxed">
+            <div className="bg-zinc-950 text-zinc-100 rounded-md p-2 max-h-[400px] overflow-y-auto font-mono text-[12px] leading-relaxed">
               {logs.length === 0 ? (
                 <p className="text-zinc-500">Waiting…</p>
               ) : (
