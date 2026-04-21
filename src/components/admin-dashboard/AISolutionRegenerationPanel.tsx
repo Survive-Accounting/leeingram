@@ -4,7 +4,7 @@
  * via the `regenerate-solution` edge function. Supports per-chapter or
  * per-course scope, dry-run preview, live progress, and full-run revert.
  */
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
