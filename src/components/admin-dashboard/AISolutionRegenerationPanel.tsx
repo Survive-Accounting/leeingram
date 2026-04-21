@@ -473,7 +473,7 @@ export function AISolutionRegenerationPanel() {
               <p className="text-xs text-muted-foreground">Processing: {currentLabel}</p>
             )}
 
-            <div className="bg-zinc-950 text-zinc-100 rounded-md p-2 max-h-[200px] overflow-y-auto font-mono text-[12px] leading-relaxed">
+            <div className="bg-zinc-950 text-zinc-100 rounded-md p-2 max-h-[400px] overflow-y-auto font-mono text-[12px] leading-relaxed">
               {logs.length === 0 ? (
                 <p className="text-zinc-500">Waiting…</p>
               ) : (
