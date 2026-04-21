@@ -20,6 +20,7 @@ import { STRIPE_PK_LIVE, STRIPE_PK_TEST } from "@/lib/stripeConfig";
 
 import { naturalSortRef } from "@/lib/utils";
 import { JETooltip } from "@/components/JETooltip";
+import { StructuredSolutionDisplay } from "@/components/StructuredSolutionDisplay";
 import { toast } from "sonner";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
@@ -717,6 +718,8 @@ function RevealToggle({
   onReportClick,
   controlledOpen,
   onControlledToggle,
+  headerBadge,
+  headerSubtitle,
 }: {
   label: string;
   children: React.ReactNode;
@@ -737,6 +740,8 @@ function RevealToggle({
   onReportClick?: () => void;
   controlledOpen?: boolean;
   onControlledToggle?: (sectionName: string) => void;
+  headerBadge?: React.ReactNode;
+  headerSubtitle?: React.ReactNode;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -780,7 +785,17 @@ function RevealToggle({
       >
         <span className="flex items-center gap-2" style={{ fontSize: isPreview ? 13 : 14, fontWeight: isPreview ? 400 : 600 }}>
           {isPreview && (open ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />)}
-          {isPreview ? label : shortLabel}
+          <span className="flex flex-col">
+            <span className="flex items-center gap-2">
+              {isPreview ? label : shortLabel}
+              {headerBadge}
+            </span>
+            {headerSubtitle && (
+              <span style={{ fontSize: 12, color: "#6B7280", fontStyle: "italic", fontWeight: 400, marginTop: 2 }}>
+                {headerSubtitle}
+              </span>
+            )}
+          </span>
         </span>
         <ChevronDown
           className="h-4 w-4 transition-transform"
@@ -3582,6 +3597,15 @@ export default function SolutionsViewer() {
   // QA: force open all toggles via postMessage
   const [allTogglesForceOpen, setAllTogglesForceOpen] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const [explainLoading, setExplainLoading] = useState(false);
+  useEffect(() => {
+    const onLoad = (e: Event) => {
+      const ce = e as CustomEvent<{ loading: boolean }>;
+      setExplainLoading(!!ce.detail?.loading);
+    };
+    window.addEventListener("sa-explain-loading", onLoad as EventListener);
+    return () => window.removeEventListener("sa-explain-loading", onLoad as EventListener);
+  }, []);
   const handleToggleSection = useCallback((sectionName: string) => {
     setOpenSection(prev => prev === sectionName ? null : sectionName);
   }, []);
@@ -3714,6 +3738,7 @@ export default function SolutionsViewer() {
           id, asset_name, source_ref, source_number, problem_title,
           problem_context, survive_problem_text, problem_text_ht_backup,
           survive_solution_text, journal_entry_completed_json, journal_entry_block,
+          survive_solution_json, survive_solution_explanation_cache,
           ai_generation_status,
           important_formulas, concept_notes, exam_traps,
           lw_quiz_url, sheet_master_url, lw_video_url,
@@ -4521,7 +4546,13 @@ export default function SolutionsViewer() {
             >
 
               {/* 1. Solution — hidden for JE-only problems since tooltips cover it */}
-              {answerSummary.trim() && !isJEOnly && (
+              {(() => {
+                const hasStructuredSolution =
+                  Array.isArray((asset as any)?.survive_solution_json?.parts) &&
+                  (asset as any).survive_solution_json.parts.length > 0;
+                if (!answerSummary.trim() && !hasStructuredSolution) return null;
+                if (isJEOnly && !hasStructuredSolution) return null;
+                return (
                 <RevealToggle
                   label="Reveal Explanation"
                   theme={t}
@@ -4540,6 +4571,22 @@ export default function SolutionsViewer() {
                   onBuyClick={handleBuyClick}
                   controlledOpen={openSection === "Explanation"}
                   onControlledToggle={handleToggleSection}
+                  headerBadge={explainLoading ? (
+                    <span style={{
+                      background: "#FEF3C7",
+                      color: "#92400E",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: "2px 8px",
+                      borderRadius: 999,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}>
+                      <Sparkles className="h-3 w-3" />
+                      Generating...
+                    </span>
+                  ) : undefined}
                 >
                   {isQaMode && (
                     <div className="flex items-center gap-2 mb-3">
@@ -4567,15 +4614,18 @@ export default function SolutionsViewer() {
                         refetchAsset();
                       }}
                     />
+                  ) : ((Array.isArray((asset as any)?.survive_solution_json?.parts) && (asset as any).survive_solution_json.parts.length > 0) ? (
+                    <StructuredSolutionDisplay asset={asset as any} />
                   ) : (
                     <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} isJEOnly={isJEOnly} aiGenerated={asset.ai_generation_status === "complete"} onSuggestFix={() => setReportOpen(true)} />
-                  )}
+                  ))}
                 </RevealToggle>
-              )}
+                );
+              })()}
 
               {/* 2. Journal Entries */}
               {hasJE && (
-                <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} courseId={asset.course_id} chapterId={asset.chapter_id} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Journal Entries"} onControlledToggle={handleToggleSection}>
+                <RevealToggle label="Reveal Journal Entries" theme={t} isPreview={isPreview} enrollUrl={enrollUrl} sectionName="Journal Entries" assetCode={asset.asset_name} fullPassLink={fullPassLink} chapterLink={chapterLink} chapterNumber={chapterNum} courseId={asset.course_id} chapterId={asset.chapter_id} forceOpen={allTogglesForceOpen} onReportClick={() => setReportOpen(true)} controlledOpen={openSection === "Journal Entries"} onControlledToggle={handleToggleSection} headerSubtitle="Quick reference — open Explanation for full context">
                   {isPreview ? (
                     <JEPreviewTeaser jeData={jeData} jeBlock={jeBlock} hasCanonicalJE={!!hasCanonicalJE} theme={t} enrollUrl={enrollUrl} />
                   ) : (
