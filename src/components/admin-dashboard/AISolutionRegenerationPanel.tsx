@@ -74,6 +74,8 @@ export function AISolutionRegenerationPanel() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [chapterRunId, setChapterRunId] = useState<string>("");
   const [stopRequested, setStopRequested] = useState(false);
+  const stopRequestedRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [dryPreviews, setDryPreviews] = useState<Array<{ label: string; preview: string }>>([]);
   const [reverting, setReverting] = useState(false);
   const [revertConfirmOpen, setRevertConfirmOpen] = useState(false);
