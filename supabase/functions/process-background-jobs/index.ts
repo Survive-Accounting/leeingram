@@ -84,24 +84,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(`Processing ${items.length} background jobs...`);
-    let successCount = 0;
-    let failCount = 0;
+    console.log(`Processing ${items.length} background jobs in parallel...`);
 
-    for (const item of items) {
+    // Mark all as processing up-front (single round-trip)
+    const itemIds = items.map((i) => i.id);
+    await sb.from("background_jobs")
+      .update({ status: "processing", started_at: new Date().toISOString() })
+      .in("id", itemIds);
+
+    // Process all items in parallel — total time = slowest single job, not the sum
+    const results = await Promise.allSettled(items.map(async (item) => {
       const handler = JOB_HANDLERS[item.job_type];
       if (!handler) {
         await sb.from("background_jobs")
           .update({ status: "failed", completed_at: new Date().toISOString(), error: `Unknown job_type: ${item.job_type}` })
           .eq("id", item.id);
-        failCount++;
-        continue;
+        throw new Error(`Unknown job_type: ${item.job_type}`);
       }
-
-      // Mark as processing
-      await sb.from("background_jobs")
-        .update({ status: "processing", started_at: new Date().toISOString() })
-        .eq("id", item.id);
 
       try {
         const res = await fetch(`${supabaseUrl}/functions/v1/${handler.fn}`, {
@@ -121,17 +120,20 @@ Deno.serve(async (req) => {
         await sb.from("background_jobs")
           .update({ status: "done", completed_at: new Date().toISOString(), error: null })
           .eq("id", item.id);
-        successCount++;
         console.log(`✓ ${item.job_type} ${item.id}`);
+        return true;
       } catch (err: any) {
         const errMsg = err instanceof Error ? err.message : String(err);
         await sb.from("background_jobs")
           .update({ status: "failed", completed_at: new Date().toISOString(), error: errMsg })
           .eq("id", item.id);
-        failCount++;
         console.error(`✗ ${item.job_type} ${item.id}: ${errMsg}`);
+        throw err;
       }
-    }
+    }));
+
+    const successCount = results.filter((r) => r.status === "fulfilled").length;
+    const failCount = results.filter((r) => r.status === "rejected").length;
 
     // Check remaining
     const { count } = await sb
