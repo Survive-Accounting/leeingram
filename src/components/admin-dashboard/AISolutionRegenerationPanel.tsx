@@ -102,16 +102,33 @@ export function AISolutionRegenerationPanel() {
   });
 
   const { data: assetCounts } = useQuery({
-    queryKey: ["regen-asset-counts"],
+    queryKey: ["regen-asset-counts-v2"],
     enabled: open && isLee,
+    staleTime: 0,
+    gcTime: 0,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("teaching_assets")
-        .select("chapter_id, course_id, ai_generation_status")
-        .limit(10000);
+      // Paginate through all rows to bypass Supabase's 1000-row default cap.
+      const PAGE = 1000;
+      let from = 0;
+      const all: any[] = [];
+      while (true) {
+        const { data, error } = await supabase
+          .from("teaching_assets")
+          .select("chapter_id, course_id, ai_generation_status")
+          .range(from, from + PAGE - 1);
+        if (error) {
+          console.error("[regen-asset-counts] error", error);
+          throw error;
+        }
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      console.info("[regen-asset-counts] total rows received:", all.length);
       const byChapter: Record<string, { total: number; complete: number }> = {};
       const byCourse: Record<string, { total: number; complete: number }> = {};
-      (data ?? []).forEach((a: any) => {
+      all.forEach((a: any) => {
         if (a.chapter_id) {
           byChapter[a.chapter_id] ??= { total: 0, complete: 0 };
           byChapter[a.chapter_id].total++;
@@ -123,6 +140,8 @@ export function AISolutionRegenerationPanel() {
           if (a.ai_generation_status === "complete") byCourse[a.course_id].complete++;
         }
       });
+      const targetCh = "ff12c70e-8d9f-4a8a-bc3c-d2fd42fcf2de";
+      console.info("[regen-asset-counts] Ch13 IA2 count:", byChapter[targetCh]);
       return { byChapter, byCourse };
     },
   });
