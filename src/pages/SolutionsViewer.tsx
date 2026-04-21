@@ -20,6 +20,7 @@ import { STRIPE_PK_LIVE, STRIPE_PK_TEST } from "@/lib/stripeConfig";
 
 import { naturalSortRef } from "@/lib/utils";
 import { JETooltip } from "@/components/JETooltip";
+import { StructuredSolutionDisplay } from "@/components/StructuredSolutionDisplay";
 import { toast } from "sonner";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 import { useEnrollUrl } from "@/hooks/useEnrollUrl";
