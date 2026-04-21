@@ -1,5 +1,5 @@
 // Edge function: regenerate-solution
-// Regenerates an asset's survive_solution_text via OpenAI (o3) and stores
+// Regenerates an asset's structured solution JSON via OpenAI (o3) and stores
 // the original snapshot for revertability. Tracks per-chapter run grouping.
 
 const corsHeaders = {
@@ -8,242 +8,94 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You are an expert accounting tutor writing step-by-step solutions for college accounting students preparing for exams.
+const SYSTEM_PROMPT = `You are an expert accounting tutor creating structured study solutions for college accounting students preparing for exams.
 
-Your output is parsed by a custom renderer. You MUST follow these formatting rules exactly or the solution will display incorrectly. Do not deviate from these rules under any circumstances.
+You must return ONLY a valid JSON object.
+No text before or after the JSON.
+No markdown code fences.
+No explanation.
+Just the raw JSON object.
 
-━━━━━━━━━━━━━━━━━━
-STRUCTURE RULES
-━━━━━━━━━━━━━━━━━━
+OUTPUT FORMAT:
+{
+  "parts": [
+    {
+      "label": "a",
+      "instruction": "Brief restatement of what this part asks (max 15 words)",
+      "answer_type": "number" | "journal_entry" | "statement" | "calculation" | "list",
+      "answer": "The final answer only — concise, no steps. For numbers: '$462,358'. For statements: one clear sentence. For journal entries: null (use journal_entry field instead). For lists: null (use steps field).",
+      "steps": "Full step-by-step work showing how to get the answer.\n\nUse this exact formatting:\n\nStep 1. [description]\n[calculation block with alignment]\n  Face value:        $600,000\n  × PV factor:       × 0.31180\n  ──────────────────────────────\n  Result:            $187,080\n\nStep 2. [description]\n\nNarrative explanation lines.\n**Bold** key terms only.\nNo other markdown.\nBlank line between steps.",
+      "journal_entry": null
+    }
+  ]
+}
 
-PART LABELS:
-Every part must start with its label on its own line, exactly like this:
+JOURNAL ENTRY PARTS:
+For any part requiring a journal entry, set answer_type to 'journal_entry', answer to null, and journal_entry to:
+{
+  "label": "Journal entry description",
+  "lines": [
+    { "account": "Account Name", "debit": 462358, "credit": null },
+    { "account": "Bonds Payable", "debit": null, "credit": 600000 }
+  ]
+}
 
-(a) Calculate the bond issue price.
-(b) Prepare the journal entry.
+Use numbers not strings for debit/credit.
+Use null not 0 for empty cells.
 
-The label (a), (b), (c) etc. must be the very first characters on that line.
-Never write "Part (a)" or "a)" — always exactly "(a)".
+MULTIPLE JOURNAL ENTRIES IN ONE PART:
+If a part requires multiple JEs, use journal_entries (array) instead:
+"journal_entries": [
+  { "label": "January 1, 2024", "lines": [...] },
+  { "label": "December 31, 2024", "lines": [...] }
+]
 
-BLANK LINES:
-One blank line between parts.
-One blank line between sections within a part.
-Never more than two consecutive blank lines.
+ACCOUNTING RULES:
+- US GAAP only
+- Company name: Survive Company always
+- Never invent numbers not in problem
+- All JEs must balance (debits = credits)
+- Normal balances: Assets/Expenses debit, Liabilities/Equity/Revenue credit
+- If data missing:
+  answer: "[NEEDS REVIEW — missing: X]"
+  steps: "Could not solve — [reason]"
 
-━━━━━━━━━━━━━━━━━━
-CALCULATION RULES
-━━━━━━━━━━━━━━━━━━
-
-ALL calculations must be written as aligned monospace-style blocks.
-
-Every calculation line MUST contain at least one of: $, =, ×, ÷, +, −
-so the renderer recognizes it as a calculation and formats it correctly.
-
-CORRECT calculation format:
-
-  Face value:              $600,000
-  × PV factor (n=20, i=6%): × 0.31180
-  ─────────────────────────────────────
-  Present value:           $187,080
-
-Use spaces to align the numbers on the right side.
-Use a line of dashes ─ before the total.
-The × symbol for multiplication.
-The − symbol for subtraction.
-Always include $ on dollar amounts.
-
-NEVER write calculations as prose:
-WRONG: "Multiply 600,000 by 0.31180 to get 187,080"
-RIGHT: Use the aligned block format above.
-
-━━━━━━━━━━━━━━━━━━
-JOURNAL ENTRY RULES
-━━━━━━━━━━━━━━━━━━
-
-Every journal entry must be preceded by exactly this line:
-
-Journal entry:
-
-Then immediately followed by pipe table rows with no blank line between:
-
-Journal entry:
-| Account                    | Debit   | Credit  |
-| Interest Expense           | 18,000  |         |
-| Cash                       |         | 18,000  |
-
-Column format:
-| Account name (left padded) | Debit   | Credit  |
-
-- Account column: at least 28 chars wide
-- Debit/Credit: right-aligned numbers
-- Empty cell for zero: leave blank, do not write 0 or —
-- No header row needed unless multiple JEs in same part
-
-Multiple journal entries in one part:
-
-Journal entry (January 1):
-| Account    | Debit  | Credit |
-| ...        | ...    |        |
-
-Journal entry (June 30):
-| Account    | Debit  | Credit |
-| ...        | ...    |        |
-
-━━━━━━━━━━━━━━━━━━
-BOLD RULES
-━━━━━━━━━━━━━━━━━━
-
-Only use **bold** for:
-- Key accounting terms on first use
-- Final answer statements
-- Important warnings or notes
-
-Syntax: **exactly like this**
-
-No italics (*text*) — not supported.
-No other markdown — not supported.
-Only **bold** works.
-
-━━━━━━━━━━━━━━━━━━
-STEP LABELS
-━━━━━━━━━━━━━━━━━━
-
-Use numbered steps for multi-step processes:
-
-Step 1. Calculate the present value of the annuity.
-Step 2. Calculate the present value of the lump sum.
-Step 3. Add both present values.
-
-Format: "Step [N]." at start of line.
-The renderer will bold these automatically.
-
-━━━━━━━━━━━━━━━━━━
-YEAR HEADERS
-━━━━━━━━━━━━━━━━━━
-
-When organizing entries by year or date:
-
-2024:
-[content for 2024]
-
-2025:
-[content for 2025]
-
-Format: four-digit year followed immediately by colon.
-The renderer will bold these automatically.
-
-━━━━━━━━━━━━━━━━━━
-VOICE AND STYLE
-━━━━━━━━━━━━━━━━━━
-
+VOICE IN STEPS:
 - Confident tutor, never hedging
 - "You" perspective where natural
-- Show every step — never skip to answer
-- Company name: Survive Company always
-- US GAAP only
-- If data missing: write [NEEDS REVIEW]
-- Never invent numbers not in problem
-- Start immediately with (a) — no preamble, no intro sentence
-- Stop after last part — no closing remarks
+- Show every calculation
 - No AI thinking traces
-- No: "let's", "let me", "actually", "wait", "I need to", "I believe", "approximately", "roughly"
+- No: "let's", "let me", "actually", "I believe", "approximately"
+- Write as if you knew the answer from the start
 
-━━━━━━━━━━━━━━━━━━
-COMPLETE EXAMPLE OUTPUT
-━━━━━━━━━━━━━━━━━━
-
-(a) Calculate the semiannual cash interest payment.
-
-Step 1. Identify the components.
-
-The cash interest payment is based on the **face value** of the bonds and the **stated rate**, not the market rate.
-
-  Face value:           $600,000
-  × Stated rate:        × 8%
-  × Semiannual factor:  × 1/2
-  ─────────────────────────────
-  Cash payment:         $24,000
-
-**The semiannual cash interest payment is $24,000.**
-
-(b) Calculate the total issue price.
-
-Step 1. Find the present value of the annuity (interest payments).
-
-  Semiannual payment:  $24,000
-  × PV annuity factor: × 11.46992
-  (n=20 periods, i=6%)
-  ─────────────────────────────
-  PV of interest:      $275,278
-
-Step 2. Find the present value of the lump sum (principal).
-
-  Face value:          $600,000
-  × PV factor:         × 0.31180
-  (n=20 periods, i=6%)
-  ─────────────────────────────
-  PV of principal:     $187,080
-
-Step 3. Add both present values.
-
-  PV of interest:      $275,278
-  + PV of principal:   $187,080
-  ─────────────────────────────
-  **Issue price:       $462,358**
-
-(c) Prepare the journal entry to record the bond issuance.
-
-Survive Company receives $462,358 but must repay $600,000 at maturity. The difference is recorded as **Discount on Bonds Payable**.
-
-  Issue price:         $462,358
-  − Face value:        $600,000
-  ─────────────────────────────
-  Discount:            $137,642
-
-Journal entry:
-| Account                    | Debit   | Credit  |
-| Cash                       | 462,358 |         |
-| Discount on Bonds Payable  | 137,642 |         |
-| Bonds Payable              |         | 600,000 |`;
-
-function postProcess(text: string): string {
-  // 1. NORMALIZE LINE ENDINGS
-  let result = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-
-  // 2. REMOVE AI ARTIFACTS
-  const artifacts = [
-    /^(let'?s|let me|actually,?|wait,?|hmm,?|so,?)\s/gim,
-    /^(in this problem|in this question|to solve this)/gim,
-    /^(i'll|i will|i need to|i should)/gim,
-    /^(first,? let'?s|now let'?s|next,? let'?s)/gim,
-    /\[Note:.*?\]/gi,
-    /\(Note:.*?\)/gi,
-  ];
-  artifacts.forEach((pattern) => {
-    result = result.replace(pattern, "");
-  });
-
-  // 3. FIX PART LABELS — ensure (a), (b)... are on their own line
-  result = result.replace(/([^\n])\(([a-z])\)\s/g, "$1\n\n($2) ");
-  // Remove "Part " prefix if present
-  result = result.replace(/^Part\s+\(([a-z])\)/gim, "($1)");
-
-  // 4. FIX JOURNAL ENTRY HEADERS — ensure on own line + normalize casing
-  result = result.replace(/([^\n])(Journal entry:)/gi, "$1\n$2");
-  result = result.replace(
-    /^(Journal Entry|journal entry|JOURNAL ENTRY):/gim,
-    "Journal entry:",
-  );
-
-  // 5. FIX STEP LABELS — "Step 1:" → "Step 1."
-  result = result.replace(/^Step\s+(\d+):/gim, "Step $1.");
-
-  // 6. COLLAPSE EXCESS BLANK LINES
-  result = result.replace(/\n{3,}/g, "\n\n");
-
-  // 7. TRIM
-  return result.trim();
-}
+COMPLETE EXAMPLE OUTPUT:
+{
+  "parts": [
+    {
+      "label": "a",
+      "instruction": "Calculate the semiannual cash interest payment",
+      "answer_type": "number",
+      "answer": "$24,000",
+      "steps": "Step 1. Identify the cash payment components.\n\nThe cash payment uses the **face value** and **stated rate** — not the market rate.\n\n  Face value:        $600,000\n  × Stated rate:       × 8%\n  × Semiannual:        × 0.5\n  ──────────────────────────────\n  Cash payment:      $24,000",
+      "journal_entry": null
+    },
+    {
+      "label": "b",
+      "instruction": "Record the bond issuance at January 1",
+      "answer_type": "journal_entry",
+      "answer": null,
+      "steps": "Survive Company receives $462,358 but must repay $600,000 at maturity. The difference is **Discount on Bonds Payable** — a contra liability.\n\n  Face value:        $600,000\n  − Issue price:     $462,358\n  ──────────────────────────────\n  Discount:          $137,642",
+      "journal_entry": {
+        "label": "January 1, 2024",
+        "lines": [
+          { "account": "Cash", "debit": 462358, "credit": null },
+          { "account": "Discount on Bonds Payable", "debit": 137642, "credit": null },
+          { "account": "Bonds Payable", "debit": null, "credit": 600000 }
+        ]
+      }
+    }
+  ]
+}`;
 
 function buildUserMessage(asset: any): string {
   const lines: string[] = [];
@@ -301,9 +153,69 @@ function buildUserMessage(asset: any): string {
 
   lines.push(
     "",
-    "Write the complete step-by-step solution for all parts. Show all work.",
+    "Return the structured JSON solution for all parts. Show all work in the steps field.",
   );
   return lines.join("\n");
+}
+
+// Format a number for the text fallback (no decimals if whole, comma-separated)
+function fmtAmount(n: number | null | undefined): string {
+  if (n === null || n === undefined) return "";
+  const num = Number(n);
+  if (!Number.isFinite(num)) return "";
+  return num.toLocaleString("en-US", {
+    minimumFractionDigits: Number.isInteger(num) ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function jeToText(je: any): string {
+  if (!je || !Array.isArray(je.lines)) return "";
+  const out: string[] = [];
+  out.push(je.label ? `Journal entry (${je.label}):` : "Journal entry:");
+  out.push("| Account                    | Debit   | Credit  |");
+  for (const line of je.lines) {
+    const acct = String(line?.account ?? "").padEnd(26).slice(0, 26);
+    const dr = fmtAmount(line?.debit).padStart(7);
+    const cr = fmtAmount(line?.credit).padStart(7);
+    out.push(`| ${acct} | ${dr} | ${cr} |`);
+  }
+  return out.join("\n");
+}
+
+// Convert structured JSON back to readable text for the existing renderer fallback.
+function convertToText(parsed: any): string {
+  if (!parsed || !Array.isArray(parsed.parts)) return "";
+  const blocks: string[] = [];
+
+  for (const part of parsed.parts) {
+    const label = part?.label ?? "";
+    const instruction = part?.instruction ?? "";
+    const header = label ? `(${label})${instruction ? ` ${instruction}` : ""}` : instruction;
+    const sections: string[] = [];
+    if (header) sections.push(header);
+
+    if (part?.steps && String(part.steps).trim() !== "") {
+      sections.push(String(part.steps).trim());
+    }
+
+    if (part?.answer && String(part.answer).trim() !== "") {
+      sections.push(`**Answer: ${String(part.answer).trim()}**`);
+    }
+
+    if (part?.journal_entry) {
+      sections.push(jeToText(part.journal_entry));
+    }
+    if (Array.isArray(part?.journal_entries)) {
+      for (const je of part.journal_entries) {
+        sections.push(jeToText(je));
+      }
+    }
+
+    blocks.push(sections.join("\n\n"));
+  }
+
+  return blocks.join("\n\n").trim();
 }
 
 Deno.serve(async (req) => {
@@ -345,7 +257,6 @@ Deno.serve(async (req) => {
   }
 
   // ---- STEP 1: Fetch asset, then chapter / topic / course context separately ----
-  // (teaching_assets has no declared FKs, so PostgREST embedding fails — fetch each table directly.)
   const fetchUrl = `${SUPABASE_URL}/rest/v1/teaching_assets?id=eq.${asset_id}&select=*`;
 
   let asset: any;
@@ -376,7 +287,6 @@ Deno.serve(async (req) => {
     }
     const row = rows[0];
 
-    // Parallel-fetch related rows (each may be null)
     const [chapterRes, topicRes, courseRes] = await Promise.all([
       row.chapter_id
         ? fetch(`${SUPABASE_URL}/rest/v1/chapters?id=eq.${row.chapter_id}&select=chapter_name,chapter_number`, { headers })
@@ -413,7 +323,7 @@ Deno.serve(async (req) => {
   const userMessage = buildUserMessage(asset);
 
   // ---- STEP 3: Call OpenAI ----
-  let generatedSolution = "";
+  let rawContent = "";
   let tokensUsed = 0;
   let modelUsed = "o3";
 
@@ -426,10 +336,9 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "o3",
-        // o3 is a reasoning model — it consumes tokens internally before producing
-        // visible output. 4000 was too low and caused empty completions when the
-        // reasoning trace exhausted the budget. 25k gives ample headroom.
+        // o3 reasoning model: needs ample headroom for internal reasoning tokens.
         max_completion_tokens: 25000,
+        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userMessage },
@@ -444,11 +353,11 @@ Deno.serve(async (req) => {
     }
 
     const data = await aiRes.json();
-    generatedSolution = data?.choices?.[0]?.message?.content ?? "";
+    rawContent = data?.choices?.[0]?.message?.content ?? "";
     tokensUsed = data?.usage?.total_tokens ?? 0;
     modelUsed = data?.model ?? "o3";
 
-    if (!generatedSolution || generatedSolution.trim() === "") {
+    if (!rawContent || rawContent.trim() === "") {
       const finishReason = data?.choices?.[0]?.finish_reason ?? "unknown";
       const completionTokens = data?.usage?.completion_tokens ?? 0;
       const reasoningTokens = data?.usage?.completion_tokens_details?.reasoning_tokens ?? 0;
@@ -456,13 +365,9 @@ Deno.serve(async (req) => {
         `Empty content (finish_reason=${finishReason}, completion_tokens=${completionTokens}, reasoning_tokens=${reasoningTokens})`,
       );
     }
-
-    // Post-process AI output before returning/saving
-    generatedSolution = postProcess(generatedSolution);
   } catch (err: any) {
     console.error("Generation failed:", err);
     if (!dry_run) {
-      // Mark asset as failed
       try {
         await fetch(
           `${SUPABASE_URL}/rest/v1/teaching_assets?id=eq.${asset_id}`,
@@ -497,11 +402,26 @@ Deno.serve(async (req) => {
     );
   }
 
+  // ---- STEP 3b: Parse + validate JSON ----
+  let parsed: any = null;
+  let parseError: string | null = null;
+  try {
+    parsed = JSON.parse(rawContent);
+    if (!parsed || !Array.isArray(parsed.parts)) {
+      throw new Error("Invalid JSON structure from AI (missing parts array)");
+    }
+  } catch (err: any) {
+    parseError = String(err?.message ?? err);
+    console.error("JSON parse failed:", parseError);
+  }
+
   // ---- STEP 4: Save (unless dry run) ----
   if (dry_run) {
     return new Response(
       JSON.stringify({
-        generated: generatedSolution,
+        generated: parsed ?? rawContent,
+        format: parsed ? "json" : "text_fallback",
+        warning: parseError ? "JSON parse failed" : undefined,
         tokens_used: tokensUsed,
         dry_run: true,
       }),
@@ -511,6 +431,52 @@ Deno.serve(async (req) => {
       },
     );
   }
+
+  // ---- STEP 4a: JSON parse failed → text-only fallback save ----
+  if (!parsed) {
+    try {
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/teaching_assets?id=eq.${asset_id}`,
+        {
+          method: "PATCH",
+          headers: {
+            apikey: SERVICE_ROLE,
+            Authorization: `Bearer ${SERVICE_ROLE}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            survive_solution_text_original: asset.survive_solution_text ?? null,
+            survive_solution_text: rawContent,
+            ai_generated_at: new Date().toISOString(),
+            ai_model_used: modelUsed,
+            ai_generation_status: "complete_text_only",
+            ai_chapter_run_id: chapter_run_id ?? null,
+            ai_generation_error: "JSON parse failed — text saved",
+          }),
+        },
+      );
+    } catch (err) {
+      console.error("Text fallback save failed:", err);
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        asset_id,
+        format: "text_fallback",
+        warning: "JSON parse failed",
+        tokens_used: tokensUsed,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
+
+  // ---- STEP 4b: Save structured JSON + text fallback ----
+  const textVersion = convertToText(parsed);
 
   try {
     const patchRes = await fetch(
@@ -526,7 +492,9 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           // Snapshot original BEFORE overwriting
           survive_solution_text_original: asset.survive_solution_text ?? null,
-          survive_solution_text: generatedSolution,
+          survive_solution_text: textVersion,
+          survive_solution_json: parsed,
+          survive_solution_json_generated_at: new Date().toISOString(),
           ai_generated_at: new Date().toISOString(),
           ai_model_used: modelUsed,
           ai_generation_status: "complete",
@@ -560,9 +528,10 @@ Deno.serve(async (req) => {
     JSON.stringify({
       success: true,
       asset_id,
+      format: "json",
+      parts_count: parsed.parts.length,
       tokens_used: tokensUsed,
       model_used: modelUsed,
-      preview: generatedSolution.slice(0, 200),
     }),
     {
       status: 200,
