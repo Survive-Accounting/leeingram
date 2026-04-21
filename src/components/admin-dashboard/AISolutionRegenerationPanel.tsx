@@ -107,7 +107,8 @@ export function AISolutionRegenerationPanel() {
     queryFn: async () => {
       const { data } = await supabase
         .from("teaching_assets")
-        .select("chapter_id, course_id, ai_generation_status");
+        .select("chapter_id, course_id, ai_generation_status")
+        .limit(10000);
       const byChapter: Record<string, { total: number; complete: number }> = {};
       const byCourse: Record<string, { total: number; complete: number }> = {};
       (data ?? []).forEach((a: any) => {
@@ -170,7 +171,8 @@ export function AISolutionRegenerationPanel() {
   const fetchAssetsToProcess = async (): Promise<AssetRow[]> => {
     let q = supabase
       .from("teaching_assets")
-      .select("id, asset_name, problem_title, ai_generation_status");
+      .select("id, asset_name, problem_title, ai_generation_status")
+      .limit(10000);
     if (scope === "chapter") q = q.eq("chapter_id", chapterId);
     else q = q.eq("course_id", courseId);
     const { data, error } = await q;
