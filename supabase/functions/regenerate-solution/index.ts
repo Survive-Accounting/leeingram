@@ -346,7 +346,7 @@ Deno.serve(async (req) => {
 
   // ---- STEP 1: Fetch asset with joined chapter / topic / course context ----
   const selectCols =
-    "*,chapters(chapter_name,chapter_number),topics(topic_name),courses(code,course_name)";
+    "*,chapters(chapter_name,chapter_number),chapter_topics(topic_name),courses(code,course_name)";
   const fetchUrl = `${SUPABASE_URL}/rest/v1/teaching_assets?id=eq.${asset_id}&select=${
     encodeURIComponent(selectCols)
   }`;
