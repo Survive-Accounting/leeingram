@@ -192,7 +192,7 @@ export function AISolutionRegenerationPanel() {
   const fetchAssetsToProcess = async (): Promise<AssetRow[]> => {
     let q = supabase
       .from("teaching_assets")
-      .select("id, asset_name, problem_title, ai_generation_status")
+      .select("id, asset_name, problem_title, source_ref, source_number, ai_generation_status")
       .limit(10000);
     if (scope === "chapter") q = q.eq("chapter_id", chapterId);
     else q = q.eq("course_id", courseId);
@@ -203,6 +203,11 @@ export function AISolutionRegenerationPanel() {
       rows = rows.filter((r) => r.ai_generation_status !== "complete");
     }
     return rows;
+  };
+
+  const buildLabel = (a: AssetRow): string => {
+    const parts = [a.source_ref, a.source_number].filter(Boolean).join(" ").trim();
+    return parts || a.problem_title || a.asset_name || a.id.slice(0, 8);
   };
 
   const startRun = async () => {
