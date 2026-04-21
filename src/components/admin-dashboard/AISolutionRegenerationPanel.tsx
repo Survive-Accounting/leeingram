@@ -231,23 +231,30 @@ export function AISolutionRegenerationPanel() {
     setTokensTotal(0);
     setLogs([]);
     setStopRequested(false);
+    stopRequestedRef.current = false;
     setDryPreviews([]);
 
     let s = 0, f = 0, sk = 0, tokens = 0;
     const previews: Array<{ label: string; preview: string }> = [];
 
     for (let i = 0; i < assets.length; i++) {
-      if (stopRequested) {
+      if (stopRequestedRef.current) {
         setLogs((l) => [
           ...l,
-          { ts: new Date().toLocaleTimeString(), status: "skip" as const, label: "—", detail: "Stopped by user" },
+          { ts: new Date().toLocaleTimeString(), status: "skip" as const, label: "—", detail: `Stopped by user (${assets.length - i} skipped)` },
         ]);
+        sk = assets.length - i;
         break;
       }
       const asset = assets[i];
       const label = buildLabel(asset);
       setCurrentLabel(label);
       setProgressIndex(i + 1);
+
+      // Per-asset abort controller — also enforces a 2-min ceiling per request.
+      const ac = new AbortController();
+      abortControllerRef.current = ac;
+      const timeout = setTimeout(() => ac.abort(), 120_000);
 
       try {
         const { data, error } = await supabase.functions.invoke("regenerate-solution", {
@@ -256,7 +263,10 @@ export function AISolutionRegenerationPanel() {
             chapter_run_id: runId,
             dry_run: dryRun,
           },
+          // @ts-expect-error supabase-js v2 forwards AbortSignal to fetch
+          signal: ac.signal,
         });
+        clearTimeout(timeout);
         if (error) throw new Error(error.message);
         if (data?.success === false) throw new Error(data?.error || "Unknown error");
 
@@ -278,6 +288,16 @@ export function AISolutionRegenerationPanel() {
           },
         ]);
       } catch (err: any) {
+        clearTimeout(timeout);
+        const aborted = ac.signal.aborted;
+        if (aborted && stopRequestedRef.current) {
+          setLogs((l) => [
+            ...l,
+            { ts: new Date().toLocaleTimeString(), status: "skip" as const, label, detail: "Cancelled mid-request" },
+          ]);
+          sk = assets.length - i;
+          break;
+        }
         f++;
         setFailed(f);
         setLogs((l) => [
@@ -291,13 +311,25 @@ export function AISolutionRegenerationPanel() {
         ]);
       }
 
-      if (i < assets.length - 1) {
+      if (i < assets.length - 1 && !stopRequestedRef.current) {
         await new Promise((r) => setTimeout(r, DELAY_MS));
       }
     }
 
+    abortControllerRef.current = null;
     setSkipped(sk);
     setPhase("complete");
+  };
+
+  const requestStop = (hard: boolean) => {
+    stopRequestedRef.current = true;
+    setStopRequested(true);
+    if (hard && abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      toast.warning("Cancelling current request…");
+    } else {
+      toast.info("Will stop after current asset finishes.");
+    }
   };
 
   const handleRevertRun = async () => {
