@@ -5283,6 +5283,9 @@ export type Database = {
           source_type: string | null
           supplementary_je_json: Json | null
           survive_problem_text: string
+          survive_solution_explanation_cache: Json | null
+          survive_solution_json: Json | null
+          survive_solution_json_generated_at: string | null
           survive_solution_text: string
           survive_solution_text_original: string | null
           t_accounts_json: Json | null
@@ -5390,6 +5393,9 @@ export type Database = {
           source_type?: string | null
           supplementary_je_json?: Json | null
           survive_problem_text?: string
+          survive_solution_explanation_cache?: Json | null
+          survive_solution_json?: Json | null
+          survive_solution_json_generated_at?: string | null
           survive_solution_text?: string
           survive_solution_text_original?: string | null
           t_accounts_json?: Json | null
@@ -5497,6 +5503,9 @@ export type Database = {
           source_type?: string | null
           supplementary_je_json?: Json | null
           survive_problem_text?: string
+          survive_solution_explanation_cache?: Json | null
+          survive_solution_json?: Json | null
+          survive_solution_json_generated_at?: string | null
           survive_solution_text?: string
           survive_solution_text_original?: string | null
           t_accounts_json?: Json | null
