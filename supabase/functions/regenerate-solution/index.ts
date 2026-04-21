@@ -433,6 +433,9 @@ Deno.serve(async (req) => {
     if (!generatedSolution || generatedSolution.trim() === "") {
       throw new Error("OpenAI returned empty content");
     }
+
+    // Post-process AI output before returning/saving
+    generatedSolution = postProcess(generatedSolution);
   } catch (err: any) {
     console.error("Generation failed:", err);
     if (!dry_run) {
