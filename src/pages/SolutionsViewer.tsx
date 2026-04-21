@@ -4546,7 +4546,13 @@ export default function SolutionsViewer() {
             >
 
               {/* 1. Solution — hidden for JE-only problems since tooltips cover it */}
-              {answerSummary.trim() && !isJEOnly && (
+              {(() => {
+                const hasStructuredSolution =
+                  Array.isArray((asset as any)?.survive_solution_json?.parts) &&
+                  (asset as any).survive_solution_json.parts.length > 0;
+                if (!answerSummary.trim() && !hasStructuredSolution) return null;
+                if (isJEOnly && !hasStructuredSolution) return null;
+                return (
                 <RevealToggle
                   label="Reveal Explanation"
                   theme={t}
