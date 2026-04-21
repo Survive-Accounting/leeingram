@@ -785,7 +785,17 @@ function RevealToggle({
       >
         <span className="flex items-center gap-2" style={{ fontSize: isPreview ? 13 : 14, fontWeight: isPreview ? 400 : 600 }}>
           {isPreview && (open ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />)}
-          {isPreview ? label : shortLabel}
+          <span className="flex flex-col">
+            <span className="flex items-center gap-2">
+              {isPreview ? label : shortLabel}
+              {headerBadge}
+            </span>
+            {headerSubtitle && (
+              <span style={{ fontSize: 12, color: "#6B7280", fontStyle: "italic", fontWeight: 400, marginTop: 2 }}>
+                {headerSubtitle}
+              </span>
+            )}
+          </span>
         </span>
         <ChevronDown
           className="h-4 w-4 transition-transform"
