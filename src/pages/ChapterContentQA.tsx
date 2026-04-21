@@ -49,6 +49,7 @@ import { ChapterAuditPanel } from "@/components/admin-dashboard/ChapterAuditPane
 import { ChapterAuditModal } from "@/components/admin-dashboard/ChapterAuditModal";
 import { TutorPrepPackModal } from "@/components/admin-dashboard/TutorPrepPackModal";
 import { CramTabVisibilityCard } from "@/components/admin-dashboard/CramTabVisibilityCard";
+import { AISolutionRegenerationPanel } from "@/components/admin-dashboard/AISolutionRegenerationPanel";
 /** Mobile-aware tooltip: popover on mobile, tooltip on desktop */
 function MobileTip({ children, content, side = "top", className = "" }: { children: React.ReactNode; content: React.ReactNode; side?: "top" | "bottom" | "left" | "right"; className?: string }) {
   const isMobile = useIsMobile();
