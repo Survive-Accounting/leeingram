@@ -238,27 +238,27 @@ export function AISolutionRegenerationPanel() {
           previews.push({ label, preview: String(data.generated).slice(0, 600) });
           setDryPreviews([...previews]);
         }
-        setLogs((l) => [
+        setLogs((l) => ([
           ...l,
           {
             ts: new Date().toLocaleTimeString(),
-            status: "ok",
+            status: "ok" as const,
             label,
             detail: `complete (${data?.tokens_used ?? 0} tokens)`,
           },
-        ].slice(-20));
+        ].slice(-20)));
       } catch (err: any) {
         f++;
         setFailed(f);
-        setLogs((l) => [
+        setLogs((l) => ([
           ...l,
           {
             ts: new Date().toLocaleTimeString(),
-            status: "fail",
+            status: "fail" as const,
             label,
             detail: `failed: ${String(err.message ?? err).slice(0, 80)}`,
           },
-        ].slice(-20));
+        ].slice(-20)));
       }
 
       if (i < assets.length - 1) {
