@@ -4,7 +4,7 @@
  * via the `regenerate-solution` edge function. Supports per-chapter or
  * per-course scope, dry-run preview, live progress, and full-run revert.
  */
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -212,6 +212,71 @@ export function AISolutionRegenerationPanel() {
     return parts || a.problem_title || a.asset_name || a.id.slice(0, 8);
   };
 
+  // Map of background_jobs.id → { label, asset_id }
+  const jobMapRef = useRef<Map<string, { label: string; asset_id: string }>>(new Map());
+  const seenJobStatusRef = useRef<Map<string, string>>(new Map());
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [batchId, setBatchId] = useState<string>("");
+
+  const stopPolling = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  };
+
+  const pollBatch = async (currentBatchId: string) => {
+    const { data: jobs, error } = await supabase
+      .from("background_jobs" as any)
+      .select("id, status, error, payload")
+      .eq("batch_id", currentBatchId);
+    if (error || !jobs) return;
+
+    let s = 0, f = 0;
+    let processed = 0;
+    const newLogs: LogEntry[] = [];
+
+    for (const j of jobs as any[]) {
+      const meta = jobMapRef.current.get(j.id) ?? {
+        label: j.payload?.asset_label ?? j.payload?.asset_id?.slice(0, 8) ?? "?",
+        asset_id: j.payload?.asset_id,
+      };
+      if (!jobMapRef.current.has(j.id)) jobMapRef.current.set(j.id, meta);
+
+      if (j.status === "done") s++;
+      if (j.status === "failed") f++;
+      if (j.status === "done" || j.status === "failed") processed++;
+
+      const prev = seenJobStatusRef.current.get(j.id);
+      if (prev !== j.status && (j.status === "done" || j.status === "failed")) {
+        seenJobStatusRef.current.set(j.id, j.status);
+        newLogs.push({
+          ts: new Date().toLocaleTimeString(),
+          status: j.status === "done" ? "ok" : "fail",
+          label: meta.label,
+          detail: j.status === "done" ? "complete" : `failed: ${String(j.error ?? "unknown").slice(0, 240)}`,
+        });
+      }
+    }
+
+    setSucceeded(s);
+    setFailed(f);
+    setProgressIndex(processed);
+    if (newLogs.length) setLogs((l) => [...l, ...newLogs]);
+
+    if (processed >= jobs.length) {
+      stopPolling();
+      try { sessionStorage.removeItem("ai_regen_batch"); } catch {}
+      setPhase("complete");
+    }
+  };
+
+  const startPolling = (currentBatchId: string) => {
+    stopPolling();
+    pollRef.current = setInterval(() => pollBatch(currentBatchId), 3000);
+    pollBatch(currentBatchId);
+  };
+
   const startRun = async () => {
     setConfirmOpen(false);
     const assets = await fetchAssetsToProcess();
@@ -221,7 +286,9 @@ export function AISolutionRegenerationPanel() {
     }
 
     const runId = `chapter_${scopeSummary?.id ?? "scope"}_${Date.now()}`;
+    const newBatchId = crypto.randomUUID();
     setChapterRunId(runId);
+    setBatchId(newBatchId);
     setPhase("running");
     setTotalToProcess(assets.length);
     setProgressIndex(0);
@@ -229,107 +296,117 @@ export function AISolutionRegenerationPanel() {
     setFailed(0);
     setSkipped(0);
     setTokensTotal(0);
-    setLogs([]);
+    setLogs([{
+      ts: new Date().toLocaleTimeString(),
+      status: "skip",
+      label: "—",
+      detail: `Queued ${assets.length} assets server-side. Safe to close this tab.`,
+    }]);
     setStopRequested(false);
     stopRequestedRef.current = false;
     setDryPreviews([]);
+    jobMapRef.current.clear();
+    seenJobStatusRef.current.clear();
 
-    let s = 0, f = 0, sk = 0, tokens = 0;
-    const previews: Array<{ label: string; preview: string }> = [];
-
-    for (let i = 0; i < assets.length; i++) {
-      if (stopRequestedRef.current) {
-        setLogs((l) => [
-          ...l,
-          { ts: new Date().toLocaleTimeString(), status: "skip" as const, label: "—", detail: `Stopped by user (${assets.length - i} skipped)` },
-        ]);
-        sk = assets.length - i;
-        break;
-      }
-      const asset = assets[i];
-      const label = buildLabel(asset);
-      setCurrentLabel(label);
-      setProgressIndex(i + 1);
-
-      // Per-asset abort controller — also enforces a 2-min ceiling per request.
-      const ac = new AbortController();
-      abortControllerRef.current = ac;
-      const timeout = setTimeout(() => ac.abort(), 120_000);
-
-      try {
-        const { data, error } = await supabase.functions.invoke("regenerate-solution", {
-          body: {
-            asset_id: asset.id,
-            chapter_run_id: runId,
-            dry_run: dryRun,
-          },
-          signal: ac.signal,
-        });
-        clearTimeout(timeout);
-        if (error) throw new Error(error.message);
-        if (data?.success === false) throw new Error(data?.error || "Unknown error");
-
-        s++;
-        tokens += data?.tokens_used ?? 0;
-        setSucceeded(s);
-        setTokensTotal(tokens);
-        if (dryRun && previews.length < 3 && data?.generated) {
-          previews.push({ label, preview: String(data.generated).slice(0, 600) });
-          setDryPreviews([...previews]);
-        }
-        setLogs((l) => [
-          ...l,
-          {
-            ts: new Date().toLocaleTimeString(),
-            status: "ok" as const,
-            label,
-            detail: `complete (${data?.tokens_used ?? 0} tokens)`,
-          },
-        ]);
-      } catch (err: any) {
-        clearTimeout(timeout);
-        const aborted = ac.signal.aborted;
-        if (aborted && stopRequestedRef.current) {
-          setLogs((l) => [
-            ...l,
-            { ts: new Date().toLocaleTimeString(), status: "skip" as const, label, detail: "Cancelled mid-request" },
-          ]);
-          sk = assets.length - i;
-          break;
-        }
-        f++;
-        setFailed(f);
-        setLogs((l) => [
-          ...l,
-          {
-            ts: new Date().toLocaleTimeString(),
-            status: "fail" as const,
-            label,
-            detail: `failed: ${String(err.message ?? err).slice(0, 240)}`,
-          },
-        ]);
-      }
-
-      if (i < assets.length - 1 && !stopRequestedRef.current) {
-        await new Promise((r) => setTimeout(r, DELAY_MS));
+    // Insert jobs in batches of 500
+    const rows = assets.map((a) => ({
+      batch_id: newBatchId,
+      job_type: "regenerate_solution",
+      payload: {
+        asset_id: a.id,
+        chapter_run_id: runId,
+        dry_run: dryRun,
+        asset_label: buildLabel(a),
+      },
+      status: "queued",
+    }));
+    for (let i = 0; i < rows.length; i += 500) {
+      const chunk = rows.slice(i, i + 500);
+      const { error } = await supabase.from("background_jobs" as any).insert(chunk);
+      if (error) {
+        toast.error(`Failed to enqueue: ${error.message}`);
+        setPhase("configure");
+        return;
       }
     }
 
-    abortControllerRef.current = null;
-    setSkipped(sk);
-    setPhase("complete");
+    try {
+      sessionStorage.setItem("ai_regen_batch", JSON.stringify({
+        batchId: newBatchId, runId, total: assets.length, dryRun, scopeSummary,
+      }));
+    } catch {}
+
+    // Kick off the worker
+    supabase.functions.invoke("process-background-jobs").catch(() => {});
+
+    toast.success(`Queued ${assets.length} jobs — running server-side.`);
+    startPolling(newBatchId);
   };
 
-  const requestStop = (hard: boolean) => {
+  const requestStop = async (_hard: boolean) => {
     stopRequestedRef.current = true;
     setStopRequested(true);
-    if (hard && abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      toast.warning("Cancelling current request…");
+    if (!batchId) return;
+    // Delete remaining queued jobs (in-flight ones can't be cancelled cleanly)
+    const { error, count } = await supabase
+      .from("background_jobs" as any)
+      .delete({ count: "exact" })
+      .eq("batch_id", batchId)
+      .eq("status", "queued");
+    if (error) {
+      toast.error(`Stop failed: ${error.message}`);
     } else {
-      toast.info("Will stop after current asset finishes.");
+      const removed = count ?? 0;
+      setSkipped(removed);
+      toast.warning(`Cancelled ${removed} queued jobs. In-flight jobs will finish.`);
+      setLogs((l) => [...l, {
+        ts: new Date().toLocaleTimeString(),
+        status: "skip",
+        label: "—",
+        detail: `Cancelled ${removed} queued jobs by user.`,
+      }]);
     }
   };
+
+  // Resume on mount if a batch is in progress
+  useEffect(() => {
+    if (!isLee) return;
+    try {
+      const stored = sessionStorage.getItem("ai_regen_batch");
+      if (!stored) return;
+      const parsed = JSON.parse(stored);
+      (async () => {
+        const { data: jobs } = await supabase
+          .from("background_jobs" as any)
+          .select("id, status")
+          .eq("batch_id", parsed.batchId);
+        if (!jobs || (jobs as any[]).length === 0) {
+          sessionStorage.removeItem("ai_regen_batch");
+          return;
+        }
+        const total = (jobs as any[]).length;
+        const done = (jobs as any[]).filter((j: any) => j.status === "done" || j.status === "failed").length;
+        if (done >= total) {
+          sessionStorage.removeItem("ai_regen_batch");
+          return;
+        }
+        setOpen(true);
+        setBatchId(parsed.batchId);
+        setChapterRunId(parsed.runId);
+        setTotalToProcess(total);
+        setPhase("running");
+        setLogs([{
+          ts: new Date().toLocaleTimeString(),
+          status: "skip",
+          label: "—",
+          detail: `Resumed in-progress batch (${done}/${total} done).`,
+        }]);
+        startPolling(parsed.batchId);
+      })();
+    } catch {}
+    return () => stopPolling();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLee]);
 
   const handleRevertRun = async () => {
     setRevertConfirmOpen(false);
@@ -522,24 +599,16 @@ export function AISolutionRegenerationPanel() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                className="border-destructive/40 text-destructive hover:bg-destructive/10"
-                onClick={() => requestStop(false)}
-                disabled={stopRequested}
-              >
-                {stopRequested ? "Stopping…" : "Stop After Current"}
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => requestStop(true)}
-              >
-                ⛔ Cancel Now
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              className="w-full border-destructive/40 text-destructive hover:bg-destructive/10"
+              onClick={() => requestStop(true)}
+              disabled={stopRequested}
+            >
+              {stopRequested ? "Stopping…" : "⛔ Cancel Remaining Jobs"}
+            </Button>
             <p className="text-[10px] text-muted-foreground text-center">
-              "Cancel Now" aborts the in-flight request — you may still be billed for tokens already generated by OpenAI.
+              Jobs run server-side — safe to close this tab. Cancelling removes queued jobs; in-flight ones finish.
             </p>
           </div>
         )}

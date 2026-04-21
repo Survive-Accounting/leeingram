@@ -33,6 +33,14 @@ const JOB_HANDLERS: Record<string, { fn: string; body: (p: any) => any }> = {
       difficulty: p.difficulty,
     }),
   },
+  regenerate_solution: {
+    fn: "regenerate-solution",
+    body: (p) => ({
+      asset_id: p.asset_id,
+      chapter_run_id: p.chapter_run_id,
+      dry_run: p.dry_run ?? false,
+    }),
+  },
 };
 
 Deno.serve(async (req) => {
