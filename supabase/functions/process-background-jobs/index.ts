@@ -8,7 +8,6 @@ const corsHeaders = {
 
 const BATCH_SIZE = 10;
 
-// Maps job_type → edge function name + how to build the request body from payload
 const JOB_HANDLERS: Record<string, { fn: string; body: (p: any) => any }> = {
   prep_doc: {
     fn: "create-prep-doc",
@@ -50,7 +49,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Auth: allow service-role or authenticated users
     const authHeader = req.headers.get("Authorization") || "";
     const isServiceRole = authHeader === `Bearer ${serviceRoleKey}`;
     if (!isServiceRole) {
@@ -69,7 +67,6 @@ Deno.serve(async (req) => {
 
     const sb = createClient(supabaseUrl, serviceRoleKey);
 
-    // Grab next batch of queued items (oldest first)
     const { data: items, error: fetchErr } = await sb
       .from("background_jobs")
       .select("id, job_type, payload, batch_id")
@@ -84,58 +81,77 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(`Processing ${items.length} background jobs in parallel...`);
+    console.log(`Dispatching ${items.length} background jobs (fire-and-forget)...`);
 
-    // Mark all as processing up-front (single round-trip)
+    // Mark all as processing up-front
     const itemIds = items.map((i) => i.id);
     await sb.from("background_jobs")
       .update({ status: "processing", started_at: new Date().toISOString() })
       .in("id", itemIds);
 
-    // Process all items in parallel — total time = slowest single job, not the sum
-    const results = await Promise.allSettled(items.map(async (item) => {
+    // Fire-and-forget each job — do NOT await the slow OpenAI calls.
+    // The HTTP response from the child will eventually mark the row done/failed
+    // via the .then() handler below. EdgeRuntime.waitUntil keeps the worker alive
+    // long enough for the response to arrive, but the parent returns immediately.
+    let dispatched = 0;
+    let invalidCount = 0;
+
+    for (const item of items) {
       const handler = JOB_HANDLERS[item.job_type];
       if (!handler) {
+        invalidCount++;
         await sb.from("background_jobs")
           .update({ status: "failed", completed_at: new Date().toISOString(), error: `Unknown job_type: ${item.job_type}` })
           .eq("id", item.id);
-        throw new Error(`Unknown job_type: ${item.job_type}`);
+        continue;
       }
 
-      try {
-        const res = await fetch(`${supabaseUrl}/functions/v1/${handler.fn}`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${serviceRoleKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(handler.body(item.payload)),
+      const childPromise = fetch(`${supabaseUrl}/functions/v1/${handler.fn}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceRoleKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(handler.body(item.payload)),
+      })
+        .then(async (res) => {
+          let errMsg: string | null = null;
+          let ok = res.ok;
+          try {
+            const result = await res.json();
+            if (!res.ok || result?.error) {
+              ok = false;
+              errMsg = result?.error || `HTTP ${res.status}`;
+            }
+          } catch {
+            if (!res.ok) errMsg = `HTTP ${res.status}`;
+          }
+          await sb.from("background_jobs")
+            .update({
+              status: ok ? "done" : "failed",
+              completed_at: new Date().toISOString(),
+              error: errMsg,
+            })
+            .eq("id", item.id);
+          console.log(`${ok ? "✓" : "✗"} ${item.job_type} ${item.id}${errMsg ? ": " + errMsg : ""}`);
+        })
+        .catch(async (err) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          await sb.from("background_jobs")
+            .update({ status: "failed", completed_at: new Date().toISOString(), error: msg })
+            .eq("id", item.id);
+          console.error(`✗ ${item.job_type} ${item.id}: ${msg}`);
         });
 
-        const result = await res.json();
-        if (!res.ok || result.error) {
-          throw new Error(result.error || `HTTP ${res.status}`);
-        }
-
-        await sb.from("background_jobs")
-          .update({ status: "done", completed_at: new Date().toISOString(), error: null })
-          .eq("id", item.id);
-        console.log(`✓ ${item.job_type} ${item.id}`);
-        return true;
-      } catch (err: any) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        await sb.from("background_jobs")
-          .update({ status: "failed", completed_at: new Date().toISOString(), error: errMsg })
-          .eq("id", item.id);
-        console.error(`✗ ${item.job_type} ${item.id}: ${errMsg}`);
-        throw err;
+      // Keep the worker alive until the child finishes, but don't block the response.
+      // @ts-ignore — EdgeRuntime is provided by Supabase Edge Functions runtime.
+      if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+        // @ts-ignore
+        EdgeRuntime.waitUntil(childPromise);
       }
-    }));
+      dispatched++;
+    }
 
-    const successCount = results.filter((r) => r.status === "fulfilled").length;
-    const failCount = results.filter((r) => r.status === "rejected").length;
-
-    // Check remaining
     const { count } = await sb
       .from("background_jobs")
       .select("id", { count: "exact", head: true })
@@ -143,7 +159,6 @@ Deno.serve(async (req) => {
 
     const remaining = count ?? 0;
 
-    // Self-chain if more items remain
     if (remaining > 0) {
       console.log(`${remaining} items remaining — self-chaining...`);
       fetch(`${supabaseUrl}/functions/v1/process-background-jobs`, {
@@ -158,8 +173,8 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       processed: items.length,
-      success: successCount,
-      failed: failCount,
+      dispatched,
+      invalid: invalidCount,
       remaining,
       done: remaining === 0,
     }), {
