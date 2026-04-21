@@ -3583,6 +3583,15 @@ export default function SolutionsViewer() {
   // QA: force open all toggles via postMessage
   const [allTogglesForceOpen, setAllTogglesForceOpen] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const [explainLoading, setExplainLoading] = useState(false);
+  useEffect(() => {
+    const onLoad = (e: Event) => {
+      const ce = e as CustomEvent<{ loading: boolean }>;
+      setExplainLoading(!!ce.detail?.loading);
+    };
+    window.addEventListener("sa-explain-loading", onLoad as EventListener);
+    return () => window.removeEventListener("sa-explain-loading", onLoad as EventListener);
+  }, []);
   const handleToggleSection = useCallback((sectionName: string) => {
     setOpenSection(prev => prev === sectionName ? null : sectionName);
   }, []);
