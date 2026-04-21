@@ -346,7 +346,7 @@ Deno.serve(async (req) => {
 
   // ---- STEP 1: Fetch asset with joined chapter / topic / course context ----
   const selectCols =
-    "*,chapters(chapter_name,chapter_number),topics(topic_name),courses(code,course_name)";
+    "*,chapters(chapter_name,chapter_number),chapter_topics(topic_name),courses(code,course_name)";
   const fetchUrl = `${SUPABASE_URL}/rest/v1/teaching_assets?id=eq.${asset_id}&select=${
     encodeURIComponent(selectCols)
   }`;
@@ -382,7 +382,7 @@ Deno.serve(async (req) => {
       ...row,
       chapter_name: row.chapters?.chapter_name ?? null,
       chapter_number: row.chapters?.chapter_number ?? null,
-      topic_name: row.topics?.topic_name ?? null,
+      topic_name: row.chapter_topics?.topic_name ?? null,
       course_code: row.courses?.code ?? null,
       course_name: row.courses?.course_name ?? null,
     };
