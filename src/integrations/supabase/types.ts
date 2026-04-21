@@ -5197,6 +5197,11 @@ export type Database = {
       teaching_assets: {
         Row: {
           admin_notes: Json
+          ai_chapter_run_id: string | null
+          ai_generated_at: string | null
+          ai_generation_error: string | null
+          ai_generation_status: string | null
+          ai_model_used: string | null
           answer_summary_backup: string | null
           asset_approved_at: string | null
           asset_name: string
@@ -5279,6 +5284,7 @@ export type Database = {
           supplementary_je_json: Json | null
           survive_problem_text: string
           survive_solution_text: string
+          survive_solution_text_original: string | null
           t_accounts_json: Json | null
           tables_json: Json | null
           tags: string[]
@@ -5298,6 +5304,11 @@ export type Database = {
         }
         Insert: {
           admin_notes?: Json
+          ai_chapter_run_id?: string | null
+          ai_generated_at?: string | null
+          ai_generation_error?: string | null
+          ai_generation_status?: string | null
+          ai_model_used?: string | null
           answer_summary_backup?: string | null
           asset_approved_at?: string | null
           asset_name?: string
@@ -5380,6 +5391,7 @@ export type Database = {
           supplementary_je_json?: Json | null
           survive_problem_text?: string
           survive_solution_text?: string
+          survive_solution_text_original?: string | null
           t_accounts_json?: Json | null
           tables_json?: Json | null
           tags?: string[]
@@ -5399,6 +5411,11 @@ export type Database = {
         }
         Update: {
           admin_notes?: Json
+          ai_chapter_run_id?: string | null
+          ai_generated_at?: string | null
+          ai_generation_error?: string | null
+          ai_generation_status?: string | null
+          ai_model_used?: string | null
           answer_summary_backup?: string | null
           asset_approved_at?: string | null
           asset_name?: string
@@ -5481,6 +5498,7 @@ export type Database = {
           supplementary_je_json?: Json | null
           survive_problem_text?: string
           survive_solution_text?: string
+          survive_solution_text_original?: string | null
           t_accounts_json?: Json | null
           tables_json?: Json | null
           tags?: string[]
