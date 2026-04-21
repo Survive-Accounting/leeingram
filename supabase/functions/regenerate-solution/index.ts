@@ -426,7 +426,10 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "o3",
-        max_completion_tokens: 4000,
+        // o3 is a reasoning model — it consumes tokens internally before producing
+        // visible output. 4000 was too low and caused empty completions when the
+        // reasoning trace exhausted the budget. 25k gives ample headroom.
+        max_completion_tokens: 25000,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userMessage },
@@ -446,7 +449,12 @@ Deno.serve(async (req) => {
     modelUsed = data?.model ?? "o3";
 
     if (!generatedSolution || generatedSolution.trim() === "") {
-      throw new Error("OpenAI returned empty content");
+      const finishReason = data?.choices?.[0]?.finish_reason ?? "unknown";
+      const completionTokens = data?.usage?.completion_tokens ?? 0;
+      const reasoningTokens = data?.usage?.completion_tokens_details?.reasoning_tokens ?? 0;
+      throw new Error(
+        `Empty content (finish_reason=${finishReason}, completion_tokens=${completionTokens}, reasoning_tokens=${reasoningTokens})`,
+      );
     }
 
     // Post-process AI output before returning/saving
