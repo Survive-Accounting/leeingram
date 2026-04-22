@@ -241,6 +241,7 @@ function fmtAmount(n: number | null | undefined): string {
 }
 
 function JETable({ je }: { je: JournalEntry }) {
+  const lookup = useContext(JETooltipContext);
   return (
     <div className="rounded-md overflow-hidden border" style={{ borderColor: "#E5E7EB" }}>
       <div
@@ -253,6 +254,7 @@ function JETable({ je }: { je: JournalEntry }) {
       </div>
       {je.lines.map((line, i) => {
         const isCredit = line.credit != null && (line.debit == null || line.debit === 0);
+        const tip = lookup?.get(normalizeAccount(line.account));
         return (
           <div
             key={i}
@@ -271,12 +273,23 @@ function JETable({ je }: { je: JournalEntry }) {
               }}
             >
               {line.account}
+              {tip?.reason && <JETooltip text={tip.reason} variant="solutions" />}
             </div>
             <div className="text-right font-mono" style={{ color: "rgba(0,0,0,0.85)" }}>
-              {fmtAmount(line.debit)}
+              {!isCredit && line.debit != null && (
+                <span>
+                  {fmtAmount(line.debit)}
+                  {tip?.amountSource && <JETooltip text={tip.amountSource} variant="solutions" />}
+                </span>
+              )}
             </div>
             <div className="text-right font-mono" style={{ color: "rgba(0,0,0,0.85)" }}>
-              {fmtAmount(line.credit)}
+              {isCredit && line.credit != null && (
+                <span>
+                  {fmtAmount(line.credit)}
+                  {tip?.amountSource && <JETooltip text={tip.amountSource} variant="solutions" />}
+                </span>
+              )}
             </div>
           </div>
         );
