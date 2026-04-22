@@ -180,6 +180,7 @@ export function SurviveThisPanel(props: SurviveThisPanelProps) {
         open={open}
         onOpen={() => setOpen(true)}
         leeOnline={leeOnline}
+        bottomOffset={props.bottomOffset ?? 24}
       />
 
       <div style={panelStyle} role="dialog" aria-label="Survive This — Lee's AI tutor">
