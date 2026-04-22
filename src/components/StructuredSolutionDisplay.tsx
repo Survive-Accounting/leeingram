@@ -1,6 +1,49 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, createContext, useContext } from "react";
 import { ChevronRight, Sparkles, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { JETooltip } from "@/components/JETooltip";
+
+// ─── Tooltip lookup built from canonical journal_entry_completed_json ───
+type TooltipEntry = { reason?: string; amountSource?: string };
+type TooltipLookup = Map<string, TooltipEntry>;
+
+const JETooltipContext = createContext<TooltipLookup | null>(null);
+
+function normalizeAccount(name: string): string {
+  return (name || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function buildTooltipLookup(source: any): TooltipLookup {
+  const map: TooltipLookup = new Map();
+  if (!source) return map;
+  let payload: any = source;
+  if (typeof payload === "string") {
+    try { payload = JSON.parse(payload); } catch { return map; }
+  }
+  const sections = payload?.scenario_sections;
+  if (!Array.isArray(sections)) return map;
+  for (const sc of sections) {
+    for (const e of sc.entries_by_date ?? []) {
+      for (const row of e.rows ?? []) {
+        const key = normalizeAccount(row.account_name);
+        if (!key) continue;
+        const reason = row.debit_credit_reason || undefined;
+        const amountSource = row.amount_source || undefined;
+        if (!reason && !amountSource) continue;
+        const existing = map.get(key);
+        if (!existing) {
+          map.set(key, { reason, amountSource });
+        } else {
+          map.set(key, {
+            reason: existing.reason || reason,
+            amountSource: existing.amountSource || amountSource,
+          });
+        }
+      }
+    }
+  }
+  return map;
+}
 
 // ─── Types ────────────────────────────────────────────────────────────
 type JELine = {
