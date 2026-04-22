@@ -78,6 +78,8 @@ interface Props {
     survive_solution_json: StructuredSolutionJson | null;
     survive_solution_explanation_cache?: Record<string, string> | null;
   };
+  /** Canonical journal_entry_completed_json — used to source tooltip text per account. */
+  jeTooltipSource?: any;
   onSuggestFix?: () => void;
   onLearnMore?: () => void;
 }
