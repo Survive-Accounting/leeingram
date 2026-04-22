@@ -4140,24 +4140,33 @@ export type Database = {
       }
       priority_queue_config: {
         Row: {
+          beta_mode: boolean | null
           cutoff_time: string | null
           id: string
           is_active: boolean | null
           price_cents: number | null
+          same_day_price_cents: number | null
+          two_day_price_cents: number | null
           updated_at: string | null
         }
         Insert: {
+          beta_mode?: boolean | null
           cutoff_time?: string | null
           id?: string
           is_active?: boolean | null
           price_cents?: number | null
+          same_day_price_cents?: number | null
+          two_day_price_cents?: number | null
           updated_at?: string | null
         }
         Update: {
+          beta_mode?: boolean | null
           cutoff_time?: string | null
           id?: string
           is_active?: boolean | null
           price_cents?: number | null
+          same_day_price_cents?: number | null
+          two_day_price_cents?: number | null
           updated_at?: string | null
         }
         Relationships: []
