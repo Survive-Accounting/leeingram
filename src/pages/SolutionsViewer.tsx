@@ -11,6 +11,7 @@ import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2, Wrench, Loader2, Sparkles, Edit3, Menu, Target, BookOpen, LayoutGrid, FileText, Calculator, ArrowLeft } from "lucide-react";
 import { QAEditButton, QAInlineEditorPanel, QAInstructionsEditor } from "@/components/QAInlineEditor";
+import StructuredSolutionDisplay from "@/components/StructuredSolutionDisplay";
 import { ProblemNavigation } from "@/components/ProblemNavigation";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { QAToolboxModal } from "@/components/QAToolboxModal";
@@ -3713,7 +3714,8 @@ export default function SolutionsViewer() {
         .select(`
           id, asset_name, source_ref, source_number, problem_title,
           problem_context, survive_problem_text, problem_text_ht_backup,
-          survive_solution_text, journal_entry_completed_json, journal_entry_block,
+          survive_solution_text, survive_solution_json, survive_solution_explanation_cache,
+          journal_entry_completed_json, journal_entry_block,
           ai_generation_status,
           important_formulas, concept_notes, exam_traps,
           lw_quiz_url, sheet_master_url, lw_video_url,
@@ -4567,6 +4569,8 @@ export default function SolutionsViewer() {
                         refetchAsset();
                       }}
                     />
+                  ) : (asset?.survive_solution_json?.parts?.length > 0) ? (
+                    <StructuredSolutionDisplay asset={asset} />
                   ) : (
                     <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} isJEOnly={isJEOnly} aiGenerated={asset.ai_generation_status === "complete"} onSuggestFix={() => setReportOpen(true)} />
                   )}
