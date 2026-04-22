@@ -43,6 +43,7 @@ interface SurviveThisPanelProps {
   topicName?: string;
   courseName?: string;
   onDownloadPdf?: () => void;
+  bottomOffset?: number;
 }
 
 export function SurviveThisPanel(props: SurviveThisPanelProps) {
