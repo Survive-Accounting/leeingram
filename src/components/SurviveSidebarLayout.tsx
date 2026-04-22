@@ -6,6 +6,7 @@ import {
   Rocket, Users, CheckCircle2, Loader2, BarChart3,
   AlertTriangle, CheckSquare, MessageSquare, LayoutDashboard, Wrench, Calculator, BookOpen,
   ChevronRight, CreditCard, ClipboardCheck, TrendingUp, Lock, Building2, Globe, Link as LinkIcon, Settings,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -583,6 +584,7 @@ export function SurviveSidebarLayout({ children }: { children: React.ReactNode }
             <div className="border-t border-border my-3" />
             {renderTopLabel("Admin")}
             <div className="space-y-0.5">
+              {renderItem("AI Features", "/admin/ai-features", Sparkles)}
               {renderItem("VA Admin", "/va-admin", Users)}
               {renderItem("Payment Links", "/payment-links-admin", CreditCard)}
 

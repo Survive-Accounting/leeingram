@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   Sparkles, Video, Share2, DollarSign, Clock, Flame, Star, Crown,
-  TrendingUp, Eye, ThumbsUp, ThumbsDown, ExternalLink, Edit3,
+  TrendingUp, Eye, ThumbsUp, ThumbsDown, ExternalLink, Edit3, Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";

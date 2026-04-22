@@ -15,6 +15,7 @@ const RESTRICTED_PATHS = [
   "/admin/analytics/content",
   "/admin/chapter-qa",
   "/admin/legacy-links",
+  "/admin/ai-features",
   "/asset-stats",
 ];
 
