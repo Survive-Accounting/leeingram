@@ -15,6 +15,7 @@ import StructuredSolutionDisplay from "@/components/StructuredSolutionDisplay";
 import { ProblemNavigation } from "@/components/ProblemNavigation";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { QAToolboxModal } from "@/components/QAToolboxModal";
+import { SurviveThisPanel } from "@/components/SurviveThisPanel";
 import { loadStripe } from "@stripe/stripe-js";
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
 import { STRIPE_PK_LIVE, STRIPE_PK_TEST } from "@/lib/stripeConfig";
