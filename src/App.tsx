@@ -105,6 +105,7 @@ const AdminAuth = lazy(() => import("./pages/AdminAuth"));
 const AdminGreek = lazy(() => import("./pages/AdminGreek"));
 const LegacyLinks = lazy(() => import("./pages/LegacyLinks"));
 const ChapterContentQA = lazy(() => import("./pages/ChapterContentQA"));
+const AIFeatures = lazy(() => import("./pages/AIFeatures"));
 const QuizExplanation = lazy(() => import("./pages/QuizExplanation"));
 const QuizQuestion = lazy(() => import("./pages/QuizQuestion"));
 const QuizChoice = lazy(() => import("./pages/QuizChoice"));
@@ -296,6 +297,7 @@ const AppRoutes = () => {
         <Route path="/admin/auth" element={<ProtectedRoute><AdminAuth /></ProtectedRoute>} />
         <Route path="/admin/greek" element={<ProtectedRoute><AdminGreek /></ProtectedRoute>} />
         <Route path="/admin/legacy-links" element={<ProtectedRoute><LegacyLinks /></ProtectedRoute>} />
+        <Route path="/admin/ai-features" element={<ProtectedRoute><AIFeatures /></ProtectedRoute>} />
         <Route path="/qa-costs" element={<ProtectedRoute><QACosts /></ProtectedRoute>} />
         <Route path="/inbox" element={<ProtectedRoute><StudentInboxPage /></ProtectedRoute>} />
         <Route path="/je-debug" element={<ProtectedRoute><JEDebug /></ProtectedRoute>} />
