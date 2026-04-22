@@ -4138,6 +4138,57 @@ export type Database = {
         }
         Relationships: []
       }
+      priority_queue_config: {
+        Row: {
+          cutoff_time: string | null
+          id: string
+          is_active: boolean | null
+          price_cents: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          cutoff_time?: string | null
+          id?: string
+          is_active?: boolean | null
+          price_cents?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          cutoff_time?: string | null
+          id?: string
+          is_active?: boolean | null
+          price_cents?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      priority_queue_sessions: {
+        Row: {
+          clocked_in_at: string | null
+          clocked_out_at: string | null
+          cutoff_time: string | null
+          id: string
+          revenue_cents: number | null
+          submissions_count: number | null
+        }
+        Insert: {
+          clocked_in_at?: string | null
+          clocked_out_at?: string | null
+          cutoff_time?: string | null
+          id?: string
+          revenue_cents?: number | null
+          submissions_count?: number | null
+        }
+        Update: {
+          clocked_in_at?: string | null
+          clocked_out_at?: string | null
+          cutoff_time?: string | null
+          id?: string
+          revenue_cents?: number | null
+          submissions_count?: number | null
+        }
+        Relationships: []
+      }
       problem_assets: {
         Row: {
           asset_type: string
@@ -4320,6 +4371,47 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "chapter_problems"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          balance_cents: number | null
+          converted: boolean | null
+          created_at: string | null
+          id: string
+          pass_code: string | null
+          referred_email: string
+          referrer_email: string
+          revenue_cents: number | null
+        }
+        Insert: {
+          balance_cents?: number | null
+          converted?: boolean | null
+          created_at?: string | null
+          id?: string
+          pass_code?: string | null
+          referred_email: string
+          referrer_email: string
+          revenue_cents?: number | null
+        }
+        Update: {
+          balance_cents?: number | null
+          converted?: boolean | null
+          created_at?: string | null
+          id?: string
+          pass_code?: string | null
+          referred_email?: string
+          referrer_email?: string
+          revenue_cents?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_pass_code_fkey"
+            columns: ["pass_code"]
+            isOneToOne: false
+            referencedRelation: "viral_passes"
+            referencedColumns: ["pass_code"]
           },
         ]
       }
@@ -5190,6 +5282,50 @@ export type Database = {
             columns: ["professor_id"]
             isOneToOne: false
             referencedRelation: "campus_professors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survive_ai_responses: {
+        Row: {
+          asset_id: string | null
+          created_at: string | null
+          helpful_count: number | null
+          id: string
+          model_used: string | null
+          not_helpful_count: number | null
+          prompt_type: string
+          response_text: string
+          video_requested_count: number | null
+        }
+        Insert: {
+          asset_id?: string | null
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          model_used?: string | null
+          not_helpful_count?: number | null
+          prompt_type: string
+          response_text: string
+          video_requested_count?: number | null
+        }
+        Update: {
+          asset_id?: string | null
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          model_used?: string | null
+          not_helpful_count?: number | null
+          prompt_type?: string
+          response_text?: string
+          video_requested_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survive_ai_responses_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
             referencedColumns: ["id"]
           },
         ]
@@ -6513,6 +6649,145 @@ export type Database = {
           video_linked_explanation?: boolean
         }
         Relationships: []
+      }
+      video_request_upvotes: {
+        Row: {
+          created_at: string | null
+          id: string
+          student_email: string | null
+          video_request_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          student_email?: string | null
+          video_request_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          student_email?: string | null
+          video_request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_request_upvotes_video_request_id_fkey"
+            columns: ["video_request_id"]
+            isOneToOne: false
+            referencedRelation: "video_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_requests: {
+        Row: {
+          asset_id: string | null
+          created_at: string | null
+          id: string
+          is_accounting_major: boolean | null
+          is_priority: boolean | null
+          priority_paid_at: string | null
+          prompt_type: string | null
+          question: string
+          status: string | null
+          student_email: string | null
+          upvote_count: number | null
+          video_url: string | null
+        }
+        Insert: {
+          asset_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_accounting_major?: boolean | null
+          is_priority?: boolean | null
+          priority_paid_at?: string | null
+          prompt_type?: string | null
+          question: string
+          status?: string | null
+          student_email?: string | null
+          upvote_count?: number | null
+          video_url?: string | null
+        }
+        Update: {
+          asset_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_accounting_major?: boolean | null
+          is_priority?: boolean | null
+          priority_paid_at?: string | null
+          prompt_type?: string | null
+          question?: string
+          status?: string | null
+          student_email?: string | null
+          upvote_count?: number | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_requests_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      viral_passes: {
+        Row: {
+          asset_id: string | null
+          conversion_window: string | null
+          converted_at: string | null
+          created_at: string | null
+          id: string
+          opened_at: string | null
+          pass_code: string
+          recipient_email: string | null
+          trial_started_at: string | null
+          trial_type: string | null
+          video_request_id: string | null
+        }
+        Insert: {
+          asset_id?: string | null
+          conversion_window?: string | null
+          converted_at?: string | null
+          created_at?: string | null
+          id?: string
+          opened_at?: string | null
+          pass_code: string
+          recipient_email?: string | null
+          trial_started_at?: string | null
+          trial_type?: string | null
+          video_request_id?: string | null
+        }
+        Update: {
+          asset_id?: string | null
+          conversion_window?: string | null
+          converted_at?: string | null
+          created_at?: string | null
+          id?: string
+          opened_at?: string | null
+          pass_code?: string
+          recipient_email?: string | null
+          trial_started_at?: string | null
+          trial_type?: string | null
+          video_request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "viral_passes_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "viral_passes_video_request_id_fkey"
+            columns: ["video_request_id"]
+            isOneToOne: false
+            referencedRelation: "video_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vlog_episodes: {
         Row: {
