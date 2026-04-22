@@ -405,6 +405,52 @@ Deno.serve(async (req) => {
     console.error("Auth user / email error:", err);
   }
 
+  // ── Step 5: Trial pass conversion tracking ──
+  try {
+    const purchaseEmail = (emailForAuth || email).trim().toLowerCase();
+    const revenueCents = pricePaidCents ?? 0;
+
+    // Find the most recent active trial pass for this email
+    const { data: passes } = await supabase
+      .from("viral_passes")
+      .select("id, pass_code, recipient_email, trial_type, trial_started_at, trial_expires_at, original_2hr_expires_at, converted_at")
+      .ilike("recipient_email", purchaseEmail)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    const pass = (passes ?? []).find((p: any) => !p.converted_at);
+    if (pass) {
+      const now = new Date();
+      const orig2hr = pass.original_2hr_expires_at ? new Date(pass.original_2hr_expires_at) : null;
+      const trialExp = pass.trial_expires_at ? new Date(pass.trial_expires_at) : null;
+
+      let conversionWindow: "2hr" | "48hr" | "later" = "later";
+      if (orig2hr && now <= orig2hr) conversionWindow = "2hr";
+      else if (trialExp && now <= trialExp) conversionWindow = "48hr";
+
+      await supabase
+        .from("viral_passes")
+        .update({ converted_at: now.toISOString(), conversion_window: conversionWindow })
+        .eq("id", pass.id);
+
+      // Create referral record if we know the upvoter (recipient_email IS the upvoter who got the pass)
+      const referrerEmail = pass.recipient_email;
+      if (referrerEmail && referrerEmail.toLowerCase() !== purchaseEmail) {
+        await supabase.from("referrals").insert({
+          referrer_email: referrerEmail,
+          referred_email: purchaseEmail,
+          pass_code: pass.pass_code,
+          converted: true,
+          revenue_cents: revenueCents,
+          balance_cents: Math.floor(revenueCents * 0.5),
+        });
+      }
+      console.log("Tracked viral pass conversion:", pass.pass_code, conversionWindow);
+    }
+  } catch (err) {
+    console.error("Trial conversion tracking error:", err);
+  }
+
   // Always return 200 to Stripe
   return new Response(JSON.stringify({ received: true }), {
     status: 200,

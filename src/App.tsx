@@ -75,6 +75,7 @@ const BulkFixTool = lazy(() => import("./pages/BulkFixTool"));
 const FlashcardTool = lazy(() => import("./pages/FlashcardTool"));
 const StudyToolsFlashcards = lazy(() => import("./pages/StudyToolsFlashcards"));
 const SolutionsViewer = lazy(() => import("./pages/SolutionsViewer"));
+const TrialPass = lazy(() => import("./pages/TrialPass"));
 const PracticeViewer = lazy(() => import("./pages/PracticeViewer"));
 const ACCY304Landing = lazy(() => import("./pages/ACCY304Landing"));
 const ACCY304Admin = lazy(() => import("./pages/ACCY304Admin"));
@@ -191,6 +192,7 @@ const AppRoutes = () => {
         <Route path="/quiz-rating/:topicId" element={<QuizRating />} />
         <Route path="/legacy/:pageId" element={<LegacyNotionPage />} />
         <Route path="/preview" element={<Preview />} />
+        <Route path="/trial/:passCode" element={<TrialPass />} />
         <Route path="/checkout/complete" element={<CheckoutComplete />} />
         <Route path="/checkout/cancelled" element={<CheckoutCancelled />} />
         <Route path="/campus/:campusSlug/:courseSlug" element={<CampusLandingPage />} />
