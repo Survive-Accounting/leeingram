@@ -4570,7 +4570,7 @@ export default function SolutionsViewer() {
                       }}
                     />
                   ) : (asset?.survive_solution_json?.parts?.length > 0) ? (
-                    <StructuredSolutionDisplay asset={asset} />
+                    <StructuredSolutionDisplay asset={asset} jeTooltipSource={asset.journal_entry_completed_json} />
                   ) : (
                     <AnswerSummarySection text={answerSummary} theme={t} instructions={asset._instructions} isJEOnly={isJEOnly} aiGenerated={asset.ai_generation_status === "complete"} onSuggestFix={() => setReportOpen(true)} />
                   )}

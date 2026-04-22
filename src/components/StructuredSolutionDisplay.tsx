@@ -1,6 +1,49 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, createContext, useContext } from "react";
 import { ChevronRight, Sparkles, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { JETooltip } from "@/components/JETooltip";
+
+// ─── Tooltip lookup built from canonical journal_entry_completed_json ───
+type TooltipEntry = { reason?: string; amountSource?: string };
+type TooltipLookup = Map<string, TooltipEntry>;
+
+const JETooltipContext = createContext<TooltipLookup | null>(null);
+
+function normalizeAccount(name: string): string {
+  return (name || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function buildTooltipLookup(source: any): TooltipLookup {
+  const map: TooltipLookup = new Map();
+  if (!source) return map;
+  let payload: any = source;
+  if (typeof payload === "string") {
+    try { payload = JSON.parse(payload); } catch { return map; }
+  }
+  const sections = payload?.scenario_sections;
+  if (!Array.isArray(sections)) return map;
+  for (const sc of sections) {
+    for (const e of sc.entries_by_date ?? []) {
+      for (const row of e.rows ?? []) {
+        const key = normalizeAccount(row.account_name);
+        if (!key) continue;
+        const reason = row.debit_credit_reason || undefined;
+        const amountSource = row.amount_source || undefined;
+        if (!reason && !amountSource) continue;
+        const existing = map.get(key);
+        if (!existing) {
+          map.set(key, { reason, amountSource });
+        } else {
+          map.set(key, {
+            reason: existing.reason || reason,
+            amountSource: existing.amountSource || amountSource,
+          });
+        }
+      }
+    }
+  }
+  return map;
+}
 
 // ─── Types ────────────────────────────────────────────────────────────
 type JELine = {
@@ -35,6 +78,8 @@ interface Props {
     survive_solution_json: StructuredSolutionJson | null;
     survive_solution_explanation_cache?: Record<string, string> | null;
   };
+  /** Canonical journal_entry_completed_json — used to source tooltip text per account. */
+  jeTooltipSource?: any;
   onSuggestFix?: () => void;
   onLearnMore?: () => void;
 }
@@ -196,6 +241,7 @@ function fmtAmount(n: number | null | undefined): string {
 }
 
 function JETable({ je }: { je: JournalEntry }) {
+  const lookup = useContext(JETooltipContext);
   return (
     <div className="rounded-md overflow-hidden border" style={{ borderColor: "#E5E7EB" }}>
       <div
@@ -208,6 +254,7 @@ function JETable({ je }: { je: JournalEntry }) {
       </div>
       {je.lines.map((line, i) => {
         const isCredit = line.credit != null && (line.debit == null || line.debit === 0);
+        const tip = lookup?.get(normalizeAccount(line.account));
         return (
           <div
             key={i}
@@ -226,12 +273,23 @@ function JETable({ je }: { je: JournalEntry }) {
               }}
             >
               {line.account}
+              {tip?.reason && <JETooltip text={tip.reason} variant="solutions" />}
             </div>
             <div className="text-right font-mono" style={{ color: "rgba(0,0,0,0.85)" }}>
-              {fmtAmount(line.debit)}
+              {!isCredit && line.debit != null && (
+                <span>
+                  {fmtAmount(line.debit)}
+                  {tip?.amountSource && <JETooltip text={tip.amountSource} variant="solutions" />}
+                </span>
+              )}
             </div>
             <div className="text-right font-mono" style={{ color: "rgba(0,0,0,0.85)" }}>
-              {fmtAmount(line.credit)}
+              {isCredit && line.credit != null && (
+                <span>
+                  {fmtAmount(line.credit)}
+                  {tip?.amountSource && <JETooltip text={tip.amountSource} variant="solutions" />}
+                </span>
+              )}
             </div>
           </div>
         );
@@ -555,7 +613,9 @@ function PartCard({
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────
-export default function StructuredSolutionDisplay({ asset, onSuggestFix, onLearnMore }: Props) {
+export default function StructuredSolutionDisplay({ asset, jeTooltipSource, onSuggestFix, onLearnMore }: Props) {
+  const tooltipLookup = useMemo(() => buildTooltipLookup(jeTooltipSource), [jeTooltipSource]);
+
   if (!asset?.survive_solution_json || !Array.isArray(asset.survive_solution_json.parts)) {
     return null;
   }
@@ -563,6 +623,7 @@ export default function StructuredSolutionDisplay({ asset, onSuggestFix, onLearn
   const cache = asset.survive_solution_explanation_cache ?? null;
 
   return (
+    <JETooltipContext.Provider value={tooltipLookup}>
     <div>
       {asset.survive_solution_json.parts.map((part, i) => (
         <PartCard
@@ -616,5 +677,6 @@ export default function StructuredSolutionDisplay({ asset, onSuggestFix, onLearn
         </button>
       </div>
     </div>
+    </JETooltipContext.Provider>
   );
 }
