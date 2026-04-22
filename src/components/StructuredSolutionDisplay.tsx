@@ -600,7 +600,9 @@ function PartCard({
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────
-export default function StructuredSolutionDisplay({ asset, onSuggestFix, onLearnMore }: Props) {
+export default function StructuredSolutionDisplay({ asset, jeTooltipSource, onSuggestFix, onLearnMore }: Props) {
+  const tooltipLookup = useMemo(() => buildTooltipLookup(jeTooltipSource), [jeTooltipSource]);
+
   if (!asset?.survive_solution_json || !Array.isArray(asset.survive_solution_json.parts)) {
     return null;
   }
@@ -608,6 +610,7 @@ export default function StructuredSolutionDisplay({ asset, onSuggestFix, onLearn
   const cache = asset.survive_solution_explanation_cache ?? null;
 
   return (
+    <JETooltipContext.Provider value={tooltipLookup}>
     <div>
       {asset.survive_solution_json.parts.map((part, i) => (
         <PartCard
