@@ -664,5 +664,6 @@ export default function StructuredSolutionDisplay({ asset, jeTooltipSource, onSu
         </button>
       </div>
     </div>
+    </JETooltipContext.Provider>
   );
 }
