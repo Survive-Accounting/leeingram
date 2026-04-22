@@ -11,7 +11,7 @@ import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { ExternalLink, Lock, Unlock, Copy, AlertTriangle, ChevronDown, ChevronUp, X, CheckCircle, Calendar, Share2, Wrench, Loader2, Sparkles, Edit3, Menu, Target, BookOpen, LayoutGrid, FileText, Calculator, ArrowLeft } from "lucide-react";
 import { QAEditButton, QAInlineEditorPanel, QAInstructionsEditor } from "@/components/QAInlineEditor";
-import { StructuredSolutionDisplay } from "@/components/StructuredSolutionDisplay";
+import StructuredSolutionDisplay from "@/components/StructuredSolutionDisplay";
 import { ProblemNavigation } from "@/components/ProblemNavigation";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { QAToolboxModal } from "@/components/QAToolboxModal";
