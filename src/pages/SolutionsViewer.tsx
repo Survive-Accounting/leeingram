@@ -4656,6 +4656,16 @@ export default function SolutionsViewer() {
         chapterName={chapter?.chapter_name || undefined}
       />
 
+      <SurviveThisPanel
+        assetId={asset.id}
+        assetName={asset.asset_name}
+        problemText={asset.problem_text || ""}
+        instructions={asset.instructions || ""}
+        chapterName={chapter?.chapter_name || ""}
+        topicName={(asset as any)?.topic_name || ""}
+        courseName={course?.course_name || ""}
+      />
+
       {rawIsPreview && (
         <PreviewPurchaseBar priceCents={12500} campusSlug="ole-miss" courseSlug="intermediate-accounting-2" />
       )}
