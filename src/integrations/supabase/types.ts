@@ -6740,8 +6740,10 @@ export type Database = {
           created_at: string | null
           id: string
           opened_at: string | null
+          original_2hr_expires_at: string | null
           pass_code: string
           recipient_email: string | null
+          trial_expires_at: string | null
           trial_started_at: string | null
           trial_type: string | null
           video_request_id: string | null
@@ -6753,8 +6755,10 @@ export type Database = {
           created_at?: string | null
           id?: string
           opened_at?: string | null
+          original_2hr_expires_at?: string | null
           pass_code: string
           recipient_email?: string | null
+          trial_expires_at?: string | null
           trial_started_at?: string | null
           trial_type?: string | null
           video_request_id?: string | null
@@ -6766,8 +6770,10 @@ export type Database = {
           created_at?: string | null
           id?: string
           opened_at?: string | null
+          original_2hr_expires_at?: string | null
           pass_code?: string
           recipient_email?: string | null
+          trial_expires_at?: string | null
           trial_started_at?: string | null
           trial_type?: string | null
           video_request_id?: string | null
