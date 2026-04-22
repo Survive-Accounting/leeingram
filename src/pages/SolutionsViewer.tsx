@@ -4664,6 +4664,7 @@ export default function SolutionsViewer() {
         chapterName={chapter?.chapter_name || ""}
         topicName={(asset as any)?.topic_name || ""}
         courseName={course?.course_name || ""}
+        bottomOffset={rawIsPreview ? 100 : 24}
       />
 
       {rawIsPreview && (

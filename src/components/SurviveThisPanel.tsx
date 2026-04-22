@@ -43,6 +43,7 @@ interface SurviveThisPanelProps {
   topicName?: string;
   courseName?: string;
   onDownloadPdf?: () => void;
+  bottomOffset?: number;
 }
 
 export function SurviveThisPanel(props: SurviveThisPanelProps) {
@@ -179,6 +180,7 @@ export function SurviveThisPanel(props: SurviveThisPanelProps) {
         open={open}
         onOpen={() => setOpen(true)}
         leeOnline={leeOnline}
+        bottomOffset={props.bottomOffset ?? 24}
       />
 
       <div style={panelStyle} role="dialog" aria-label="Survive This — Lee's AI tutor">
@@ -281,7 +283,7 @@ export function SurviveThisPanel(props: SurviveThisPanelProps) {
 
 // ── Floating Button ────────────────────────────────────────────────────
 
-function FloatingButton({ open, onOpen, leeOnline }: { open: boolean; onOpen: () => void; leeOnline: boolean }) {
+function FloatingButton({ open, onOpen, leeOnline, bottomOffset = 24 }: { open: boolean; onOpen: () => void; leeOnline: boolean; bottomOffset?: number }) {
   const [hover, setHover] = useState(false);
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
   const size = isMobile ? 56 : 64;
@@ -290,7 +292,7 @@ function FloatingButton({ open, onOpen, leeOnline }: { open: boolean; onOpen: ()
     <div
       style={{
         position: "fixed",
-        bottom: 24,
+        bottom: bottomOffset,
         right: 24,
         zIndex: 1000,
         display: "flex",
