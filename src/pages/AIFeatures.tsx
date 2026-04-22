@@ -496,20 +496,8 @@ function PriorityQueueTab() {
   const [tmpPrice, setTmpPrice] = useState("15");
   const [clockInTime, setClockInTime] = useState<string | null>(null);
 
-  const handleToggle = async (next: boolean) => {
+  const handleToggle = (next: boolean) => {
     setClockedIn(next);
-    try {
-      const { supabase } = await import("@/integrations/supabase/client");
-      await supabase.functions.invoke("toggle-priority-queue", {
-        body: {
-          active: next,
-          cutoff_time: `${cutoff}:00`,
-          price_cents: price * 100,
-        },
-      });
-    } catch (err) {
-      console.error("toggle-priority-queue failed", err);
-    }
     if (next) {
       const t = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
       setClockInTime(t);

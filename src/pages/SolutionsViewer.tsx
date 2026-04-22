@@ -15,6 +15,7 @@ import StructuredSolutionDisplay from "@/components/StructuredSolutionDisplay";
 import { ProblemNavigation } from "@/components/ProblemNavigation";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { QAToolboxModal } from "@/components/QAToolboxModal";
+import { SurviveThisPanel } from "@/components/SurviveThisPanel";
 import { loadStripe } from "@stripe/stripe-js";
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
 import { STRIPE_PK_LIVE, STRIPE_PK_TEST } from "@/lib/stripeConfig";
@@ -4653,6 +4654,16 @@ export default function SolutionsViewer() {
         teachingAssetId={asset.id}
         chapterLabel={chapterNum ? `Ch ${chapterNum}` : undefined}
         chapterName={chapter?.chapter_name || undefined}
+      />
+
+      <SurviveThisPanel
+        assetId={asset.id}
+        assetName={asset.asset_name}
+        problemText={asset.problem_text || ""}
+        instructions={asset.instructions || ""}
+        chapterName={chapter?.chapter_name || ""}
+        topicName={(asset as any)?.topic_name || ""}
+        courseName={course?.course_name || ""}
       />
 
       {rawIsPreview && (
