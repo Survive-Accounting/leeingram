@@ -148,15 +148,63 @@ export default function StagingCoursesSection({
   };
 
   return (
-    <section id="courses-section" className="px-4 sm:px-6 scroll-mt-24" style={{ background: "#F8F8FA", paddingTop: 80, paddingBottom: 120 }}>
+    <section
+      id="courses-section"
+      className="relative px-4 sm:px-6 scroll-mt-24 overflow-hidden"
+      style={{ paddingTop: 80, paddingBottom: 120 }}
+    >
       <style>{`
         @keyframes betaPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.4); opacity: 0.6; }
         }
+        .courses-bg-video {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          z-index: 0;
+          opacity: 0.18;
+          filter: blur(2px) saturate(1.1);
+          pointer-events: none;
+        }
+        .courses-bg-base {
+          position: absolute;
+          inset: 0;
+          background: #F8F8FA;
+          z-index: 0;
+        }
+        .courses-bg-overlay {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+          background:
+            radial-gradient(ellipse at 50% 40%, rgba(248,248,250,0.55) 0%, rgba(248,248,250,0.85) 60%, rgba(248,248,250,0.95) 100%),
+            linear-gradient(to bottom, rgba(248,248,250,1) 0%, rgba(248,248,250,0.6) 18%, rgba(248,248,250,0.6) 75%, rgba(20,33,61,0.18) 100%);
+        }
       `}</style>
 
-      <div className="mx-auto max-w-[920px]">
+      <div className="courses-bg-base" />
+      <video
+        className="courses-bg-video"
+        autoPlay
+        loop
+        muted
+        playsInline
+        // @ts-ignore
+        webkit-playsinline="true"
+        disablePictureInPicture
+        disableRemotePlayback
+        preload="auto"
+        aria-hidden="true"
+      >
+        <source src="/videos/hero-loop.mp4" type="video/mp4" />
+      </video>
+      <div className="courses-bg-overlay" />
+
+      <div className="relative mx-auto max-w-[920px]" style={{ zIndex: 2 }}>
 
         <p
           className="text-center mb-4 text-[22px] sm:text-[28px] md:text-[34px] leading-tight"
