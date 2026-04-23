@@ -277,7 +277,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                     textShadow: subtextShadow,
                   }}
                 >
-                  Accounting Tutor Since 2015
+                  Full-time Accounting Tutor
                 </p>
               </div>
             </div>
@@ -307,51 +307,54 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
               >
                 <p style={{ fontSize: "15px", lineHeight: 1.6 }}>
-                  Prep for your exams with AI-assisted study tools—designed to get you unstuck fast. Built by OG accounting tutor, Lee Ingram.
+                  Prep for your exams with AI-assisted study tools designed to get you unstuck fast. Built by OG accounting tutor, Lee Ingram. Trusted by 1,200+ students since 2015.
                 </p>
               </div>
               {/* Hidden tooltip provider preserved for future use */}
               <Tooltip><TooltipTrigger asChild><span /></TooltipTrigger><TooltipContent /></Tooltip>
             </TooltipProvider>
+
+            {/* CTA inside card */}
+            <div className="mt-7 flex justify-center md:justify-start hero-anim-btn">
+              <div className="relative">
+                <div
+                  aria-hidden="true"
+                  className="absolute -inset-6 rounded-full pointer-events-none"
+                  style={{
+                    background:
+                      "radial-gradient(closest-side, rgba(206,17,38,0.5) 0%, rgba(120,40,180,0.25) 50%, rgba(20,33,61,0) 80%)",
+                    filter: "blur(24px)",
+                    zIndex: 0,
+                    animation: "heroBtnGlow 4s ease-in-out infinite",
+                  }}
+                />
+                <style>{`
+                  @keyframes heroBtnGlow {
+                    0%, 100% { opacity: 0.85; transform: scale(1); }
+                    50%      { opacity: 1;    transform: scale(1.06); }
+                  }
+                `}</style>
+                <button
+                  onClick={onGetStartedClick}
+                  className="relative rounded-xl px-10 py-4 text-[17px] md:text-[19px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+                  style={{
+                    background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+                    fontFamily: "Inter, sans-serif",
+                    boxShadow:
+                      "inset 0 1px 0 rgba(255,255,255,0.25), 0 0 0 1px rgba(255,255,255,0.1), 0 10px 28px rgba(206,17,38,0.5), 0 20px 50px rgba(120,40,180,0.3)",
+                    letterSpacing: "0.01em",
+                    zIndex: 1,
+                  }}
+                >
+                  Get Started
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* CTAs — moved BELOW the card so mobile shows button without scrolling */}
-        <div className="mt-8 md:mt-12 flex flex-col items-center gap-5 hero-anim-btn">
-          <div className="relative">
-            {/* Ambient glow that aligns with animated background lighting */}
-            <div
-              aria-hidden="true"
-              className="absolute -inset-8 rounded-full pointer-events-none"
-              style={{
-                background:
-                  "radial-gradient(closest-side, rgba(206,17,38,0.55) 0%, rgba(120,40,180,0.35) 45%, rgba(20,33,61,0) 75%)",
-                filter: "blur(28px)",
-                zIndex: 0,
-                animation: "heroBtnGlow 4s ease-in-out infinite",
-              }}
-            />
-            <style>{`
-              @keyframes heroBtnGlow {
-                0%, 100% { opacity: 0.85; transform: scale(1); }
-                50%      { opacity: 1;    transform: scale(1.06); }
-              }
-            `}</style>
-            <button
-              onClick={onGetStartedClick}
-              className="relative rounded-xl px-12 py-5 text-[19px] md:text-[21px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-1 active:translate-y-0 active:scale-[0.99]"
-              style={{
-                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-                fontFamily: "Inter, sans-serif",
-                boxShadow:
-                  "inset 0 1px 0 rgba(255,255,255,0.25), 0 0 0 1px rgba(255,255,255,0.1), 0 14px 36px rgba(206,17,38,0.55), 0 28px 70px rgba(120,40,180,0.4), 0 40px 100px rgba(20,33,61,0.6)",
-                letterSpacing: "0.01em",
-                zIndex: 1,
-              }}
-            >
-              Get Started
-            </button>
-          </div>
+        {/* "See how it works" sits below the card */}
+        <div className="mt-6 md:mt-8 flex justify-center hero-anim-btn">
           <button
             onClick={() => {
               const el = document.getElementById("courses-section");
