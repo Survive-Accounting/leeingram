@@ -19,27 +19,66 @@ const StudentPassDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-6 py-12">
-        <header className="mb-10">
+        <header className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground">
             Welcome to your dashboard
           </h1>
           <p className="mt-2 text-muted-foreground">
             Your study pass is active{purchase?.email ? ` — ${purchase.email}` : ""}.
           </p>
-          {purchase && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {purchase.selectedPlan && (
-                <Badge variant="secondary">Plan: {purchase.selectedPlan}</Badge>
-              )}
-              {purchase.campus && (
-                <Badge variant="secondary">Campus: {purchase.campus}</Badge>
-              )}
-              {formattedAmount && (
-                <Badge variant="secondary">Paid: {formattedAmount}</Badge>
-              )}
-            </div>
-          )}
         </header>
+
+        {purchase && (
+          <Card className="mb-8 border-primary/20 bg-primary/5">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Your Purchase</CardTitle>
+                <Badge variant="default">Active</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Plan
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium text-foreground">
+                    {purchase.selectedPlan ?? "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Amount Paid
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium text-foreground">
+                    {formattedAmount ?? "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Campus
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium text-foreground">
+                    {purchase.campus ?? "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Included Courses
+                  </dt>
+                  <dd className="mt-1 text-sm font-medium text-foreground">
+                    {purchase.includedCourses?.length
+                      ? purchase.includedCourses.join(", ")
+                      : "—"}
+                  </dd>
+                </div>
+              </dl>
+              <p className="mt-4 text-xs text-muted-foreground">
+                Temporary summary — full course access provisioning is coming soon.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-4 md:grid-cols-3">
           <Card className="hover:shadow-md transition-shadow">
