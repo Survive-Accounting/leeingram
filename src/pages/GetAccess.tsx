@@ -62,23 +62,28 @@ export default function GetAccess() {
 
   const campusParam = (searchParams.get("campus") || "").toLowerCase();
   const courseParam = (searchParams.get("course") || "").toLowerCase();
+  const emailParam = searchParams.get("email") || "";
+
+  // Default to Ole Miss when no (or unknown) campus is provided.
+  const effectiveCampus = campusParam && CAMPUS_LABELS[campusParam] ? campusParam : "ole-miss";
+  const isOleMiss = effectiveCampus === "ole-miss";
 
   // Resolve course slug from param (matches slug or known aliases).
+  // For Ole Miss with no course specified, default to ACCY 201 (intro-1).
   const resolvedCourseSlug = useMemo(() => {
-    if (!courseParam) return COURSES[0].slug;
+    if (!courseParam) return "intro-accounting-1";
     const match = COURSES.find(
       (c) => c.slug === courseParam || c.aliases.includes(courseParam),
     );
-    return match?.slug ?? COURSES[0].slug;
+    return match?.slug ?? "intro-accounting-1";
   }, [courseParam]);
 
-  const campusName = CAMPUS_LABELS[campusParam] || null;
+  const campusName = CAMPUS_LABELS[effectiveCampus];
   const courseCode = COURSE_CODES[resolvedCourseSlug] || null;
-  const showContextLabel = Boolean(campusParam && courseParam);
 
   const [course, setCourse] = useState(resolvedCourseSlug);
   const [plan, setPlan] = useState<"semester" | "chapter">("semester");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(emailParam);
 
   const selectedPlan = PLANS.find((p) => p.id === plan)!;
 
@@ -97,21 +102,32 @@ export default function GetAccess() {
       />
 
       {/* Hero */}
-      <section className="px-4 sm:px-6 pt-12 md:pt-20 pb-10 text-center">
-        {showContextLabel && (
+      <section className="px-4 sm:px-6 pt-12 md:pt-20 pb-10 text-center relative">
+        {/* Subtle Ole Miss powder-blue accent bar */}
+        {isOleMiss && (
           <div
-            className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full text-[12px] font-semibold uppercase tracking-wider"
+            aria-hidden
+            className="absolute top-0 left-1/2 -translate-x-1/2 h-1 rounded-b-full"
             style={{
-              background: "rgba(20,33,61,0.06)",
-              color: NAVY,
-              fontFamily: "Inter, sans-serif",
-              border: "1px dashed rgba(20,33,61,0.25)",
+              width: 120,
+              background: `linear-gradient(90deg, #A6CCE2 0%, ${NAVY} 50%, ${RED} 100%)`,
+              opacity: 0.85,
             }}
-            title="[Placeholder] Wire to real campus/course data later"
-          >
-            For {campusName ?? campusParam} {courseCode ?? ""} students
-          </div>
+          />
         )}
+
+        <div
+          className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full text-[12px] font-semibold uppercase tracking-wider"
+          style={{
+            background: isOleMiss ? "rgba(166,204,226,0.22)" : "rgba(20,33,61,0.06)",
+            color: NAVY,
+            fontFamily: "Inter, sans-serif",
+            border: isOleMiss ? "1px solid rgba(20,33,61,0.18)" : "1px dashed rgba(20,33,61,0.25)",
+          }}
+        >
+          For {campusName} {courseCode ?? "ACCY 201"} students
+        </div>
+
         <h1
           className="text-[34px] sm:text-[44px] md:text-[54px] leading-tight"
           style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
