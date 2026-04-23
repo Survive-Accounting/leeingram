@@ -15,10 +15,8 @@ function getFinalsCountdownText(): string | null {
   const msPerDay = 1000 * 60 * 60 * 24;
   const days = Math.ceil((target.getTime() - today.getTime()) / msPerDay);
   if (days <= 0) return null;
-  if (days === 1) return "Final exams are tomorrow.";
-  if (days >= 2 && days <= 6) return `Final exams are ${days} days away.`;
-  if (days >= 7 && days <= 14) return "Final exams are 1 week away.";
   const weeks = Math.floor(days / 7);
+  if (weeks < 1) return "Final exams are almost here.";
   return `Final exams are ${weeks} weeks away.`;
 }
 
