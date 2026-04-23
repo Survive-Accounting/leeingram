@@ -112,6 +112,15 @@ export default function StagingFeatureCardsSection({
       <div className="feature-grid-bg" aria-hidden="true" />
       <div className="feature-orb feature-orb-1" aria-hidden="true" />
       <div className="feature-orb feature-orb-2" aria-hidden="true" />
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background: "linear-gradient(180deg, rgba(10,20,40,0.85) 0%, rgba(10,20,40,0.95) 100%)",
+        }}
+      />
 
       <div className="max-w-[1100px] mx-auto w-full relative" style={{ zIndex: 1 }}>
         <div className="text-center mb-10">
