@@ -20,6 +20,7 @@ interface Course {
 interface StagingCoursesSectionProps {
   courses: Course[];
   onCardClick: (course: Course) => void;
+  onChapterClick?: (course: Course, chapterNumber: number) => void;
   onExpansionClick?: () => void;
 }
 
