@@ -51,23 +51,21 @@ export default function GetAccess() {
   const emailParam = searchParams.get("email") || "";
 
   // Default to Ole Miss when no (or unknown) campus is provided.
-  const effectiveCampus = campusParam && CAMPUS_LABELS[campusParam] ? campusParam : "ole-miss";
-  const isOleMiss = effectiveCampus === "ole-miss";
+  // The progression module decides which course list + codes to use.
+  const effectiveCampus = campusParam || "ole-miss";
+  const progression = useMemo(() => getCampusProgression(effectiveCampus), [effectiveCampus]);
+  const isOleMiss = progression.campusSlug === "ole-miss";
 
-  // Resolve course slug from param (matches slug or known aliases).
-  // For Ole Miss with no course specified, default to ACCY 201 (intro-1).
-  const resolvedCourseSlug = useMemo(() => {
-    if (!courseParam) return "intro-accounting-1";
-    const match = COURSES.find(
-      (c) => c.slug === courseParam || c.aliases.includes(courseParam),
-    );
-    return match?.slug ?? "intro-accounting-1";
-  }, [courseParam]);
+  const resolvedCourseSlug = useMemo<CourseSlug>(
+    () => resolveCourseSlug(progression, courseParam),
+    [progression, courseParam],
+  );
 
-  const campusName = CAMPUS_LABELS[effectiveCampus];
-  const courseCode = COURSE_CODES[resolvedCourseSlug] || null;
+  const campusName = progression.campusName;
+  const resolvedCourse = progression.courses.find((c) => c.slug === resolvedCourseSlug)!;
+  const courseCode = resolvedCourse.code;
 
-  const [course, setCourse] = useState(resolvedCourseSlug);
+  const [course, setCourse] = useState<CourseSlug>(resolvedCourseSlug);
   const [plan, setPlan] = useState<"semester" | "chapter">("semester");
   const [email, setEmail] = useState(emailParam);
 
