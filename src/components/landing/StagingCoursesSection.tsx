@@ -321,6 +321,44 @@ export default function StagingCoursesSection({
           )}
         </div>
 
+        {/* Below-dropdown stack: countdown + urgency CTA */}
+        <div style={{ marginTop: 20, marginBottom: 20 }} className="flex flex-col items-center gap-1.5">
+          {countdownText && (
+            <p
+              className="text-center"
+              style={{
+                color: "rgba(255,255,255,0.85)",
+                fontSize: 13,
+                fontFamily: "Inter, sans-serif",
+                fontWeight: 400,
+                textShadow: "1px 1px 4px rgba(0,0,0,0.5)",
+              }}
+            >
+              {countdownText}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => onGetStartedClick?.(selected?.slug ?? null)}
+            className="text-center hover:opacity-90 transition-opacity"
+            style={{
+              color: "#fff",
+              fontSize: 13,
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 400,
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
+              textShadow: "1px 1px 4px rgba(0,0,0,0.5)",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            Start studying now →
+          </button>
+        </div>
+
         {/* Stats + Chapters — only after selection */}
         {selected && (
           <div
