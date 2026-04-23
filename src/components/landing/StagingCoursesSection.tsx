@@ -171,66 +171,14 @@ export default function StagingCoursesSection({
     <section
       id="courses-section"
       className="relative px-4 sm:px-6 scroll-mt-0 overflow-hidden pt-10 md:pt-16 pb-[320px] md:pb-[120px]"
+      style={{ background: "#0F1A2E" }}
     >
       <style>{`
         @keyframes betaPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.4); opacity: 0.6; }
         }
-        .courses-bg-video {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          z-index: 0;
-          pointer-events: none;
-        }
-        .courses-bg-base {
-          position: absolute;
-          inset: 0;
-          background: ${NAVY};
-          z-index: 0;
-        }
-        .courses-bg-overlay {
-          position: absolute;
-          inset: 0;
-          z-index: 1;
-          pointer-events: none;
-          background: linear-gradient(to bottom, rgba(20,33,61,0.55) 0%, rgba(20,33,61,0.35) 40%, rgba(20,33,61,0.55) 100%);
-        }
       `}</style>
-
-      <div className="courses-bg-base" />
-      <video
-        ref={(el) => {
-          if (!el) return;
-          el.muted = true;
-          const tryPlay = () => el.play().catch(() => {});
-          tryPlay();
-          const onInteract = () => {
-            tryPlay();
-            document.removeEventListener("touchstart", onInteract);
-            document.removeEventListener("click", onInteract);
-          };
-          document.addEventListener("touchstart", onInteract, { once: true, passive: true });
-          document.addEventListener("click", onInteract, { once: true });
-        }}
-        className="courses-bg-video"
-        autoPlay
-        loop
-        muted
-        playsInline
-        // @ts-ignore
-        webkit-playsinline="true"
-        disablePictureInPicture
-        disableRemotePlayback
-        preload="auto"
-        aria-hidden="true"
-      >
-        <source src="/videos/hero-loop.mp4" type="video/mp4" />
-      </video>
-      <div className="courses-bg-overlay" />
 
       <div className="relative mx-auto max-w-[920px]" style={{ zIndex: 2 }}>
 
