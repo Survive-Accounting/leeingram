@@ -155,6 +155,9 @@ export default function CampusLandingPage() {
         <div className="max-w-[1100px] mx-auto w-full px-4 sm:px-6 pb-32">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
             <Card
+              icon={Sword}
+              iconColor="#16a34a"
+              tint="#f0fdf4"
               title="Survival Tools"
               body="Built for late night cramming. Flashcards, journal entries, formulas — optimized for speed."
               buttonLabel="Browse Tools →"
@@ -165,6 +168,9 @@ export default function CampusLandingPage() {
             />
 
             <Card
+              icon={PenLine}
+              iconColor="#d97706"
+              tint="#fffbeb"
               title="Practice Problems"
               body="Your solutions manual sucks. Ours actually teaches you something."
               buttonLabel="Browse Problems →"
@@ -175,53 +181,15 @@ export default function CampusLandingPage() {
             />
 
             <Card
+              icon={MonitorPlay}
+              iconColor="#2563eb"
+              tint="#eff6ff"
               title="On Demand Videos"
               body="Lee's full video library, 24/7. Binge what's there, request what's not. New videos drop every week."
               buttonLabel={waitlistJoined ? "You're on the list 👍" : "Request Early Access"}
               onClick={handleOnDemandClick}
               disabled={waitlistJoined}
               buttonBg={waitlistJoined ? GREEN : NAVY}
-              extra={
-                showEmailInput && !waitlistJoined ? (
-                  <div className="mt-3 flex gap-2">
-                    <input
-                      type="email"
-                      value={waitlistEmail}
-                      onChange={(e) => setWaitlistEmail(e.target.value)}
-                      placeholder="your@university.edu"
-                      disabled={waitlistLoading}
-                      className="flex-1 rounded-lg px-3 text-[13px] outline-none focus:ring-2"
-                      style={{
-                        minHeight: 40,
-                        background: "#F8F9FA",
-                        border: "1px solid #E5E7EB",
-                        color: NAVY,
-                        fontFamily: "Inter, sans-serif",
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") submitWaitlist(waitlistEmail);
-                      }}
-                    />
-                    <button
-                      onClick={() => submitWaitlist(waitlistEmail)}
-                      disabled={waitlistLoading}
-                      className="rounded-lg px-4 text-[13px] font-semibold text-white disabled:opacity-60"
-                      style={{ background: NAVY, fontFamily: "Inter, sans-serif" }}
-                    >
-                      {waitlistLoading ? "..." : "Join →"}
-                    </button>
-                  </div>
-                ) : null
-              }
-            />
-
-            <Card
-              title="On Demand Videos"
-              body="Lee's full video library, 24/7. Binge what's there, request what's not. New videos drop every week."
-              buttonLabel={waitlistJoined ? "You're on the list 👍" : "Request Early Access →"}
-              onClick={handleOnDemandClick}
-              disabled={waitlistJoined}
-              buttonBg={waitlistJoined ? GREEN : RED}
               extra={
                 showEmailInput && !waitlistJoined ? (
                   <div className="mt-3 flex gap-2">
