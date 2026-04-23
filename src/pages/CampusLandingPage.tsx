@@ -263,6 +263,11 @@ function Card({ title, body, buttonLabel, onClick, comingSoon, disabled, buttonB
         border: "1px solid rgba(20,33,61,0.06)",
       }}
     >
+      {Icon && (
+        <div className="mb-3 flex items-center justify-center" style={{ height: 48 }}>
+          <Icon size={48} color={iconColor || NAVY} strokeWidth={1.75} />
+        </div>
+      )}
       <h3
         className="text-[20px] font-bold mb-2"
         style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
@@ -280,7 +285,7 @@ function Card({ title, body, buttonLabel, onClick, comingSoon, disabled, buttonB
           onClick={disabled ? undefined : onClick}
           disabled={disabled}
           aria-disabled={disabled}
-          className={`self-start rounded-lg px-4 py-2 text-[13px] font-semibold text-white transition-all ${disabled ? "cursor-not-allowed" : "hover:brightness-110 active:scale-[0.99]"}`}
+          className={`rounded-lg px-4 py-2 text-[13px] font-semibold text-white transition-all ${disabled ? "cursor-not-allowed" : "hover:brightness-110 active:scale-[0.99]"}`}
           style={{
             background: bg,
             fontFamily: "Inter, sans-serif",
