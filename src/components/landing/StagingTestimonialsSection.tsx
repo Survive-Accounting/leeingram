@@ -66,6 +66,7 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const counterRef = useRef<HTMLSpanElement>(null);
   const [animate, setAnimate] = useState(false);
+  const countdownText = useMemo(() => getFinalsCountdownText(), []);
 
   useEffect(() => {
     const scriptId = "testimonialto-resizer";
