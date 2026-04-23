@@ -1,11 +1,23 @@
+import { useNavigate } from "react-router-dom";
+import { buildGetAccessUrl } from "@/lib/getAccessUrl";
+
 const NAVY = "#14213D";
 const RED = "#CE1126";
 
 interface ClosingCtaSectionProps {
-  onCtaClick: () => void;
+  onCtaClick?: () => void;
+  /** Optional course slug to pass into /get-access */
+  courseSlug?: string;
+  /** Optional campus slug to pass into /get-access */
+  campusSlug?: string;
 }
 
-export default function ClosingCtaSection({ onCtaClick }: ClosingCtaSectionProps) {
+export default function ClosingCtaSection({ onCtaClick, courseSlug, campusSlug }: ClosingCtaSectionProps) {
+  const navigate = useNavigate();
+  const handleClick = () => {
+    if (onCtaClick) onCtaClick();
+    else navigate(buildGetAccessUrl({ campus: campusSlug, course: courseSlug }));
+  };
   return (
     <section className="py-20 sm:py-28 px-4 sm:px-6 text-center" style={{ background: NAVY }}>
       <div className="mx-auto max-w-[560px]">

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import CourseCard from "@/components/landing/CourseCard";
 import EmailCaptureModal from "@/components/landing/EmailCaptureModal";
 import NotifyModal from "@/components/landing/NotifyModal";
@@ -7,6 +8,7 @@ import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import ContactForm from "@/components/landing/ContactForm";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { useEventTracking } from "@/hooks/useEventTracking";
+import { buildGetAccessUrl } from "@/lib/getAccessUrl";
 
 const COURSES = [
   {
@@ -51,6 +53,7 @@ type ModalState =
   | { type: "notify"; course: typeof COURSES[0] };
 
 export default function LandingPage() {
+  const navigate = useNavigate();
   const [modal, setModal] = useState<ModalState>({ type: "none" });
   const coursesRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
@@ -61,16 +64,11 @@ export default function LandingPage() {
   const handleCardClick = (course: typeof COURSES[0]) => {
     if (course.status === "live") {
       trackEvent('course_selected', { course_name: course.name, course_slug: course.slug });
-      setModal({ type: "email", course });
+      navigate(buildGetAccessUrl({ course: course.slug }));
     } else {
       trackEvent('waitlist_signup', { course_name: course.name });
       setModal({ type: "notify", course });
     }
-  };
-
-  const handlePricingClick = () => {
-    const ia2 = COURSES.find((c) => c.slug === "intermediate-accounting-2")!;
-    setModal({ type: "email", course: ia2, redirectTo: "pricing" });
   };
 
   return (

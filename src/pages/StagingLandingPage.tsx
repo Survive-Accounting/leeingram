@@ -18,6 +18,7 @@ import StagingEmailPromptModal, { type CelebrationData } from "@/components/land
 
 import StagingGetStartedModal from "@/components/landing/StagingGetStartedModal";
 import type { CtaCourse } from "@/components/landing/StagingCtaModal";
+import { buildGetAccessUrl } from "@/lib/getAccessUrl";
 
 const COURSES: CtaCourse[] = [
   {
@@ -220,19 +221,16 @@ export default function StagingLandingPage() {
       <div style={{ height: 24 }} />
 
       <StagingNavbar
-        onCtaClick={() => handleCardClick(defaultCourse)}
-        onPricingClick={() => navigate("/get-access")}
+        onCtaClick={() => navigate(buildGetAccessUrl({ course: defaultCourse.slug }))}
+        onPricingClick={() => navigate(buildGetAccessUrl({ course: defaultCourse.slug }))}
       />
 
       <StagingHero
         liveCourse={defaultCourse}
         futureCourses={[]}
-        onLiveCourseClick={() => handleCardClick(defaultCourse)}
+        onLiveCourseClick={() => navigate(buildGetAccessUrl({ course: defaultCourse.slug }))}
         onNotifyClick={() => handleCardClick(defaultCourse)}
-        onGetStartedClick={() => {
-          setGetStartedPreselectedSlug(null);
-          setGetStartedOpen(true);
-        }}
+        onGetStartedClick={() => navigate(buildGetAccessUrl({ course: defaultCourse.slug }))}
       />
 
       <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />

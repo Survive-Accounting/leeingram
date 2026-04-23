@@ -13,6 +13,7 @@ import { CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, Ey
 import { JETooltip } from "@/components/JETooltip";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { toast } from "sonner";
+import { buildGetAccessUrl } from "@/lib/getAccessUrl";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
@@ -583,12 +584,14 @@ function TestimonialEmbed() {
   );
 }
 
-function TieredPaywallCard({ enrollUrl, chapterNumber, fullPassLink, chapterLink }: { enrollUrl: string; chapterNumber: number | null; fullPassLink?: any; chapterLink?: any }) {
+function TieredPaywallCard({ enrollUrl: _enrollUrl, chapterNumber, fullPassLink, chapterLink, campusContext }: { enrollUrl: string; chapterNumber: number | null; fullPassLink?: any; chapterLink?: any; campusContext?: { slug: string; courseSlug: string } }) {
   const now = new Date();
   const saleActive = fullPassLink?.sale_expires_at ? now < new Date(fullPassLink.sale_expires_at) : false;
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
-  const fullPassUrl = fullPassLink?.url || enrollUrl;
-  const singleChapterUrl = chapterLink?.url || enrollUrl;
+  const accessHref = buildGetAccessUrl({
+    campus: campusContext?.slug,
+    course: campusContext?.courseSlug || "intermediate-accounting-2",
+  });
 
   return (
     <div className="rounded-xl p-5" style={{ background: "#FFFBF0", border: `1px solid ${theme.amberBorder}` }}>
@@ -603,13 +606,13 @@ function TieredPaywallCard({ enrollUrl, chapterNumber, fullPassLink, chapterLink
           {saleActive && fullPassLink?.original_price_cents && <span className="text-[14px] line-through" style={{ color: "rgba(255,255,255,0.45)" }}>{formatPrice(fullPassLink.original_price_cents)}</span>}
           <span className="text-[24px] font-bold text-white">{formatPrice(fullPassLink?.price_cents || 12500)}</span>
         </div>
-        <a href={fullPassUrl} target="_blank" rel="noopener noreferrer" className="mt-4 block rounded-lg px-6 py-3 text-center text-[15px] font-bold text-white transition-all hover:brightness-90" style={{ background: "#CE1126" }}>Get Full Access →</a>
+        <a href={accessHref} className="mt-4 block rounded-lg px-6 py-3 text-center text-[15px] font-bold text-white transition-all hover:brightness-90" style={{ background: "#CE1126" }}>Get Full Access →</a>
       </div>
       {chapterNumber && (
         <div className="mt-4 rounded-xl px-6 py-5" style={{ background: theme.cardBg, border: `1px solid ${theme.border}` }}>
           <p className="text-[15px] font-bold" style={{ color: theme.text }}>Chapter {chapterNumber} Only</p>
           <p className="mt-1 text-[22px] font-bold" style={{ color: theme.text }}>{formatPrice(chapterLink?.price_cents || 3000)}</p>
-          <a href={singleChapterUrl} target="_blank" rel="noopener noreferrer" className="mt-3 block rounded-lg px-6 py-3 text-center text-[15px] font-bold text-white transition-all hover:brightness-90" style={{ background: "#006BA6" }}>Buy Chapter {chapterNumber} →</a>
+          <a href={accessHref} className="mt-3 block rounded-lg px-6 py-3 text-center text-[15px] font-bold text-white transition-all hover:brightness-90" style={{ background: "#006BA6" }}>Buy Chapter {chapterNumber} →</a>
         </div>
       )}
     </div>
@@ -1122,7 +1125,7 @@ export default function ChapterCramTool({ overrideChapterId, campusContext }: Ch
                         )}
                         {isPreview && solutionsFiltered.length > PREVIEW_LIMIT && (
                           <div className="border-t p-4 sm:p-5" style={{ borderColor: theme.border }}>
-                            <TieredPaywallCard enrollUrl={enrollUrl} chapterNumber={chapter?.chapter_number || null} fullPassLink={fullPassLink} chapterLink={chapterLink} />
+                            <TieredPaywallCard enrollUrl={enrollUrl} chapterNumber={chapter?.chapter_number || null} fullPassLink={fullPassLink} chapterLink={chapterLink} campusContext={campusContext} />
                           </div>
                         )}
                       </div>
@@ -1342,7 +1345,7 @@ export default function ChapterCramTool({ overrideChapterId, campusContext }: Ch
               {accessExpired ? "Purchase a new pass to regain access." : "Get full access to all study tools and practice problems."}
             </DialogDescription>
           </DialogHeader>
-          <TieredPaywallCard enrollUrl={enrollUrl} chapterNumber={chapter?.chapter_number || null} fullPassLink={fullPassLink} chapterLink={chapterLink} />
+          <TieredPaywallCard enrollUrl={enrollUrl} chapterNumber={chapter?.chapter_number || null} fullPassLink={fullPassLink} chapterLink={chapterLink} campusContext={campusContext} />
         </DialogContent>
       </Dialog>
 

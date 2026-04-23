@@ -1,7 +1,4 @@
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { buildGetAccessUrl } from "@/lib/getAccessUrl";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -10,54 +7,24 @@ interface PurchaseBarProps {
   priceCents: number;
   originalPriceCents?: number;
   saleLabel?: string;
-  campusId: string | null;
+  campusId?: string | null;
   campusSlug?: string;
-  courseId: string;
+  courseId?: string;
   courseSlug?: string;
   studentEmail?: string;
 }
 
-export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel, campusId, campusSlug, courseId, courseSlug, studentEmail }: PurchaseBarProps) {
-  const [loading, setLoading] = useState(false);
-
+export default function PurchaseBar({
+  priceCents,
+  originalPriceCents,
+  saleLabel,
+  campusSlug,
+  courseSlug,
+}: PurchaseBarProps) {
   const priceDisplay = `$${Math.round(priceCents / 100)}`;
   const originalDisplay = originalPriceCents ? `$${Math.round(originalPriceCents / 100)}` : null;
 
-  const email = studentEmail || sessionStorage.getItem("student_email") || "";
-
-  const handleClick = async () => {
-    if (!email) {
-      toast.error("No email found. Please go back and enter your email.");
-      return;
-    }
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("create-checkout-session", {
-        body: {
-          email,
-          campus_id: campusId,
-          campus_slug: campusSlug || "",
-          course_id: courseId,
-          course_slug: courseSlug || "",
-          product_type: "semester_pass",
-          return_url: window.location.origin,
-          ui_mode: "redirect",
-          is_test_mode: sessionStorage.getItem("sa_test_mode") === "true",
-          email_override: sessionStorage.getItem("sa_email_override") || "",
-        },
-      });
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, "_blank", "noopener,noreferrer");
-      } else {
-        throw new Error("No checkout URL returned");
-      }
-    } catch {
-      toast.error("Couldn't start checkout. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const accessHref = buildGetAccessUrl({ campus: campusSlug, course: courseSlug });
 
   return (
     <div
@@ -76,14 +43,13 @@ export default function PurchaseBar({ priceCents, originalPriceCents, saleLabel,
             <p className="text-[11px] font-medium" style={{ color: RED }}>{saleLabel}</p>
           )}
         </div>
-        <button
-          onClick={handleClick}
-          disabled={loading}
-          className="rounded-lg px-6 py-2.5 text-[14px] font-semibold text-white flex items-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60 shrink-0"
+        <a
+          href={accessHref}
+          className="rounded-lg px-6 py-2.5 text-[14px] font-semibold text-white flex items-center gap-2 transition-opacity hover:opacity-90 shrink-0"
           style={{ background: RED, minHeight: 56 }}
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : `Get Full Access – ${priceDisplay}`}
-        </button>
+          {`Get Full Access – ${priceDisplay}`}
+        </a>
       </div>
     </div>
   );
