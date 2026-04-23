@@ -595,6 +595,7 @@ export function AISolutionRegenerationPanel() {
                     )}
                   </div>
                 </div>
+              </RadioGroup>
             </div>
 
             {/* Summary card */}
