@@ -277,7 +277,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                     textShadow: subtextShadow,
                   }}
                 >
-                  Accounting Tutor Since 2015
+                  Full-time Accounting Tutor
                 </p>
               </div>
             </div>
