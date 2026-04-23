@@ -3,32 +3,18 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, Sword, PenLine, MonitorPlay, ShieldCheck, ChevronDown } from "lucide-react";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
+import {
+  getCampusProgression,
+  resolveCourseSlug,
+  formatCourseLabel,
+  type CourseSlug,
+} from "@/lib/campusProgressions";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
 const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
-const COURSES = [
-  { slug: "intermediate-accounting-2", name: "Intermediate Accounting 2", aliases: ["ia2", "intermediate-2", "accy-304", "accy304"] },
-  { slug: "intermediate-accounting-1", name: "Intermediate Accounting 1", aliases: ["ia1", "intermediate-1", "accy-303", "accy303"] },
-  { slug: "intro-accounting-2", name: "Introductory Accounting 2", aliases: ["intro-2", "intro2", "accy-202", "accy202"] },
-  { slug: "intro-accounting-1", name: "Introductory Accounting 1", aliases: ["intro-1", "intro1", "accy-201", "accy201"] },
-];
-
-// Placeholder campus name lookup — wire to real data later.
-const CAMPUS_LABELS: Record<string, string> = {
-  "ole-miss": "Ole Miss",
-  "mississippi-state": "Mississippi State",
-};
-
-// Placeholder course-code lookup for the small contextual label.
-const COURSE_CODES: Record<string, string> = {
-  "intro-accounting-1": "ACCY 201",
-  "intro-accounting-2": "ACCY 202",
-  "intermediate-accounting-1": "ACCY 303",
-  "intermediate-accounting-2": "ACCY 304",
-};
 
 const PLANS = [
   {
@@ -65,23 +51,21 @@ export default function GetAccess() {
   const emailParam = searchParams.get("email") || "";
 
   // Default to Ole Miss when no (or unknown) campus is provided.
-  const effectiveCampus = campusParam && CAMPUS_LABELS[campusParam] ? campusParam : "ole-miss";
-  const isOleMiss = effectiveCampus === "ole-miss";
+  // The progression module decides which course list + codes to use.
+  const effectiveCampus = campusParam || "ole-miss";
+  const progression = useMemo(() => getCampusProgression(effectiveCampus), [effectiveCampus]);
+  const isOleMiss = progression.campusSlug === "ole-miss";
 
-  // Resolve course slug from param (matches slug or known aliases).
-  // For Ole Miss with no course specified, default to ACCY 201 (intro-1).
-  const resolvedCourseSlug = useMemo(() => {
-    if (!courseParam) return "intro-accounting-1";
-    const match = COURSES.find(
-      (c) => c.slug === courseParam || c.aliases.includes(courseParam),
-    );
-    return match?.slug ?? "intro-accounting-1";
-  }, [courseParam]);
+  const resolvedCourseSlug = useMemo<CourseSlug>(
+    () => resolveCourseSlug(progression, courseParam),
+    [progression, courseParam],
+  );
 
-  const campusName = CAMPUS_LABELS[effectiveCampus];
-  const courseCode = COURSE_CODES[resolvedCourseSlug] || null;
+  const campusName = progression.campusName;
+  const resolvedCourse = progression.courses.find((c) => c.slug === resolvedCourseSlug)!;
+  const courseCode = resolvedCourse.code;
 
-  const [course, setCourse] = useState(resolvedCourseSlug);
+  const [course, setCourse] = useState<CourseSlug>(resolvedCourseSlug);
   const [plan, setPlan] = useState<"semester" | "chapter">("semester");
   const [email, setEmail] = useState(emailParam);
 
@@ -212,7 +196,7 @@ export default function GetAccess() {
             <div className="relative mb-5">
               <select
                 value={course}
-                onChange={(e) => setCourse(e.target.value)}
+                onChange={(e) => setCourse(e.target.value as CourseSlug)}
                 className="w-full appearance-none rounded-lg px-4 py-3 text-[14px] outline-none focus:ring-2"
                 style={{
                   background: "#F8FAFC",
@@ -221,8 +205,8 @@ export default function GetAccess() {
                   fontFamily: "Inter, sans-serif",
                 }}
               >
-                {COURSES.map((c) => (
-                  <option key={c.slug} value={c.slug}>{c.name}</option>
+                {progression.courses.map((c) => (
+                  <option key={c.slug} value={c.slug}>{formatCourseLabel(c)}</option>
                 ))}
               </select>
               <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: NAVY }} />
