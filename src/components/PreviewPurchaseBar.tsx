@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { DevShortcut } from "@/components/DevShortcut";
+import { ShoppingCart } from "lucide-react";
 
 const STRIPE_PAYMENT_LINK = "#stripe-payment-link";
-const GOLD = "#d4a017";
+const RED = "#c0392b";
 
 interface PreviewPurchaseBarProps {
   /** Retained for API compatibility; copy is now fixed. */
@@ -28,8 +29,8 @@ export default function PreviewPurchaseBar(_props: PreviewPurchaseBarProps) {
           100% { transform: translateX(220%) skewX(-20deg); }
         }
         @keyframes ppbGlow {
-          0%, 100% { box-shadow: 0 0 6px rgba(212,160,23,0.35), 0 4px 14px rgba(212,160,23,0.25); }
-          50%      { box-shadow: 0 0 18px rgba(212,160,23,0.65), 0 4px 18px rgba(212,160,23,0.45); }
+          0%, 100% { box-shadow: 0 0 6px rgba(192,57,43,0.35), 0 4px 14px rgba(192,57,43,0.25); }
+          50%      { box-shadow: 0 0 18px rgba(192,57,43,0.65), 0 4px 18px rgba(192,57,43,0.5); }
         }
         .ppb-cta {
           position: relative;
@@ -68,10 +69,11 @@ export default function PreviewPurchaseBar(_props: PreviewPurchaseBarProps) {
         <div className="shrink-0 flex flex-col items-end gap-1">
           <a href={STRIPE_PAYMENT_LINK} target="_blank" rel="noopener noreferrer">
             <Button
-              className="ppb-cta px-4 sm:px-6 py-3 text-[13px] sm:text-[15px] font-bold text-white transition-all hover:brightness-105"
-              style={{ background: GOLD, minHeight: 56, height: "auto", border: "none" }}
+              className="ppb-cta px-4 sm:px-6 py-3 text-[13px] sm:text-[15px] font-bold text-white transition-all hover:brightness-105 inline-flex items-center gap-2"
+              style={{ background: RED, minHeight: 56, height: "auto", border: "none" }}
             >
-              ⚡ Get Full Access — $99 →
+              <ShoppingCart size={16} className="text-white" />
+              Get Full Access — $99 →
             </Button>
           </a>
           <DevShortcut label="[DEV] Skip to dashboard →" to="/my-dashboard" />
