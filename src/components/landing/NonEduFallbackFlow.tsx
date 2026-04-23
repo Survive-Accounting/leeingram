@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Loader2, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { DevShortcut } from "@/components/DevShortcut";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -160,6 +161,9 @@ export default function NonEduFallbackFlow({
             Continue →
           </button>
         )}
+        <div className="text-center pt-1">
+          <DevShortcut label="[DEV] Bypass →" to="/campus/general/intermediate-accounting-2" />
+        </div>
       </div>
     );
   }
@@ -210,6 +214,9 @@ export default function NonEduFallbackFlow({
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send Me Access →"}
         </button>
+        <div className="text-center pt-1">
+          <DevShortcut label="[DEV] Bypass →" to="/campus/general/intermediate-accounting-2" />
+        </div>
       </form>
     );
   }
@@ -276,6 +283,9 @@ export default function NonEduFallbackFlow({
             </>
           )}
         </button>
+      </div>
+      <div className="text-center">
+        <DevShortcut label="[DEV] Bypass →" to="/campus/general/intermediate-accounting-2" />
       </div>
     </div>
   );
