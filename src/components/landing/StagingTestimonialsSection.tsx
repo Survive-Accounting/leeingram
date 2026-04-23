@@ -125,7 +125,7 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
                 <sup className="cursor-help" style={{ color: NAVY, fontSize: "0.45em", marginLeft: 2, fontWeight: 400 }}>*</sup>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-[260px] text-xs">
-                Updated as students join.
+                Includes students tutored by Lee since 2015 and Survive Accounting users since 2020.
               </TooltipContent>
             </Tooltip>
             {" "}<span style={{ fontWeight: 400 }}>students who went from{" "}</span>
