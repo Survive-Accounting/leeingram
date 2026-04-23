@@ -33,6 +33,8 @@ interface StagingEmailPromptModalProps {
   chapterNumber?: number | null;
   chapterName?: string | null;
   loading?: boolean;
+  /** When 'pricing', shows pricing-specific headline copy. */
+  intent?: "default" | "pricing";
 }
 
 /** Tier copy keyed by founding student number N. */
