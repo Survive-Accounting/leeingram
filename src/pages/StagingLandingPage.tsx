@@ -214,7 +214,7 @@ export default function StagingLandingPage() {
     COURSES.find((c) => c.slug === "intermediate-accounting-2") || COURSES[0];
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8F8FA" }}>
+    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8FAFC" }}>
       {/* STAGING BANNER */}
       <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 text-black text-center text-xs font-bold py-1 tracking-wide">
         ⚠️ STAGING — Changes here won't affect the live homepage

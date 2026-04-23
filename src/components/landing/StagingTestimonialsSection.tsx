@@ -106,7 +106,7 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
   return (
     <section
       style={{
-        background: "linear-gradient(180deg, #F8F8F8 0%, #F8F8F8 70%, #C9CFD9 92%, #6F7C92 100%)",
+        background: "#F8FAFC",
       }}
       className="pt-16 sm:pt-20 pb-24 sm:pb-28 px-4 sm:px-6 relative"
     >
