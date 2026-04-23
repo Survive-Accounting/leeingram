@@ -161,6 +161,9 @@ export default function NonEduFallbackFlow({
             Continue →
           </button>
         )}
+        <div className="text-center pt-1">
+          <DevShortcut label="[DEV] Bypass →" to="/campus/general/intermediate-accounting-2" />
+        </div>
       </div>
     );
   }
