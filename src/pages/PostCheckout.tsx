@@ -158,6 +158,12 @@ export default function PostCheckout() {
             <p className="text-[14px]" style={{ color: "#64748B" }}>
               Redirecting to your dashboard...
             </p>
+            <p
+              className="mt-4 text-[11px] leading-snug"
+              style={{ color: "#94A3B8" }}
+            >
+              Individual access only. Account activity is monitored to prevent sharing.
+            </p>
           </>
         )}
 

@@ -562,6 +562,13 @@ export default function GetAccess() {
                 Instant access after purchase
               </div>
             </div>
+
+            <p
+              className="mt-3 text-center text-[11px] leading-snug"
+              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+            >
+              Individual access only. Account activity is monitored to prevent sharing.
+            </p>
           </div>
         </div>
       </section>
