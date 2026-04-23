@@ -55,15 +55,16 @@ export default function StagingFinalExamSection({ children }: Props) {
           animation: finalExamOrbFloat 72s ease-in-out infinite reverse;
         }
       `}</style>
-      <div className="final-exam-grid-bg" aria-hidden="true" />
-      <div className="final-exam-orb final-exam-orb-1" aria-hidden="true" />
-      <div className="final-exam-orb final-exam-orb-2" aria-hidden="true" />
+      <div className="final-exam-grid-bg" aria-hidden="true" style={{ zIndex: 0 }} />
+      <div className="final-exam-orb final-exam-orb-1" aria-hidden="true" style={{ zIndex: 0 }} />
+      <div className="final-exam-orb final-exam-orb-2" aria-hidden="true" style={{ zIndex: 0 }} />
       <div
         aria-hidden="true"
         style={{
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
+          zIndex: 1,
           background: "linear-gradient(180deg, rgba(10,20,40,0.85) 0%, rgba(10,20,40,0.95) 100%)",
         }}
       />
@@ -73,11 +74,12 @@ export default function StagingFinalExamSection({ children }: Props) {
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
+          zIndex: 2,
           background:
             "radial-gradient(ellipse 70% 50% at 50% 35%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 40%, rgba(0,0,0,0) 75%)",
         }}
       />
-      <div className="relative" style={{ zIndex: 1 }}>
+      <div className="relative" style={{ zIndex: 3 }}>
         {children}
       </div>
     </section>
