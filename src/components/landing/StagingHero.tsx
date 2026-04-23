@@ -197,7 +197,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
       <div className="relative z-[3] mx-auto max-w-[1100px] px-4 sm:px-6 py-12 md:py-20 w-full">
         <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
           {/* LEFT — Photo (smaller, ~33% width) */}
-          <div className="w-full md:w-[33%] flex justify-center md:justify-start shrink-0">
+          <div className="w-full md:w-[33%] flex flex-col items-center md:items-start shrink-0">
             <div className="relative w-full max-w-[240px] md:max-w-[300px]">
               <img
                 src={leeStadiumPhoto}
@@ -209,21 +209,21 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                   border: "1px solid rgba(255,255,255,0.1)",
                 }}
               />
+              <p
+                className="mt-3 text-center text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.15em] hero-anim-line1"
+                style={{
+                  color: "rgba(255,255,255,0.7)",
+                  fontFamily: "Inter, sans-serif",
+                  textShadow: subtextShadow,
+                }}
+              >
+                Lee Ingram · Accounting Tutor Since 2015
+              </p>
             </div>
           </div>
 
           {/* RIGHT — Text */}
           <div className="flex-1 text-center md:text-left">
-            <p
-              className="mb-3 text-[12px] sm:text-[13px] font-semibold uppercase tracking-[0.15em] hero-anim-line1"
-              style={{
-                color: "rgba(255,255,255,0.75)",
-                fontFamily: "Inter, sans-serif",
-                textShadow: subtextShadow,
-              }}
-            >
-              Lee Ingram · Accounting Tutor Since 2015
-            </p>
             <h1
               className="text-white leading-[1.15] tracking-tight text-[32px] sm:text-[40px] md:text-[52px]"
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
