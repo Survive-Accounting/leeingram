@@ -1,5 +1,4 @@
-import { useNavigate } from "react-router-dom";
-import { buildGetAccessUrl } from "@/lib/getAccessUrl";
+import { useEmailGate } from "@/contexts/EmailGateContext";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -8,15 +7,15 @@ interface ClosingCtaSectionProps {
   onCtaClick?: () => void;
   /** Optional course slug to pass into /get-access */
   courseSlug?: string;
-  /** Optional campus slug to pass into /get-access */
+  /** Optional campus slug to pass into /get-access (currently unused — gate detects campus). */
   campusSlug?: string;
 }
 
-export default function ClosingCtaSection({ onCtaClick, courseSlug, campusSlug }: ClosingCtaSectionProps) {
-  const navigate = useNavigate();
+export default function ClosingCtaSection({ onCtaClick, courseSlug }: ClosingCtaSectionProps) {
+  const { requestAccess } = useEmailGate();
   const handleClick = () => {
     if (onCtaClick) onCtaClick();
-    else navigate(buildGetAccessUrl({ campus: campusSlug, course: courseSlug }));
+    else requestAccess({ course: courseSlug });
   };
   return (
     <section className="py-20 sm:py-28 px-4 sm:px-6 text-center" style={{ background: NAVY }}>
@@ -37,7 +36,7 @@ export default function ClosingCtaSection({ onCtaClick, courseSlug, campusSlug }
         </p>
 
         <button
-          onClick={onCtaClick}
+          onClick={handleClick}
           className="mt-8 rounded-xl px-10 py-4 text-[16px] font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
           style={{
             background: RED,

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ShoppingCart, X, Check } from "lucide-react";
 import { DevShortcut } from "@/components/DevShortcut";
-import { buildGetAccessUrl } from "@/lib/getAccessUrl";
+import { useEmailGate } from "@/contexts/EmailGateContext";
 
 const NAVY = "#14213D";
 
@@ -32,29 +32,27 @@ function CheckboxChip({ label }: { label: string }) {
   );
 }
 
-export default function PreviewPurchaseBar({ campusSlug, courseSlug }: PreviewPurchaseBarProps) {
+export default function PreviewPurchaseBar({ courseSlug }: PreviewPurchaseBarProps) {
   const [refundOpen, setRefundOpen] = useState(false);
-
-  const accessHref = buildGetAccessUrl({ campus: campusSlug, course: courseSlug });
+  const { requestAccess } = useEmailGate();
 
   const ctaButton = (compact = false) => (
-    <a href={accessHref}>
-      <button
-        className={`inline-flex items-center gap-2 rounded-lg font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98] ${
-          compact ? "px-4 py-2.5 text-[13px]" : "px-7 py-3.5 text-[16px]"
-        }`}
-        style={{
-          background: "#CE1126",
-          border: "1px solid rgba(255,255,255,0.18)",
-          minHeight: compact ? undefined : 52,
-          boxShadow: "0 6px 20px rgba(206,17,38,0.45), inset 0 1px 0 rgba(255,255,255,0.18)",
-        }}
-      >
-        <ShoppingCart size={compact ? 14 : 18} className="text-white" />
-        Buy Survive Accounting — <span>$99</span>{" "}
-        <span className="line-through opacity-60 font-normal">$250</span>
-      </button>
-    </a>
+    <button
+      onClick={() => requestAccess({ course: courseSlug })}
+      className={`inline-flex items-center gap-2 rounded-lg font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98] ${
+        compact ? "px-4 py-2.5 text-[13px]" : "px-7 py-3.5 text-[16px]"
+      }`}
+      style={{
+        background: "#CE1126",
+        border: "1px solid rgba(255,255,255,0.18)",
+        minHeight: compact ? undefined : 52,
+        boxShadow: "0 6px 20px rgba(206,17,38,0.45), inset 0 1px 0 rgba(255,255,255,0.18)",
+      }}
+    >
+      <ShoppingCart size={compact ? 14 : 18} className="text-white" />
+      Buy Survive Accounting — <span>$99</span>{" "}
+      <span className="line-through opacity-60 font-normal">$250</span>
+    </button>
   );
 
   return (
