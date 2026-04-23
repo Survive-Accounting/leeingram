@@ -209,7 +209,7 @@ export default function StagingCoursesSection({
 
         <div className="relative">
           <p
-            className="relative text-center mb-4 text-[26px] sm:text-[32px] md:text-[38px] leading-tight text-white"
+            className="relative text-center mb-2 text-[26px] sm:text-[32px] md:text-[38px] leading-tight text-white"
             style={{
               fontFamily: "'DM Serif Display', serif",
               fontWeight: 400,
@@ -218,6 +218,12 @@ export default function StagingCoursesSection({
             }}
           >
             Which course are you studying?
+          </p>
+          <p
+            className="text-center mb-4 text-[13px] sm:text-[14px]"
+            style={{ color: "rgba(255,255,255,0.7)", fontFamily: "Inter, sans-serif" }}
+          >
+            Select your course to start the demo →
           </p>
         </div>
 
