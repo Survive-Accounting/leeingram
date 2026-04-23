@@ -14,7 +14,7 @@ import StagingCoursesSection from "@/components/landing/StagingCoursesSection";
 import ClosingCtaSection from "@/components/landing/ClosingCtaSection";
 
 import StagingEmailPromptModal, { type CelebrationData } from "@/components/landing/StagingEmailPromptModal";
-import StagingStickyBar from "@/components/landing/StagingStickyBar";
+
 import StagingGetStartedModal from "@/components/landing/StagingGetStartedModal";
 import type { CtaCourse } from "@/components/landing/StagingCtaModal";
 
@@ -191,14 +191,6 @@ export default function StagingLandingPage() {
       <LandingFooter
         onScrollToCourses={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })}
         onScrollToContact={() => contactRef.current?.scrollIntoView({ behavior: "smooth" })}
-      />
-
-      {/* Mobile bottom-bar spacer so content isn't covered */}
-      <div className="md:hidden" style={{ height: 110 }} />
-
-      <StagingStickyBar
-        onCtaClick={() => handleCardClick(defaultCourse)}
-        hidden={emailPromptOpen}
       />
 
       <StagingEmailPromptModal
