@@ -1,7 +1,21 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { BookOpen, Wrench, User } from "lucide-react";
+import { getPurchaseContext, type PurchaseContext } from "@/lib/purchaseContext";
 
 const StudentPassDashboard = () => {
+  const [purchase, setPurchase] = useState<PurchaseContext | null>(null);
+
+  useEffect(() => {
+    setPurchase(getPurchaseContext());
+  }, []);
+
+  const formattedAmount =
+    purchase?.amountPaid != null
+      ? `$${purchase.amountPaid.toFixed(2)}`
+      : null;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-6 py-12">
@@ -10,8 +24,21 @@ const StudentPassDashboard = () => {
             Welcome to your dashboard
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Your study pass is active.
+            Your study pass is active{purchase?.email ? ` — ${purchase.email}` : ""}.
           </p>
+          {purchase && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {purchase.selectedPlan && (
+                <Badge variant="secondary">Plan: {purchase.selectedPlan}</Badge>
+              )}
+              {purchase.campus && (
+                <Badge variant="secondary">Campus: {purchase.campus}</Badge>
+              )}
+              {formattedAmount && (
+                <Badge variant="secondary">Paid: {formattedAmount}</Badge>
+              )}
+            </div>
+          )}
         </header>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -23,9 +50,17 @@ const StudentPassDashboard = () => {
               <CardTitle>My Courses</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Your enrolled courses will appear here.
-              </p>
+              {purchase?.includedCourses?.length ? (
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  {purchase.includedCourses.map((course) => (
+                    <li key={course}>• {course}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Your enrolled courses will appear here.
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -52,7 +87,9 @@ const StudentPassDashboard = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Manage your email and access details.
+                {purchase?.email
+                  ? `Signed in as ${purchase.email}`
+                  : "Manage your email and access details."}
               </p>
             </CardContent>
           </Card>
