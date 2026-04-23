@@ -280,7 +280,7 @@ export default function StagingCoursesSection({
                   className="md:w-[35%] md:shrink-0 rounded-xl p-4 pr-6 flex flex-col"
                   style={{ background: "#1a1a2e" }}
                 >
-                  <div className="flex flex-col gap-2 flex-1">
+                  <div className="flex flex-col gap-2">
                     {[
                       {
                         tag: "intent_practice_problems",
