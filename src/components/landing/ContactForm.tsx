@@ -59,7 +59,24 @@ export default function ContactForm() {
         background: `linear-gradient(180deg, #14213D 0%, #0B1426 100%)`,
       }}
     >
-      <div className="relative mx-auto max-w-[640px]">
+      <style>{`
+        @keyframes contactGridDrift {
+          0%   { background-position: 0px 0px, 0px 0px; }
+          100% { background-position: 80px 80px, 80px 80px; }
+        }
+        .contact-grid-bg {
+          position: absolute; inset: 0; pointer-events: none;
+          background-image:
+            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+          background-size: 80px 80px, 80px 80px;
+          animation: contactGridDrift 60s linear infinite;
+          mask-image: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 70%, rgba(0,0,0,0) 100%);
+          -webkit-mask-image: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 70%, rgba(0,0,0,0) 100%);
+        }
+      `}</style>
+      <div className="contact-grid-bg" aria-hidden="true" />
+      <div className="relative mx-auto max-w-[640px]" style={{ zIndex: 1 }}>
         <h2
           className="text-center text-[20px] sm:text-[24px] text-white mb-8"
           style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 8px rgba(0,0,0,0.4)" }}
