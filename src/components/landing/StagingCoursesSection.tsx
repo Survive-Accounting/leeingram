@@ -150,8 +150,7 @@ export default function StagingCoursesSection({
   return (
     <section
       id="courses-section"
-      className="relative px-4 sm:px-6 scroll-mt-24 overflow-hidden"
-      style={{ paddingTop: 80, paddingBottom: 120 }}
+      className="relative px-4 sm:px-6 scroll-mt-24 overflow-hidden pt-20 pb-[640px] md:pb-[160px]"
     >
       <style>{`
         @keyframes betaPulse {
@@ -188,6 +187,19 @@ export default function StagingCoursesSection({
 
       <div className="courses-bg-base" />
       <video
+        ref={(el) => {
+          if (!el) return;
+          el.muted = true;
+          const tryPlay = () => el.play().catch(() => {});
+          tryPlay();
+          const onInteract = () => {
+            tryPlay();
+            document.removeEventListener("touchstart", onInteract);
+            document.removeEventListener("click", onInteract);
+          };
+          document.addEventListener("touchstart", onInteract, { once: true, passive: true });
+          document.addEventListener("click", onInteract, { once: true });
+        }}
         className="courses-bg-video"
         autoPlay
         loop
