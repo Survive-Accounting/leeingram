@@ -26,7 +26,6 @@ interface StagingHeroProps {
 }
 
 export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
-  const [introOpen, setIntroOpen] = useState(false);
   const headlineShadow = "2px 2px 8px rgba(0,0,0,0.8)";
   const subtextShadow = "1px 1px 4px rgba(0,0,0,0.6)";
 
