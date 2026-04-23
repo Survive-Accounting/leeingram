@@ -76,6 +76,15 @@ export default function ContactForm() {
         }
       `}</style>
       <div className="contact-grid-bg" aria-hidden="true" />
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background: "linear-gradient(180deg, rgba(10,20,40,0.85) 0%, rgba(10,20,40,0.95) 100%)",
+        }}
+      />
       <div className="relative mx-auto max-w-[640px]" style={{ zIndex: 1 }}>
         <h2
           className="text-center text-[20px] sm:text-[24px] text-white mb-8"
