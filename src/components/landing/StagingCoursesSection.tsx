@@ -148,7 +148,7 @@ export default function StagingCoursesSection({
   };
 
   return (
-    <section id="courses-section" className="px-4 sm:px-6 pt-12 sm:pt-16 pb-32 sm:pb-40 scroll-mt-24" style={{ background: "#F8F8FA" }}>
+    <section id="courses-section" className="px-4 sm:px-6 scroll-mt-24" style={{ background: "#F8F8FA", paddingTop: 80, paddingBottom: 120 }}>
       <style>{`
         @keyframes betaPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
@@ -166,7 +166,7 @@ export default function StagingCoursesSection({
         </p>
 
         {/* Dropdown */}
-        <div className="relative">
+        <div className="relative" style={{ zIndex: 100 }}>
           <button
             onClick={() => setOpen((v) => !v)}
             className="w-full rounded-2xl px-5 py-4 flex items-center justify-between text-left transition-all hover:shadow-md"
