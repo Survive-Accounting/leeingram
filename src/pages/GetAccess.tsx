@@ -153,8 +153,10 @@ export default function GetAccess() {
       if (!url) throw new Error("Checkout URL missing from response");
       window.location.href = url;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Could not start checkout";
-      setCheckoutError(msg);
+      console.error("[get-access checkout]", err);
+      setCheckoutError(
+        "We couldn't start checkout. Please try again in a moment.",
+      );
       setCheckoutLoading(false);
     }
   };
