@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -25,7 +26,7 @@ import { toast } from "sonner";
 import { useIsLee } from "@/components/AccessRestrictedGuard";
 import { useNavigate } from "react-router-dom";
 
-type Scope = "chapter" | "course";
+type Scope = "chapter" | "course" | "courses";
 type Phase = "configure" | "running" | "complete";
 
 type LogEntry = {
@@ -58,6 +59,7 @@ export function AISolutionRegenerationPanel() {
   const [scope, setScope] = useState<Scope>("chapter");
   const [chapterId, setChapterId] = useState<string>("");
   const [courseId, setCourseId] = useState<string>("");
+  const [courseIds, setCourseIds] = useState<string[]>([]);
   const [skipAlreadyRegenerated, setSkipAlreadyRegenerated] = useState(true);
   const [dryRun, setDryRun] = useState(false);
 
