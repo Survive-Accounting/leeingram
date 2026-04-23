@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import heroImage from "@/assets/staging-hero.jpg";
 import leeStadiumPhoto from "@/assets/hero-lee-stadium.jpg";
 
