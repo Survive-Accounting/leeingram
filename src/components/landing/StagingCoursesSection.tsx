@@ -70,6 +70,7 @@ export default function StagingCoursesSection({
   const [open, setOpen] = useState(false);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [problemCount, setProblemCount] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const selected = ordered.find((c) => c.slug === selectedSlug);
 
@@ -77,9 +78,12 @@ export default function StagingCoursesSection({
     if (!selected) {
       setChapters([]);
       setProblemCount(null);
+      setLoading(false);
       return;
     }
     let cancelled = false;
+    setLoading(true);
+    const minDelay = new Promise((r) => setTimeout(r, 400));
     (async () => {
       const [{ data: chData }, { count }] = await Promise.all([
         supabase
@@ -93,14 +97,53 @@ export default function StagingCoursesSection({
           .eq("course_id", selected.id)
           .not("asset_approved_at", "is", null),
       ]);
+      await minDelay;
       if (cancelled) return;
       setChapters((chData ?? []) as Chapter[]);
       setProblemCount(typeof count === "number" ? count : null);
+      setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
   }, [selected?.id]);
+
+  /** Tag the user's intent before opening modal / navigating. */
+  const tagIntent = (tag: string) => {
+    if (!selected) return;
+    try {
+      sessionStorage.setItem(
+        "sa_signup_intent",
+        JSON.stringify({
+          tag,
+          course_slug: selected.slug,
+          course_name: selected.name,
+          timestamp: new Date().toISOString(),
+        })
+      );
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const handleStatClick = (tag: string) => {
+    if (!selected) return;
+    tagIntent(tag);
+    onCardClick(selected);
+  };
+
+  const handleChapterRowClick = (ch: Chapter) => {
+    if (!selected) return;
+    tagIntent(`intent_chapter_${ch.chapter_number}`);
+    if (onChapterClick) onChapterClick(selected, ch.chapter_number);
+    else onCardClick(selected);
+  };
+
+  const handlePreviewFreeClick = () => {
+    if (!selected) return;
+    tagIntent("intent_preview_free");
+    onCardClick(selected);
+  };
 
   return (
     <section className="px-4 sm:px-6 py-12 sm:py-16" style={{ background: "#F8F8FA" }}>
