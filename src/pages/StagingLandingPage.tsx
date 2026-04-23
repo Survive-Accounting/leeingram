@@ -90,22 +90,10 @@ export default function StagingLandingPage() {
     if (stored) setCapturedEmail(stored);
   }, [trackPageView]);
 
-  /** Resolve email + course. Returns celebration data for in-modal display, or null if non-Ole-Miss (waitlist shown). */
+  /** Resolve email + course. Returns celebration data for in-modal display. */
   const resolveEmail = async (email: string, course: CtaCourse): Promise<CelebrationData | null> => {
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return null;
-
-    if (!isOleMissEmail(trimmed)) {
-      trackEvent("non_ole_miss_email_blocked", {
-        email_domain: trimmed.split("@")[1] || "",
-        course_slug: course.slug,
-      });
-      // Close prompt, show waitlist
-      setEmailPromptOpen(false);
-      setWaitlistInitialEmail(trimmed);
-      setWaitlistOpen(true);
-      return null;
-    }
 
     setResolving(true);
     try {
