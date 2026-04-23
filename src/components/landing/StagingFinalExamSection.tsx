@@ -39,8 +39,8 @@ export default function StagingFinalExamSection({ children }: Props) {
             linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
             linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
           background-size: 120px 120px, 120px 120px;
-          animation: finalExamGridDrift 240s linear infinite;
-          opacity: 0.18;
+          animation: finalExamGridDrift 2400s linear infinite;
+          opacity: 0.32;
           filter: blur(1.4px);
           mask-image: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.9) 100%);
           -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.9) 100%);
@@ -50,13 +50,13 @@ export default function StagingFinalExamSection({ children }: Props) {
           position: absolute; inset: 0; pointer-events: none;
           background-image: repeating-linear-gradient(
             135deg,
-            rgba(255,255,255,0.022) 0px,
-            rgba(255,255,255,0.022) 1px,
+            rgba(255,255,255,0.04) 0px,
+            rgba(255,255,255,0.04) 1px,
             transparent 1px,
             transparent 200px
           );
-          animation: finalExamDiagDrift 320s linear infinite;
-          opacity: 0.5;
+          animation: finalExamDiagDrift 3200s linear infinite;
+          opacity: 0.7;
           filter: blur(0.6px);
         }
         .final-exam-orb {
@@ -65,13 +65,13 @@ export default function StagingFinalExamSection({ children }: Props) {
         }
         .final-exam-orb-1 {
           width: 420px; height: 420px; top: -120px; left: -80px;
-          background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 70%);
-          animation: finalExamOrbFloat 110s ease-in-out infinite;
+          background: radial-gradient(circle, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 70%);
+          animation: finalExamOrbFloat 1100s ease-in-out infinite;
         }
         .final-exam-orb-2 {
           width: 380px; height: 380px; bottom: -100px; right: -60px;
-          background: radial-gradient(circle, rgba(212,175,55,0.05) 0%, rgba(212,175,55,0) 70%);
-          animation: finalExamOrbFloat 140s ease-in-out infinite reverse;
+          background: radial-gradient(circle, rgba(212,175,55,0.08) 0%, rgba(212,175,55,0) 70%);
+          animation: finalExamOrbFloat 1400s ease-in-out infinite reverse;
         }
         @media (prefers-reduced-motion: reduce) {
           .final-exam-grid-bg, .final-exam-diag-bg, .final-exam-orb { animation: none !important; }
