@@ -45,6 +45,9 @@ export default function StagingGetStartedModal({
   const [step1Loading, setStep1Loading] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<CtaCourse | null>(null);
   const [step2Loading, setStep2Loading] = useState(false);
+  const [view, setView] = useState<"main" | "non_edu" | "non_edu_success">("main");
+  const [fallbackEmail, setFallbackEmail] = useState("");
+  const [fallbackLoading, setFallbackLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -57,6 +60,9 @@ export default function StagingGetStartedModal({
       setStep1Loading(false);
       setSelectedCourse(preset);
       setStep2Loading(false);
+      setView("main");
+      setFallbackEmail("");
+      setFallbackLoading(false);
     }
   }, [open, preselectedCourseSlug, courses]);
 
@@ -65,8 +71,10 @@ export default function StagingGetStartedModal({
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
     const eduRegex = /^[^\s@]+@[^\s@]+\.edu$/i;
-    if (!eduRegex.test(trimmed) && !isAllowedEmail(trimmed)) {
-      setEmailError("Please enter a valid .edu email address.");
+    if (!eduRegex.test(trimmed) && !isWhitelistedEmail(trimmed)) {
+      // Non-.edu fallback — capture lead instead of blocking.
+      setFallbackEmail(trimmed);
+      setView("non_edu");
       return;
     }
     setEmailError(null);
@@ -86,6 +94,29 @@ export default function StagingGetStartedModal({
     } finally {
       // Modal will be closed by parent on navigate; if not, release state
       setStep2Loading(false);
+    }
+  };
+
+  const handleFallbackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = fallbackEmail.trim().toLowerCase();
+    if (!trimmed) return;
+    setFallbackLoading(true);
+    try {
+      const { error } = await supabase.from("survive_ai_subscribers").insert({
+        email: trimmed,
+        tag: "non_edu_fallback",
+        source_context: {
+          source: "get_started_modal",
+          preselected_course_slug: preselectedCourseSlug ?? null,
+        },
+      });
+      if (error && error.code !== "23505") throw error;
+      setView("non_edu_success");
+    } catch {
+      toast.error("Something went wrong. Try again.");
+    } finally {
+      setFallbackLoading(false);
     }
   };
 
