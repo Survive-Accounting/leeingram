@@ -523,7 +523,6 @@ export default function GetAccess() {
                   onClick={handleCheckout}
                   disabled={
                     checkoutLoading ||
-                    !email.trim() ||
                     (!selectedTier && tier !== "lifetime")
                   }
                   className="w-full rounded-xl py-4 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
