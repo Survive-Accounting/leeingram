@@ -308,6 +308,55 @@ export default function GetAccess() {
               })}
             </div>
 
+            {/* Dynamic summary box */}
+            {selectedTier && (() => {
+              const startIdx = progression.courses.findIndex((c) => c.slug === course);
+              const includedCourses = progression.courses
+                .slice(startIdx, startIdx + 1 + selectedTier.coursesAhead)
+                .map((c) => c.code ?? c.name);
+              const isFull =
+                selectedTier.coursesAhead >= progression.courses.length - 1 - startIdx &&
+                selectedTier.coursesAhead > 0;
+              const accessPhrase =
+                selectedTier.coursesAhead === 0
+                  ? "Through August 31"
+                  : isFull
+                  ? "Covers your full accounting progression"
+                  : `Covers your next ${selectedTier.coursesAhead === 1 ? "course" : `${selectedTier.coursesAhead} courses`}`;
+
+              return (
+                <div
+                  className="rounded-lg p-4 mb-5"
+                  style={{
+                    background: "#F8FAFC",
+                    border: "1px solid #E2E8F0",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                >
+                  <div className="flex flex-col gap-2.5 text-[13px]">
+                    <div className="flex gap-2">
+                      <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>
+                        You get:
+                      </span>
+                      <span style={{ color: NAVY }}>{includedCourses.join(", ")}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>
+                        Total:
+                      </span>
+                      <span className="font-bold" style={{ color: NAVY }}>${selectedTier.price}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>
+                        Access:
+                      </span>
+                      <span style={{ color: NAVY }}>{accessPhrase}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Step 3 — email */}
             <label className="block text-[12px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
               3. Your email
