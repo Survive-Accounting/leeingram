@@ -87,17 +87,19 @@ export default function CampusLandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col relative" style={{ background: NAVY }}>
-      {/* Background image + overlay */}
-      <div
-        className="fixed inset-0 z-0"
-        style={{
-          backgroundImage: `url('${heroBg}')`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        }}
+      {/* Background video + overlay (matches /staging hero) */}
+      <video
+        className="fixed inset-0 z-0 w-full h-full object-cover"
+        src="/videos/hero-loop.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        poster={heroBg}
       />
-      <div className="fixed inset-0 z-0" style={{ background: "rgba(0,0,0,0.55)" }} />
+      <div className="fixed inset-0 z-0" style={{ background: `linear-gradient(to right, ${NAVY}cc 0%, ${NAVY}99 40%, ${NAVY}80 100%)` }} />
+      <div className="fixed inset-0 z-0" style={{ background: "rgba(0,0,0,0.35)" }} />
 
       <div className="relative z-10 flex-1 flex flex-col">
         <CampusHeader campusName={campusName} courseName={courseName} />
