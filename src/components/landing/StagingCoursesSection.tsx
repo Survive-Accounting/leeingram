@@ -153,26 +153,38 @@ export default function StagingCoursesSection({
                 boxShadow: "0 12px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06)",
               }}
             >
-              {ordered.map((c) => (
-                <button
-                  key={c.slug}
-                  onClick={() => {
-                    setSelectedSlug(c.slug);
-                    setOpen(false);
-                  }}
-                  className="w-full px-5 py-3 text-left transition-colors hover:bg-slate-50"
-                  style={{ fontFamily: "Inter, sans-serif" }}
-                >
-                  <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
-                    {c.name}
-                  </div>
-                  {SUBTEXT_BY_SLUG[c.slug] && (
-                    <div className="text-[12px]" style={{ color: "#6B7280" }}>
-                      {SUBTEXT_BY_SLUG[c.slug]}
+              {ordered.map((c) => {
+                const color = COLOR_BY_SLUG[c.slug];
+                return (
+                  <button
+                    key={c.slug}
+                    onClick={() => {
+                      setSelectedSlug(c.slug);
+                      setOpen(false);
+                    }}
+                    onMouseEnter={(e) => {
+                      if (color) e.currentTarget.style.background = color.tint;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
+                    className="w-full px-5 py-3 text-left transition-colors"
+                    style={{
+                      fontFamily: "Inter, sans-serif",
+                      borderLeft: `4px solid ${color?.border ?? "transparent"}`,
+                    }}
+                  >
+                    <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
+                      {c.name}
                     </div>
-                  )}
-                </button>
-              ))}
+                    {SUBTEXT_BY_SLUG[c.slug] && (
+                      <div className="text-[12px]" style={{ color: "#6B7280" }}>
+                        {SUBTEXT_BY_SLUG[c.slug]}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
