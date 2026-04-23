@@ -74,7 +74,7 @@ export default function StagingLandingPage() {
     if (stored) setCapturedEmail(stored);
   }, [trackPageView]);
 
-  /** Resolve email + course. Returns celebration data for in-modal display. */
+  /** Resolve email + course. Returns celebration data for in-modal display, or null if we navigated/skipped. */
   const resolveEmail = async (email: string, course: CtaCourse): Promise<CelebrationData | null> => {
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return null;
@@ -97,6 +97,15 @@ export default function StagingLandingPage() {
         sessionStorage.setItem("sa_test_mode", "true");
         sessionStorage.setItem("sa_email_override", data.email_override || "");
       }
+
+      // Ole Miss skips the founding-student modal entirely — straight to preview.
+      if (data?.campus_slug === "ole-miss") {
+        setEmailPromptOpen(false);
+        const chapterSuffix = pendingChapterNumber != null ? `/${pendingChapterNumber}` : "";
+        navigate(`/campus/${data.campus_slug}/${course.slug}${chapterSuffix}`);
+        return null;
+      }
+
       return data as CelebrationData;
     } catch {
       toast.error("Something went wrong. Try again.");
