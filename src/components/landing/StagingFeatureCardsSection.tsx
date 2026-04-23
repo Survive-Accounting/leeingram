@@ -13,38 +13,38 @@ interface CardProps {
   onClick?: () => void;
 }
 
-function Card({ title, body, buttonLabel, icon: Icon, iconColor, tint, onClick }: CardProps) {
+function Card({ title, body, buttonLabel, icon: Icon, iconColor, onClick }: CardProps) {
   return (
     <div
-      className="rounded-2xl px-5 py-5 flex flex-col items-center text-center"
+      className="rounded-2xl px-7 py-9 flex flex-col items-center text-center transition-all hover:-translate-y-0.5"
       style={{
-        background: tint,
-        boxShadow: "0 12px 40px rgba(0,0,0,0.30), 0 2px 6px rgba(0,0,0,0.18)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "#FFFFFF",
+        border: "1px solid #E5E7EB",
+        boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.04)",
       }}
     >
-      <div className="mb-3 flex items-center justify-center" style={{ height: 48 }}>
-        <Icon size={48} color={iconColor} strokeWidth={1.75} />
+      <div className="mb-5 flex items-center justify-center" style={{ height: 48 }}>
+        <Icon size={44} color={iconColor} strokeWidth={1.5} opacity={0.85} />
       </div>
       <h3
-        className="text-[20px] font-bold mb-2"
+        className="text-[20px] font-bold mb-3"
         style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
       >
         {title}
       </h3>
       <p
-        className="text-[13px] leading-snug mb-4 flex-1"
-        style={{ color: "#4B5563", fontFamily: "Inter, sans-serif" }}
+        className="text-[13px] leading-relaxed mb-6 flex-1"
+        style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
       >
         {body}
       </p>
       <button
         onClick={onClick}
-        className="rounded-lg px-4 py-2 text-[13px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.99]"
+        className="rounded-lg px-5 py-2.5 text-[13px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.99]"
         style={{
           background: NAVY,
           fontFamily: "Inter, sans-serif",
-          boxShadow: "0 2px 8px rgba(20,33,61,0.20)",
+          boxShadow: "0 1px 2px rgba(20,33,61,0.10)",
         }}
       >
         {buttonLabel}
