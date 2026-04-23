@@ -49,7 +49,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         .staging-hero-overlay-left {
           position: absolute;
           inset: 0;
-          background: linear-gradient(to right, ${NAVY}cc 0%, ${NAVY}99 40%, ${NAVY}80 100%);
+          background: linear-gradient(to right, ${NAVY}f2 0%, ${NAVY}e6 40%, ${NAVY}d9 100%);
           opacity: 1;
           z-index: 1;
         }
@@ -294,7 +294,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
               <span className="block hero-anim-line2">
-                AI study tools designed to get you unstuck — fast.
+                Accounting study tools that get you unstuck — fast.
               </span>
             </h1>
 
@@ -304,7 +304,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
               >
                 <p style={{ fontSize: "15px", lineHeight: 1.6 }}>
-                  Built by accounting tutor Lee Ingram. Tailored to students who are serious about passing. Trusted by 1,200+ since 2015.
+                  AI study tools built by accounting tutor Lee Ingram. Tailored to students serious about passing. Trusted by 1,200+ since 2015.
                 </p>
               </div>
               <Tooltip><TooltipTrigger asChild><span /></TooltipTrigger><TooltipContent /></Tooltip>
