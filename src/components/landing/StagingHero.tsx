@@ -237,11 +237,11 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
       </video>
       <div className="staging-hero-overlay-left" />
 
-      <div className="relative z-[3] mx-auto max-w-[1100px] px-4 sm:px-6 py-4 md:py-20 w-full">
-        <div className="staging-hero-card flex flex-col md:flex-row items-center gap-6 md:gap-0">
-          {/* LEFT — Photo (33% width) */}
-          <div className="w-full md:w-[33%] flex flex-col items-center justify-center shrink-0 md:pr-10">
-            <div className="relative w-full max-w-[240px] md:max-w-[280px]">
+      <div className="relative z-[3] mx-auto max-w-[1000px] px-4 sm:px-6 py-4 md:py-20 w-full">
+        <div className="staging-hero-card flex flex-col md:flex-row items-center md:items-stretch gap-6 md:gap-0">
+          {/* LEFT — Photo (fixed ~300px) */}
+          <div className="flex flex-col items-center justify-center shrink-0 md:pr-8" style={{ width: "100%", maxWidth: 300 }}>
+            <div className="relative w-full max-w-[240px] md:max-w-[300px]">
               <img
                 src={leeStadiumPhoto}
                 alt="Lee Ingram at Ole Miss stadium"
@@ -290,10 +290,10 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             aria-hidden="true"
           />
 
-          {/* RIGHT — Text (67%) */}
-          <div className="flex-1 w-full md:w-[67%] flex flex-col justify-center text-center md:text-left md:pl-10">
+          {/* RIGHT — Text column (max 500px) */}
+          <div className="flex-1 w-full flex flex-col justify-center text-center md:text-left md:pl-8" style={{ maxWidth: 500 }}>
             <h1
-              className="text-white leading-[1.15] tracking-tight text-[26px] sm:text-[36px] md:text-[38px]"
+              className="text-white leading-[1.15] tracking-tight text-[26px] sm:text-[34px] md:text-[36px]"
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
               <span className="block hero-anim-line2">
@@ -303,20 +303,19 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
 
             <TooltipProvider delayDuration={150}>
               <div
-                className="mt-5 mx-auto md:mx-0 max-w-[600px] hero-anim-sub"
+                className="mt-4 hero-anim-sub"
                 style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
               >
                 <p style={{ fontSize: "15px", lineHeight: 1.6 }}>
                   Built by accounting tutor Lee Ingram. Trusted by 1,200+ students since 2015.
                 </p>
               </div>
-              {/* Hidden tooltip provider preserved for future use */}
               <Tooltip><TooltipTrigger asChild><span /></TooltipTrigger><TooltipContent /></Tooltip>
             </TooltipProvider>
 
-            {/* CTA inside card — centered within the right (2/3) column */}
-            <div className="mt-7 flex flex-col items-center hero-anim-btn">
-              <div className="relative">
+            {/* CTA group — left-aligned with headline/subtext */}
+            <div className="mt-8 flex flex-col items-center md:items-start hero-anim-btn">
+              <div className="relative inline-block">
                 <div
                   aria-hidden="true"
                   className="absolute -inset-6 rounded-full pointer-events-none"
@@ -336,7 +335,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 `}</style>
                 <button
                   onClick={onGetStartedClick}
-                  className="relative rounded-xl px-14 py-4 text-[17px] md:text-[19px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+                  className="relative rounded-xl px-12 py-3.5 text-[17px] md:text-[18px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
                   style={{
                     background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
                     fontFamily: "Inter, sans-serif",
@@ -349,8 +348,10 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                   Get Access
                 </button>
               </div>
+
+              {/* Refund guarantee — tight under CTA */}
               <div
-                className="mt-2.5 flex items-center justify-center gap-1.5"
+                className="mt-2 flex items-center gap-1.5"
                 style={{
                   color: "rgba(255,255,255,0.65)",
                   fontFamily: "Inter, sans-serif",
@@ -365,31 +366,29 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 </svg>
                 <span>7-day refund guarantee</span>
               </div>
+
+              {/* Secondary link — inside the card, just below guarantee */}
+              <button
+                onClick={() => {
+                  const el = document.getElementById("exam-coming-up");
+                  if (el) {
+                    const top = el.getBoundingClientRect().top + window.scrollY;
+                    window.scrollTo({ top, behavior: "smooth" });
+                  }
+                }}
+                className="mt-1.5 text-[12px] font-medium underline underline-offset-[4px] decoration-1 transition-opacity hover:opacity-100 opacity-70"
+                style={{
+                  color: "rgba(255,255,255,0.7)",
+                  fontFamily: "Inter, sans-serif",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                }}
+              >
+                See what you'll get ↓
+              </button>
             </div>
           </div>
-        </div>
-
-        {/* "See what you'll get" sits below the card */}
-        <div className="mt-6 md:mt-8 flex justify-center hero-anim-btn">
-          <button
-            onClick={() => {
-              const el = document.getElementById("exam-coming-up");
-              if (el) {
-                const top = el.getBoundingClientRect().top + window.scrollY;
-                window.scrollTo({ top, behavior: "smooth" });
-              }
-            }}
-            className="text-[16px] md:text-[17px] font-semibold underline underline-offset-[6px] decoration-2 transition-opacity hover:opacity-100 opacity-90 px-3 py-1.5"
-            style={{
-              color: "rgba(255,255,255,0.92)",
-              fontFamily: "Inter, sans-serif",
-              textShadow: subtextShadow,
-              background: "none",
-              border: "none",
-            }}
-          >
-            See what you'll get ↓
-          </button>
         </div>
       </div>
 
