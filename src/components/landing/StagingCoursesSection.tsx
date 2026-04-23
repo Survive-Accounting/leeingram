@@ -464,6 +464,9 @@ export default function StagingCoursesSection({
                   >
                     Start Free Preview →
                   </button>
+                  <p className="mt-2 text-center text-[12px] text-white/60">
+                    Semester pass · Access through May 31
+                  </p>
                 </div>
 
                 {/* RIGHT — chapter list, own framed box */}

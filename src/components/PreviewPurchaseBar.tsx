@@ -61,10 +61,7 @@ export default function PreviewPurchaseBar(_props: PreviewPurchaseBarProps) {
             <span className="text-2xl sm:text-3xl font-bold text-white">$99</span>
           </div>
           <span className="text-[12px] sm:text-[13px] font-medium text-white/85 mt-1">
-            Spring 2026 Beta
-          </span>
-          <span className="text-[11px] sm:text-[12px] text-white/55">
-            Access through May 31
+            Semester pass · Access through May 31
           </span>
         </div>
 
