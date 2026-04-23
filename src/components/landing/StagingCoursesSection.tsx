@@ -150,8 +150,7 @@ export default function StagingCoursesSection({
   return (
     <section
       id="courses-section"
-      className="relative px-4 sm:px-6 scroll-mt-24 overflow-hidden"
-      style={{ paddingTop: 80, paddingBottom: 120 }}
+      className="relative px-4 sm:px-6 scroll-mt-24 overflow-hidden pt-20 pb-[640px] md:pb-[160px]"
     >
       <style>{`
         @keyframes betaPulse {
