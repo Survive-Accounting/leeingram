@@ -189,8 +189,27 @@ export function AISolutionRegenerationPanel() {
           }
         : null;
     }
+    if (scope === "courses" && courseIds.length > 0) {
+      let total = 0;
+      let complete = 0;
+      const labels: string[] = [];
+      courseIds.forEach((cid) => {
+        const co = courses?.find((c) => c.id === cid);
+        const counts = assetCounts?.byCourse[cid] ?? { total: 0, complete: 0 };
+        total += counts.total;
+        complete += counts.complete;
+        if (co) labels.push(co.code);
+      });
+      const remaining = skipAlreadyRegenerated ? total - complete : total;
+      return {
+        id: `multi_${courseIds.join("_")}`,
+        label: `${courseIds.length} courses (${labels.join(", ")})`,
+        total,
+        toProcess: remaining,
+      };
+    }
     return null;
-  }, [scope, chapterId, courseId, chapters, courses, assetCounts, skipAlreadyRegenerated]);
+  }, [scope, chapterId, courseId, courseIds, chapters, courses, assetCounts, skipAlreadyRegenerated]);
 
   // ── Run handler ────────────────────────────────────────────────
   const fetchAssetsToProcess = async (): Promise<AssetRow[]> => {
@@ -199,7 +218,8 @@ export function AISolutionRegenerationPanel() {
       .select("id, asset_name, problem_title, source_ref, source_number, ai_generation_status")
       .limit(10000);
     if (scope === "chapter") q = q.eq("chapter_id", chapterId);
-    else q = q.eq("course_id", courseId);
+    else if (scope === "course") q = q.eq("course_id", courseId);
+    else q = q.in("course_id", courseIds);
     const { data, error } = await q;
     if (error) throw error;
     let rows = (data ?? []) as AssetRow[];
