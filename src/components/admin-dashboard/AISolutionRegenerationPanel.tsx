@@ -545,7 +545,56 @@ export function AISolutionRegenerationPanel() {
                     )}
                   </div>
                 </div>
-              </RadioGroup>
+
+                <div className="flex items-start gap-2">
+                  <RadioGroupItem value="courses" id="scope-courses" className="mt-1" />
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="scope-courses" className="cursor-pointer text-sm">
+                      By Multiple Courses
+                    </Label>
+                    {scope === "courses" && (
+                      <div className="space-y-1.5 border border-border rounded-md p-2.5 bg-muted/20">
+                        <div className="flex items-center justify-between pb-1.5 mb-1 border-b border-border/60">
+                          <button
+                            type="button"
+                            className="text-[11px] text-primary hover:underline"
+                            onClick={() => setCourseIds((courses ?? []).map((c) => c.id))}
+                          >
+                            Select all
+                          </button>
+                          <button
+                            type="button"
+                            className="text-[11px] text-muted-foreground hover:underline"
+                            onClick={() => setCourseIds([])}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                        {courses?.map((c) => {
+                          const cnt = assetCounts?.byCourse[c.id]?.total ?? 0;
+                          const checked = courseIds.includes(c.id);
+                          return (
+                            <label
+                              key={c.id}
+                              className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/40 rounded px-1.5 py-1"
+                            >
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(v) => {
+                                  setCourseIds((prev) =>
+                                    v ? [...prev, c.id] : prev.filter((id) => id !== c.id)
+                                  );
+                                }}
+                              />
+                              <span className="flex-1">{c.course_name} ({c.code})</span>
+                              <span className="text-muted-foreground">{cnt} assets</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
             </div>
 
             {/* Summary card */}
