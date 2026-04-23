@@ -148,7 +148,7 @@ export default function StagingCoursesSection({
   };
 
   return (
-    <section className="px-4 sm:px-6 py-12 sm:py-16" style={{ background: "#F8F8FA" }}>
+    <section className="px-4 sm:px-6 pt-12 sm:pt-16 pb-20 sm:pb-28" style={{ background: "#F8F8FA" }}>
       <style>{`
         @keyframes betaPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
