@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, X } from "lucide-react";
 import { DevShortcut } from "@/components/DevShortcut";
+import { supabase } from "@/integrations/supabase/client";
+import { isWhitelistedEmail } from "@/lib/emailWhitelist";
+import { toast } from "sonner";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
