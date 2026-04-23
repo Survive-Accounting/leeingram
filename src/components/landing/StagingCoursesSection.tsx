@@ -247,7 +247,7 @@ export default function StagingCoursesSection({
         {selected && (
           <>
             <button
-              onClick={() => onCardClick(selected)}
+              onClick={handlePreviewFreeClick}
               className="mt-4 w-full rounded-xl px-5 py-3.5 text-[14px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
               style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.25)" }}
             >
@@ -268,95 +268,106 @@ export default function StagingCoursesSection({
         {/* Stats + Chapters — only after selection */}
         {selected && (
           <div
-            className="mt-5 rounded-2xl p-5 sm:p-6"
+            className="mt-5 rounded-2xl p-5 sm:p-6 animate-fade-in"
             style={{
               background: "#fff",
               boxShadow: "0 4px 20px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)",
               fontFamily: "Inter, sans-serif",
             }}
           >
-            <div className="flex flex-col md:flex-row gap-5 md:gap-6">
-              {/* LEFT — stat items + convergence lines */}
-              <div className="md:w-[30%] md:shrink-0 relative">
-                <div className="flex flex-col gap-3">
-                  {[
-                    {
-                      title: problemCount && problemCount > 0
-                        ? `${problemCount}+ Practice Problems`
-                        : "Hundreds of Practice Problems",
-                      subtext: "Step-by-step AI solutions",
-                    },
-                    { title: "Cram Tools", subtext: "Every chapter covered" },
-                    { title: "Lee on Demand", subtext: "Personalized tutoring videos" },
-                  ].map((stat) => (
-                    <div
-                      key={stat.title}
-                      className="rounded-xl p-3 sm:p-3.5"
-                      style={{ background: "#F8F8FA" }}
-                    >
-                      <div
-                        className="text-[12px] sm:text-[13px] font-bold leading-tight"
-                        style={{ color: NAVY }}
-                      >
-                        {stat.title}
-                      </div>
-                      <div
-                        className="text-[10px] sm:text-[11px] mt-1 leading-snug"
-                        style={{ color: "#6B7280" }}
-                      >
-                        {stat.subtext}
-                      </div>
+            {loading ? (
+              <div className="flex flex-col md:flex-row gap-5 md:gap-6 animate-pulse">
+                <div className="md:w-[30%] md:shrink-0 flex flex-col gap-3">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="rounded-xl p-3 sm:p-3.5" style={{ background: "#F1F2F5" }}>
+                      <div className="h-3 rounded w-3/4 mb-2" style={{ background: "#E5E7EB" }} />
+                      <div className="h-2 rounded w-1/2" style={{ background: "#E5E7EB" }} />
                     </div>
                   ))}
                 </div>
-
-                {/* Convergence arrows — desktop only */}
-                <svg
-                  className="hidden md:block absolute pointer-events-none"
-                  style={{ right: -18, top: 0, width: 40, height: "100%" }}
-                  viewBox="0 0 40 200"
-                  preserveAspectRatio="none"
-                  aria-hidden="true"
-                >
-                  <path d="M0 25 Q 25 25 32 100" stroke="#D1D5DB" strokeWidth="1" fill="none" />
-                  <path d="M0 100 L 32 100" stroke="#D1D5DB" strokeWidth="1" fill="none" />
-                  <path d="M0 175 Q 25 175 32 100" stroke="#D1D5DB" strokeWidth="1" fill="none" />
-                  <path d="M32 70 L 32 130" stroke="#D1D5DB" strokeWidth="1.5" fill="none" />
-                  <path d="M32 100 L 38 96 M32 100 L 38 104" stroke="#D1D5DB" strokeWidth="1" fill="none" />
-                </svg>
+                <div className="md:w-[70%] md:flex-1 flex flex-col gap-2">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="h-5 rounded" style={{ background: "#F1F2F5" }} />
+                  ))}
+                </div>
               </div>
-
-              {/* RIGHT — chapter list */}
-              <div className="md:w-[70%] md:flex-1">
-                {chapters.length === 0 ? (
-                  <p className="text-[13px]" style={{ color: "#9CA3AF" }}>
-                    Loading chapters…
-                  </p>
-                ) : (
-                  <ul className="flex flex-col -mx-2">
-                    {chapters.map((ch) => (
-                      <li key={ch.id}>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onChapterClick
-                              ? onChapterClick(selected, ch.chapter_number)
-                              : onCardClick(selected)
-                          }
-                          className="w-full flex items-baseline gap-2 text-[14px] text-left rounded-lg px-2 py-2 transition-colors hover:bg-slate-50 cursor-pointer"
-                          style={{ color: NAVY }}
+            ) : (
+              <div className="flex flex-col md:flex-row gap-5 md:gap-6">
+                {/* LEFT — stat items as clickable buttons */}
+                <div className="md:w-[30%] md:shrink-0">
+                  <div className="flex flex-col gap-3">
+                    {[
+                      {
+                        tag: "intent_practice_problems",
+                        title: problemCount && problemCount > 0
+                          ? `${problemCount}+ Practice Problems`
+                          : "Hundreds of Practice Problems",
+                        subtext: "Step-by-step AI solutions",
+                      },
+                      { tag: "intent_cram_tools", title: "Cram Tools", subtext: "Every chapter covered" },
+                      { tag: "intent_lee_on_demand", title: "Lee on Demand", subtext: "Personalized tutoring videos" },
+                    ].map((stat) => (
+                      <button
+                        key={stat.tag}
+                        type="button"
+                        onClick={() => handleStatClick(stat.tag)}
+                        className="rounded-xl p-3 sm:p-3.5 text-left transition-all hover:bg-slate-100 hover:shadow-sm group flex items-center justify-between gap-2 w-full"
+                        style={{ background: "#F8F8FA" }}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div
+                            className="text-[12px] sm:text-[13px] font-bold leading-tight"
+                            style={{ color: NAVY }}
+                          >
+                            {stat.title}
+                          </div>
+                          <div
+                            className="text-[10px] sm:text-[11px] mt-1 leading-snug"
+                            style={{ color: "#6B7280" }}
+                          >
+                            {stat.subtext}
+                          </div>
+                        </div>
+                        <span
+                          aria-hidden="true"
+                          className="text-[16px] flex-shrink-0 transition-transform group-hover:translate-x-0.5"
+                          style={{ color: "#9CA3AF" }}
                         >
-                          <span className="text-[12px] font-semibold w-12 flex-shrink-0" style={{ color: "#9CA3AF" }}>
-                            Ch. {ch.chapter_number}
-                          </span>
-                          <span>{ch.chapter_name}</span>
-                        </button>
-                      </li>
+                          →
+                        </span>
+                      </button>
                     ))}
-                  </ul>
-                )}
+                  </div>
+                </div>
+
+                {/* RIGHT — chapter list */}
+                <div className="md:w-[70%] md:flex-1">
+                  {chapters.length === 0 ? (
+                    <p className="text-[13px]" style={{ color: "#9CA3AF" }}>
+                      No chapters available yet.
+                    </p>
+                  ) : (
+                    <ul className="flex flex-col -mx-2">
+                      {chapters.map((ch) => (
+                        <li key={ch.id}>
+                          <button
+                            type="button"
+                            onClick={() => handleChapterRowClick(ch)}
+                            className="w-full flex items-baseline gap-2 text-[14px] text-left rounded-lg px-2 py-2 transition-colors hover:bg-slate-50 cursor-pointer"
+                            style={{ color: NAVY }}
+                          >
+                            <span className="text-[12px] font-semibold w-12 flex-shrink-0" style={{ color: "#9CA3AF" }}>
+                              Ch. {ch.chapter_number}
+                            </span>
+                            <span>{ch.chapter_name}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
