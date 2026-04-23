@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Sword, PenLine, MonitorPlay, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CampusHeader from "@/components/campus/CampusHeader";
 import PreviewPurchaseBar from "@/components/PreviewPurchaseBar";
@@ -154,6 +155,9 @@ export default function CampusLandingPage() {
         <div className="max-w-[1100px] mx-auto w-full px-4 sm:px-6 pb-32">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
             <Card
+              icon={Sword}
+              iconColor="#16a34a"
+              tint="#f0fdf4"
               title="Survival Tools"
               body="Built for late night cramming. Flashcards, journal entries, formulas — optimized for speed."
               buttonLabel="Browse Tools →"
@@ -164,6 +168,9 @@ export default function CampusLandingPage() {
             />
 
             <Card
+              icon={PenLine}
+              iconColor="#d97706"
+              tint="#fffbeb"
               title="Practice Problems"
               body="Your solutions manual sucks. Ours actually teaches you something."
               buttonLabel="Browse Problems →"
@@ -174,53 +181,15 @@ export default function CampusLandingPage() {
             />
 
             <Card
+              icon={MonitorPlay}
+              iconColor="#2563eb"
+              tint="#eff6ff"
               title="On Demand Videos"
               body="Lee's full video library, 24/7. Binge what's there, request what's not. New videos drop every week."
               buttonLabel={waitlistJoined ? "You're on the list 👍" : "Request Early Access"}
               onClick={handleOnDemandClick}
               disabled={waitlistJoined}
               buttonBg={waitlistJoined ? GREEN : NAVY}
-              extra={
-                showEmailInput && !waitlistJoined ? (
-                  <div className="mt-3 flex gap-2">
-                    <input
-                      type="email"
-                      value={waitlistEmail}
-                      onChange={(e) => setWaitlistEmail(e.target.value)}
-                      placeholder="your@university.edu"
-                      disabled={waitlistLoading}
-                      className="flex-1 rounded-lg px-3 text-[13px] outline-none focus:ring-2"
-                      style={{
-                        minHeight: 40,
-                        background: "#F8F9FA",
-                        border: "1px solid #E5E7EB",
-                        color: NAVY,
-                        fontFamily: "Inter, sans-serif",
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") submitWaitlist(waitlistEmail);
-                      }}
-                    />
-                    <button
-                      onClick={() => submitWaitlist(waitlistEmail)}
-                      disabled={waitlistLoading}
-                      className="rounded-lg px-4 text-[13px] font-semibold text-white disabled:opacity-60"
-                      style={{ background: NAVY, fontFamily: "Inter, sans-serif" }}
-                    >
-                      {waitlistLoading ? "..." : "Join →"}
-                    </button>
-                  </div>
-                ) : null
-              }
-            />
-
-            <Card
-              title="On Demand Videos"
-              body="Lee's full video library, 24/7. Binge what's there, request what's not. New videos drop every week."
-              buttonLabel={waitlistJoined ? "You're on the list 👍" : "Request Early Access →"}
-              onClick={handleOnDemandClick}
-              disabled={waitlistJoined}
-              buttonBg={waitlistJoined ? GREEN : RED}
               extra={
                 showEmailInput && !waitlistJoined ? (
                   <div className="mt-3 flex gap-2">
@@ -277,19 +246,28 @@ interface CardProps {
   disabled?: boolean;
   buttonBg?: string;
   extra?: React.ReactNode;
+  icon?: LucideIcon;
+  iconColor?: string;
+  tint?: string;
 }
 
-function Card({ title, body, buttonLabel, onClick, comingSoon, disabled, buttonBg, extra }: CardProps) {
+function Card({ title, body, buttonLabel, onClick, comingSoon, disabled, buttonBg, extra, icon: Icon, iconColor, tint }: CardProps) {
   const bg = buttonBg || NAVY;
   const isGreen = bg === GREEN;
   return (
     <div
-      className="bg-white rounded-2xl px-5 py-4 flex flex-col"
+      className="rounded-2xl px-5 py-5 flex flex-col items-center text-center"
       style={{
+        background: tint || "#fff",
         boxShadow: "0 12px 40px rgba(20,33,61,0.10), 0 2px 6px rgba(20,33,61,0.06)",
         border: "1px solid rgba(20,33,61,0.06)",
       }}
     >
+      {Icon && (
+        <div className="mb-3 flex items-center justify-center" style={{ height: 48 }}>
+          <Icon size={48} color={iconColor || NAVY} strokeWidth={1.75} />
+        </div>
+      )}
       <h3
         className="text-[20px] font-bold mb-2"
         style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
@@ -307,7 +285,7 @@ function Card({ title, body, buttonLabel, onClick, comingSoon, disabled, buttonB
           onClick={disabled ? undefined : onClick}
           disabled={disabled}
           aria-disabled={disabled}
-          className={`self-start rounded-lg px-4 py-2 text-[13px] font-semibold text-white transition-all ${disabled ? "cursor-not-allowed" : "hover:brightness-110 active:scale-[0.99]"}`}
+          className={`rounded-lg px-4 py-2 text-[13px] font-semibold text-white transition-all ${disabled ? "cursor-not-allowed" : "hover:brightness-110 active:scale-[0.99]"}`}
           style={{
             background: bg,
             fontFamily: "Inter, sans-serif",
