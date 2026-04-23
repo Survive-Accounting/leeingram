@@ -55,7 +55,7 @@ export default function StagingGetStartedModal({
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
     const eduRegex = /^[^\s@]+@[^\s@]+\.edu$/i;
-    if (!eduRegex.test(trimmed)) {
+    if (!eduRegex.test(trimmed) && !isAllowedEmail(trimmed)) {
       setEmailError("Please enter a valid .edu email address.");
       return;
     }
