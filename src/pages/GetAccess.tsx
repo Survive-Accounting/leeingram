@@ -564,11 +564,11 @@ export default function GetAccess() {
           >
             <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
               <div className="min-w-0 flex items-baseline gap-2">
-                <span className="text-[13px] sm:text-[14px] font-semibold truncate" style={{ color: NAVY }}>
-                  {stickyName}
-                </span>
                 <span className="text-[14px] sm:text-[16px] font-bold shrink-0" style={{ color: NAVY }}>
                   ${stickyPrice}
+                </span>
+                <span className="text-[13px] sm:text-[14px] font-semibold truncate" style={{ color: NAVY }}>
+                  — {stickyName}
                 </span>
               </div>
               <button
