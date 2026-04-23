@@ -56,13 +56,13 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           z-index: 1;
         }
         .staging-hero-card {
-          background: rgba(20, 33, 61, 0.72);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
+          background: rgba(20, 33, 61, 0.45);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
           border: 1px solid rgba(255,255,255,0.08);
           border-radius: 16px;
-          padding: 28px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+          padding: 24px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.35);
         }
         @media (min-width: 768px) {
           .staging-hero-card { padding: 36px 40px; }
