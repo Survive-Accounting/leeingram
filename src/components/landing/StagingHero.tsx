@@ -243,10 +243,10 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
       <div className="staging-hero-overlay-left" />
 
       <div className="relative z-[3] mx-auto max-w-[1100px] px-4 sm:px-6 py-4 md:py-20 w-full">
-        <div className="staging-hero-card flex flex-col md:flex-row items-center gap-6 md:gap-10">
-          {/* LEFT — Photo (smaller, ~33% width) */}
-          <div className="w-full md:w-[33%] flex flex-col items-center md:items-start shrink-0">
-            <div className="relative w-full max-w-[240px] md:max-w-[300px]">
+        <div className="staging-hero-card flex flex-col md:flex-row items-center gap-6 md:gap-0">
+          {/* LEFT — Photo (33% width) */}
+          <div className="w-full md:w-[33%] flex flex-col items-center justify-center shrink-0">
+            <div className="relative w-full max-w-[240px] md:max-w-[280px]">
               <img
                 src={leeStadiumPhoto}
                 alt="Lee Ingram at Ole Miss stadium"
@@ -304,14 +304,21 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             </div>
           </div>
 
-          {/* RIGHT — Text */}
-          <div className="flex-1 text-center md:text-left">
+          {/* DIVIDER */}
+          <div
+            className="hidden md:block self-stretch"
+            style={{ width: "1px", background: "rgba(255,255,255,0.15)" }}
+            aria-hidden="true"
+          />
+
+          {/* RIGHT — Text (67%) */}
+          <div className="flex-1 w-full md:w-[67%] flex flex-col justify-center text-center md:text-left md:pl-8">
             <h1
-              className="text-white leading-[1.15] tracking-tight text-[28px] sm:text-[40px] md:text-[52px]"
+              className="text-white leading-[1.15] tracking-tight text-[28px] sm:text-[40px] md:text-[44px]"
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
               <span className="block hero-anim-line2">
-                AI-enabled study tools created by a real tutor.
+                AI-assisted study tools created by a real tutor.
               </span>
             </h1>
 
@@ -320,12 +327,12 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 className="mt-5 mx-auto md:mx-0 max-w-[560px] hero-anim-sub"
                 style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
               >
-                <p className="text-[14px] md:text-[16px] leading-relaxed">
-                  I built Survive Accounting to help you into your exam confident you'll own it.
+                <p style={{ fontSize: "15px", lineHeight: 1.6 }}>
+                  Generic AI wasn't built for your accounting exam prep. This is. Survive uses AI to bring 10 years of tutoring experience to every student who's feeling lost in accounting.
                 </p>
               </div>
 
-              <div className="mt-5 md:mt-6 flex justify-center md:justify-start hero-anim-btn">
+              <div className="mt-8 flex flex-col items-center md:items-start gap-2 hero-anim-btn">
                 <button
                   onClick={onGetStartedClick}
                   className="rounded-lg px-7 py-3.5 text-[15px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
@@ -333,19 +340,18 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 >
                   Get Started →
                 </button>
-              </div>
-
-              <div className="mt-6 flex justify-center md:justify-start hero-anim-btn">
                 <button
                   onClick={() => {
                     const el = document.getElementById("courses-section");
                     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
-                  className="text-[14px] font-medium underline underline-offset-4 transition-opacity hover:opacity-80"
+                  className="text-[14px] font-medium underline underline-offset-4 transition-opacity hover:opacity-80 px-2 py-1"
                   style={{
-                    color: "rgba(255,255,255,0.9)",
+                    color: "rgba(255,255,255,0.75)",
                     fontFamily: "Inter, sans-serif",
                     textShadow: subtextShadow,
+                    background: "none",
+                    border: "none",
                   }}
                 >
                   See how it works ↓
