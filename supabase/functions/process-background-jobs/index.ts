@@ -7,6 +7,16 @@ const corsHeaders = {
 };
 
 const BATCH_SIZE = 10;
+// Per-job-type rate-limit config to stay under OpenAI TPM caps.
+// o3 has a 30,000 TPM limit; ~1,500 tokens/request → ~20 req/min.
+// We pace at ~15/min (4s between dispatches) to leave headroom.
+const JOB_DISPATCH_DELAY_MS: Record<string, number> = {
+  regenerate_solution: 4000,
+};
+const DEFAULT_DISPATCH_DELAY_MS = 0;
+const SELF_CHAIN_DELAY_MS = 2000;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const JOB_HANDLERS: Record<string, { fn: string; body: (p: any) => any }> = {
   prep_doc: {
@@ -150,6 +160,10 @@ Deno.serve(async (req) => {
         EdgeRuntime.waitUntil(childPromise);
       }
       dispatched++;
+
+      // Pace dispatches per job_type to respect upstream API rate limits.
+      const delay = JOB_DISPATCH_DELAY_MS[item.job_type] ?? DEFAULT_DISPATCH_DELAY_MS;
+      if (delay > 0) await sleep(delay);
     }
 
     const { count } = await sb
@@ -160,7 +174,9 @@ Deno.serve(async (req) => {
     const remaining = count ?? 0;
 
     if (remaining > 0) {
-      console.log(`${remaining} items remaining — self-chaining...`);
+      console.log(`${remaining} items remaining — self-chaining in ${SELF_CHAIN_DELAY_MS}ms...`);
+      // Small gap before re-invoking so we don't pile dispatcher invocations on top of each other.
+      await sleep(SELF_CHAIN_DELAY_MS);
       fetch(`${supabaseUrl}/functions/v1/process-background-jobs`, {
         method: "POST",
         headers: {
