@@ -251,29 +251,51 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
 
           {/* RIGHT — Text */}
           <div className="flex-1 text-center md:text-left">
+            <p
+              className="mb-3 text-[12px] sm:text-[13px] font-semibold uppercase tracking-[0.15em] hero-anim-line1"
+              style={{
+                color: "rgba(255,255,255,0.75)",
+                fontFamily: "Inter, sans-serif",
+                textShadow: subtextShadow,
+              }}
+            >
+              Ole Miss · Tutor since 2015
+            </p>
             <h1
               className="text-white leading-[1.15] tracking-tight text-[28px] sm:text-[36px] md:text-[44px]"
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
-              <span className="block hero-anim-line1">Your exam is coming.</span>
-              <span className="block hero-anim-line2">I'll get you ready.</span>
+              <span className="block hero-anim-line2">
+                Accounting exams are more ace-able than you think.
+              </span>
             </h1>
 
             <p
               className="mt-5 text-[15px] md:text-[16px] leading-relaxed mx-auto md:mx-0 max-w-[520px] hero-anim-sub"
               style={{ color: "rgba(255,255,255,0.85)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
             >
-              I'm Lee Ingram. Ole Miss accounting alum & tutor. I built Survive Accounting out of a love for helping students master their accounting courses — not just survive them.
+              I'm Lee Ingram, Ole Miss alum and tutor. Helping you ace accounting exams is my passion. Survive Accounting is an AI-enabled platform I'm building specifically for accounting students who want to master the material — not just memorize it.
             </p>
 
             <TooltipProvider delayDuration={150}>
-              <div className="mt-8 flex justify-center md:justify-start hero-anim-btn">
+              <div className="mt-8 flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 justify-center md:justify-start hero-anim-btn">
                 <button
                   onClick={onGetStartedClick}
                   className="rounded-lg px-7 py-3.5 text-[15px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
                   style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.35)" }}
                 >
                   Get Started →
+                </button>
+                <button
+                  onClick={onGetStartedClick}
+                  className="text-[14px] font-medium underline underline-offset-4 transition-opacity hover:opacity-80"
+                  style={{
+                    color: "rgba(255,255,255,0.9)",
+                    fontFamily: "Inter, sans-serif",
+                    textShadow: subtextShadow,
+                  }}
+                >
+                  See what's included
                 </button>
               </div>
               {/* Hidden tooltip provider preserved for future use */}
