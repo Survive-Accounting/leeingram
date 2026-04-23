@@ -101,60 +101,6 @@ export default function StagingCoursesSection({
       `}</style>
 
       <div className="mx-auto max-w-[720px]">
-        {/* Integrated beta banner */}
-        <TooltipProvider delayDuration={150}>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-5">
-            <span
-              className="inline-flex items-center gap-2 self-start px-3 py-1.5 rounded-full text-[12px] font-bold whitespace-nowrap"
-              style={{
-                background: "rgba(22,163,74,0.12)",
-                color: GREEN,
-                fontFamily: "Inter, sans-serif",
-              }}
-            >
-              <span className="relative inline-block w-2 h-2">
-                <span className="absolute inset-0 rounded-full" style={{ background: GREEN }} />
-                <span
-                  className="absolute inset-0 rounded-full"
-                  style={{ background: GREEN, animation: "betaPulse 1.8s ease-in-out infinite" }}
-                />
-              </span>
-              Spring 2026 is Live
-            </span>
-          </div>
-
-          <ul className="space-y-2.5 mb-8">
-            {BULLETS.map((b, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-3 text-[14px] sm:text-[15px] leading-relaxed"
-                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-              >
-                <span
-                  className="flex-shrink-0 mt-[7px] w-1.5 h-1.5 rounded-full"
-                  style={{ background: GREEN }}
-                />
-                <span className="flex items-center gap-1.5">
-                  <span>{b.text}</span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        className="inline-flex items-center justify-center cursor-help"
-                        aria-label="More info"
-                      >
-                        <Info className="w-3.5 h-3.5" style={{ color: "#9CA3AF" }} />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-[280px] text-xs leading-relaxed">
-                      {b.tooltip}
-                    </TooltipContent>
-                  </Tooltip>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </TooltipProvider>
 
         <p
           className="text-center text-[13px] sm:text-[14px] font-semibold uppercase tracking-[0.15em] mb-4"
