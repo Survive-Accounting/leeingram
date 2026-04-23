@@ -37,10 +37,10 @@ interface AccessTier {
 }
 
 const ACCESS_TIERS: AccessTier[] = [
-  { id: "current", title: "Current Course",                price: 150, coursesAhead: 0 },
-  { id: "next1",   title: "Continue to Next Course",       price: 250, coursesAhead: 1 },
-  { id: "next2",   title: "Stay Covered (Next 2 Courses)", price: 325, coursesAhead: 2 },
-  { id: "full",    title: "Full Accounting Sequence",      price: 475, coursesAhead: 3, badge: "Best value" },
+  { id: "current", title: "Current Course",  price: 150, coursesAhead: 0 },
+  { id: "next1",   title: "Next Course",     price: 250, coursesAhead: 1 },
+  { id: "next2",   title: "Stay Covered",    price: 325, coursesAhead: 2 },
+  { id: "full",    title: "Full Sequence",   price: 475, coursesAhead: 3, badge: "Best value" },
 ];
 
 const INCLUDES = [
