@@ -136,13 +136,19 @@ export default function CampusLandingPage() {
         <CampusHeader campusName={campusName} courseName={courseName} />
 
         {/* Header */}
-        <div className="max-w-[1100px] mx-auto w-full px-4 sm:px-6 pt-10 pb-8 text-center">
+        <div className="max-w-[1100px] mx-auto w-full px-4 sm:px-6 pt-10 pb-16 text-center">
           <h1
             className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
           >
-            Exactly what you need to start studying smarter.
+            Your next exam is coming up.
           </h1>
+          <p
+            className="mt-4 text-[16px] sm:text-[18px]"
+            style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
+          >
+            Get exactly what you need to study smarter.
+          </p>
         </div>
 
         {/* Cards */}
