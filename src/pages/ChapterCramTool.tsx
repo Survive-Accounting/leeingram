@@ -1435,8 +1435,8 @@ function CramFloatingActionBar({ chapterId, chapterNumber, chapterName, courseDi
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const shareUrl = `${STUDENT_BASE_URL}/cram/${chapterId}?preview=true`;
 
-  // Hero bottom = nav (56px) + hero (300px) = 356px; bar anchors near that edge
-  const HERO_BOTTOM = 356;
+  // Title block bottom = nav (56px) + title (~120px) = 176px; bar anchors near that edge
+  const HERO_BOTTOM = 176;
   const [isSticky, setIsSticky] = useState(false);
 
   useEffect(() => {
