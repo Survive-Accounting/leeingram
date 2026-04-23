@@ -3,7 +3,9 @@ import { X, Loader2 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { CtaCourse } from "@/components/landing/StagingCtaModal";
 import { DevShortcut } from "@/components/DevShortcut";
-import { isAllowedEmail } from "@/lib/emailWhitelist";
+import { isAllowedEmail, isWhitelistedEmail } from "@/lib/emailWhitelist";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const RED = "#CE1126";
 const NAVY = "#14213D";
@@ -43,6 +45,9 @@ export default function StagingGetStartedModal({
   const [step1Loading, setStep1Loading] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<CtaCourse | null>(null);
   const [step2Loading, setStep2Loading] = useState(false);
+  const [view, setView] = useState<"main" | "non_edu" | "non_edu_success">("main");
+  const [fallbackEmail, setFallbackEmail] = useState("");
+  const [fallbackLoading, setFallbackLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -55,6 +60,9 @@ export default function StagingGetStartedModal({
       setStep1Loading(false);
       setSelectedCourse(preset);
       setStep2Loading(false);
+      setView("main");
+      setFallbackEmail("");
+      setFallbackLoading(false);
     }
   }, [open, preselectedCourseSlug, courses]);
 
@@ -63,8 +71,10 @@ export default function StagingGetStartedModal({
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
     const eduRegex = /^[^\s@]+@[^\s@]+\.edu$/i;
-    if (!eduRegex.test(trimmed) && !isAllowedEmail(trimmed)) {
-      setEmailError("Please enter a valid .edu email address.");
+    if (!eduRegex.test(trimmed) && !isWhitelistedEmail(trimmed)) {
+      // Non-.edu fallback — capture lead instead of blocking.
+      setFallbackEmail(trimmed);
+      setView("non_edu");
       return;
     }
     setEmailError(null);
@@ -87,6 +97,29 @@ export default function StagingGetStartedModal({
     }
   };
 
+  const handleFallbackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = fallbackEmail.trim().toLowerCase();
+    if (!trimmed) return;
+    setFallbackLoading(true);
+    try {
+      const { error } = await supabase.from("survive_ai_subscribers").insert({
+        email: trimmed,
+        tag: "non_edu_fallback",
+        source_context: {
+          source: "get_started_modal",
+          preselected_course_slug: preselectedCourseSlug ?? null,
+        },
+      });
+      if (error && error.code !== "23505") throw error;
+      setView("non_edu_success");
+    } catch {
+      toast.error("Something went wrong. Try again.");
+    } finally {
+      setFallbackLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
@@ -105,7 +138,67 @@ export default function StagingGetStartedModal({
         <div className="pt-7" />
 
         <div className="px-6 sm:px-8 pb-7">
-          {step === 1 && (
+          {view === "non_edu_success" && (
+            <div className="text-center space-y-4 py-2">
+              <div className="text-4xl leading-none" aria-hidden="true">✉️</div>
+              <h2
+                className="text-[20px] font-semibold"
+                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+              >
+                You're on the list — we'll be in touch.
+              </h2>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-[13px] font-medium hover:underline"
+                style={{ color: "#6B7280" }}
+              >
+                Close
+              </button>
+            </div>
+          )}
+
+          {view === "non_edu" && (
+            <form onSubmit={handleFallbackSubmit} className="space-y-4">
+              <div>
+                <h2
+                  className="text-[20px] font-semibold"
+                  style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                >
+                  Looks like that's not a school email.
+                </h2>
+                <p className="text-[13px] mt-2 leading-relaxed" style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>
+                  Survive Accounting is built for college students — but we don't want to leave you out. Drop your email and we'll send you a free preview link.
+                </p>
+              </div>
+              <input
+                type="email"
+                value={fallbackEmail}
+                onChange={(e) => setFallbackEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                disabled={fallbackLoading}
+                autoFocus
+                className="w-full rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#14213D]"
+                style={{
+                  background: "#F8F9FA",
+                  border: "1px solid #E5E7EB",
+                  color: NAVY,
+                  fontFamily: "Inter, sans-serif",
+                }}
+              />
+              <button
+                type="submit"
+                disabled={fallbackLoading}
+                className="w-full rounded-lg py-3 text-[14px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-80 disabled:cursor-wait flex items-center justify-center gap-2"
+                style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.3)" }}
+              >
+                {fallbackLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send Me Access →"}
+              </button>
+            </form>
+          )}
+
+          {view === "main" && step === 1 && (
             <form onSubmit={handleStep1}>
               <h2
                 className="text-[22px] sm:text-[26px] leading-tight text-center"
@@ -165,7 +258,7 @@ export default function StagingGetStartedModal({
             </form>
           )}
 
-          {step === 2 && (
+          {view === "main" && step === 2 && (
             <div>
               <h2
                 className="text-[22px] sm:text-[26px] leading-tight text-center"
