@@ -6,9 +6,10 @@ const RED = "#CE1126";
 
 interface StagingNavbarProps {
   onCtaClick: () => void;
+  onPricingClick?: () => void;
 }
 
-export default function StagingNavbar({ onCtaClick }: StagingNavbarProps) {
+export default function StagingNavbar({ onCtaClick, onPricingClick }: StagingNavbarProps) {
   const navigate = useNavigate();
 
   return (
@@ -34,6 +35,13 @@ export default function StagingNavbar({ onCtaClick }: StagingNavbarProps) {
         {/* Right side */}
         <div className="flex items-center gap-4 sm:gap-5">
           <button
+            onClick={() => onPricingClick?.()}
+            className="text-[13px] font-semibold transition-colors hover:opacity-70"
+            style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+          >
+            Pricing
+          </button>
+          <button
             onClick={() => navigate("/login")}
             className="text-[13px] font-semibold transition-all hover:brightness-110 active:scale-[0.98]"
             style={{
@@ -46,7 +54,7 @@ export default function StagingNavbar({ onCtaClick }: StagingNavbarProps) {
               boxShadow: "0 2px 8px rgba(20,33,61,0.25)",
             }}
           >
-            Student Login
+            Login
           </button>
         </div>
       </nav>
