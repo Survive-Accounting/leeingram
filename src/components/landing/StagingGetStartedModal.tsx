@@ -49,21 +49,26 @@ export default function StagingGetStartedModal({
   const [view, setView] = useState<"main" | "non_edu" | "non_edu_success">("main");
   const [fallbackEmail, setFallbackEmail] = useState("");
   const [fallbackLoading, setFallbackLoading] = useState(false);
+  // When true, expand into the full picker. Otherwise show the static "Your course" line.
+  const [showCoursePicker, setShowCoursePicker] = useState(false);
 
   useEffect(() => {
     if (open) {
       const preset = preselectedCourseSlug
         ? courses.find((c) => c.slug === preselectedCourseSlug) ?? null
         : null;
+      // Default to a single locked course to remove decision fatigue.
+      const fallback = courses[0] ?? null;
       setStep(1);
       setEmail("");
       setEmailError(null);
       setStep1Loading(false);
-      setSelectedCourse(preset);
+      setSelectedCourse(preset ?? fallback);
       setStep2Loading(false);
       setView("main");
       setFallbackEmail("");
       setFallbackLoading(false);
+      setShowCoursePicker(false);
     }
   }, [open, preselectedCourseSlug, courses]);
 
