@@ -262,7 +262,7 @@ Deno.serve(async (req) => {
             // Can't create — use general fallback
             campusId = "";
             campusSlug = "general";
-            campusName = "Your School";
+            campusName = "Survive Accounting";
           } else {
             campusId = retried.id;
             campusSlug = retried.slug;
@@ -285,10 +285,23 @@ Deno.serve(async (req) => {
             .maybeSingle();
         }
       } else {
-        // No HIPOLABS result — general fallback
+        // No HIPOLABS result and not a .edu — general fallback
         campusId = "";
         campusSlug = "general";
-        campusName = "Your School";
+        campusName = "Survive Accounting";
+      }
+    }
+
+    // If we landed on the general fallback, hydrate campusId from the real row.
+    if (!campusId && campusSlug === "general") {
+      const { data: generalCampus } = await sb
+        .from("campuses")
+        .select("id, name")
+        .eq("slug", "general")
+        .maybeSingle();
+      if (generalCampus) {
+        campusId = generalCampus.id;
+        campusName = generalCampus.name;
       }
     }
 
