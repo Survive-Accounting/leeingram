@@ -110,11 +110,52 @@ export default function GetAccess() {
   // is no longer valid (e.g. user picked the last course in the sequence).
   const selectedTier = tiers.find((t) => t.id === tier) ?? tiers[0];
 
-  const handleCheckout = () => {
-    // Hook up Stripe later; for now route to staging campus checkout flow.
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  const handleCheckout = async () => {
     if (!email.trim()) return;
-    sessionStorage.setItem("student_email", email.trim().toLowerCase());
-    navigate(`/staging`);
+    const cleanEmail = email.trim().toLowerCase();
+    sessionStorage.setItem("student_email", cleanEmail);
+
+    const startIdx = progression.courses.findIndex((c) => c.slug === course);
+    const includedCourses =
+      tier === "lifetime"
+        ? progression.courses.map((c) => c.code ?? c.name)
+        : selectedTier
+        ? progression.courses
+            .slice(startIdx, startIdx + 1 + selectedTier.coursesAhead)
+            .map((c) => c.code ?? c.name)
+        : [];
+    const amount = tier === "lifetime" ? LIFETIME_PRICE : selectedTier?.price;
+    if (!amount) return;
+
+    setCheckoutError(null);
+    setCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "create-get-access-checkout",
+        {
+          body: {
+            email: cleanEmail,
+            campus: progression.campusSlug,
+            selectedCourse: course,
+            selectedPlan: tier,
+            amount,
+            includedCourses,
+            origin: window.location.origin,
+          },
+        },
+      );
+      if (error) throw error;
+      const url = (data as { url?: string } | null)?.url;
+      if (!url) throw new Error("Checkout URL missing from response");
+      window.location.href = url;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not start checkout";
+      setCheckoutError(msg);
+      setCheckoutLoading(false);
+    }
   };
 
   return (
