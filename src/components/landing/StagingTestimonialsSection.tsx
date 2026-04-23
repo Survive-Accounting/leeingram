@@ -104,7 +104,12 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
   }, []);
 
   return (
-    <section style={{ background: "#F8F8F8" }} className="py-16 sm:py-20 px-4 sm:px-6">
+    <section
+      style={{
+        background: "linear-gradient(180deg, #F8F8F8 0%, #F8F8F8 70%, #C9CFD9 92%, #6F7C92 100%)",
+      }}
+      className="pt-16 sm:pt-20 pb-24 sm:pb-28 px-4 sm:px-6 relative"
+    >
       <div className="mx-auto max-w-[800px]">
         <TooltipProvider delayDuration={150}>
           <p
