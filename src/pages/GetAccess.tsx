@@ -98,8 +98,10 @@ export default function GetAccess() {
       const span = courses.slice(startIdx, startIdx + 1 + t.coursesAhead);
       const labels = span.map((c) => c.code ?? c.name);
       const subtext =
-        t.coursesAhead === 0
-          ? `${labels[0]} — Access through August 31`
+        t.id === "current"
+          ? "Access through August 31"
+          : t.id === "full"
+          ? "All accounting courses"
           : t.coursesAhead === 1
           ? `${labels[0]} + ${labels[1]}`
           : labels.join(" → ");
