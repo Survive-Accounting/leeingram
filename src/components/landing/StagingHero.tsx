@@ -237,10 +237,10 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
       </video>
       <div className="staging-hero-overlay-left" />
 
-      <div className="relative z-[3] mx-auto max-w-[1000px] px-4 sm:px-6 py-4 md:py-20 w-full">
+      <div className="relative z-[3] mx-auto max-w-[950px] px-4 sm:px-6 py-4 md:py-20 w-full">
         <div className="staging-hero-card flex flex-col md:flex-row items-center md:items-stretch gap-6 md:gap-0">
           {/* LEFT — Photo (fixed ~300px) */}
-          <div className="flex flex-col items-center justify-center shrink-0 md:pr-8" style={{ width: "100%", maxWidth: 300 }}>
+          <div className="flex flex-col items-center justify-center shrink-0 md:pr-6" style={{ width: "100%", maxWidth: 300 }}>
             <div className="relative w-full max-w-[240px] md:max-w-[300px]">
               <img
                 src={leeStadiumPhoto}
@@ -290,8 +290,8 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             aria-hidden="true"
           />
 
-          {/* RIGHT — Text column (max 500px) */}
-          <div className="flex-1 w-full flex flex-col justify-center text-center md:text-left md:pl-8" style={{ maxWidth: 500 }}>
+          {/* RIGHT — Text column (max 480px) */}
+          <div className="flex-1 w-full flex flex-col justify-center text-center md:text-left md:pl-6" style={{ maxWidth: 480 }}>
             <h1
               className="text-white leading-[1.15] tracking-tight text-[26px] sm:text-[34px] md:text-[36px]"
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
@@ -314,7 +314,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             </TooltipProvider>
 
             {/* CTA group — left-aligned with headline/subtext */}
-            <div className="mt-8 flex flex-col items-center md:items-start hero-anim-btn">
+            <div className="mt-5 flex flex-col items-center md:items-start hero-anim-btn">
               <div className="relative inline-block">
                 <div
                   aria-hidden="true"
@@ -371,7 +371,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                     window.scrollTo({ top, behavior: "smooth" });
                   }
                 }}
-                className="mt-1.5 text-[12px] font-medium underline underline-offset-[4px] decoration-1 transition-opacity hover:opacity-100 opacity-70"
+                className="mt-1 text-[12px] font-medium underline underline-offset-[4px] decoration-1 transition-opacity hover:opacity-80 opacity-45"
                 style={{
                   color: "rgba(255,255,255,0.7)",
                   fontFamily: "Inter, sans-serif",
