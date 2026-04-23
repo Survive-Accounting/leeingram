@@ -119,6 +119,23 @@ export default function StagingFeatureCardsSection({
             onClick={onRequestEarlyAccess}
           />
         </div>
+
+        {/* CTA — placed after cards for clear conversion flow */}
+        <div className="mt-14 md:mt-16 flex justify-center">
+          <button
+            type="button"
+            onClick={onStartStudying}
+            className="text-[15px] md:text-[16px] font-semibold underline underline-offset-[6px] decoration-2 transition-opacity hover:opacity-80 px-2 py-1.5"
+            style={{
+              color: NAVY,
+              fontFamily: "Inter, sans-serif",
+              background: "none",
+              border: "none",
+            }}
+          >
+            Start studying now →
+          </button>
+        </div>
       </div>
     </section>
   );
