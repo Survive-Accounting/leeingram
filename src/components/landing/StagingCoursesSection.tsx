@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -68,22 +69,33 @@ export default function StagingCoursesSection({
   const [selectedSlug, setSelectedSlug] = useState<string>("");
   const [open, setOpen] = useState(false);
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [problemCount, setProblemCount] = useState<number | null>(null);
 
   const selected = ordered.find((c) => c.slug === selectedSlug);
 
   useEffect(() => {
     if (!selected) {
       setChapters([]);
+      setProblemCount(null);
       return;
     }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("chapters")
-        .select("id, chapter_number, chapter_name, course_id")
-        .eq("course_id", selected.id)
-        .order("chapter_number", { ascending: true });
-      if (!cancelled) setChapters((data ?? []) as Chapter[]);
+      const [{ data: chData }, { count }] = await Promise.all([
+        supabase
+          .from("chapters")
+          .select("id, chapter_number, chapter_name, course_id")
+          .eq("course_id", selected.id)
+          .order("chapter_number", { ascending: true }),
+        (supabase as any)
+          .from("teaching_assets")
+          .select("id", { count: "exact", head: true })
+          .eq("course_id", selected.id)
+          .not("asset_approved_at", "is", null),
+      ]);
+      if (cancelled) return;
+      setChapters((chData ?? []) as Chapter[]);
+      setProblemCount(typeof count === "number" ? count : null);
     })();
     return () => {
       cancelled = true;
@@ -99,7 +111,7 @@ export default function StagingCoursesSection({
         }
       `}</style>
 
-      <div className="mx-auto max-w-[720px]">
+      <div className="mx-auto max-w-[920px]">
 
         <p
           className="text-center mb-4 text-[22px] sm:text-[28px] md:text-[34px] leading-tight"
@@ -188,7 +200,29 @@ export default function StagingCoursesSection({
           )}
         </div>
 
-        {/* Textbook + Chapters — only after selection */}
+        {/* Preview Free button — appears once a course is selected */}
+        {selected && (
+          <>
+            <button
+              onClick={() => onCardClick(selected)}
+              className="mt-4 w-full rounded-xl px-5 py-3.5 text-[14px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
+              style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.25)" }}
+            >
+              Preview Free →
+            </button>
+            <p
+              className="mt-2 text-center text-[12px]"
+              style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
+            >
+              Already have an account?{" "}
+              <Link to="/login" className="underline hover:no-underline" style={{ color: NAVY, fontWeight: 600 }}>
+                Log in →
+              </Link>
+            </p>
+          </>
+        )}
+
+        {/* Stats + Chapters — only after selection */}
         {selected && (
           <div
             className="mt-5 rounded-2xl p-5 sm:p-6"
@@ -198,69 +232,88 @@ export default function StagingCoursesSection({
               fontFamily: "Inter, sans-serif",
             }}
           >
-            {/* Stat cards */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
-              {[
-                { title: "250+ Practice Problems", subtext: "Step-by-step AI solutions" },
-                { title: "Cram Tools", subtext: "Every chapter covered" },
-                { title: "Ask Lee", subtext: "Personalized video responses" },
-              ].map((stat) => (
-                <div
-                  key={stat.title}
-                  className="rounded-xl p-3 sm:p-4 text-center"
-                  style={{ background: "#F8F8FA" }}
-                >
-                  <div
-                    className="text-[12px] sm:text-[13px] font-bold leading-tight"
-                    style={{ color: NAVY }}
-                  >
-                    {stat.title}
-                  </div>
-                  <div
-                    className="text-[10px] sm:text-[11px] mt-1 leading-snug"
-                    style={{ color: "#6B7280" }}
-                  >
-                    {stat.subtext}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {chapters.length === 0 ? (
-              <p className="text-[13px]" style={{ color: "#9CA3AF" }}>
-                Loading chapters…
-              </p>
-            ) : (
-              <ul className="flex flex-col mb-5 -mx-2">
-                {chapters.map((ch) => (
-                  <li key={ch.id}>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onChapterClick
-                          ? onChapterClick(selected, ch.chapter_number)
-                          : onCardClick(selected)
-                      }
-                      className="w-full flex items-baseline gap-2 text-[14px] text-left rounded-lg px-2 py-2 transition-colors hover:bg-slate-50 cursor-pointer"
-                      style={{ color: NAVY }}
+            <div className="flex flex-col md:flex-row gap-5 md:gap-6">
+              {/* LEFT — stat items + convergence lines */}
+              <div className="md:w-[30%] md:shrink-0 relative">
+                <div className="flex flex-col gap-3">
+                  {[
+                    {
+                      title: problemCount && problemCount > 0
+                        ? `${problemCount}+ Practice Problems`
+                        : "Hundreds of Practice Problems",
+                      subtext: "Step-by-step AI solutions",
+                    },
+                    { title: "Cram Tools", subtext: "Every chapter covered" },
+                    { title: "Lee on Demand", subtext: "Personalized tutoring videos" },
+                  ].map((stat) => (
+                    <div
+                      key={stat.title}
+                      className="rounded-xl p-3 sm:p-3.5"
+                      style={{ background: "#F8F8FA" }}
                     >
-                      <span className="text-[12px] font-semibold w-12 flex-shrink-0" style={{ color: "#9CA3AF" }}>
-                        Ch. {ch.chapter_number}
-                      </span>
-                      <span>{ch.chapter_name}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
+                      <div
+                        className="text-[12px] sm:text-[13px] font-bold leading-tight"
+                        style={{ color: NAVY }}
+                      >
+                        {stat.title}
+                      </div>
+                      <div
+                        className="text-[10px] sm:text-[11px] mt-1 leading-snug"
+                        style={{ color: "#6B7280" }}
+                      >
+                        {stat.subtext}
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-            <button
-              onClick={() => onCardClick(selected)}
-              className="w-full rounded-xl px-5 py-3 text-[14px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
-              style={{ background: RED, fontFamily: "Inter, sans-serif" }}
-            >
-              Preview Free →
-            </button>
+                {/* Convergence arrows — desktop only */}
+                <svg
+                  className="hidden md:block absolute pointer-events-none"
+                  style={{ right: -18, top: 0, width: 40, height: "100%" }}
+                  viewBox="0 0 40 200"
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                >
+                  <path d="M0 25 Q 25 25 32 100" stroke="#D1D5DB" strokeWidth="1" fill="none" />
+                  <path d="M0 100 L 32 100" stroke="#D1D5DB" strokeWidth="1" fill="none" />
+                  <path d="M0 175 Q 25 175 32 100" stroke="#D1D5DB" strokeWidth="1" fill="none" />
+                  <path d="M32 70 L 32 130" stroke="#D1D5DB" strokeWidth="1.5" fill="none" />
+                  <path d="M32 100 L 38 96 M32 100 L 38 104" stroke="#D1D5DB" strokeWidth="1" fill="none" />
+                </svg>
+              </div>
+
+              {/* RIGHT — chapter list */}
+              <div className="md:w-[70%] md:flex-1">
+                {chapters.length === 0 ? (
+                  <p className="text-[13px]" style={{ color: "#9CA3AF" }}>
+                    Loading chapters…
+                  </p>
+                ) : (
+                  <ul className="flex flex-col -mx-2">
+                    {chapters.map((ch) => (
+                      <li key={ch.id}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onChapterClick
+                              ? onChapterClick(selected, ch.chapter_number)
+                              : onCardClick(selected)
+                          }
+                          className="w-full flex items-baseline gap-2 text-[14px] text-left rounded-lg px-2 py-2 transition-colors hover:bg-slate-50 cursor-pointer"
+                          style={{ color: NAVY }}
+                        >
+                          <span className="text-[12px] font-semibold w-12 flex-shrink-0" style={{ color: "#9CA3AF" }}>
+                            Ch. {ch.chapter_number}
+                          </span>
+                          <span>{ch.chapter_name}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
