@@ -294,7 +294,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
               <span className="block hero-anim-line2">
-                AI study tools designed to get you unstuck — fast.
+                Accounting study tools that get you unstuck — fast.
               </span>
             </h1>
 
