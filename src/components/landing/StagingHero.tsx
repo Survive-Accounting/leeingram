@@ -297,7 +297,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
               <span className="block hero-anim-line2">
-                Generic AI isn't built for accounting exam prep. This is.
+                AI-assisted study tools designed to get you unstuck fast.
               </span>
             </h1>
 
@@ -307,7 +307,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
               >
                 <p style={{ fontSize: "15px", lineHeight: 1.6 }}>
-                  Prep for your exams with AI-assisted study tools designed to get you unstuck fast. Built by OG accounting tutor, Lee Ingram. Trusted by 1,200+ students since 2015.
+                  Built by accounting tutor Lee Ingram. Trusted by 1,200+ students since 2015.
                 </p>
               </div>
               {/* Hidden tooltip provider preserved for future use */}
@@ -346,9 +346,25 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                     zIndex: 1,
                   }}
                 >
-                  Get Started
+                  Get Access
                 </button>
               </div>
+            </div>
+            <div
+              className="mt-2.5 flex items-center justify-center md:justify-start gap-1.5 hero-anim-btn"
+              style={{
+                color: "rgba(255,255,255,0.65)",
+                fontFamily: "Inter, sans-serif",
+                fontSize: "11px",
+                textShadow: subtextShadow,
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M11 17l-5-5 5-5" />
+                <path d="M6 12h12" />
+                <path d="M13 7l5 5-5 5" />
+              </svg>
+              <span>7-day refund guarantee</span>
             </div>
           </div>
         </div>
