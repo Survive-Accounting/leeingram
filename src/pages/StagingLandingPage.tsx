@@ -18,7 +18,7 @@ import StagingEmailPromptModal, { type CelebrationData } from "@/components/land
 
 import StagingGetStartedModal from "@/components/landing/StagingGetStartedModal";
 import type { CtaCourse } from "@/components/landing/StagingCtaModal";
-import { buildGetAccessUrl } from "@/lib/getAccessUrl";
+import { useEmailGate } from "@/contexts/EmailGateContext";
 
 const COURSES: CtaCourse[] = [
   {
