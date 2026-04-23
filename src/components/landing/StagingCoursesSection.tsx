@@ -187,6 +187,19 @@ export default function StagingCoursesSection({
 
       <div className="courses-bg-base" />
       <video
+        ref={(el) => {
+          if (!el) return;
+          el.muted = true;
+          const tryPlay = () => el.play().catch(() => {});
+          tryPlay();
+          const onInteract = () => {
+            tryPlay();
+            document.removeEventListener("touchstart", onInteract);
+            document.removeEventListener("click", onInteract);
+          };
+          document.addEventListener("touchstart", onInteract, { once: true, passive: true });
+          document.addEventListener("click", onInteract, { once: true });
+        }}
         className="courses-bg-video"
         autoPlay
         loop
