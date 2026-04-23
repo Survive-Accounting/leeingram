@@ -1,11 +1,9 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import heroImage from "@/assets/staging-hero.jpg";
 import leeStadiumPhoto from "@/assets/hero-lee-stadium.jpg";
 
 const RED = "#CE1126";
 const NAVY = "#14213D";
 const GOLD = "#D4AF37";
-const HERO_IMAGE = heroImage;
 
 interface Course {
   id: string;
@@ -231,7 +229,6 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         disablePictureInPicture
         disableRemotePlayback
         preload="auto"
-        poster={HERO_IMAGE}
       >
         <source src="/videos/hero-loop.mp4" type="video/mp4" />
       </video>
