@@ -76,8 +76,8 @@ export default function LandingFooter({ onScrollToCourses, onScrollToContact }: 
             <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.3)", fontFamily: "Inter, sans-serif" }}>
               © 2026 Earned Wisdom, LLC · Created by Lee Ingram
             </p>
-            <p className="text-[11px] italic" style={{ color: "rgba(255,255,255,0.25)", fontFamily: "Inter, sans-serif" }}>
-              In memory of Ben Ingram 🤍
+            <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.25)", fontFamily: "Inter, sans-serif" }}>
+              In memory of my twin Ben Ingram (1993–2017)
             </p>
           </div>
         </div>
