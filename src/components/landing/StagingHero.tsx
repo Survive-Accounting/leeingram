@@ -199,15 +199,29 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
       `}</style>
 
       <video
+        ref={(el) => {
+          if (!el) return;
+          el.muted = true;
+          const tryPlay = () => el.play().catch(() => {});
+          tryPlay();
+          const onInteract = () => { tryPlay(); document.removeEventListener("touchstart", onInteract); document.removeEventListener("click", onInteract); };
+          document.addEventListener("touchstart", onInteract, { once: true, passive: true });
+          document.addEventListener("click", onInteract, { once: true });
+        }}
         className="staging-hero-video"
-        src="/videos/hero-loop.mp4"
         autoPlay
         loop
         muted
         playsInline
+        // @ts-ignore
+        webkit-playsinline="true"
+        disablePictureInPicture
+        disableRemotePlayback
         preload="auto"
         poster={HERO_IMAGE}
-      />
+      >
+        <source src="/videos/hero-loop.mp4" type="video/mp4" />
+      </video>
       <div className="staging-hero-overlay-left" />
 
       <div className="relative z-[3] mx-auto max-w-[1100px] px-4 sm:px-6 py-12 md:py-20 w-full">
