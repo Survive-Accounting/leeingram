@@ -536,45 +536,6 @@ export default function GetAccess() {
         </div>
       </section>
 
-      {/* Supporting / preview content */}
-      <section className="px-4 sm:px-6 pb-20" style={{ background: "transparent" }}>
-        <div className="max-w-[1100px] mx-auto">
-          <h2
-            className="text-center text-[24px] sm:text-[30px] mb-8"
-            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
-          >
-            Want to see it first?
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[
-              { label: "Browse Survival Tools", body: "Try the flashcards, journal entry builder, and formula recall — free preview.", to: "/staging" },
-              { label: "Browse Practice Problems", body: "See how Lee's solutions actually walk you through the work.", to: "/staging" },
-              { label: "Common questions", body: "How access works, refunds, and what's in the library.", to: "/staging" },
-            ].map((c) => (
-              <button
-                key={c.label}
-                onClick={() => navigate(c.to)}
-                className="text-left rounded-xl p-5 transition-all hover:-translate-y-0.5"
-                style={{
-                  background: "#fff",
-                  border: "1px solid rgba(20,33,61,0.08)",
-                  boxShadow: "0 4px 16px rgba(20,33,61,0.06)",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
-                <div className="flex items-center gap-2 text-[14px] font-semibold" style={{ color: NAVY }}>
-                  <Check className="w-4 h-4" />
-                  {c.label}
-                </div>
-                <div className="text-[12px] mt-1.5" style={{ color: "#64748B" }}>
-                  {c.body}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <LandingFooter
         onScrollToCourses={() => navigate("/staging")}
         onScrollToContact={() => navigate("/staging")}
