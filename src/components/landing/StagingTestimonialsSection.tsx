@@ -132,20 +132,6 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
           scrolling="no"
           style={{ width: "100%", border: "none", minHeight: 300 }}
         />
-
-        <div className="mt-12 flex justify-center">
-          <button
-            onClick={onCtaClick}
-            className="rounded-xl px-8 py-4 text-[16px] font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{
-              background: RED,
-              boxShadow: "0 4px 16px rgba(206,17,38,0.25)",
-              fontFamily: "Inter, sans-serif",
-            }}
-          >
-            Start Studying →
-          </button>
-        </div>
       </div>
     </section>
   );
