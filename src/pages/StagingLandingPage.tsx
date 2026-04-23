@@ -263,13 +263,17 @@ export default function StagingLandingPage() {
 
       <StagingEmailPromptModal
         open={emailPromptOpen}
-        onClose={() => setEmailPromptOpen(false)}
+        onClose={() => {
+          setEmailPromptOpen(false);
+          setEmailPromptIntent("default");
+        }}
         onSubmit={(email) => (pendingCourse ? resolveEmail(email, pendingCourse) : Promise.resolve(null))}
         onContinue={handleContinue}
         courseName={pendingCourse?.name}
         chapterNumber={pendingChapterNumber}
         chapterName={pendingChapterName}
         loading={emailPromptLoading || resolving}
+        intent={emailPromptIntent}
       />
 
       <StagingGetStartedModal
