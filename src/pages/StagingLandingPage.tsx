@@ -9,7 +9,7 @@ import { useEventTracking, setStoredEmail } from "@/hooks/useEventTracking";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import StagingHero from "@/components/landing/StagingHero";
-import StagingBetaBanner from "@/components/landing/StagingBetaBanner";
+
 import StagingCoursesSection from "@/components/landing/StagingCoursesSection";
 import ClosingCtaSection from "@/components/landing/ClosingCtaSection";
 import StagingWaitlistModal from "@/components/landing/StagingWaitlistModal";
