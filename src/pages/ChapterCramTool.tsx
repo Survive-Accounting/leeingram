@@ -1010,65 +1010,33 @@ export default function ChapterCramTool({ overrideChapterId, campusContext }: Ch
   const drawerTitle = openDrawer ? TOOL_CARDS.find(c => c.key === openDrawer)?.title || "" : "";
 
   return (
-    <div className="min-h-screen" style={{ background: theme.pageBg }}>
-      {/* ── Static Nav Bar ── */}
+    <div className="min-h-screen" style={{ background: "#f5f5f5" }}>
+      {/* ── Simple Nav Bar ── */}
       <header style={{ background: theme.navy, height: 56 }}>
-        <div className="mx-auto flex h-full max-w-[1200px] items-center px-4 sm:px-6">
-          <img src={LOGO_URL} alt="Survive Accounting" className="h-7 object-contain sm:h-8 shrink-0" />
-          <div className="flex-1 flex justify-center">
-            <FinalsCountdown />
-          </div>
-          <div className="w-7 sm:w-8 shrink-0" />
+        <div className="mx-auto flex h-full max-w-[1200px] items-center justify-between px-4 sm:px-6">
+          <a href="/" className="text-white font-bold tracking-tight" style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18 }}>
+            Survive Accounting™
+          </a>
+          <a href="/login" className="text-white text-[13px] font-semibold hover:opacity-80 transition-opacity">
+            Log In →
+          </a>
         </div>
       </header>
 
-      {/* ── Hero Header — Full-bleed photo ── */}
-      <div className="relative overflow-hidden cram-hero" style={{ height: 300 }}>
-        <style>{`
-          @media (max-width: 640px) { .cram-hero { height: 220px !important; } }
-          .cram-hero::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: url('https://i.ibb.co/Qj8d4Hhs/Survive-Accounting-Hero-Image.jpg');
-            background-size: cover;
-            background-position: 60% 40%;
-            background-repeat: no-repeat;
-            transform: scaleX(-1);
-            z-index: 0;
-          }
-          .cram-hero::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(to right, rgba(20,33,61,0.45) 0%, rgba(20,33,61,0.55) 25%, rgba(20,33,61,0.12) 55%, rgba(20,33,61,0.35) 100%);
-            z-index: 1;
-          }
-        `}</style>
-        <div className="relative h-full mx-auto max-w-[780px] px-4 sm:px-6 flex flex-col justify-center" style={{ zIndex: 2 }}>
-          {courseDisplayName && (
-            <p className="text-[11px] uppercase" style={{ color: "rgba(255,255,255,0.55)", letterSpacing: "0.15em", fontWeight: 500 }}>
-              {courseDisplayName}
-            </p>
-          )}
-          <h1 className="mt-2 text-[26px] sm:text-[34px] text-white leading-tight" style={{ fontWeight: 800 }}>
-            Ch {chapterNum} — {chapter?.chapter_name}
-          </h1>
-          <p className="mt-2 text-[13px]" style={{ color: "rgba(255,255,255,0.7)" }}>
-            Exam prep by Lee Ingram · Tutor since 2015
+      {/* ── Page title (replaces hero) ── */}
+      <div className="mx-auto max-w-[1200px] px-4 sm:px-6 pt-6 pb-2">
+        {courseDisplayName && (
+          <p className="text-[11px] uppercase" style={{ color: "#6B7280", letterSpacing: "0.15em", fontWeight: 500 }}>
+            {courseDisplayName}
           </p>
-        </div>
+        )}
+        <h1 className="mt-1 text-[26px] sm:text-[32px] leading-tight" style={{ color: theme.navy, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}>
+          Ch {chapterNum} — {chapter?.chapter_name}
+        </h1>
+        <p className="mt-1 text-[13px]" style={{ color: "#6B7280" }}>
+          Exam prep by Lee Ingram · Tutor since 2015
+        </p>
       </div>
-
-      {/* ── Divider 1: Header → Content (wave) ── */}
-      <div style={{ background: "#F8F8FA", marginTop: "-2px", overflow: "hidden", lineHeight: 0 }}>
-        <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: "60px" }}>
-          <path d="M0,30 C240,60 480,55 720,35 C960,15 1200,50 1440,30 L1440,0 L0,0 Z" fill="#14213D" />
-        </svg>
-      </div>
-
-
-
 
 
       {/* ── Main Content with Sidebar ── */}

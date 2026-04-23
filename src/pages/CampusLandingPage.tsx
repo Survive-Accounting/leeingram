@@ -156,10 +156,10 @@ export default function CampusLandingPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#F8F8FA" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#f5f5f5" }}>
       <CampusHeader campusName={campusName} courseName={courseName} />
 
-      <div className="flex-1 max-w-[780px] mx-auto w-full px-4 py-6 pb-28">
+      <div className="flex-1 max-w-[780px] mx-auto w-full px-4 py-8 pb-28">
         {/* Value prop */}
         <p className="text-center text-lg mb-8" style={{ color: "#6B7280" }}>
           Everything you need to study for your exam.
