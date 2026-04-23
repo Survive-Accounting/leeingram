@@ -37,10 +37,10 @@ interface AccessTier {
 }
 
 const ACCESS_TIERS: AccessTier[] = [
-  { id: "current", title: "Current Course",                price: 150, coursesAhead: 0 },
-  { id: "next1",   title: "Continue to Next Course",       price: 250, coursesAhead: 1 },
-  { id: "next2",   title: "Stay Covered (Next 2 Courses)", price: 325, coursesAhead: 2 },
-  { id: "full",    title: "Full Accounting Sequence",      price: 475, coursesAhead: 3, badge: "Best value" },
+  { id: "current", title: "Current Course",  price: 150, coursesAhead: 0 },
+  { id: "next1",   title: "Next Course",     price: 250, coursesAhead: 1 },
+  { id: "next2",   title: "Stay Covered",    price: 325, coursesAhead: 2 },
+  { id: "full",    title: "Full Sequence",   price: 475, coursesAhead: 3, badge: "Best value" },
 ];
 
 const INCLUDES = [
@@ -98,8 +98,10 @@ export default function GetAccess() {
       const span = courses.slice(startIdx, startIdx + 1 + t.coursesAhead);
       const labels = span.map((c) => c.code ?? c.name);
       const subtext =
-        t.coursesAhead === 0
-          ? `${labels[0]} — Access through August 31`
+        t.id === "current"
+          ? "Access through August 31"
+          : t.id === "full"
+          ? "All accounting courses"
           : t.coursesAhead === 1
           ? `${labels[0]} + ${labels[1]}`
           : labels.join(" → ");
