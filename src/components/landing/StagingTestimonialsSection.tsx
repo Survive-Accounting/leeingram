@@ -140,6 +140,15 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
           </p>
         </TooltipProvider>
 
+        {countdownText && (
+          <p
+            className="text-center mb-3"
+            style={{ color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", fontWeight: 400 }}
+          >
+            {countdownText}
+          </p>
+        )}
+
         <iframe
           ref={iframeRef}
           id={`testimonialto-${EMBED_ID}`}
