@@ -156,7 +156,7 @@ export default function CampusLandingPage() {
             <Card
               title="Survival Tools"
               body="Built for late night cramming. Flashcards, journal entries, formulas — optimized for speed."
-              buttonLabel="Explore Survival Tools →"
+              buttonLabel="Browse Tools →"
               onClick={() => {
                 trackEvent("preview_cram_click", { campus_slug: campusSlug, course_slug: courseSlug });
                 if (firstChapterId) navigate(`/cram/${firstChapterId}?preview=true`);
@@ -171,6 +171,47 @@ export default function CampusLandingPage() {
                 trackEvent("preview_problems_click", { campus_slug: campusSlug, course_slug: courseSlug });
                 if (firstChapterId) navigate(`/campus/${campusSlug}/${courseSlug}/chapter-1`);
               }}
+            />
+
+            <Card
+              title="On Demand Videos"
+              body="Lee's full video library, 24/7. Binge what's there, request what's not. New videos drop every week."
+              buttonLabel={waitlistJoined ? "You're on the list 👍" : "Request Early Access"}
+              onClick={handleOnDemandClick}
+              disabled={waitlistJoined}
+              buttonBg={waitlistJoined ? GREEN : NAVY}
+              extra={
+                showEmailInput && !waitlistJoined ? (
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      type="email"
+                      value={waitlistEmail}
+                      onChange={(e) => setWaitlistEmail(e.target.value)}
+                      placeholder="your@university.edu"
+                      disabled={waitlistLoading}
+                      className="flex-1 rounded-lg px-3 text-[13px] outline-none focus:ring-2"
+                      style={{
+                        minHeight: 40,
+                        background: "#F8F9FA",
+                        border: "1px solid #E5E7EB",
+                        color: NAVY,
+                        fontFamily: "Inter, sans-serif",
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") submitWaitlist(waitlistEmail);
+                      }}
+                    />
+                    <button
+                      onClick={() => submitWaitlist(waitlistEmail)}
+                      disabled={waitlistLoading}
+                      className="rounded-lg px-4 text-[13px] font-semibold text-white disabled:opacity-60"
+                      style={{ background: NAVY, fontFamily: "Inter, sans-serif" }}
+                    >
+                      {waitlistLoading ? "..." : "Join →"}
+                    </button>
+                  </div>
+                ) : null
+              }
             />
 
             <Card
