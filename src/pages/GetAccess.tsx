@@ -425,76 +425,37 @@ export default function GetAccess() {
               </button>
             )}
 
-            {/* Dynamic summary box */}
+            {/* Inline confirmation — subtle, lightweight */}
             {(() => {
               const startIdx = progression.courses.findIndex((c) => c.slug === course);
 
+              let summary: string | null = null;
               if (tier === "lifetime") {
-                return (
-                  <div
-                    className="rounded-lg p-4 mb-5"
-                    style={{
-                      background: "#F8FAFC",
-                      border: "1px solid #E2E8F0",
-                      fontFamily: "Inter, sans-serif",
-                    }}
-                  >
-                    <div className="flex flex-col gap-2.5 text-[13px]">
-                      <div className="flex gap-2">
-                        <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>You get:</span>
-                        <span style={{ color: NAVY }}>Every course, forever</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>Total:</span>
-                        <span className="font-bold" style={{ color: NAVY }}>${LIFETIME_PRICE}</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>Access:</span>
-                        <span style={{ color: NAVY }}>Lifetime — including all future updates</span>
-                      </div>
-                    </div>
-                  </div>
-                );
+                summary = "Every course, forever — including all future updates";
+              } else if (selectedTier) {
+                const labels = progression.courses
+                  .slice(startIdx, startIdx + 1 + selectedTier.coursesAhead)
+                  .map((c) => c.code ?? c.name);
+                const isFull =
+                  selectedTier.coursesAhead >= progression.courses.length - 1 - startIdx &&
+                  selectedTier.coursesAhead > 0;
+                summary =
+                  selectedTier.coursesAhead === 0
+                    ? `${labels[0]} — Access through August 31`
+                    : isFull
+                    ? `${labels.join(" → ")} — Full accounting progression`
+                    : labels.join(" → ");
               }
 
-              if (!selectedTier) return null;
-              const includedCourses = progression.courses
-                .slice(startIdx, startIdx + 1 + selectedTier.coursesAhead)
-                .map((c) => c.code ?? c.name);
-              const isFull =
-                selectedTier.coursesAhead >= progression.courses.length - 1 - startIdx &&
-                selectedTier.coursesAhead > 0;
-              const accessPhrase =
-                selectedTier.coursesAhead === 0
-                  ? "Through August 31"
-                  : isFull
-                  ? "Covers your full accounting progression"
-                  : `Covers your next ${selectedTier.coursesAhead === 1 ? "course" : `${selectedTier.coursesAhead} courses`}`;
-
+              if (!summary) return null;
               return (
-                <div
-                  className="rounded-lg p-4 mb-5"
-                  style={{
-                    background: "#F8FAFC",
-                    border: "1px solid #E2E8F0",
-                    fontFamily: "Inter, sans-serif",
-                  }}
+                <p
+                  className="text-[12px] mb-5"
+                  style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
                 >
-                  <div className="flex flex-col gap-2.5 text-[13px]">
-                    <div className="flex gap-2">
-                      <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>You get:</span>
-                      <span style={{ color: NAVY }}>{includedCourses.join(", ")}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>Total:</span>
-                      <span className="font-bold" style={{ color: NAVY }}>${selectedTier.price}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>Access:</span>
-                      <span style={{ color: NAVY }}>{accessPhrase}</span>
-                    </div>
-                  </div>
-                </div>
+                  <span className="font-semibold" style={{ color: NAVY }}>You're getting:</span>{" "}
+                  {summary}
+                </p>
               );
             })()}
 
