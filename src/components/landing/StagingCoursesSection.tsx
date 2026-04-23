@@ -317,12 +317,6 @@ export default function StagingCoursesSection({
           </div>
         )}
 
-        <p
-          className="mt-8 text-center text-[14px]"
-          style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}
-        >
-          AI-enabled study tools curated by a real tutor for maximum exam impact. Started at University of Mississippi. Built for accounting students anywhere.
-        </p>
       </div>
     </section>
   );
