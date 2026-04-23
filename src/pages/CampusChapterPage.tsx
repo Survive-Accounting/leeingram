@@ -283,11 +283,13 @@ export default function CampusChapterPage() {
                 >
                   {/* Pills */}
                   <div className="flex flex-wrap gap-2 sm:gap-3" style={{ marginBottom: 16 }}>
-                    {([
-                      ["be" as const, `${beLabel} (${counts.be})`],
-                      ["ex" as const, `Exercises (${counts.ex})`],
-                      ["p" as const, `Problems (${counts.p})`],
-                    ]).map(([key, label]) => {
+                    {(
+                      [
+                        ["be", `${beLabel} (${counts.be})`],
+                        ["ex", `Exercises (${counts.ex})`],
+                        ["p", `Problems (${counts.p})`],
+                      ] as Array<[PillKey, string]>
+                    ).map(([key, label]) => {
                       const active = pill === key;
                       return (
                         <button
