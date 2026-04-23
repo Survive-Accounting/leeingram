@@ -17,6 +17,7 @@ function getFinalsCountdownText(): string | null {
   if (days <= 0) return null;
   const weeks = Math.floor(days / 7);
   if (weeks < 1) return "Final exams are almost here.";
+  if (weeks === 1) return "Final exams are 1 week away.";
   return `Final exams are ${weeks} weeks away.`;
 }
 
