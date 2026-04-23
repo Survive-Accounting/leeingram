@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import StagingHero from "@/components/landing/StagingHero";
 
 import StagingCoursesSection from "@/components/landing/StagingCoursesSection";
+import StagingFeatureCardsSection from "@/components/landing/StagingFeatureCardsSection";
 import ClosingCtaSection from "@/components/landing/ClosingCtaSection";
 
 import StagingEmailPromptModal, { type CelebrationData } from "@/components/landing/StagingEmailPromptModal";
@@ -241,6 +242,12 @@ export default function StagingLandingPage() {
       />
 
       <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />
+
+      <StagingFeatureCardsSection
+        onBrowseTools={() => handleCardClick(defaultCourse)}
+        onBrowseProblems={() => handleCardClick(defaultCourse)}
+        onRequestEarlyAccess={() => handleCardClick(defaultCourse)}
+      />
 
       <div ref={coursesRef}>
         <StagingCoursesSection
