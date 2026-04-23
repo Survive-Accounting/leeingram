@@ -157,9 +157,13 @@ export default function StagingEmailPromptModal({
                 className="text-[18px] font-semibold"
                 style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
               >
-                Enter your school email
+                {intent === "pricing" ? "What's your school email?" : "Enter your school email"}
               </h2>
-              {chapterNumber != null ? (
+              {intent === "pricing" ? (
+                <p className="text-[13px] mt-1" style={{ color: "#6B7280" }}>
+                  We'll use this to find your campus pricing.
+                </p>
+              ) : chapterNumber != null ? (
                 <p className="text-[13px] mt-1" style={{ color: "#6B7280" }}>
                   Takes you straight to Ch. {chapterNumber}
                   {chapterName ? ` — ${chapterName}` : ""} study tools.
