@@ -14,7 +14,7 @@ import StagingCoursesSection from "@/components/landing/StagingCoursesSection";
 import ClosingCtaSection from "@/components/landing/ClosingCtaSection";
 
 import StagingEmailPromptModal, { type CelebrationData } from "@/components/landing/StagingEmailPromptModal";
-import StagingStickyBar from "@/components/landing/StagingStickyBar";
+
 import StagingGetStartedModal from "@/components/landing/StagingGetStartedModal";
 import type { CtaCourse } from "@/components/landing/StagingCtaModal";
 
