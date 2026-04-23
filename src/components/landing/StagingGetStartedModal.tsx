@@ -102,11 +102,7 @@ export default function StagingGetStartedModal({
           <X className="w-4 h-4" style={{ color: "#6B7280" }} />
         </button>
 
-        {/* Step dots */}
-        <div className="flex items-center justify-center gap-2 pt-7 pb-4">
-          <Dot active={step === 1} />
-          <Dot active={step === 2} />
-        </div>
+        <div className="pt-7" />
 
         <div className="px-6 sm:px-8 pb-7">
           {step === 1 && (
