@@ -262,16 +262,45 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                   display: "block",
                 }}
               />
-              <p
-                className="mt-3 text-center text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.15em] hero-anim-line1"
-                style={{
-                  color: "rgba(255,255,255,0.7)",
-                  fontFamily: "Inter, sans-serif",
-                  textShadow: subtextShadow,
-                }}
-              >
-                Lee Ingram · Accounting Tutor Since 2015
-              </p>
+              <div className="mt-3 text-center hero-anim-line1" style={{ fontFamily: "Inter, sans-serif" }}>
+                <p
+                  className="font-semibold"
+                  style={{
+                    color: "rgba(255,255,255,0.85)",
+                    fontSize: "13px",
+                    textShadow: subtextShadow,
+                  }}
+                >
+                  Lee Ingram · Ole Miss Alum
+                </p>
+                <p
+                  style={{
+                    color: "rgba(255,255,255,0.6)",
+                    fontSize: "11px",
+                    fontWeight: 400,
+                    marginTop: 2,
+                    textShadow: subtextShadow,
+                  }}
+                >
+                  Accounting Tutor Since 2015
+                </p>
+                <button
+                  onClick={() => setIntroOpen(true)}
+                  className="mt-2 transition-opacity hover:opacity-80"
+                  style={{
+                    color: "#BFDBFE",
+                    fontSize: "12px",
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    fontFamily: "Inter, sans-serif",
+                    textShadow: subtextShadow,
+                  }}
+                >
+                  Learn More →
+                </button>
+              </div>
             </div>
           </div>
 
