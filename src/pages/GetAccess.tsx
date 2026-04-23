@@ -98,6 +98,21 @@ export default function GetAccess() {
 
       {/* Hero */}
       <section className="px-4 sm:px-6 pt-12 md:pt-20 pb-10 text-center">
+        {showContextLabel && (
+          <div
+            className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full text-[12px] font-semibold uppercase tracking-wider"
+            style={{
+              background: "rgba(20,33,61,0.06)",
+              color: NAVY,
+              fontFamily: "Inter, sans-serif",
+              border: "1px dashed rgba(20,33,61,0.25)",
+            }}
+            title="[Placeholder] Wire to real campus/course data later"
+          >
+            <span style={{ opacity: 0.5 }}>[placeholder]</span>
+            For {campusName ?? campusParam} {courseCode ?? ""} students
+          </div>
+        )}
         <h1
           className="text-[34px] sm:text-[44px] md:text-[54px] leading-tight"
           style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
