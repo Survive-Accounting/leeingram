@@ -89,15 +89,29 @@ export default function CampusLandingPage() {
     <div className="min-h-screen flex flex-col relative" style={{ background: NAVY }}>
       {/* Background video + overlay (matches /staging hero) */}
       <video
+        ref={(el) => {
+          if (!el) return;
+          el.muted = true;
+          const tryPlay = () => el.play().catch(() => {});
+          tryPlay();
+          const onInteract = () => { tryPlay(); document.removeEventListener("touchstart", onInteract); document.removeEventListener("click", onInteract); };
+          document.addEventListener("touchstart", onInteract, { once: true, passive: true });
+          document.addEventListener("click", onInteract, { once: true });
+        }}
         className="fixed inset-0 z-0 w-full h-full object-cover"
-        src="/videos/hero-loop.mp4"
         autoPlay
         loop
         muted
         playsInline
+        // @ts-ignore
+        webkit-playsinline="true"
+        disablePictureInPicture
+        disableRemotePlayback
         preload="auto"
         poster={heroBg}
-      />
+      >
+        <source src="/videos/hero-loop.mp4" type="video/mp4" />
+      </video>
       <div className="fixed inset-0 z-0" style={{ background: `linear-gradient(to right, ${NAVY}cc 0%, ${NAVY}99 40%, ${NAVY}80 100%)` }} />
       <div className="fixed inset-0 z-0" style={{ background: "rgba(0,0,0,0.35)" }} />
 
