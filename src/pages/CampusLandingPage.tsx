@@ -180,19 +180,19 @@ interface CardProps {
 function Card({ title, body, buttonLabel, onClick, comingSoon, disabled }: CardProps) {
   return (
     <div
-      className="bg-white rounded-2xl p-6 flex flex-col"
+      className="bg-white rounded-2xl px-5 py-4 flex flex-col"
       style={{
         boxShadow: "0 12px 40px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08)",
       }}
     >
       <h3
-        className="text-[22px] font-bold mb-3"
+        className="text-[20px] font-bold mb-2"
         style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
       >
         {title}
       </h3>
       <p
-        className="text-[14px] leading-relaxed mb-5 flex-1"
+        className="text-[13px] leading-snug mb-4 flex-1"
         style={{ color: "#4B5563", fontFamily: "Inter, sans-serif" }}
       >
         {body}
