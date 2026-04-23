@@ -3,32 +3,18 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, Sword, PenLine, MonitorPlay, ShieldCheck, ChevronDown } from "lucide-react";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
+import {
+  getCampusProgression,
+  resolveCourseSlug,
+  formatCourseLabel,
+  type CourseSlug,
+} from "@/lib/campusProgressions";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
 const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
-const COURSES = [
-  { slug: "intermediate-accounting-2", name: "Intermediate Accounting 2", aliases: ["ia2", "intermediate-2", "accy-304", "accy304"] },
-  { slug: "intermediate-accounting-1", name: "Intermediate Accounting 1", aliases: ["ia1", "intermediate-1", "accy-303", "accy303"] },
-  { slug: "intro-accounting-2", name: "Introductory Accounting 2", aliases: ["intro-2", "intro2", "accy-202", "accy202"] },
-  { slug: "intro-accounting-1", name: "Introductory Accounting 1", aliases: ["intro-1", "intro1", "accy-201", "accy201"] },
-];
-
-// Placeholder campus name lookup — wire to real data later.
-const CAMPUS_LABELS: Record<string, string> = {
-  "ole-miss": "Ole Miss",
-  "mississippi-state": "Mississippi State",
-};
-
-// Placeholder course-code lookup for the small contextual label.
-const COURSE_CODES: Record<string, string> = {
-  "intro-accounting-1": "ACCY 201",
-  "intro-accounting-2": "ACCY 202",
-  "intermediate-accounting-1": "ACCY 303",
-  "intermediate-accounting-2": "ACCY 304",
-};
 
 const PLANS = [
   {
