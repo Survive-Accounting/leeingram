@@ -171,52 +171,26 @@ export default function StagingCoursesSection({
     <section
       id="courses-section"
       className="relative px-4 sm:px-6 scroll-mt-0 overflow-hidden pt-12 md:pt-20 pb-[320px] md:pb-[120px]"
-      style={{ background: "#FFFFFF" }}
+      style={{
+        background: `linear-gradient(180deg, #0F1A2E 0%, ${NAVY} 50%, #0B1426 100%)`,
+      }}
     >
       <style>{`
         @keyframes betaPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.4); opacity: 0.6; }
         }
-        /* Curtain depth effect behind heading */
-        .courses-curtain {
-          position: absolute;
-          left: 50%;
-          top: -10px;
-          transform: translateX(-50%);
-          width: min(720px, 92%);
-          height: 180px;
-          pointer-events: none;
-          z-index: 0;
-          background:
-            radial-gradient(ellipse 60% 80% at 50% 0%, rgba(20,33,61,0.10) 0%, rgba(20,33,61,0.04) 45%, rgba(20,33,61,0) 75%);
-          filter: blur(8px);
-        }
-        .courses-curtain::before,
-        .courses-curtain::after {
-          content: "";
-          position: absolute;
-          top: 8px;
-          width: 38%;
-          height: 110px;
-          background: linear-gradient(180deg, rgba(20,33,61,0.08) 0%, rgba(20,33,61,0) 100%);
-          filter: blur(14px);
-          border-radius: 50%;
-        }
-        .courses-curtain::before { left: 6%; transform: rotate(-6deg); }
-        .courses-curtain::after  { right: 6%; transform: rotate(6deg); }
       `}</style>
 
       <div className="relative mx-auto max-w-[920px]" style={{ zIndex: 2 }}>
 
         <div className="relative">
-          <div className="courses-curtain" aria-hidden="true" />
           <p
-            className="relative text-center mb-4 text-[26px] sm:text-[32px] md:text-[38px] leading-tight"
+            className="relative text-center mb-4 text-[26px] sm:text-[32px] md:text-[38px] leading-tight text-white"
             style={{
-              color: NAVY,
               fontFamily: "'DM Serif Display', serif",
               fontWeight: 400,
+              textShadow: "2px 2px 12px rgba(0,0,0,0.5)",
               zIndex: 1,
             }}
           >

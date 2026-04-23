@@ -74,6 +74,7 @@ export default function StagingLandingPage() {
   const [resolving, setResolving] = useState(false);
   const [getStartedOpen, setGetStartedOpen] = useState(false);
   const [getStartedPreselectedSlug, setGetStartedPreselectedSlug] = useState<string | null>(null);
+  const [coursesRevealed, setCoursesRevealed] = useState(false);
 
   useEffect(() => {
     trackPageView("staging_landing");
@@ -237,25 +238,45 @@ export default function StagingLandingPage() {
       <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />
 
       <StagingFeatureCardsSection
-        onBrowseTools={() => handleCardClick(defaultCourse)}
-        onBrowseProblems={() => handleCardClick(defaultCourse)}
-        onRequestEarlyAccess={() => handleCardClick(defaultCourse)}
+        onBrowseTools={() => {
+          setCoursesRevealed(true);
+          requestAnimationFrame(() =>
+            coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+          );
+        }}
+        onBrowseProblems={() => {
+          setCoursesRevealed(true);
+          requestAnimationFrame(() =>
+            coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+          );
+        }}
+        onRequestEarlyAccess={() => {
+          setCoursesRevealed(true);
+          requestAnimationFrame(() =>
+            coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+          );
+        }}
         onStartStudying={() => {
-          coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          setCoursesRevealed(true);
+          requestAnimationFrame(() =>
+            coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+          );
         }}
       />
 
-      <div ref={coursesRef}>
-        <StagingCoursesSection
-          courses={COURSES}
-          onCardClick={handleCardClick}
-          onChapterClick={handleChapterClick}
-          onGetStartedClick={(slug) => {
-            setGetStartedPreselectedSlug(slug);
-            setGetStartedOpen(true);
-          }}
-        />
-      </div>
+      {coursesRevealed && (
+        <div ref={coursesRef}>
+          <StagingCoursesSection
+            courses={COURSES}
+            onCardClick={handleCardClick}
+            onChapterClick={handleChapterClick}
+            onGetStartedClick={(slug) => {
+              setGetStartedPreselectedSlug(slug);
+              setGetStartedOpen(true);
+            }}
+          />
+        </div>
+      )}
 
       <div ref={contactRef}>
         <ContactForm />
