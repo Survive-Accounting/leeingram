@@ -53,48 +53,7 @@ export default function ContactForm() {
   };
 
   return (
-    <section
-      className="relative pt-20 sm:pt-24 pb-24 sm:pb-28 px-4 overflow-hidden"
-      style={{
-        background: `linear-gradient(180deg, #14213D 0%, #0B1426 100%)`,
-      }}
-    >
-      <style>{`
-        @keyframes contactGridDrift {
-          0%   { background-position: 0px 0px, 0px 0px; }
-          100% { background-position: 80px 80px, 80px 80px; }
-        }
-        .contact-grid-bg {
-          position: absolute; inset: 0; pointer-events: none;
-          background-image:
-            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-          background-size: 80px 80px, 80px 80px;
-          animation: contactGridDrift 60s linear infinite;
-          mask-image: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 70%, rgba(0,0,0,0) 100%);
-          -webkit-mask-image: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 70%, rgba(0,0,0,0) 100%);
-        }
-      `}</style>
-      <div className="contact-grid-bg" aria-hidden="true" />
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background: "linear-gradient(180deg, rgba(10,20,40,0.85) 0%, rgba(10,20,40,0.95) 100%)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background:
-            "radial-gradient(ellipse 70% 70% at 50% 50%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 40%, rgba(0,0,0,0) 75%)",
-        }}
-      />
+    <section className="relative pt-20 sm:pt-24 pb-24 sm:pb-28 px-4">
       <div className="relative mx-auto max-w-[640px]" style={{ zIndex: 1 }}>
         <h2
           className="text-center text-[24px] sm:text-[30px] text-white mb-3"
