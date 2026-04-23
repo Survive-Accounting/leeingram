@@ -536,7 +536,7 @@ export default function GetAccess() {
                     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px rgba(206,17,38,0.35)",
                   }}
                 >
-                  {checkoutLoading ? "Redirecting to checkout…" : ctaLabel}
+                  {checkoutLoading ? "Redirecting to secure checkout..." : ctaLabel}
                 </button>
               );
             })()}
