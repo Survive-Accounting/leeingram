@@ -12,6 +12,7 @@ import StagingHero from "@/components/landing/StagingHero";
 
 import StagingCoursesSection from "@/components/landing/StagingCoursesSection";
 import StagingFeatureCardsSection from "@/components/landing/StagingFeatureCardsSection";
+import StagingFinalExamSection from "@/components/landing/StagingFinalExamSection";
 import ClosingCtaSection from "@/components/landing/ClosingCtaSection";
 
 import StagingEmailPromptModal, { type CelebrationData } from "@/components/landing/StagingEmailPromptModal";
@@ -237,50 +238,52 @@ export default function StagingLandingPage() {
 
       <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />
 
-      <StagingFeatureCardsSection
-        onBrowseTools={() => {
-          setCoursesRevealed(true);
-          requestAnimationFrame(() =>
-            coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-          );
-        }}
-        onBrowseProblems={() => {
-          setCoursesRevealed(true);
-          requestAnimationFrame(() =>
-            coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-          );
-        }}
-        onRequestEarlyAccess={() => {
-          setCoursesRevealed(true);
-          requestAnimationFrame(() =>
-            coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-          );
-        }}
-        onStartStudying={() => {
-          setCoursesRevealed(true);
-          requestAnimationFrame(() =>
-            coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-          );
-        }}
-      />
+      <StagingFinalExamSection>
+        <StagingFeatureCardsSection
+          onBrowseTools={() => {
+            setCoursesRevealed(true);
+            requestAnimationFrame(() =>
+              coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+            );
+          }}
+          onBrowseProblems={() => {
+            setCoursesRevealed(true);
+            requestAnimationFrame(() =>
+              coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+            );
+          }}
+          onRequestEarlyAccess={() => {
+            setCoursesRevealed(true);
+            requestAnimationFrame(() =>
+              coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+            );
+          }}
+          onStartStudying={() => {
+            setCoursesRevealed(true);
+            requestAnimationFrame(() =>
+              coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+            );
+          }}
+        />
 
-      {coursesRevealed && (
-        <div ref={coursesRef}>
-          <StagingCoursesSection
-            courses={COURSES}
-            onCardClick={handleCardClick}
-            onChapterClick={handleChapterClick}
-            onGetStartedClick={(slug) => {
-              setGetStartedPreselectedSlug(slug);
-              setGetStartedOpen(true);
-            }}
-          />
+        {coursesRevealed && (
+          <div ref={coursesRef}>
+            <StagingCoursesSection
+              courses={COURSES}
+              onCardClick={handleCardClick}
+              onChapterClick={handleChapterClick}
+              onGetStartedClick={(slug) => {
+                setGetStartedPreselectedSlug(slug);
+                setGetStartedOpen(true);
+              }}
+            />
+          </div>
+        )}
+
+        <div ref={contactRef}>
+          <ContactForm />
         </div>
-      )}
-
-      <div ref={contactRef}>
-        <ContactForm />
-      </div>
+      </StagingFinalExamSection>
 
       <LandingFooter
         onScrollToCourses={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })}
