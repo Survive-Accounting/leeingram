@@ -1,10 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, Video, BookOpen, PenLine } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
+const FINALS_DATE = new Date(2026, 4, 4); // May 4, 2026 (local)
+
+/** Returns weeks-only countdown text, or null after May 4. */
+function getFinalsCountdownText(): string | null {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(FINALS_DATE.getFullYear(), FINALS_DATE.getMonth(), FINALS_DATE.getDate());
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const days = Math.ceil((target.getTime() - today.getTime()) / msPerDay);
+  if (days <= 0) return null;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 1) return "Final exams are almost here.";
+  return `Final exams are ${weeks} weeks away.`;
+}
 
 interface Course {
   id: string;
@@ -21,6 +35,8 @@ interface StagingCoursesSectionProps {
   onCardClick: (course: Course) => void;
   onChapterClick?: (course: Course, chapterNumber: number) => void;
   onExpansionClick?: () => void;
+  /** Opens the Get Started email modal; passes selected slug for preselection. */
+  onGetStartedClick?: (preselectedSlug: string | null) => void;
 }
 
 const DISPLAY_ORDER = [
