@@ -65,8 +65,7 @@ export default function StagingLandingPage() {
   const [pendingChapterNumber, setPendingChapterNumber] = useState<number | null>(null);
   const [emailPromptOpen, setEmailPromptOpen] = useState(false);
   const [emailPromptLoading, setEmailPromptLoading] = useState(false);
-  const [waitlistOpen, setWaitlistOpen] = useState(false);
-  const [waitlistInitialEmail, setWaitlistInitialEmail] = useState("");
+  
   const [resolving, setResolving] = useState(false);
 
   useEffect(() => {
