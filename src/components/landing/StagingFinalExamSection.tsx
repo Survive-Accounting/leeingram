@@ -88,7 +88,7 @@ export default function StagingFinalExamSection({ children }: Props) {
           inset: 0,
           pointerEvents: "none",
           zIndex: 1,
-          background: "linear-gradient(180deg, rgba(10,20,40,0.85) 0%, rgba(10,20,40,0.95) 100%)",
+          background: "linear-gradient(180deg, rgba(10,20,40,0.55) 0%, rgba(10,20,40,0.65) 100%)",
         }}
       />
       <div
@@ -99,7 +99,7 @@ export default function StagingFinalExamSection({ children }: Props) {
           pointerEvents: "none",
           zIndex: 2,
           background:
-            "radial-gradient(ellipse 75% 60% at 50% 40%, rgba(10,20,40,0) 0%, rgba(10,20,40,0.18) 60%, rgba(10,20,40,0.45) 100%)",
+            "radial-gradient(ellipse 75% 60% at 50% 40%, rgba(10,20,40,0) 0%, rgba(10,20,40,0.10) 60%, rgba(10,20,40,0.28) 100%)",
         }}
       />
       <div className="relative" style={{ zIndex: 3 }}>
