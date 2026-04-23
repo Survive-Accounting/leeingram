@@ -75,7 +75,45 @@ export default function StagingFeatureCardsSection({
         scrollMarginTop: "0px",
       }}
     >
-      <div className="max-w-[1100px] mx-auto w-full relative">
+      <style>{`
+        @keyframes subtleGridDrift {
+          0%   { background-position: 0px 0px, 0px 0px; }
+          100% { background-position: 80px 80px, 80px 80px; }
+        }
+        @keyframes subtleOrbFloat {
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.35; }
+          50%      { transform: translate(40px, -30px) scale(1.05); opacity: 0.5; }
+        }
+        .feature-grid-bg {
+          position: absolute; inset: 0; pointer-events: none;
+          background-image:
+            linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+          background-size: 80px 80px, 80px 80px;
+          animation: subtleGridDrift 60s linear infinite;
+          mask-image: radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%);
+          -webkit-mask-image: radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%);
+        }
+        .feature-orb {
+          position: absolute; border-radius: 9999px; filter: blur(80px);
+          pointer-events: none; mix-blend-mode: screen;
+        }
+        .feature-orb-1 {
+          width: 420px; height: 420px; top: -120px; left: -80px;
+          background: radial-gradient(circle, rgba(180,200,230,0.18) 0%, rgba(180,200,230,0) 70%);
+          animation: subtleOrbFloat 28s ease-in-out infinite;
+        }
+        .feature-orb-2 {
+          width: 380px; height: 380px; bottom: -100px; right: -60px;
+          background: radial-gradient(circle, rgba(200,215,240,0.14) 0%, rgba(200,215,240,0) 70%);
+          animation: subtleOrbFloat 36s ease-in-out infinite reverse;
+        }
+      `}</style>
+      <div className="feature-grid-bg" aria-hidden="true" />
+      <div className="feature-orb feature-orb-1" aria-hidden="true" />
+      <div className="feature-orb feature-orb-2" aria-hidden="true" />
+
+      <div className="max-w-[1100px] mx-auto w-full relative" style={{ zIndex: 1 }}>
         <div className="text-center mb-10">
           <h2
             className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight text-white"
