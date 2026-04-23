@@ -285,7 +285,7 @@ export default function StagingCoursesSection({
                       {
                         tag: "intent_practice_problems",
                         title: problemCount && problemCount > 0
-                          ? `${problemCount}+ Practice Problems`
+                          ? `${problemCount} Practice Problems`
                           : "Hundreds of Practice Problems",
                         subtext: "Step-by-step AI solutions",
                       },
