@@ -5,6 +5,7 @@ import { DevShortcut } from "@/components/DevShortcut";
 import { supabase } from "@/integrations/supabase/client";
 import { isWhitelistedEmail } from "@/lib/emailWhitelist";
 import { toast } from "sonner";
+import NonEduFallbackFlow from "@/components/landing/NonEduFallbackFlow";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -79,25 +80,11 @@ export default function StagingEmailPromptModal({
 
     const isEdu = trimmed.endsWith(".edu") || isWhitelistedEmail(trimmed);
 
-    // Non-.edu still proceeds — log lead, then continue through the normal flow.
-    // resolve-campus will route them to the General campus.
+    // Non-.edu → switch to role/email/share fallback flow.
     if (!isEdu) {
-      try {
-        await supabase.from("landing_page_leads").insert({
-          email: trimmed,
-          email_type: "non_edu",
-          university_domain: trimmed.split("@")[1] || null,
-          course_slug: null,
-          intent_tag: chapterNumber != null
-            ? `intent_chapter_${chapterNumber}`
-            : courseName
-              ? `intent_course_${courseName}`
-              : "intent_email_prompt",
-          source: "non_edu_fallback",
-        });
-      } catch {
-        /* non-blocking */
-      }
+      setFallbackEmail(trimmed);
+      setView("non_edu");
+      return;
     }
 
     setSubmitting(true);
@@ -105,33 +92,6 @@ export default function StagingEmailPromptModal({
       const result = await onSubmit(trimmed);
       // If parent returns null, it has already navigated (e.g. Ole Miss skip).
       if (result) setCelebration(result);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleFallbackSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = fallbackEmail.trim().toLowerCase();
-    if (!trimmed) return;
-    setSubmitting(true);
-    try {
-      const { error } = await supabase.from("landing_page_leads").insert({
-        email: trimmed,
-        email_type: "non_edu",
-        university_domain: trimmed.split("@")[1] || null,
-        course_slug: null,
-        intent_tag: chapterNumber != null
-          ? `intent_chapter_${chapterNumber}`
-          : courseName
-            ? `intent_course_${courseName}`
-            : "intent_email_prompt",
-        source: "non_edu_fallback",
-      });
-      if (error) throw error;
-      setView("non_edu_success");
-    } catch {
-      toast.error("Something went wrong. Try again.");
     } finally {
       setSubmitting(false);
     }
@@ -181,63 +141,12 @@ export default function StagingEmailPromptModal({
               <DevShortcut label="[DEV] Skip modal →" to="/campus/general/intermediate-accounting-2" onClick={onClose} />
             </div>
           </div>
-        ) : view === "non_edu_success" ? (
-          <div className="text-center space-y-4 py-4">
-            <div className="text-4xl leading-none" aria-hidden="true">✉️</div>
-            <h2
-              className="text-[20px] font-semibold"
-              style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-            >
-              You're on the list — we'll be in touch.
-            </h2>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-[13px] font-medium hover:underline"
-              style={{ color: "#6B7280" }}
-            >
-              Close
-            </button>
-          </div>
-        ) : view === "non_edu" ? (
-          <form onSubmit={handleFallbackSubmit} className="space-y-4">
-            <div>
-              <h2
-                className="text-[18px] font-semibold"
-                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-              >
-                Looks like that's not a school email.
-              </h2>
-              <p className="text-[13px] mt-2 leading-relaxed" style={{ color: "#6B7280" }}>
-                Survive Accounting is built for college students — but we don't want to leave you out. Drop your email and we'll send you a free preview link.
-              </p>
-            </div>
-            <input
-              type="email"
-              value={fallbackEmail}
-              onChange={(e) => setFallbackEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-              disabled={submitting}
-              autoFocus
-              className="w-full rounded-lg px-4 text-[15px] outline-none focus:ring-2"
-              style={{
-                minHeight: 48,
-                background: "#F8F9FA",
-                border: "1px solid #E5E7EB",
-                color: NAVY,
-                fontFamily: "Inter, sans-serif",
-              }}
-            />
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full rounded-lg text-white text-[15px] font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
-              style={{ minHeight: 48, background: RED, fontFamily: "Inter, sans-serif" }}
-            >
-              {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Send Me Access →"}
-            </button>
-          </form>
+        ) : view === "non_edu" || view === "non_edu_success" ? (
+          <NonEduFallbackFlow
+            initialEmail={fallbackEmail || email}
+            courseSlug={null}
+            sourceContext="email_prompt_modal"
+          />
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
