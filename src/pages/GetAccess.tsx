@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, Sword, PenLine, MonitorPlay, ShieldCheck, ChevronDown, Sparkles, Infinity as InfinityIcon } from "lucide-react";
 import StagingNavbar from "@/components/landing/StagingNavbar";
@@ -75,6 +75,14 @@ export default function GetAccess() {
   const [course, setCourse] = useState<CourseSlug>(resolvedCourseSlug);
   const [tier, setTier] = useState<TierId>("current");
   const [email, setEmail] = useState(emailParam);
+  const [showStickyBar, setShowStickyBar] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowStickyBar(window.scrollY > 480);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   /**
    * Build per-tier display data given the currently selected course.
