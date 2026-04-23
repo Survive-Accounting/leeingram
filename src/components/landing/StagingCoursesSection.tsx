@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Video, BookOpen, PenLine } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const NAVY = "#14213D";
@@ -283,14 +283,23 @@ export default function StagingCoursesSection({
                   <div className="flex flex-col gap-2">
                     {[
                       {
-                        tag: "intent_practice_problems",
-                        title: problemCount && problemCount > 0
-                          ? `${problemCount} Practice Problems`
-                          : "Hundreds of Practice Problems",
-                        subtext: "Check your work with Lee's solutions",
+                        tag: "intent_lee_on_demand",
+                        title: "Lee on Demand",
+                        subtext: "Personalized tutoring videos",
+                        Icon: Video,
                       },
-                      { tag: "intent_cram_tools", title: "Get Cram Resources", subtext: "Study tools for every chapter" },
-                      { tag: "intent_lee_on_demand", title: "Get Lee on Demand", subtext: "Personalized tutoring videos" },
+                      {
+                        tag: "intent_cram_tools",
+                        title: "Cram Tools",
+                        subtext: "Study tools for every chapter",
+                        Icon: BookOpen,
+                      },
+                      {
+                        tag: "intent_practice_problems",
+                        title: "Practice Problems",
+                        subtext: "Check your work with Lee's solutions",
+                        Icon: PenLine,
+                      },
                     ].map((stat) => (
                       <button
                         key={stat.tag}
@@ -299,11 +308,12 @@ export default function StagingCoursesSection({
                         className="rounded-lg p-3 text-left transition-all hover:bg-white/5 group flex items-center justify-between gap-2 w-full"
                       >
                         <div className="min-w-0 flex-1">
-                          <div className="text-[12px] sm:text-[13px] font-bold leading-tight text-white">
+                          <div className="text-[12px] sm:text-[13px] font-bold leading-tight text-white flex items-center gap-2">
+                            <stat.Icon className="w-4 h-4 shrink-0 text-white" strokeWidth={2} />
                             {stat.title}
                           </div>
                           <div
-                            className="text-[10px] sm:text-[11px] mt-1 leading-snug"
+                            className="text-[10px] sm:text-[11px] mt-1 leading-snug pl-6"
                             style={{ color: "rgba(255,255,255,0.6)" }}
                           >
                             {stat.subtext}
