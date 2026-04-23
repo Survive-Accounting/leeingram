@@ -6971,6 +6971,33 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist_signups: {
+        Row: {
+          campus_slug: string | null
+          course_slug: string | null
+          created_at: string
+          email: string
+          id: string
+          tag: string
+        }
+        Insert: {
+          campus_slug?: string | null
+          course_slug?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          tag: string
+        }
+        Update: {
+          campus_slug?: string | null
+          course_slug?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          tag?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
