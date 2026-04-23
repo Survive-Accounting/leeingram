@@ -160,6 +160,10 @@ Deno.serve(async (req) => {
         EdgeRuntime.waitUntil(childPromise);
       }
       dispatched++;
+
+      // Pace dispatches per job_type to respect upstream API rate limits.
+      const delay = JOB_DISPATCH_DELAY_MS[item.job_type] ?? DEFAULT_DISPATCH_DELAY_MS;
+      if (delay > 0) await sleep(delay);
     }
 
     const { count } = await sb
@@ -170,7 +174,9 @@ Deno.serve(async (req) => {
     const remaining = count ?? 0;
 
     if (remaining > 0) {
-      console.log(`${remaining} items remaining — self-chaining...`);
+      console.log(`${remaining} items remaining — self-chaining in ${SELF_CHAIN_DELAY_MS}ms...`);
+      // Small gap before re-invoking so we don't pile dispatcher invocations on top of each other.
+      await sleep(SELF_CHAIN_DELAY_MS);
       fetch(`${supabaseUrl}/functions/v1/process-background-jobs`, {
         method: "POST",
         headers: {
