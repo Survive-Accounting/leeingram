@@ -97,15 +97,21 @@ export default function ContactForm() {
       />
       <div className="relative mx-auto max-w-[640px]" style={{ zIndex: 1 }}>
         <h2
-          className="text-center text-[20px] sm:text-[24px] text-white mb-8"
+          className="text-center text-[24px] sm:text-[30px] text-white mb-3"
           style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 8px rgba(0,0,0,0.4)" }}
         >
           Have a question? I've got you.
         </h2>
+        <p
+          className="text-center text-[14px] mb-10"
+          style={{ color: "rgba(255,255,255,0.65)", fontFamily: "Inter, sans-serif" }}
+        >
+          Send a note — I'll personally reply.
+        </p>
 
         <div
-          className="rounded-xl p-5 sm:p-7"
-          style={{ background: "#0B0F1A", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 20px 60px rgba(0,0,0,0.45)" }}
+          className="rounded-xl p-6 sm:p-8"
+          style={{ background: "rgba(11,15,26,0.7)", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}
         >
           <div className="grid grid-cols-1 sm:grid-cols-[150px_1fr] gap-5 sm:gap-7">
             {/* Left: Photo + text */}
