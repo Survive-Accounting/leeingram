@@ -5,6 +5,7 @@ import { DevShortcut } from "@/components/DevShortcut";
 import { supabase } from "@/integrations/supabase/client";
 import { isWhitelistedEmail } from "@/lib/emailWhitelist";
 import { toast } from "sonner";
+import NonEduFallbackFlow from "@/components/landing/NonEduFallbackFlow";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
