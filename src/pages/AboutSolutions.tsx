@@ -67,7 +67,7 @@ export default function AboutSolutions() {
           </Section>
 
           <Section title="What we check">
-            Every AI-generated solution is reviewed to ensure:
+            Every AI-enabled solution is reviewed to ensure:
             <ul style={{ marginTop: 12, paddingLeft: 20 }}>
               <li>All calculations are correct</li>
               <li>Journal entries balance</li>

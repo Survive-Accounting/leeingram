@@ -805,7 +805,7 @@ export default function EmailFactory() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>📧 Email Suggestions</DialogTitle>
-            <DialogDescription>AI-generated recommendations from strategy notes</DialogDescription>
+            <DialogDescription>AI-enabled recommendations from strategy notes</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             {activeEmail?.ai_strategy_notes ? (
