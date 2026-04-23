@@ -166,33 +166,48 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           }
         }
 
-        /* Entrance animations */
+        /* Entrance animations — smoother, designed easing */
         @keyframes heroPhotoIn {
-          from { opacity: 0; transform: scale(0.97); }
-          to { opacity: 1; transform: scale(1); }
+          0%   { opacity: 0; transform: scale(1.06); filter: blur(8px); }
+          60%  { opacity: 1; filter: blur(0); }
+          100% { opacity: 1; transform: scale(1); filter: blur(0); }
+        }
+        @keyframes heroPhotoDrift {
+          0%, 100% { transform: scale(1) translateY(0); }
+          50%      { transform: scale(1.015) translateY(-3px); }
         }
         @keyframes heroFadeUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateY(20px); filter: blur(4px); }
+          to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
         }
         @keyframes heroFadeIn {
           from { opacity: 0; }
-          to { opacity: 1; }
+          to   { opacity: 1; }
         }
         @keyframes heroBtnIn {
-          from { opacity: 0; transform: translateY(8px) scale(0.98); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
+          from { opacity: 0; transform: translateY(10px) scale(0.96); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .hero-anim-photo { opacity: 0; animation: heroPhotoIn 0.6s ease-out forwards; }
-        .hero-anim-line1 { opacity: 0; animation: heroFadeUp 0.5s ease-out 0.2s forwards; }
-        .hero-anim-line2 { opacity: 0; animation: heroFadeUp 0.5s ease-out 0.4s forwards; }
-        .hero-anim-sub { opacity: 0; animation: heroFadeIn 0.4s ease-out 0.6s forwards; }
-        .hero-anim-btn { opacity: 0; animation: heroBtnIn 0.4s ease-out 0.8s forwards; }
+        /* Cubic-bezier ease-out for refined feel */
+        .hero-anim-photo {
+          opacity: 0;
+          animation:
+            heroPhotoIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+            heroPhotoDrift 6s ease-in-out 1.2s infinite;
+          will-change: transform, opacity, filter;
+          transform: translateZ(0);
+          backface-visibility: hidden;
+        }
+        .hero-anim-line1 { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards; }
+        .hero-anim-line2 { opacity: 0; animation: heroFadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards; }
+        .hero-anim-sub   { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.55s forwards; }
+        .hero-anim-btn   { opacity: 0; animation: heroBtnIn  0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.75s forwards; }
         @media (prefers-reduced-motion: reduce) {
           .hero-anim-photo, .hero-anim-line1, .hero-anim-line2, .hero-anim-sub, .hero-anim-btn {
             opacity: 1 !important;
             animation: none !important;
             transform: none !important;
+            filter: none !important;
           }
           .staging-hero-cap-inline { animation: none !important; }
         }
