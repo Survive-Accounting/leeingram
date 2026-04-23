@@ -148,7 +148,7 @@ export default function StagingCoursesSection({
   };
 
   return (
-    <section className="px-4 sm:px-6 py-12 sm:py-16" style={{ background: "#F8F8FA" }}>
+    <section className="px-4 sm:px-6 pt-12 sm:pt-16 pb-20 sm:pb-28" style={{ background: "#F8F8FA" }}>
       <style>{`
         @keyframes betaPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
@@ -274,13 +274,13 @@ export default function StagingCoursesSection({
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col md:flex-row gap-3 items-stretch">
+              <div className="flex flex-col md:flex-row gap-3 md:items-start">
                 {/* LEFT — navy callout block with stat items + CTA */}
                 <div
                   className="md:w-[35%] md:shrink-0 rounded-xl p-4 pr-6 flex flex-col"
                   style={{ background: "#1a1a2e" }}
                 >
-                  <div className="flex flex-col gap-2 flex-1">
+                  <div className="flex flex-col gap-2">
                     {[
                       {
                         tag: "intent_practice_problems",
