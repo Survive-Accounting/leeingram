@@ -1,9 +1,10 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import heroImage from "@/assets/staging-hero.jpg";
 
 const RED = "#CE1126";
 const NAVY = "#14213D";
 const GOLD = "#D4AF37";
-const HERO_IMAGE = "https://i.ibb.co/Qj8d4Hhs/Survive-Accounting-Hero-Image.jpg";
+const HERO_IMAGE = heroImage;
 
 interface Course {
   id: string;
