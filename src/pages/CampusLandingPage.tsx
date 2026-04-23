@@ -141,7 +141,7 @@ export default function CampusLandingPage() {
             {/* Card 2 — Practice Problems */}
             <Card
               title={`${problemLabel} Practice Problems`}
-              body="Work through textbook problems and check your work against Lee's AI-enabled solutions."
+              body="Run through mock textbook problems and check your work with Lee's solutions."
               buttonLabel="Browse Problems →"
               onClick={() => {
                 trackEvent("preview_problems_click", { campus_slug: campusSlug, course_slug: courseSlug });
@@ -149,10 +149,12 @@ export default function CampusLandingPage() {
               }}
             />
 
-            {/* Card 3 — Ask Lee */}
+            {/* Card 3 — Lee on Demand */}
             <Card
-              title="Ask Lee"
-              body="Submit a question — Lee sends back a personal video answer."
+              title="Lee on Demand"
+              body="Submit a question from any page on the platform — Lee sends back a personal video answer."
+              buttonLabel="Learn More →"
+              disabled
             />
           </div>
         </div>
