@@ -1,4 +1,4 @@
-import { buildGetAccessUrl } from "@/lib/getAccessUrl";
+import { useEmailGate } from "@/contexts/EmailGateContext";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -18,13 +18,11 @@ export default function PurchaseBar({
   priceCents,
   originalPriceCents,
   saleLabel,
-  campusSlug,
   courseSlug,
 }: PurchaseBarProps) {
   const priceDisplay = `$${Math.round(priceCents / 100)}`;
   const originalDisplay = originalPriceCents ? `$${Math.round(originalPriceCents / 100)}` : null;
-
-  const accessHref = buildGetAccessUrl({ campus: campusSlug, course: courseSlug });
+  const { requestAccess } = useEmailGate();
 
   return (
     <div
@@ -43,13 +41,14 @@ export default function PurchaseBar({
             <p className="text-[11px] font-medium" style={{ color: RED }}>{saleLabel}</p>
           )}
         </div>
-        <a
-          href={accessHref}
+        <button
+          type="button"
+          onClick={() => requestAccess({ course: courseSlug })}
           className="rounded-lg px-6 py-2.5 text-[14px] font-semibold text-white flex items-center gap-2 transition-opacity hover:opacity-90 shrink-0"
           style={{ background: RED, minHeight: 56 }}
         >
           {`Get Full Access – ${priceDisplay}`}
-        </a>
+        </button>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 import { ImpersonationBanner } from "@/components/va-dashboards/ImpersonationBanner";
 import { SprintProvider } from "@/contexts/SprintContext";
+import { EmailGateProvider } from "@/contexts/EmailGateContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
@@ -321,12 +322,14 @@ const App = () => (
           <AuthProvider>
             <ImpersonationProvider>
               <SprintProvider>
-                <RoutedAppBoundary>
-                  <ImpersonationBanner />
-                  <SprintTimerBar />
-                  <RoleRouteGuard />
-                  <AppRoutes />
-                </RoutedAppBoundary>
+                <EmailGateProvider>
+                  <RoutedAppBoundary>
+                    <ImpersonationBanner />
+                    <SprintTimerBar />
+                    <RoleRouteGuard />
+                    <AppRoutes />
+                  </RoutedAppBoundary>
+                </EmailGateProvider>
               </SprintProvider>
             </ImpersonationProvider>
           </AuthProvider>

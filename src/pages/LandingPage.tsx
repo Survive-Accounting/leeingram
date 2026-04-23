@@ -8,7 +8,7 @@ import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import ContactForm from "@/components/landing/ContactForm";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { useEventTracking } from "@/hooks/useEventTracking";
-import { buildGetAccessUrl } from "@/lib/getAccessUrl";
+import { useEmailGate } from "@/contexts/EmailGateContext";
 
 const COURSES = [
   {
@@ -58,13 +58,14 @@ export default function LandingPage() {
   const coursesRef = useRef<HTMLDivElement>(null);
   const contactRef = useRef<HTMLDivElement>(null);
   const { trackEvent, trackPageView } = useEventTracking();
+  const { requestAccess } = useEmailGate();
 
   useEffect(() => { trackPageView('landing'); }, [trackPageView]);
 
   const handleCardClick = (course: typeof COURSES[0]) => {
     if (course.status === "live") {
       trackEvent('course_selected', { course_name: course.name, course_slug: course.slug });
-      navigate(buildGetAccessUrl({ course: course.slug }));
+      requestAccess({ course: course.slug });
     } else {
       trackEvent('waitlist_signup', { course_name: course.name });
       setModal({ type: "notify", course });
