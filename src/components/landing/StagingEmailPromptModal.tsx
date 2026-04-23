@@ -26,6 +26,8 @@ interface StagingEmailPromptModalProps {
   onSubmit: (email: string) => Promise<CelebrationData | null> | CelebrationData | null;
   onContinue: (data: CelebrationData) => void;
   courseName?: string;
+  chapterNumber?: number | null;
+  chapterName?: string | null;
   loading?: boolean;
 }
 
