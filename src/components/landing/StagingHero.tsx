@@ -224,7 +224,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
       </video>
       <div className="staging-hero-overlay-left" />
 
-      <div className="relative z-[3] mx-auto max-w-[1100px] px-4 sm:px-6 py-12 md:py-20 w-full">
+      <div className="relative z-[3] mx-auto max-w-[1100px] px-4 sm:px-6 py-4 md:py-20 w-full">
         <div className="staging-hero-card flex flex-col md:flex-row items-center gap-6 md:gap-10">
           {/* LEFT — Photo (smaller, ~33% width) */}
           <div className="w-full md:w-[33%] flex flex-col items-center md:items-start shrink-0">
