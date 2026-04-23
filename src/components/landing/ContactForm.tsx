@@ -54,7 +54,7 @@ export default function ContactForm() {
 
   return (
     <section
-      className="relative pt-4 pb-20 px-4 overflow-hidden"
+      className="relative pt-20 sm:pt-24 pb-24 sm:pb-28 px-4 overflow-hidden"
       style={{
         background: `linear-gradient(180deg, #14213D 0%, #0B1426 100%)`,
       }}
