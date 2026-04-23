@@ -255,7 +255,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           {/* RIGHT — Text */}
           <div className="flex-1 text-center md:text-left">
             <h1
-              className="text-white leading-[1.15] tracking-tight text-[32px] sm:text-[40px] md:text-[52px]"
+              className="text-white leading-[1.15] tracking-tight text-[28px] sm:text-[40px] md:text-[52px]"
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
               <span className="block hero-anim-line2">
@@ -263,20 +263,8 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               </span>
             </h1>
 
-            <div
-              className="mt-5 mx-auto md:mx-0 max-w-[560px] hero-anim-sub space-y-5"
-              style={{ color: "rgba(255,255,255,0.88)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
-            >
-              <p className="text-[15px] md:text-[17px] leading-relaxed">
-                Hey! I'm Lee Ingram. I built Survive Accounting for one reason — so you walk into your exam confident.
-              </p>
-              <p className="text-[15px] md:text-[17px] leading-relaxed pt-2">
-                Let's get you there together.
-              </p>
-            </div>
-
             <TooltipProvider delayDuration={150}>
-              <div className="mt-8 flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 justify-center md:justify-start hero-anim-btn">
+              <div className="mt-5 md:mt-6 flex justify-center md:justify-start hero-anim-btn">
                 <button
                   onClick={onGetStartedClick}
                   className="rounded-lg px-7 py-3.5 text-[15px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
@@ -284,6 +272,21 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 >
                   Get Started →
                 </button>
+              </div>
+
+              <div
+                className="mt-5 mx-auto md:mx-0 max-w-[560px] hero-anim-sub space-y-4"
+                style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
+              >
+                <p className="text-[14px] md:text-[16px] leading-relaxed">
+                  Hey! I'm Lee Ingram. I built Survive Accounting for one reason — so you walk into your exam confident.
+                </p>
+                <p className="text-[14px] md:text-[16px] leading-relaxed">
+                  Let's get you there together.
+                </p>
+              </div>
+
+              <div className="mt-6 flex justify-center md:justify-start hero-anim-btn">
                 <button
                   onClick={() => {
                     const el = document.getElementById("courses-section");
