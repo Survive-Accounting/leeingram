@@ -511,3 +511,165 @@ export default function StagingCoursesSection({
     </section>
   );
 }
+
+// ── DemoScreen (renders inside the laptop screen) ──
+interface DemoScreenProps {
+  courseName: string;
+  chapters: Chapter[];
+  loading: boolean;
+  onChange: () => void;
+  onChapterClick: (ch: Chapter, tag: string) => void;
+}
+
+function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }: DemoScreenProps) {
+  const [tab, setTab] = useState<"survival" | "practice">("survival");
+  const [showSkeleton, setShowSkeleton] = useState(true);
+  const [contentKey, setContentKey] = useState(0);
+
+  // Skeleton min-duration 400ms
+  useEffect(() => {
+    setShowSkeleton(true);
+    const t = setTimeout(() => setShowSkeleton(false), 400);
+    return () => clearTimeout(t);
+  }, [tab, loading]);
+
+  // Bump key when tab changes for fade transition
+  useEffect(() => {
+    setContentKey((k) => k + 1);
+  }, [tab]);
+
+  const tagFor = (ch: Chapter) =>
+    `intent_${tab === "survival" ? "cram_tools" : "practice_problems"}_ch${ch.chapter_number}`;
+
+  return (
+    <div className="flex flex-col h-full" style={{ fontFamily: "Inter, sans-serif" }}>
+      <style>{`
+        @keyframes demoCardIn {
+          0% { opacity: 0; transform: translateY(10px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes demoShimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        @keyframes demoFadeIn {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+      `}</style>
+
+      {/* Course label + change link */}
+      <div className="flex items-center justify-between mb-2 px-1">
+        <p className="text-[12px]" style={{ color: "#6B7280" }}>
+          {courseName}
+        </p>
+        <button
+          type="button"
+          onClick={onChange}
+          className="text-[12px] font-semibold hover:opacity-70 transition-opacity"
+          style={{ color: NAVY, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        >
+          Change →
+        </button>
+      </div>
+
+      {/* Tab bar */}
+      <div
+        className="flex gap-1 p-1 rounded-lg mb-4"
+        style={{ background: "#EEF0F3", border: "1px solid #E5E7EB" }}
+      >
+        {[
+          { key: "survival" as const, label: "Survival Tools" },
+          { key: "practice" as const, label: "Practice Problems" },
+        ].map((t) => {
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className="flex-1 py-2 text-[13px] font-semibold rounded-md transition-all"
+              style={{
+                background: active ? NAVY : "transparent",
+                color: active ? "#fff" : "#6B7280",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Choose a chapter label */}
+      <p
+        className="text-[11px] font-semibold uppercase mb-3 px-1"
+        style={{ color: "#9CA3AF", letterSpacing: "0.08em" }}
+      >
+        Choose a chapter
+      </p>
+
+      {/* Grid */}
+      <div key={contentKey} style={{ animation: "demoFadeIn 150ms ease-out" }}>
+        {showSkeleton || loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-lg"
+                style={{
+                  height: 64,
+                  background:
+                    "linear-gradient(90deg, #EEF0F3 0%, #F8F9FB 50%, #EEF0F3 100%)",
+                  backgroundSize: "200% 100%",
+                  animation: "demoShimmer 1.4s linear infinite",
+                  border: "1px solid #E5E7EB",
+                }}
+              />
+            ))}
+          </div>
+        ) : chapters.length === 0 ? (
+          <p className="text-[13px] text-center py-6" style={{ color: "#9CA3AF" }}>
+            No chapters available yet.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+            {chapters.map((ch, i) => (
+              <button
+                key={ch.id}
+                type="button"
+                onClick={() => onChapterClick(ch, tagFor(ch))}
+                className="relative rounded-lg p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
+                style={{
+                  background: "#fff",
+                  border: "1px solid #E5E7EB",
+                  cursor: "pointer",
+                  opacity: 0,
+                  animation: `demoCardIn 320ms ease-out forwards`,
+                  animationDelay: `${i * 80}ms`,
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = NAVY;
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = "#E5E7EB";
+                }}
+              >
+                <p
+                  className="text-[10px] font-semibold uppercase mb-1"
+                  style={{ color: "#9CA3AF", letterSpacing: "0.06em" }}
+                >
+                  Ch. {ch.chapter_number}
+                </p>
+                <p className="text-[13px] font-bold leading-tight text-center" style={{ color: NAVY }}>
+                  {ch.chapter_name}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
