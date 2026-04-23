@@ -12,7 +12,7 @@ import StagingHero from "@/components/landing/StagingHero";
 
 import StagingCoursesSection from "@/components/landing/StagingCoursesSection";
 import ClosingCtaSection from "@/components/landing/ClosingCtaSection";
-import StagingWaitlistModal from "@/components/landing/StagingWaitlistModal";
+
 import StagingEmailPromptModal, { type CelebrationData } from "@/components/landing/StagingEmailPromptModal";
 import StagingStickyBar from "@/components/landing/StagingStickyBar";
 import type { CtaCourse } from "@/components/landing/StagingCtaModal";
@@ -54,21 +54,6 @@ const COURSES: CtaCourse[] = [
   },
 ];
 
-const OLE_MISS_DOMAINS = ["olemiss.edu", "go.olemiss.edu"];
-
-// Test bypass: lee+anything@survivestudios.com is treated as Ole Miss for QA / checkout testing.
-function isTestOleMissEmail(email: string): boolean {
-  const lower = email.trim().toLowerCase();
-  return /^lee\+[^@]+@survivestudios\.com$/.test(lower);
-}
-
-function isOleMissEmail(email: string): boolean {
-  const lower = email.trim().toLowerCase();
-  if (isTestOleMissEmail(lower)) return true;
-  const domain = lower.split("@")[1] || "";
-  return OLE_MISS_DOMAINS.some((d) => domain === d || domain.endsWith(`.${d}`));
-}
-
 export default function StagingLandingPage() {
   const navigate = useNavigate();
   const contactRef = useRef<HTMLDivElement>(null);
@@ -80,8 +65,7 @@ export default function StagingLandingPage() {
   const [pendingChapterNumber, setPendingChapterNumber] = useState<number | null>(null);
   const [emailPromptOpen, setEmailPromptOpen] = useState(false);
   const [emailPromptLoading, setEmailPromptLoading] = useState(false);
-  const [waitlistOpen, setWaitlistOpen] = useState(false);
-  const [waitlistInitialEmail, setWaitlistInitialEmail] = useState("");
+  
   const [resolving, setResolving] = useState(false);
 
   useEffect(() => {
@@ -90,22 +74,10 @@ export default function StagingLandingPage() {
     if (stored) setCapturedEmail(stored);
   }, [trackPageView]);
 
-  /** Resolve email + course. Returns celebration data for in-modal display, or null if non-Ole-Miss (waitlist shown). */
+  /** Resolve email + course. Returns celebration data for in-modal display. */
   const resolveEmail = async (email: string, course: CtaCourse): Promise<CelebrationData | null> => {
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return null;
-
-    if (!isOleMissEmail(trimmed)) {
-      trackEvent("non_ole_miss_email_blocked", {
-        email_domain: trimmed.split("@")[1] || "",
-        course_slug: course.slug,
-      });
-      // Close prompt, show waitlist
-      setEmailPromptOpen(false);
-      setWaitlistInitialEmail(trimmed);
-      setWaitlistOpen(true);
-      return null;
-    }
 
     setResolving(true);
     try {
@@ -201,10 +173,6 @@ export default function StagingLandingPage() {
           courses={COURSES}
           onCardClick={handleCardClick}
           onChapterClick={handleChapterClick}
-          onExpansionClick={() => {
-            setWaitlistInitialEmail("");
-            setWaitlistOpen(true);
-          }}
         />
       </div>
 
@@ -224,7 +192,7 @@ export default function StagingLandingPage() {
 
       <StagingStickyBar
         onCtaClick={() => handleCardClick(defaultCourse)}
-        hidden={emailPromptOpen || waitlistOpen}
+        hidden={emailPromptOpen}
       />
 
       <StagingEmailPromptModal
@@ -234,12 +202,6 @@ export default function StagingLandingPage() {
         onContinue={handleContinue}
         courseName={pendingCourse?.name}
         loading={emailPromptLoading || resolving}
-      />
-
-      <StagingWaitlistModal
-        open={waitlistOpen}
-        onClose={() => setWaitlistOpen(false)}
-        initialEmail={waitlistInitialEmail}
       />
     </div>
   );
