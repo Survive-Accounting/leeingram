@@ -5339,6 +5339,30 @@ export type Database = {
           },
         ]
       }
+      survive_ai_subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          source_context: Json
+          tag: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          source_context?: Json
+          tag?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          source_context?: Json
+          tag?: string
+        }
+        Relationships: []
+      }
       teaching_assets: {
         Row: {
           admin_notes: Json
