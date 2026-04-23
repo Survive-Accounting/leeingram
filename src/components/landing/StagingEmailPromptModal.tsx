@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, X } from "lucide-react";
+import { DevShortcut } from "@/components/DevShortcut";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";

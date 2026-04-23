@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { DevShortcut } from "@/components/DevShortcut";
 
 const STRIPE_PAYMENT_LINK = "#stripe-payment-link";
 

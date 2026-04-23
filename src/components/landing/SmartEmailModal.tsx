@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { DevShortcut } from "@/components/DevShortcut";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
