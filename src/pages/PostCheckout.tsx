@@ -24,7 +24,11 @@ export default function PostCheckout() {
 
     const run = async () => {
       if (!sessionId) {
-        setState({ phase: "failed", reason: "Missing checkout session." });
+        setState({
+          phase: "failed",
+          reason:
+            "We couldn't find your checkout session. Head back and try again.",
+        });
         return;
       }
       try {
