@@ -1,9 +1,10 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import heroImage from "@/assets/staging-hero.jpg";
 
 const RED = "#CE1126";
 const NAVY = "#14213D";
 const GOLD = "#D4AF37";
-const HERO_IMAGE = "https://i.ibb.co/Qj8d4Hhs/Survive-Accounting-Hero-Image.jpg";
+const HERO_IMAGE = heroImage;
 
 interface Course {
   id: string;
@@ -43,10 +44,9 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           inset: 0;
           background-image: url('${HERO_IMAGE}');
           background-size: cover;
-          background-position: 60% 40%;
+          background-position: center center;
           background-repeat: no-repeat;
           background-attachment: fixed;
-          transform: scaleX(-1);
           z-index: 0;
         }
         @media (max-width: 768px) {
