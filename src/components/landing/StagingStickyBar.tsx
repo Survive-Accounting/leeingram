@@ -88,15 +88,15 @@ export default function StagingStickyBar({ hidden = false }: StagingStickyBarPro
       >
         <button
           onClick={() => navigate("/login")}
-          className="w-full rounded-lg text-[15px] font-bold flex items-center justify-center transition-all active:scale-[0.99]"
+          className="w-full rounded-lg text-[15px] font-semibold flex items-center justify-center transition-all active:scale-[0.99]"
           style={{
-            background: "#BFDBFE",
+            background: "#fff",
             color: NAVY,
             fontFamily: "Inter, sans-serif",
             minHeight: 48,
           }}
         >
-          Log In →
+          Student Login
         </button>
       </div>
     </>
