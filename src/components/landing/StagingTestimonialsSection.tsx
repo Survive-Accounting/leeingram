@@ -88,10 +88,6 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
     return () => obs.disconnect();
   }, []);
 
-  // Digits: 1, 0, 0, 0 + "+" suffix
-  const digits = String(TARGET_COUNT).split("").map(Number);
-  const delays = [0, 120, 240, 360];
-
   return (
     <section style={{ background: "#F8F8F8" }} className="py-16 sm:py-20 px-4 sm:px-6">
       <div className="mx-auto max-w-[800px]">
@@ -106,9 +102,7 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
               className="inline-block align-baseline"
               style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
             >
-              {digits.map((d, i) => (
-                <SlotDigit key={i} target={d} delay={delays[i] ?? 0} active={animate} />
-              ))}
+              <Counter target={TARGET_COUNT} active={animate} />
               <span>+</span>
             </span>
             <Tooltip>
@@ -119,14 +113,14 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
                 Updated as students join.
               </TooltipContent>
             </Tooltip>
-            {" "}<span style={{ fontWeight: 400 }}>students{" "}</span>
+            {" "}<span style={{ fontWeight: 400 }}>accounting students{" "}</span>
             <span style={{ color: "#888888", opacity: 0.5, fontStyle: "italic", textDecoration: "line-through", fontWeight: 400 }}>
-              survived
+              survive
             </span>{" "}
             <span style={{ color: RED, fontWeight: 700, fontSize: "1.08em" }}>
-              thrived
+              thrive
             </span>{" "}
-            <span style={{ fontWeight: 400 }}>in accounting since 2015.</span>
+            <span style={{ fontWeight: 400 }}>since 2015.</span>
           </p>
         </TooltipProvider>
 
