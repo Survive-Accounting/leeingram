@@ -4,7 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const NAVY = "#14213D";
 const RED = "#CE1126";
 const EMBED_ID = "484dc267-e1b2-425c-b5c6-49d9525cec9f";
-const TARGET_COUNT = 597;
+const TARGET_COUNT = 1000;
 
 interface StagingTestimonialsSectionProps {
   onCtaClick: () => void;
@@ -95,9 +95,9 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
     return () => obs.disconnect();
   }, []);
 
-  // Digits: 5 (delay 0), 9 (delay 150), 7 (delay 300)
+  // Digits: 1, 0, 0, 0 + "+" suffix
   const digits = String(TARGET_COUNT).split("").map(Number);
-  const delays = [0, 150, 300];
+  const delays = [0, 120, 240, 360];
 
   return (
     <section style={{ background: "#F8F8F8" }} className="py-16 sm:py-20 px-4 sm:px-6">
@@ -107,6 +107,7 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
             className="text-center mb-8 text-[22px] sm:text-[28px] md:text-[34px] leading-tight"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 700 }}
           >
+            <span style={{ fontWeight: 400 }}>I've helped{" "}</span>
             <span
               ref={counterRef}
               className="inline-block align-baseline"
@@ -115,6 +116,7 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
               {digits.map((d, i) => (
                 <SlotDigit key={i} target={d} delay={delays[i] ?? 0} active={animate} />
               ))}
+              <span>+</span>
             </span>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -124,14 +126,14 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
                 Updated as students join.
               </TooltipContent>
             </Tooltip>
-            {" "}Ole Miss students{" "}
+            {" "}<span style={{ fontWeight: 400 }}>students{" "}</span>
             <span style={{ color: "#888888", opacity: 0.5, fontStyle: "italic", textDecoration: "line-through", fontWeight: 400 }}>
               survived
             </span>{" "}
             <span style={{ color: RED, fontWeight: 700, fontSize: "1.08em" }}>
               thrived
             </span>{" "}
-            <span style={{ fontWeight: 400 }}>in accounting since 2020.</span>
+            <span style={{ fontWeight: 400 }}>in accounting since 2015.</span>
           </p>
         </TooltipProvider>
 
