@@ -83,12 +83,6 @@ export default function ContactForm() {
               <p className="text-[12px] text-white/70 mt-3 leading-relaxed" style={{ fontFamily: "Inter, sans-serif" }}>
                 I read and reply to every message personally.
               </p>
-              <p className="text-[12px] text-white/50 mt-2 leading-relaxed max-w-[170px]" style={{ fontFamily: "Inter, sans-serif" }}>
-                Whether you're stuck on something or just not sure where to start — feel free to reach out.
-              </p>
-              <p className="text-[11px] text-white/35 mt-3 italic" style={{ fontFamily: "Inter, sans-serif" }}>
-                No pressure. Just real help.
-              </p>
             </div>
 
             {/* Right: Form */}
