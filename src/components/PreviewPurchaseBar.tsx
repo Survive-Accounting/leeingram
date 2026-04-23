@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { ShoppingCart, X, Check } from "lucide-react";
 import { DevShortcut } from "@/components/DevShortcut";
+import { buildGetAccessUrl } from "@/lib/getAccessUrl";
 
-const STRIPE_PAYMENT_LINK = "#stripe-payment-link";
 const NAVY = "#14213D";
 
 interface PreviewPurchaseBarProps {
@@ -32,11 +32,13 @@ function CheckboxChip({ label }: { label: string }) {
   );
 }
 
-export default function PreviewPurchaseBar(_props: PreviewPurchaseBarProps) {
+export default function PreviewPurchaseBar({ campusSlug, courseSlug }: PreviewPurchaseBarProps) {
   const [refundOpen, setRefundOpen] = useState(false);
 
+  const accessHref = buildGetAccessUrl({ campus: campusSlug, course: courseSlug });
+
   const ctaButton = (compact = false) => (
-    <a href={STRIPE_PAYMENT_LINK} target="_blank" rel="noopener noreferrer">
+    <a href={accessHref}>
       <button
         className={`inline-flex items-center gap-2 rounded-lg font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98] ${
           compact ? "px-4 py-2.5 text-[13px]" : "px-7 py-3.5 text-[16px]"
