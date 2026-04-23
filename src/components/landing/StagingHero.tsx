@@ -371,7 +371,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                     window.scrollTo({ top, behavior: "smooth" });
                   }
                 }}
-                className="mt-1.5 text-[12px] font-medium underline underline-offset-[4px] decoration-1 transition-opacity hover:opacity-100 opacity-70"
+                className="mt-1 text-[12px] font-medium underline underline-offset-[4px] decoration-1 transition-opacity hover:opacity-80 opacity-45"
                 style={{
                   color: "rgba(255,255,255,0.7)",
                   fontFamily: "Inter, sans-serif",
