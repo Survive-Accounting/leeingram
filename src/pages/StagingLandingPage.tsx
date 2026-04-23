@@ -77,6 +77,7 @@ export default function StagingLandingPage() {
 
   const [capturedEmail, setCapturedEmail] = useState<string>("");
   const [pendingCourse, setPendingCourse] = useState<CtaCourse | null>(null);
+  const [pendingChapterNumber, setPendingChapterNumber] = useState<number | null>(null);
   const [emailPromptOpen, setEmailPromptOpen] = useState(false);
   const [emailPromptLoading, setEmailPromptLoading] = useState(false);
   const [waitlistOpen, setWaitlistOpen] = useState(false);
@@ -136,10 +137,22 @@ export default function StagingLandingPage() {
   /** Card / CTA click handler. */
   const handleCardClick = async (course: CtaCourse) => {
     setPendingCourse(course);
+    setPendingChapterNumber(null);
     if (capturedEmail) {
-      // Already captured — skip celebration, route directly
       const data = await resolveEmail(capturedEmail, course);
       if (data) navigate(`/campus/${data.campus_slug}/${course.slug}`);
+    } else {
+      setEmailPromptOpen(true);
+    }
+  };
+
+  /** Chapter row click — same flow but routes to specific chapter. */
+  const handleChapterClick = async (course: CtaCourse, chapterNumber: number) => {
+    setPendingCourse(course);
+    setPendingChapterNumber(chapterNumber);
+    if (capturedEmail) {
+      const data = await resolveEmail(capturedEmail, course);
+      if (data) navigate(`/campus/${data.campus_slug}/${course.slug}/${chapterNumber}`);
     } else {
       setEmailPromptOpen(true);
     }
@@ -148,7 +161,11 @@ export default function StagingLandingPage() {
   const handleContinue = (data: CelebrationData) => {
     if (!pendingCourse) return;
     setEmailPromptOpen(false);
-    navigate(`/campus/${data.campus_slug}/${pendingCourse.slug}`);
+    if (pendingChapterNumber != null) {
+      navigate(`/campus/${data.campus_slug}/${pendingCourse.slug}/${pendingChapterNumber}`);
+    } else {
+      navigate(`/campus/${data.campus_slug}/${pendingCourse.slug}`);
+    }
   };
 
   // Pick a default course for navbar/hero/closing CTAs (IA2 — original live flagship)
@@ -183,6 +200,7 @@ export default function StagingLandingPage() {
         <StagingCoursesSection
           courses={COURSES}
           onCardClick={handleCardClick}
+          onChapterClick={handleChapterClick}
           onExpansionClick={() => {
             setWaitlistInitialEmail("");
             setWaitlistOpen(true);

@@ -20,6 +20,7 @@ interface Course {
 interface StagingCoursesSectionProps {
   courses: Course[];
   onCardClick: (course: Course) => void;
+  onChapterClick?: (course: Course, chapterNumber: number) => void;
   onExpansionClick?: () => void;
 }
 
@@ -70,6 +71,7 @@ interface Chapter {
 export default function StagingCoursesSection({
   courses,
   onCardClick,
+  onChapterClick,
 }: StagingCoursesSectionProps) {
   const ordered = DISPLAY_ORDER
     .map((slug) => courses.find((c) => c.slug === slug))
@@ -129,14 +131,8 @@ export default function StagingCoursesSection({
                   style={{ background: GREEN, animation: "betaPulse 1.8s ease-in-out infinite" }}
                 />
               </span>
-              Spring 2026 Beta is Live
+              Spring 2026 is Live
             </span>
-            <p
-              className="text-[13px] sm:text-[14px]"
-              style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}
-            >
-              AI study tools for accounting · Curated by a real tutor
-            </p>
           </div>
 
           <ul className="space-y-2.5 mb-8">
@@ -257,31 +253,57 @@ export default function StagingCoursesSection({
               fontFamily: "Inter, sans-serif",
             }}
           >
-            {TEXTBOOK_BY_SLUG[selected.slug] && (
-              <p
-                className="text-[12px] uppercase tracking-[0.12em] font-semibold mb-3"
-                style={{ color: "#6B7280" }}
-              >
-                {TEXTBOOK_BY_SLUG[selected.slug]}
-              </p>
-            )}
+            {/* Stat cards */}
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
+              {[
+                { title: "250+ Practice Problems", subtext: "Step-by-step AI solutions" },
+                { title: "Cram Tools", subtext: "Every chapter covered" },
+                { title: "Ask Lee", subtext: "Personalized video responses" },
+              ].map((stat) => (
+                <div
+                  key={stat.title}
+                  className="rounded-xl p-3 sm:p-4 text-center"
+                  style={{ background: "#F8F8FA" }}
+                >
+                  <div
+                    className="text-[12px] sm:text-[13px] font-bold leading-tight"
+                    style={{ color: NAVY }}
+                  >
+                    {stat.title}
+                  </div>
+                  <div
+                    className="text-[10px] sm:text-[11px] mt-1 leading-snug"
+                    style={{ color: "#6B7280" }}
+                  >
+                    {stat.subtext}
+                  </div>
+                </div>
+              ))}
+            </div>
 
             {chapters.length === 0 ? (
               <p className="text-[13px]" style={{ color: "#9CA3AF" }}>
                 Loading chapters…
               </p>
             ) : (
-              <ul className="flex flex-col gap-2 mb-5">
+              <ul className="flex flex-col mb-5 -mx-2">
                 {chapters.map((ch) => (
-                  <li
-                    key={ch.id}
-                    className="flex items-baseline gap-2 text-[14px]"
-                    style={{ color: NAVY }}
-                  >
-                    <span className="text-[12px] font-semibold w-12 flex-shrink-0" style={{ color: "#9CA3AF" }}>
-                      Ch. {ch.chapter_number}
-                    </span>
-                    <span>{ch.chapter_name}</span>
+                  <li key={ch.id}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onChapterClick
+                          ? onChapterClick(selected, ch.chapter_number)
+                          : onCardClick(selected)
+                      }
+                      className="w-full flex items-baseline gap-2 text-[14px] text-left rounded-lg px-2 py-2 transition-colors hover:bg-slate-50 cursor-pointer"
+                      style={{ color: NAVY }}
+                    >
+                      <span className="text-[12px] font-semibold w-12 flex-shrink-0" style={{ color: "#9CA3AF" }}>
+                        Ch. {ch.chapter_number}
+                      </span>
+                      <span>{ch.chapter_name}</span>
+                    </button>
                   </li>
                 ))}
               </ul>
