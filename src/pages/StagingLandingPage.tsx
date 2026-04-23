@@ -59,6 +59,7 @@ const COURSES: CtaCourse[] = [
 
 export default function StagingLandingPage() {
   const navigate = useNavigate();
+  const { requestAccess } = useEmailGate();
   const contactRef = useRef<HTMLDivElement>(null);
   const coursesRef = useRef<HTMLDivElement>(null);
   const { trackPageView, trackEvent } = useEventTracking();
@@ -221,16 +222,16 @@ export default function StagingLandingPage() {
       <div style={{ height: 24 }} />
 
       <StagingNavbar
-        onCtaClick={() => navigate(buildGetAccessUrl({ course: defaultCourse.slug }))}
-        onPricingClick={() => navigate(buildGetAccessUrl({ course: defaultCourse.slug }))}
+        onCtaClick={() => requestAccess({ course: defaultCourse.slug })}
+        onPricingClick={() => requestAccess({ course: defaultCourse.slug })}
       />
 
       <StagingHero
         liveCourse={defaultCourse}
         futureCourses={[]}
-        onLiveCourseClick={() => navigate(buildGetAccessUrl({ course: defaultCourse.slug }))}
+        onLiveCourseClick={() => requestAccess({ course: defaultCourse.slug })}
         onNotifyClick={() => handleCardClick(defaultCourse)}
-        onGetStartedClick={() => navigate(buildGetAccessUrl({ course: defaultCourse.slug }))}
+        onGetStartedClick={() => requestAccess({ course: defaultCourse.slug })}
       />
 
       <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />
