@@ -38,7 +38,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           align-items: center;
         }
         @media (max-width: 768px) {
-          .staging-hero { min-height: auto; padding-top: 32px; padding-bottom: 40px; display: block; }
+          .staging-hero { min-height: auto; padding-top: 12px; padding-bottom: 32px; display: block; }
         }
         .staging-hero-video {
           position: absolute;
