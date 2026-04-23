@@ -7,6 +7,16 @@ const corsHeaders = {
 };
 
 const BATCH_SIZE = 10;
+// Per-job-type rate-limit config to stay under OpenAI TPM caps.
+// o3 has a 30,000 TPM limit; ~1,500 tokens/request → ~20 req/min.
+// We pace at ~15/min (4s between dispatches) to leave headroom.
+const JOB_DISPATCH_DELAY_MS: Record<string, number> = {
+  regenerate_solution: 4000,
+};
+const DEFAULT_DISPATCH_DELAY_MS = 0;
+const SELF_CHAIN_DELAY_MS = 2000;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const JOB_HANDLERS: Record<string, { fn: string; body: (p: any) => any }> = {
   prep_doc: {

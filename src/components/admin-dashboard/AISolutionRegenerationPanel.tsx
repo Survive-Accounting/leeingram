@@ -213,16 +213,26 @@ export function AISolutionRegenerationPanel() {
 
   // ── Run handler ────────────────────────────────────────────────
   const fetchAssetsToProcess = async (): Promise<AssetRow[]> => {
-    let q = supabase
-      .from("teaching_assets")
-      .select("id, asset_name, problem_title, source_ref, source_number, ai_generation_status")
-      .limit(10000);
-    if (scope === "chapter") q = q.eq("chapter_id", chapterId);
-    else if (scope === "course") q = q.eq("course_id", courseId);
-    else q = q.in("course_id", courseIds);
-    const { data, error } = await q;
-    if (error) throw error;
-    let rows = (data ?? []) as AssetRow[];
+    // Paginate to bypass Supabase's 1000-row default cap.
+    const PAGE = 1000;
+    let from = 0;
+    const all: AssetRow[] = [];
+    while (true) {
+      let q = supabase
+        .from("teaching_assets")
+        .select("id, asset_name, problem_title, source_ref, source_number, ai_generation_status")
+        .range(from, from + PAGE - 1);
+      if (scope === "chapter") q = q.eq("chapter_id", chapterId);
+      else if (scope === "course") q = q.eq("course_id", courseId);
+      else q = q.in("course_id", courseIds);
+      const { data, error } = await q;
+      if (error) throw error;
+      const rows = (data ?? []) as AssetRow[];
+      all.push(...rows);
+      if (rows.length < PAGE) break;
+      from += PAGE;
+    }
+    let rows = all;
     if (skipAlreadyRegenerated) {
       rows = rows.filter((r) => r.ai_generation_status !== "complete");
     }
