@@ -44,12 +44,16 @@ Deno.serve(async (req) => {
     const verified =
       session.status === "complete" && session.payment_status === "paid";
 
+    const customer_email =
+      session.customer_details?.email ?? session.customer_email ?? null;
+
     return new Response(
       JSON.stringify({
         verified,
         status: session.status,
         payment_status: session.payment_status,
-        email: session.customer_details?.email ?? session.customer_email ?? null,
+        customer_email,
+        email: customer_email, // backward compat with PostCheckout page
         amount_total: session.amount_total,
         metadata: session.metadata ?? {},
       }),
