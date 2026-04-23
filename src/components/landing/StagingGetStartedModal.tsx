@@ -81,7 +81,7 @@ export default function StagingGetStartedModal({
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
-        className="max-w-[460px] p-0 gap-0 border-0 overflow-hidden"
+        className="max-w-[460px] p-0 gap-0 border-0 overflow-hidden [&>button]:hidden"
         style={{ background: "white", borderRadius: 16 }}
       >
         {/* Close */}
@@ -94,7 +94,7 @@ export default function StagingGetStartedModal({
         </button>
 
         {/* Step dots */}
-        <div className="flex items-center justify-center gap-2 pt-6 pb-4">
+        <div className="flex items-center justify-center gap-2 pt-7 pb-4">
           <Dot active={step === 1} />
           <Dot active={step === 2} />
         </div>
