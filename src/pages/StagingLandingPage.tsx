@@ -172,7 +172,10 @@ export default function StagingLandingPage() {
         futureCourses={[]}
         onLiveCourseClick={() => handleCardClick(defaultCourse)}
         onNotifyClick={() => handleCardClick(defaultCourse)}
-        onGetStartedClick={() => setGetStartedOpen(true)}
+        onGetStartedClick={() => {
+          setGetStartedPreselectedSlug(null);
+          setGetStartedOpen(true);
+        }}
       />
 
       <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />
