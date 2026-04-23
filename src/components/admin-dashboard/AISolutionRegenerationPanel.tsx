@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
@@ -25,7 +26,7 @@ import { toast } from "sonner";
 import { useIsLee } from "@/components/AccessRestrictedGuard";
 import { useNavigate } from "react-router-dom";
 
-type Scope = "chapter" | "course";
+type Scope = "chapter" | "course" | "courses";
 type Phase = "configure" | "running" | "complete";
 
 type LogEntry = {
@@ -58,6 +59,7 @@ export function AISolutionRegenerationPanel() {
   const [scope, setScope] = useState<Scope>("chapter");
   const [chapterId, setChapterId] = useState<string>("");
   const [courseId, setCourseId] = useState<string>("");
+  const [courseIds, setCourseIds] = useState<string[]>([]);
   const [skipAlreadyRegenerated, setSkipAlreadyRegenerated] = useState(true);
   const [dryRun, setDryRun] = useState(false);
 
@@ -187,8 +189,27 @@ export function AISolutionRegenerationPanel() {
           }
         : null;
     }
+    if (scope === "courses" && courseIds.length > 0) {
+      let total = 0;
+      let complete = 0;
+      const labels: string[] = [];
+      courseIds.forEach((cid) => {
+        const co = courses?.find((c) => c.id === cid);
+        const counts = assetCounts?.byCourse[cid] ?? { total: 0, complete: 0 };
+        total += counts.total;
+        complete += counts.complete;
+        if (co) labels.push(co.code);
+      });
+      const remaining = skipAlreadyRegenerated ? total - complete : total;
+      return {
+        id: `multi_${courseIds.join("_")}`,
+        label: `${courseIds.length} courses (${labels.join(", ")})`,
+        total,
+        toProcess: remaining,
+      };
+    }
     return null;
-  }, [scope, chapterId, courseId, chapters, courses, assetCounts, skipAlreadyRegenerated]);
+  }, [scope, chapterId, courseId, courseIds, chapters, courses, assetCounts, skipAlreadyRegenerated]);
 
   // ── Run handler ────────────────────────────────────────────────
   const fetchAssetsToProcess = async (): Promise<AssetRow[]> => {
@@ -197,7 +218,8 @@ export function AISolutionRegenerationPanel() {
       .select("id, asset_name, problem_title, source_ref, source_number, ai_generation_status")
       .limit(10000);
     if (scope === "chapter") q = q.eq("chapter_id", chapterId);
-    else q = q.eq("course_id", courseId);
+    else if (scope === "course") q = q.eq("course_id", courseId);
+    else q = q.in("course_id", courseIds);
     const { data, error } = await q;
     if (error) throw error;
     let rows = (data ?? []) as AssetRow[];
@@ -520,6 +542,56 @@ export function AISolutionRegenerationPanel() {
                           })}
                         </SelectContent>
                       </Select>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <RadioGroupItem value="courses" id="scope-courses" className="mt-1" />
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="scope-courses" className="cursor-pointer text-sm">
+                      By Multiple Courses
+                    </Label>
+                    {scope === "courses" && (
+                      <div className="space-y-1.5 border border-border rounded-md p-2.5 bg-muted/20">
+                        <div className="flex items-center justify-between pb-1.5 mb-1 border-b border-border/60">
+                          <button
+                            type="button"
+                            className="text-[11px] text-primary hover:underline"
+                            onClick={() => setCourseIds((courses ?? []).map((c) => c.id))}
+                          >
+                            Select all
+                          </button>
+                          <button
+                            type="button"
+                            className="text-[11px] text-muted-foreground hover:underline"
+                            onClick={() => setCourseIds([])}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                        {courses?.map((c) => {
+                          const cnt = assetCounts?.byCourse[c.id]?.total ?? 0;
+                          const checked = courseIds.includes(c.id);
+                          return (
+                            <label
+                              key={c.id}
+                              className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/40 rounded px-1.5 py-1"
+                            >
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(v) => {
+                                  setCourseIds((prev) =>
+                                    v ? [...prev, c.id] : prev.filter((id) => id !== c.id)
+                                  );
+                                }}
+                              />
+                              <span className="flex-1">{c.course_name} ({c.code})</span>
+                              <span className="text-muted-foreground">{cnt} assets</span>
+                            </label>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 </div>
