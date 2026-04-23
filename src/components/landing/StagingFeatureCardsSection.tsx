@@ -75,8 +75,8 @@ export default function StagingFeatureCardsSection({
       <div className="max-w-[1100px] mx-auto w-full relative" style={{ zIndex: 1 }}>
         <div className="text-center mb-16 md:mb-20">
           <h2
-            className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight text-white"
-            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 12px rgba(0,0,0,0.5)" }}
+            className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight"
+            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
           >
             {new Date() < new Date("2026-05-16T00:00:00")
               ? "Final exams are 1 week away."
@@ -84,7 +84,7 @@ export default function StagingFeatureCardsSection({
           </h2>
           <p
             className="mt-2 text-[16px] sm:text-[18px]"
-            style={{ color: "rgba(255,255,255,0.78)", fontFamily: "Inter, sans-serif" }}
+            style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
           >
             Get exactly what you need to study smarter.
           </p>
@@ -94,9 +94,9 @@ export default function StagingFeatureCardsSection({
             <button
               type="button"
               onClick={onStartStudying}
-              className="text-[15px] md:text-[16px] font-semibold underline underline-offset-[6px] decoration-2 transition-opacity hover:opacity-100 opacity-90 px-2 py-1.5"
+              className="text-[15px] md:text-[16px] font-semibold underline underline-offset-[6px] decoration-2 transition-opacity hover:opacity-80 px-2 py-1.5"
               style={{
-                color: "rgba(255,255,255,0.92)",
+                color: NAVY,
                 fontFamily: "Inter, sans-serif",
                 background: "none",
                 border: "none",
