@@ -9,7 +9,9 @@ import { toast } from "sonner";
 const NAVY = "#14213D";
 const RED = "#CE1126";
 const GREEN = "#16A34A";
-const BG_GRADIENT = "linear-gradient(160deg, #1a1a2e 0%, #16213e 40%, #c0392b 100%)";
+// Powder blue gradient that converges toward the center, drawing the eye to the CTA in the sticky bar.
+const BG_GRADIENT =
+  "radial-gradient(ellipse at 50% 95%, #BFDBFE 0%, #DBEAFE 35%, #EFF6FF 65%, #F8FAFC 100%)";
 
 const COURSE_SLUG_MAP: Record<string, string> = {
   "intermediate-accounting-2": "44444444-4444-4444-4444-444444444444",
