@@ -1,6 +1,4 @@
-import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import heroImage from "@/assets/staging-hero.jpg";
 import leeStadiumPhoto from "@/assets/hero-lee-stadium.jpg";
 
@@ -28,7 +26,6 @@ interface StagingHeroProps {
 }
 
 export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
-  const [introOpen, setIntroOpen] = useState(false);
   const headlineShadow = "2px 2px 8px rgba(0,0,0,0.8)";
   const subtextShadow = "1px 1px 4px rgba(0,0,0,0.6)";
 
@@ -59,13 +56,13 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           z-index: 1;
         }
         .staging-hero-card {
-          background: rgba(20, 33, 61, 0.72);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
+          background: rgba(20, 33, 61, 0.45);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
           border: 1px solid rgba(255,255,255,0.08);
           border-radius: 16px;
-          padding: 28px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+          padding: 24px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.35);
         }
         @media (min-width: 768px) {
           .staging-hero-card { padding: 36px 40px; }
@@ -245,7 +242,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
       <div className="relative z-[3] mx-auto max-w-[1100px] px-4 sm:px-6 py-4 md:py-20 w-full">
         <div className="staging-hero-card flex flex-col md:flex-row items-center gap-6 md:gap-0">
           {/* LEFT — Photo (33% width) */}
-          <div className="w-full md:w-[33%] flex flex-col items-center justify-center shrink-0">
+          <div className="w-full md:w-[33%] flex flex-col items-center justify-center shrink-0 md:pr-10">
             <div className="relative w-full max-w-[240px] md:max-w-[280px]">
               <img
                 src={leeStadiumPhoto}
@@ -284,22 +281,6 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 >
                   Accounting Tutor Since 2015
                 </p>
-                <button
-                  onClick={() => setIntroOpen(true)}
-                  className="mt-2 transition-opacity hover:opacity-80"
-                  style={{
-                    color: "#BFDBFE",
-                    fontSize: "12px",
-                    background: "none",
-                    border: "none",
-                    padding: 0,
-                    cursor: "pointer",
-                    fontFamily: "Inter, sans-serif",
-                    textShadow: subtextShadow,
-                  }}
-                >
-                  Learn More →
-                </button>
               </div>
             </div>
           </div>
@@ -312,67 +293,60 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           />
 
           {/* RIGHT — Text (67%) */}
-          <div className="flex-1 w-full md:w-[67%] flex flex-col justify-center text-center md:text-left md:pl-8">
+          <div className="flex-1 w-full md:w-[67%] flex flex-col justify-center text-center md:text-left md:pl-10">
             <h1
-              className="text-white leading-[1.15] tracking-tight text-[28px] sm:text-[40px] md:text-[44px]"
-              style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
+              className="text-white leading-[1.15] tracking-tight text-[26px] sm:text-[36px] md:text-[40px]"
+              style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, fontStyle: "italic", textShadow: headlineShadow }}
             >
               <span className="block hero-anim-line2">
-                AI-assisted study tools created by a real tutor.
+                Generic AI wasn't built for your accounting exam prep. This is.
               </span>
             </h1>
 
             <TooltipProvider delayDuration={150}>
               <div
                 className="mt-5 mx-auto md:mx-0 max-w-[560px] hero-anim-sub"
-                style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
+                style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
               >
                 <p style={{ fontSize: "15px", lineHeight: 1.6 }}>
-                  Generic AI wasn't built for your accounting exam prep. This is. Survive uses AI to bring 10 years of tutoring experience to every student who's feeling lost in accounting.
+                  AI-assisted study tools built by a real tutor — designed to get you unstuck fast.
                 </p>
-              </div>
-
-              <div className="mt-8 flex flex-col items-center md:items-start gap-2 hero-anim-btn">
-                <button
-                  onClick={onGetStartedClick}
-                  className="rounded-lg px-7 py-3.5 text-[15px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
-                  style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.35)" }}
-                >
-                  Get Started →
-                </button>
-                <button
-                  onClick={() => {
-                    const el = document.getElementById("courses-section");
-                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }}
-                  className="text-[14px] font-medium underline underline-offset-4 transition-opacity hover:opacity-80 px-2 py-1"
-                  style={{
-                    color: "rgba(255,255,255,0.75)",
-                    fontFamily: "Inter, sans-serif",
-                    textShadow: subtextShadow,
-                    background: "none",
-                    border: "none",
-                  }}
-                >
-                  See how it works ↓
-                </button>
               </div>
               {/* Hidden tooltip provider preserved for future use */}
               <Tooltip><TooltipTrigger asChild><span /></TooltipTrigger><TooltipContent /></Tooltip>
             </TooltipProvider>
           </div>
         </div>
+
+        {/* CTAs — moved BELOW the card so mobile shows button without scrolling */}
+        <div className="mt-6 md:mt-8 flex flex-col items-center gap-2 hero-anim-btn">
+          <button
+            onClick={onGetStartedClick}
+            className="rounded-lg px-8 py-3.5 text-[15px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
+            style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.35)" }}
+          >
+            Get Started
+          </button>
+          <button
+            onClick={() => {
+              const el = document.getElementById("courses-section");
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            className="text-[14px] font-medium underline underline-offset-4 transition-opacity hover:opacity-80 px-2 py-1"
+            style={{
+              color: "rgba(255,255,255,0.8)",
+              fontFamily: "Inter, sans-serif",
+              textShadow: subtextShadow,
+              background: "none",
+              border: "none",
+            }}
+          >
+            See how it works ↓
+          </button>
+        </div>
       </div>
 
       <div className="staging-hero-overlay-bottom" />
-
-      <Dialog open={introOpen} onOpenChange={setIntroOpen}>
-        <DialogContent className="max-w-lg">
-          <div className="flex items-center justify-center aspect-video bg-muted rounded-md">
-            <p className="text-muted-foreground text-sm">Intro video coming soon</p>
-          </div>
-        </DialogContent>
-      </Dialog>
     </section>
   );
 }
