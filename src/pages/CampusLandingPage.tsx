@@ -120,6 +120,14 @@ export default function CampusLandingPage() {
           });
           setTopicsByChapter(grouped);
         }
+
+        // Total approved problem count for this course
+        const { count } = await (supabase as any)
+          .from("teaching_assets")
+          .select("id", { count: "exact", head: true })
+          .in("chapter_id", chapterIds)
+          .eq("status", "approved");
+        if (typeof count === "number") setProblemCount(count);
       }
 
       setLoading(false);
