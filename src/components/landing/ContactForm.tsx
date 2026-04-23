@@ -85,6 +85,16 @@ export default function ContactForm() {
           background: "linear-gradient(180deg, rgba(10,20,40,0.85) 0%, rgba(10,20,40,0.95) 100%)",
         }}
       />
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse 70% 70% at 50% 50%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 40%, rgba(0,0,0,0) 75%)",
+        }}
+      />
       <div className="relative mx-auto max-w-[640px]" style={{ zIndex: 1 }}>
         <h2
           className="text-center text-[20px] sm:text-[24px] text-white mb-8"
