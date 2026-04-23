@@ -1,10 +1,26 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
 const EMBED_ID = "484dc267-e1b2-425c-b5c6-49d9525cec9f";
 const TARGET_COUNT = 1000;
+const FINALS_DATE = new Date(2026, 4, 4); // May 4, 2026 (local)
+
+/** Returns the countdown line text, or null if exam date has passed. */
+function getFinalsCountdownText(): string | null {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(FINALS_DATE.getFullYear(), FINALS_DATE.getMonth(), FINALS_DATE.getDate());
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const days = Math.ceil((target.getTime() - today.getTime()) / msPerDay);
+  if (days <= 0) return null;
+  if (days === 1) return "Final exams are tomorrow.";
+  if (days >= 2 && days <= 6) return `Final exams are ${days} days away.`;
+  if (days >= 7 && days <= 14) return "Final exams are 1 week away.";
+  const weeks = Math.floor(days / 7);
+  return `Final exams are ${weeks} weeks away.`;
+}
 
 interface StagingTestimonialsSectionProps {
   onCtaClick: () => void;
@@ -50,6 +66,7 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const counterRef = useRef<HTMLSpanElement>(null);
   const [animate, setAnimate] = useState(false);
+  const countdownText = useMemo(() => getFinalsCountdownText(), []);
 
   useEffect(() => {
     const scriptId = "testimonialto-resizer";
@@ -123,6 +140,15 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
             </span>
           </p>
         </TooltipProvider>
+
+        {countdownText && (
+          <p
+            className="text-center mb-3"
+            style={{ color: "#6B7280", fontSize: 13, fontFamily: "Inter, sans-serif", fontWeight: 400 }}
+          >
+            {countdownText}
+          </p>
+        )}
 
         <iframe
           ref={iframeRef}
