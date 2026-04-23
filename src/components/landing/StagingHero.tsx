@@ -56,13 +56,11 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           z-index: 1;
         }
         .staging-hero-card {
-          background: rgba(20, 33, 61, 0.45);
-          backdrop-filter: blur(4px);
-          -webkit-backdrop-filter: blur(4px);
+          background: #0B0F1A;
           border: 1px solid rgba(255,255,255,0.08);
           border-radius: 16px;
           padding: 24px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+          box-shadow: 0 20px 60px rgba(0,0,0,0.45);
         }
         @media (min-width: 768px) {
           .staging-hero-card { padding: 36px 40px; }
@@ -299,8 +297,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
               <span className="block hero-anim-line2">
-                <span className="md:block">Generic AI isn't built for accounting exam prep.</span>{" "}
-                <span className="md:block">This is.</span>
+                Generic AI isn't built for accounting exam prep. This is.
               </span>
             </h1>
 
@@ -310,7 +307,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
               >
                 <p style={{ fontSize: "15px", lineHeight: 1.6 }}>
-                  Prep for your exams with AI-assisted study tools built by the OG accounting tutor since 2015 — designed to get you unstuck fast.
+                  Prep for your exams with AI-assisted study tools—designed to get you unstuck fast. Built by OG accounting tutor, Lee Ingram.
                 </p>
               </div>
               {/* Hidden tooltip provider preserved for future use */}

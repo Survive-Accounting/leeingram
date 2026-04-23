@@ -112,7 +112,7 @@ export default function ContactForm() {
 
         <div
           className="rounded-xl p-5 sm:p-7"
-          style={{ background: "rgba(20,33,61,0.7)", border: "1px solid rgba(255,255,255,0.06)" }}
+          style={{ background: "#0B0F1A", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 20px 60px rgba(0,0,0,0.45)" }}
         >
           <div className="grid grid-cols-1 sm:grid-cols-[150px_1fr] gap-5 sm:gap-7">
             {/* Left: Photo + text */}
