@@ -216,7 +216,16 @@ export default function StagingLandingPage() {
       {/* Spacer for staging banner */}
       <div style={{ height: 24 }} />
 
-      <StagingNavbar onCtaClick={() => handleCardClick(defaultCourse)} />
+      <StagingNavbar
+        onCtaClick={() => handleCardClick(defaultCourse)}
+        onPricingClick={() => {
+          setPendingCourse(defaultCourse);
+          setPendingChapterNumber(null);
+          setPendingChapterName(null);
+          setEmailPromptIntent("pricing");
+          setEmailPromptOpen(true);
+        }}
+      />
 
       <StagingHero
         liveCourse={defaultCourse}
