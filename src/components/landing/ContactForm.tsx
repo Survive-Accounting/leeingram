@@ -62,19 +62,52 @@ export default function ContactForm() {
           0%   { background-position: 0px 0px, 0px 0px; }
           100% { background-position: 120px 120px, 120px 120px; }
         }
+        @keyframes contactDiagDrift {
+          0%   { background-position: 0px 0px; }
+          100% { background-position: 240px 240px; }
+        }
       `}</style>
+
+      {/* Animated grid — monochrome navy+white, low opacity, slowed ~50% */}
       <div
         aria-hidden="true"
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px)",
+            "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)",
           backgroundSize: "120px 120px, 120px 120px",
-          animation: "contactGridDrift 2400s linear infinite",
-          opacity: 0.4,
+          animation: "contactGridDrift 4800s linear infinite",
+          opacity: 0.28,
+          filter: "blur(0.6px)",
           zIndex: 0,
         }}
       />
+
+      {/* Diagonal sweeping lines — adds slow emotional drift */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(135deg, rgba(255,255,255,0.04) 0px, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 240px)",
+          animation: "contactDiagDrift 6400s linear infinite",
+          opacity: 0.22,
+          filter: "blur(0.8px)",
+          zIndex: 0,
+        }}
+      />
+
+      {/* Dark gradient overlay — preserves text readability over the animation */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 50%, rgba(11,15,26,0.55) 0%, rgba(11,15,26,0.78) 70%, rgba(11,15,26,0.92) 100%)",
+          zIndex: 0,
+        }}
+      />
+
       <div className="relative mx-auto max-w-[640px]" style={{ zIndex: 1 }}>
         <h2
           className="text-center text-[24px] sm:text-[30px] text-white mb-3"
