@@ -80,6 +80,11 @@ export default function LandingFooter({ onScrollToCourses, onScrollToContact }: 
               In memory of my twin Ben Ingram (1993–2017)
             </p>
           </div>
+          <div className="mx-auto max-w-[900px] px-4 sm:px-6 pb-6">
+            <p className="text-center text-[11px] leading-relaxed" style={{ color: "rgba(255,255,255,0.35)", fontFamily: "Inter, sans-serif" }}>
+              AI-enabled study tools curated by a real tutor for maximum exam impact. Started at University of Mississippi. Built for accounting students anywhere.
+            </p>
+          </div>
         </div>
       </footer>
 
