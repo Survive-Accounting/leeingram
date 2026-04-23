@@ -192,7 +192,7 @@ export default function StagingLandingPage() {
 
       <StagingStickyBar
         onCtaClick={() => handleCardClick(defaultCourse)}
-        hidden={emailPromptOpen || waitlistOpen}
+        hidden={emailPromptOpen}
       />
 
       <StagingEmailPromptModal
