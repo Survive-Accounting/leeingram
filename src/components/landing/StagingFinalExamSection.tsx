@@ -78,6 +78,7 @@ export default function StagingFinalExamSection({ children }: Props) {
         }
       `}</style>
       <div className="final-exam-grid-bg" aria-hidden="true" style={{ zIndex: 0 }} />
+      <div className="final-exam-diag-bg" aria-hidden="true" style={{ zIndex: 0 }} />
       <div className="final-exam-orb final-exam-orb-1" aria-hidden="true" style={{ zIndex: 0 }} />
       <div className="final-exam-orb final-exam-orb-2" aria-hidden="true" style={{ zIndex: 0 }} />
       <div
