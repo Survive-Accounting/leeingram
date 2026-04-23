@@ -157,7 +157,7 @@ export default function StagingCoursesSection({
   const handleChapterRowClick = (ch: Chapter) => {
     if (!selected) return;
     tagIntent(`intent_chapter_${ch.chapter_number}`);
-    if (onChapterClick) onChapterClick(selected, ch.chapter_number);
+    if (onChapterClick) onChapterClick(selected, ch.chapter_number, ch.chapter_name);
     else onCardClick(selected);
   };
 
