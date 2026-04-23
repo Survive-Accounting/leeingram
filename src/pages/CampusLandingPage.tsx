@@ -166,7 +166,7 @@ export default function CampusLandingPage() {
               iconColor="#d97706"
               tint="#fffbeb"
               title="Practice Problems"
-              body="Your solutions manual sucks. Ours actually teaches you something."
+              body="Your solutions manual sucks. Mine actually teach you something."
               buttonLabel="Browse Problems →"
               onClick={() => {
                 trackEvent("preview_problems_click", { campus_slug: campusSlug, course_slug: courseSlug });
