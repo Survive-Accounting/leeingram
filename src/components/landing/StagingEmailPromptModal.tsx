@@ -49,6 +49,8 @@ export default function StagingEmailPromptModal({
   onSubmit,
   onContinue,
   courseName,
+  chapterNumber,
+  chapterName,
   loading = false,
 }: StagingEmailPromptModalProps) {
   const [email, setEmail] = useState("");
