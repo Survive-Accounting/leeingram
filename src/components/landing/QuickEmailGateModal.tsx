@@ -41,7 +41,17 @@ export default function QuickEmailGateModal({
     }
   }, [open]);
 
+  const persistEmail = (value: string) => {
+    try {
+      localStorage.setItem("student_email", value);
+      sessionStorage.setItem("student_email", value);
+    } catch {
+      /* storage unavailable — ignore */
+    }
+  };
+
   const goTo = (campusSlug: string, emailValue: string) => {
+    persistEmail(emailValue);
     const base = buildGetAccessUrl({ campus: campusSlug, course: courseSlug ?? null });
     const sep = base.includes("?") ? "&" : "?";
     navigate(`${base}${sep}email=${encodeURIComponent(emailValue)}`);

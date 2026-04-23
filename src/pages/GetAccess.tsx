@@ -4,6 +4,7 @@ import { Check, Sword, PenLine, MonitorPlay, ShieldCheck, ChevronDown, Sparkles,
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { supabase } from "@/integrations/supabase/client";
+import { useEmailGate } from "@/contexts/EmailGateContext";
 import {
   getCampusProgression,
   resolveCourseSlug,
