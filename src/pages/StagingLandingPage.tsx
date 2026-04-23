@@ -175,7 +175,7 @@ export default function StagingLandingPage() {
         onGetStartedClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })}
       />
 
-      <StagingBetaBanner />
+      
 
       <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />
 
