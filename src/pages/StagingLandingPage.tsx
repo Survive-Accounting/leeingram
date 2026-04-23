@@ -203,12 +203,6 @@ export default function StagingLandingPage() {
         courseName={pendingCourse?.name}
         loading={emailPromptLoading || resolving}
       />
-
-      <StagingWaitlistModal
-        open={waitlistOpen}
-        onClose={() => setWaitlistOpen(false)}
-        initialEmail={waitlistInitialEmail}
-      />
     </div>
   );
 }
