@@ -114,13 +114,7 @@ export default function CampusLandingPage() {
             className="mt-3 text-[15px] sm:text-[17px]"
             style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: "1px 1px 4px rgba(0,0,0,0.5)" }}
           >
-            Everything your solutions manual should have been — and more.
-          </p>
-          <p
-            className="mt-1 text-[13px] sm:text-[14px]"
-            style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Inter, sans-serif", textShadow: "1px 1px 4px rgba(0,0,0,0.5)" }}
-          >
-            AI-enabled study tools curated by accounting tutor Lee Ingram.
+            AI-enabled study tools by a real accounting tutor.
           </p>
         </div>
 
