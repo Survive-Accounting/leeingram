@@ -170,24 +170,59 @@ export default function StagingCoursesSection({
   return (
     <section
       id="courses-section"
-      className="relative px-4 sm:px-6 scroll-mt-0 overflow-hidden pt-10 md:pt-16 pb-[320px] md:pb-[120px]"
-      style={{ background: "#0F1A2E" }}
+      className="relative px-4 sm:px-6 scroll-mt-0 overflow-hidden pt-12 md:pt-20 pb-[320px] md:pb-[120px]"
+      style={{ background: "#FFFFFF" }}
     >
       <style>{`
         @keyframes betaPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.4); opacity: 0.6; }
         }
+        /* Curtain depth effect behind heading */
+        .courses-curtain {
+          position: absolute;
+          left: 50%;
+          top: -10px;
+          transform: translateX(-50%);
+          width: min(720px, 92%);
+          height: 180px;
+          pointer-events: none;
+          z-index: 0;
+          background:
+            radial-gradient(ellipse 60% 80% at 50% 0%, rgba(20,33,61,0.10) 0%, rgba(20,33,61,0.04) 45%, rgba(20,33,61,0) 75%);
+          filter: blur(8px);
+        }
+        .courses-curtain::before,
+        .courses-curtain::after {
+          content: "";
+          position: absolute;
+          top: 8px;
+          width: 38%;
+          height: 110px;
+          background: linear-gradient(180deg, rgba(20,33,61,0.08) 0%, rgba(20,33,61,0) 100%);
+          filter: blur(14px);
+          border-radius: 50%;
+        }
+        .courses-curtain::before { left: 6%; transform: rotate(-6deg); }
+        .courses-curtain::after  { right: 6%; transform: rotate(6deg); }
       `}</style>
 
       <div className="relative mx-auto max-w-[920px]" style={{ zIndex: 2 }}>
 
-        <p
-          className="text-center mb-4 text-[26px] sm:text-[32px] md:text-[38px] leading-tight text-white"
-          style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 8px rgba(0,0,0,0.7)" }}
-        >
-          Which course are you studying?
-        </p>
+        <div className="relative">
+          <div className="courses-curtain" aria-hidden="true" />
+          <p
+            className="relative text-center mb-4 text-[26px] sm:text-[32px] md:text-[38px] leading-tight"
+            style={{
+              color: NAVY,
+              fontFamily: "'DM Serif Display', serif",
+              fontWeight: 400,
+              zIndex: 1,
+            }}
+          >
+            Which course are you studying?
+          </p>
+        </div>
 
         {/* Dropdown */}
         <div className="relative" style={{ zIndex: 100 }}>
@@ -276,11 +311,10 @@ export default function StagingCoursesSection({
             <p
               className="text-center"
               style={{
-                color: "rgba(255,255,255,0.85)",
+                color: "#475569",
                 fontSize: 13,
                 fontFamily: "Inter, sans-serif",
                 fontWeight: 400,
-                textShadow: "1px 1px 4px rgba(0,0,0,0.5)",
               }}
             >
               {countdownText}
@@ -289,15 +323,14 @@ export default function StagingCoursesSection({
           <button
             type="button"
             onClick={() => onGetStartedClick?.(selected?.slug ?? null)}
-            className="text-center hover:opacity-90 transition-opacity"
+            className="text-center hover:opacity-80 transition-opacity"
             style={{
-              color: "#fff",
+              color: NAVY,
               fontSize: 13,
               fontFamily: "Inter, sans-serif",
-              fontWeight: 400,
+              fontWeight: 600,
               textDecoration: "underline",
               textUnderlineOffset: 3,
-              textShadow: "1px 1px 4px rgba(0,0,0,0.5)",
               background: "transparent",
               border: "none",
               cursor: "pointer",

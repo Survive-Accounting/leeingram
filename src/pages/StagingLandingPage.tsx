@@ -241,6 +241,9 @@ export default function StagingLandingPage() {
         onBrowseTools={() => handleCardClick(defaultCourse)}
         onBrowseProblems={() => handleCardClick(defaultCourse)}
         onRequestEarlyAccess={() => handleCardClick(defaultCourse)}
+        onStartStudying={() => {
+          coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
       />
 
       <div ref={coursesRef}>
