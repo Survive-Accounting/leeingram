@@ -68,6 +68,7 @@ export default function StagingLandingPage() {
   const [emailPromptLoading, setEmailPromptLoading] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [getStartedOpen, setGetStartedOpen] = useState(false);
+  const [getStartedPreselectedSlug, setGetStartedPreselectedSlug] = useState<string | null>(null);
 
   useEffect(() => {
     trackPageView("staging_landing");
