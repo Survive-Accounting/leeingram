@@ -44,12 +44,12 @@ export default function StagingFinalExamSection({ children }: Props) {
         }
         .final-exam-orb-1 {
           width: 420px; height: 420px; top: -120px; left: -80px;
-          background: radial-gradient(circle, rgba(180,200,230,0.18) 0%, rgba(180,200,230,0) 70%);
+          background: radial-gradient(circle, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 70%);
           animation: finalExamOrbFloat 28s ease-in-out infinite;
         }
         .final-exam-orb-2 {
           width: 380px; height: 380px; bottom: -100px; right: -60px;
-          background: radial-gradient(circle, rgba(200,215,240,0.14) 0%, rgba(200,215,240,0) 70%);
+          background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%);
           animation: finalExamOrbFloat 36s ease-in-out infinite reverse;
         }
       `}</style>
