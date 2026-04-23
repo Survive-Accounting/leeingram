@@ -49,21 +49,26 @@ export default function StagingGetStartedModal({
   const [view, setView] = useState<"main" | "non_edu" | "non_edu_success">("main");
   const [fallbackEmail, setFallbackEmail] = useState("");
   const [fallbackLoading, setFallbackLoading] = useState(false);
+  // When true, expand into the full picker. Otherwise show the static "Your course" line.
+  const [showCoursePicker, setShowCoursePicker] = useState(false);
 
   useEffect(() => {
     if (open) {
       const preset = preselectedCourseSlug
         ? courses.find((c) => c.slug === preselectedCourseSlug) ?? null
         : null;
+      // Default to a single locked course to remove decision fatigue.
+      const fallback = courses[0] ?? null;
       setStep(1);
       setEmail("");
       setEmailError(null);
       setStep1Loading(false);
-      setSelectedCourse(preset);
+      setSelectedCourse(preset ?? fallback);
       setStep2Loading(false);
       setView("main");
       setFallbackEmail("");
       setFallbackLoading(false);
+      setShowCoursePicker(false);
     }
   }, [open, preselectedCourseSlug, courses]);
 
@@ -215,7 +220,7 @@ export default function StagingGetStartedModal({
                 className="text-[22px] sm:text-[26px] leading-tight text-center"
                 style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
               >
-                Which course are you studying?
+                Confirm your course
               </h2>
               <p
                 className="mt-2 text-center text-[13px] sm:text-[14px]"
@@ -224,34 +229,74 @@ export default function StagingGetStartedModal({
                 We'll take you straight there.
               </p>
 
-              <div className="mt-5 space-y-2.5">
-                {courses.map((c) => {
-                  const accent = COURSE_ACCENTS[c.slug] || { border: "#E5E7EB", tint: "#F9FAFB" };
-                  const isSelected = selectedCourse?.slug === c.slug;
-                  return (
-                    <button
-                      key={c.slug}
-                      type="button"
-                      onClick={() => setSelectedCourse(c)}
-                      disabled={step2Loading}
-                      className="w-full text-left rounded-lg px-4 py-3 text-[14px] font-medium transition-all hover:shadow-sm"
-                      style={{
-                        borderLeft: `4px solid ${accent.border}`,
-                        background: isSelected ? accent.tint : "white",
-                        boxShadow: isSelected
-                          ? `0 0 0 2px ${accent.border}`
-                          : "0 0 0 1px #E5E7EB",
-                        color: NAVY,
-                        fontFamily: "Inter, sans-serif",
-                      }}
-                    >
-                      {c.name}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Static course display (default) — minimizes decision fatigue */}
+              {!showCoursePicker && selectedCourse && (
+                <div
+                  className="mt-5 rounded-lg px-4 py-4"
+                  style={{
+                    background: "#F8FAFC",
+                    border: "1px solid #E5E7EB",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                >
+                  <p
+                    className="text-[11px] uppercase tracking-wider"
+                    style={{ color: "#6B7280", letterSpacing: "0.08em" }}
+                  >
+                    Your course
+                  </p>
+                  <p
+                    className="mt-1 text-[15px] font-semibold"
+                    style={{ color: NAVY }}
+                  >
+                    {selectedCourse.name}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowCoursePicker(true)}
+                    disabled={step2Loading}
+                    className="mt-2 text-[12px] underline underline-offset-2 transition-opacity hover:opacity-70"
+                    style={{ color: "#6B7280", background: "none", border: "none", padding: 0 }}
+                  >
+                    Change
+                  </button>
+                </div>
+              )}
 
-              {selectedCourse && (
+              {/* Expanded picker — only shown when user explicitly clicks "Change" */}
+              {showCoursePicker && (
+                <div className="mt-5 space-y-2.5">
+                  {courses.map((c) => {
+                    const accent = COURSE_ACCENTS[c.slug] || { border: "#E5E7EB", tint: "#F9FAFB" };
+                    const isSelected = selectedCourse?.slug === c.slug;
+                    return (
+                      <button
+                        key={c.slug}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCourse(c);
+                          setShowCoursePicker(false);
+                        }}
+                        disabled={step2Loading}
+                        className="w-full text-left rounded-lg px-4 py-3 text-[14px] font-medium transition-all hover:shadow-sm"
+                        style={{
+                          borderLeft: `4px solid ${accent.border}`,
+                          background: isSelected ? accent.tint : "white",
+                          boxShadow: isSelected
+                            ? `0 0 0 2px ${accent.border}`
+                            : "0 0 0 1px #E5E7EB",
+                          color: NAVY,
+                          fontFamily: "Inter, sans-serif",
+                        }}
+                      >
+                        {c.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {selectedCourse && !showCoursePicker && (
                 <button
                   onClick={handleStep2}
                   disabled={step2Loading}
