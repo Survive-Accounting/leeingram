@@ -171,7 +171,7 @@ export default function StagingLandingPage() {
         futureCourses={[]}
         onLiveCourseClick={() => handleCardClick(defaultCourse)}
         onNotifyClick={() => handleCardClick(defaultCourse)}
-        onGetStartedClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })}
+        onGetStartedClick={() => setGetStartedOpen(true)}
       />
 
       
@@ -210,6 +210,21 @@ export default function StagingLandingPage() {
         onContinue={handleContinue}
         courseName={pendingCourse?.name}
         loading={emailPromptLoading || resolving}
+      />
+
+      <StagingGetStartedModal
+        open={getStartedOpen}
+        onClose={() => setGetStartedOpen(false)}
+        courses={COURSES}
+        onSubmit={async (email, course) => {
+          setPendingCourse(course);
+          setPendingChapterNumber(null);
+          const data = await resolveEmail(email, course);
+          if (data) {
+            setGetStartedOpen(false);
+            navigate(`/campus/${data.campus_slug}/${course.slug}`);
+          }
+        }}
       />
     </div>
   );
