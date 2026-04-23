@@ -214,6 +214,7 @@ export default function StagingLandingPage() {
         open={getStartedOpen}
         onClose={() => setGetStartedOpen(false)}
         courses={COURSES}
+        preselectedCourseSlug={getStartedPreselectedSlug}
         onSubmit={async (email, course) => {
           setPendingCourse(course);
           setPendingChapterNumber(null);
