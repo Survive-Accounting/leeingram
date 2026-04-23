@@ -67,19 +67,31 @@ export default function StagingGetStartedModal({
   }, [open, preselectedCourseSlug, courses]);
 
 
-  const handleStep1 = (e: React.FormEvent) => {
+  const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
     const eduRegex = /^[^\s@]+@[^\s@]+\.edu$/i;
-    if (!eduRegex.test(trimmed) && !isWhitelistedEmail(trimmed)) {
-      // Non-.edu fallback — capture lead instead of blocking.
-      setFallbackEmail(trimmed);
-      setView("non_edu");
-      return;
+    const isEdu = eduRegex.test(trimmed) || isWhitelistedEmail(trimmed);
+
+    // Non-.edu still proceeds — they get routed to the General campus.
+    // We log the lead immediately so we don't lose them if they bail at step 2.
+    if (!isEdu) {
+      try {
+        await supabase.from("landing_page_leads").insert({
+          email: trimmed,
+          email_type: "non_edu",
+          university_domain: trimmed.split("@")[1] || null,
+          course_slug: preselectedCourseSlug ?? null,
+          intent_tag: "intent_get_started_modal",
+          source: "non_edu_fallback",
+        });
+      } catch {
+        /* non-blocking */
+      }
     }
+
     setEmailError(null);
     setStep1Loading(true);
-    // Brief loading animation, then advance
     setTimeout(() => {
       setStep1Loading(false);
       setStep(2);

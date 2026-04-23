@@ -77,11 +77,27 @@ export default function StagingEmailPromptModal({
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return;
 
-    // Non-.edu fallback (whitelisted staff/VA emails bypass)
-    if (!trimmed.endsWith(".edu") && !isWhitelistedEmail(trimmed)) {
-      setFallbackEmail(trimmed);
-      setView("non_edu");
-      return;
+    const isEdu = trimmed.endsWith(".edu") || isWhitelistedEmail(trimmed);
+
+    // Non-.edu still proceeds — log lead, then continue through the normal flow.
+    // resolve-campus will route them to the General campus.
+    if (!isEdu) {
+      try {
+        await supabase.from("landing_page_leads").insert({
+          email: trimmed,
+          email_type: "non_edu",
+          university_domain: trimmed.split("@")[1] || null,
+          course_slug: null,
+          intent_tag: chapterNumber != null
+            ? `intent_chapter_${chapterNumber}`
+            : courseName
+              ? `intent_course_${courseName}`
+              : "intent_email_prompt",
+          source: "non_edu_fallback",
+        });
+      } catch {
+        /* non-blocking */
+      }
     }
 
     setSubmitting(true);
