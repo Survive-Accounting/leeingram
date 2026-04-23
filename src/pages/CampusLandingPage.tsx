@@ -4,10 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import CampusHeader from "@/components/campus/CampusHeader";
 import PreviewPurchaseBar from "@/components/PreviewPurchaseBar";
 import { useEventTracking } from "@/hooks/useEventTracking";
-import heroBg from "@/assets/staging-hero.jpg";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
+const BG_GRADIENT = "linear-gradient(160deg, #1a1a2e 0%, #16213e 40%, #c0392b 100%)";
 
 const COURSE_SLUG_MAP: Record<string, string> = {
   "intermediate-accounting-2": "44444444-4444-4444-4444-444444444444",
@@ -80,41 +80,11 @@ export default function CampusLandingPage() {
   }, [campusSlug, courseSlug, courseId]);
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center text-white text-sm" style={{ background: NAVY }}>Loading...</div>;
+    return <div className="flex min-h-screen items-center justify-center text-white text-sm" style={{ background: BG_GRADIENT }}>Loading...</div>;
   }
 
-  const problemLabel = problemCount && problemCount > 0 ? `${problemCount}` : "Hundreds of";
-
   return (
-    <div className="min-h-screen flex flex-col relative" style={{ background: NAVY }}>
-      {/* Background video + overlay (matches /staging hero) */}
-      <video
-        ref={(el) => {
-          if (!el) return;
-          el.muted = true;
-          const tryPlay = () => el.play().catch(() => {});
-          tryPlay();
-          const onInteract = () => { tryPlay(); document.removeEventListener("touchstart", onInteract); document.removeEventListener("click", onInteract); };
-          document.addEventListener("touchstart", onInteract, { once: true, passive: true });
-          document.addEventListener("click", onInteract, { once: true });
-        }}
-        className="fixed inset-0 z-0 w-full h-full object-cover"
-        autoPlay
-        loop
-        muted
-        playsInline
-        // @ts-ignore
-        webkit-playsinline="true"
-        disablePictureInPicture
-        disableRemotePlayback
-        preload="auto"
-        poster={heroBg}
-      >
-        <source src="/videos/hero-loop.mp4" type="video/mp4" />
-      </video>
-      <div className="fixed inset-0 z-0" style={{ background: `linear-gradient(to right, ${NAVY}cc 0%, ${NAVY}99 40%, ${NAVY}80 100%)` }} />
-      <div className="fixed inset-0 z-0" style={{ background: "rgba(0,0,0,0.35)" }} />
-
+    <div className="min-h-screen flex flex-col relative" style={{ background: BG_GRADIENT }}>
       <div className="relative z-10 flex-1 flex flex-col">
         <CampusHeader campusName={campusName} courseName={courseName} />
 
@@ -122,25 +92,24 @@ export default function CampusLandingPage() {
         <div className="max-w-[1100px] mx-auto w-full px-4 sm:px-6 pt-10 pb-8 text-center">
           <h1
             className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight text-white"
-            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 8px rgba(0,0,0,0.6)" }}
+            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 8px rgba(0,0,0,0.4)" }}
           >
-            Ace {courseName}
+            Your exam is closer than you think.
           </h1>
           <p
             className="mt-3 text-[15px] sm:text-[17px]"
-            style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: "1px 1px 4px rgba(0,0,0,0.5)" }}
+            style={{ color: "rgba(255,255,255,0.85)", fontFamily: "Inter, sans-serif" }}
           >
-            Get AI-enabled study tools created by a real accounting tutor
+            Everything you need to stop panicking and start studying.
           </p>
         </div>
 
         {/* Cards */}
         <div className="max-w-[1100px] mx-auto w-full px-4 sm:px-6 pb-32">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
-            {/* Card 1 — Cram Tools */}
             <Card
               title="Cram Tools"
-              body="Brain blast through flashcards, journal entries, formulas and more."
+              body="Flashcards, journal entries, formulas — the stuff that actually shows up on your exam."
               buttonLabel="Explore Cram Tools →"
               onClick={() => {
                 trackEvent("preview_cram_click", { campus_slug: campusSlug, course_slug: courseSlug });
@@ -148,10 +117,9 @@ export default function CampusLandingPage() {
               }}
             />
 
-            {/* Card 2 — Practice Problems */}
             <Card
-              title={`${problemLabel} Practice Problems`}
-              body="Check your work with Lee's interactive solutions."
+              title="Practice Problems"
+              body="Work the problems. Check your answers. Try not to cry. (Lee's solutions help with that last part.)"
               buttonLabel="Browse Problems →"
               onClick={() => {
                 trackEvent("preview_problems_click", { campus_slug: campusSlug, course_slug: courseSlug });
@@ -159,12 +127,10 @@ export default function CampusLandingPage() {
               }}
             />
 
-            {/* Card 3 — Lee on Demand */}
             <Card
-              title="Lee on Demand (New!)"
-              body="Submit a question—Lee sends back a personal video answer."
-              buttonLabel="Learn More →"
-              disabled
+              title="Tutor on Tap"
+              body="Submit a tutoring question — Lee sends back a personal video answer. Like magic."
+              comingSoon
             />
           </div>
         </div>
