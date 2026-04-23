@@ -23,7 +23,9 @@ const BG_GRADIENT =
  * are bundled into the tier. The tier is only available if the campus
  * progression has enough remaining courses.
  */
-type TierId = "current" | "next1" | "next2" | "full";
+type TierId = "current" | "next1" | "next2" | "full" | "lifetime";
+
+const LIFETIME_PRICE = 850;
 
 interface AccessTier {
   id: TierId;
