@@ -58,19 +58,18 @@ export default function StagingStickyBar({ hidden = false }: StagingStickyBarPro
 
           <button
             onClick={() => navigate("/login")}
-            className="text-[13px] font-medium transition-colors"
+            className="text-[13px] font-semibold transition-all hover:brightness-110 active:scale-[0.98]"
             style={{
-              background: "#BFDBFE",
-              color: NAVY,
+              background: NAVY,
+              color: "#fff",
               border: "none",
-              borderRadius: 6,
-              padding: "8px 16px",
+              borderRadius: 8,
+              padding: "9px 18px",
               fontFamily: "Inter, sans-serif",
+              boxShadow: "0 2px 8px rgba(20,33,61,0.25)",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#93C5FD")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#BFDBFE")}
           >
-            Log In →
+            Student Login
           </button>
         </div>
       </div>
