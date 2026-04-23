@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
-const GREEN = "#16A34A";
 
 interface Course {
   id: string;
