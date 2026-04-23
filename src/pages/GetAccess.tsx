@@ -269,7 +269,7 @@ export default function GetAccess() {
               className="text-[22px] sm:text-[26px] mb-5"
               style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
             >
-              Select your access
+              Choose your plan
             </h2>
 
             {/* Step 1 — course */}
