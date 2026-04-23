@@ -35,7 +35,10 @@ export default function StagingNavbar({ onCtaClick, onPricingClick }: StagingNav
         {/* Right side */}
         <div className="flex items-center gap-4 sm:gap-5">
           <button
-            onClick={() => onPricingClick?.()}
+            onClick={() => {
+              if (onPricingClick) onPricingClick();
+              else navigate("/get-access");
+            }}
             className="text-[13px] font-semibold transition-colors hover:opacity-70"
             style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
           >
