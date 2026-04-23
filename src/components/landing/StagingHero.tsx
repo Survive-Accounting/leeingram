@@ -304,13 +304,13 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
               >
                 <p style={{ fontSize: "15px", lineHeight: 1.6 }}>
-                  AI study tools built by accounting tutor Lee Ingram. Tailored to students serious about passing. Trusted by 1,200+ since 2015.
+                  Tailored to students serious about passing. Built by accounting tutor, Lee Ingram. Trusted by 1,200+ since 2015.
                 </p>
               </div>
               <Tooltip><TooltipTrigger asChild><span /></TooltipTrigger><TooltipContent /></Tooltip>
             </TooltipProvider>
 
-            {/* CTA group — left-aligned with headline/subtext */}
+            {/* CTA group — centered under button */}
             <div className="mt-5 flex flex-col items-center md:items-start hero-anim-btn">
               <div className="relative inline-block">
                 <div
@@ -332,7 +332,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 `}</style>
                 <button
                   onClick={onGetStartedClick}
-                  className="relative rounded-xl px-12 py-3.5 text-[17px] md:text-[18px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+                  className="relative rounded-xl px-12 pt-5 pb-3.5 text-[17px] md:text-[18px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] inline-flex items-center justify-center gap-2"
                   style={{
                     background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
                     fontFamily: "Inter, sans-serif",
@@ -342,43 +342,42 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                     zIndex: 1,
                   }}
                 >
-                  Get Access
+                  Get Access <span aria-hidden="true">→</span>
                 </button>
-              </div>
 
-              {/* Refund guarantee — tight under CTA */}
-              <div
-                className="mt-2 flex items-center gap-1.5"
-                style={{
-                  color: "rgba(255,255,255,0.65)",
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: "11px",
-                  textShadow: subtextShadow,
-                }}
-              >
-                <span>7-day refund guarantee</span>
+                {/* Refund + secondary link — centered under button width */}
+                <div className="mt-2 flex flex-col items-center">
+                  <div
+                    style={{
+                      color: "rgba(255,255,255,0.65)",
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: "11px",
+                      textShadow: subtextShadow,
+                    }}
+                  >
+                    7-day refund guarantee
+                  </div>
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById("exam-coming-up");
+                      if (el) {
+                        const top = el.getBoundingClientRect().top + window.scrollY;
+                        window.scrollTo({ top, behavior: "smooth" });
+                      }
+                    }}
+                    className="mt-1 text-[12px] font-medium underline underline-offset-[4px] decoration-1 transition-opacity hover:opacity-80 opacity-45"
+                    style={{
+                      color: "rgba(255,255,255,0.7)",
+                      fontFamily: "Inter, sans-serif",
+                      background: "none",
+                      border: "none",
+                      padding: 0,
+                    }}
+                  >
+                    See what you'll get ↓
+                  </button>
+                </div>
               </div>
-
-              {/* Secondary link — inside the card, just below guarantee */}
-              <button
-                onClick={() => {
-                  const el = document.getElementById("exam-coming-up");
-                  if (el) {
-                    const top = el.getBoundingClientRect().top + window.scrollY;
-                    window.scrollTo({ top, behavior: "smooth" });
-                  }
-                }}
-                className="mt-1 text-[12px] font-medium underline underline-offset-[4px] decoration-1 transition-opacity hover:opacity-80 opacity-45"
-                style={{
-                  color: "rgba(255,255,255,0.7)",
-                  fontFamily: "Inter, sans-serif",
-                  background: "none",
-                  border: "none",
-                  padding: 0,
-                }}
-              >
-                See what you'll get ↓
-              </button>
             </div>
           </div>
         </div>
