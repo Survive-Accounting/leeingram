@@ -54,21 +54,6 @@ const COURSES: CtaCourse[] = [
   },
 ];
 
-const OLE_MISS_DOMAINS = ["olemiss.edu", "go.olemiss.edu"];
-
-// Test bypass: lee+anything@survivestudios.com is treated as Ole Miss for QA / checkout testing.
-function isTestOleMissEmail(email: string): boolean {
-  const lower = email.trim().toLowerCase();
-  return /^lee\+[^@]+@survivestudios\.com$/.test(lower);
-}
-
-function isOleMissEmail(email: string): boolean {
-  const lower = email.trim().toLowerCase();
-  if (isTestOleMissEmail(lower)) return true;
-  const domain = lower.split("@")[1] || "";
-  return OLE_MISS_DOMAINS.some((d) => domain === d || domain.endsWith(`.${d}`));
-}
-
 export default function StagingLandingPage() {
   const navigate = useNavigate();
   const contactRef = useRef<HTMLDivElement>(null);
