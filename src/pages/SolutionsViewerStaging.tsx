@@ -417,7 +417,7 @@ function TieredPaywallCard({ theme, enrollUrl, fullPassLink, chapterLink, chapte
           <span className="font-bold text-[24px] text-white">{formatPrice(fullPassLink?.price_cents || 12500)}</span>
           {saleActive && fullPassLink?.sale_label && <span className="text-[12px] font-semibold" style={{ color: "#00FFFF" }}>· {fullPassLink.sale_label}</span>}
         </div>
-        <a href={fullPassUrl} target="_blank" rel="noopener noreferrer" className="block w-full mt-4 px-6 py-3 rounded-lg font-bold text-[15px] text-center text-white transition-all hover:brightness-90 active:scale-[0.98]" style={{ background: "#CE1126", height: 48, lineHeight: "24px" }}>Get Full Access →</a>
+        <a href="/get-access?course=ia2" className="block w-full mt-4 px-6 py-3 rounded-lg font-bold text-[15px] text-center text-white transition-all hover:brightness-90 active:scale-[0.98]" style={{ background: "#CE1126", height: 48, lineHeight: "24px" }}>Get Full Access →</a>
         <p className="text-[11px] mt-3 text-center" style={{ color: "rgba(255,255,255,0.55)" }}>7-day refund policy · Covers Ch 13–22 · Access expires after finals</p>
       </div>
       {chapterNumber && (

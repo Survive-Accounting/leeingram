@@ -1125,7 +1125,7 @@ export default function ChapterCramTool({ overrideChapterId, campusContext }: Ch
                         )}
                         {isPreview && solutionsFiltered.length > PREVIEW_LIMIT && (
                           <div className="border-t p-4 sm:p-5" style={{ borderColor: theme.border }}>
-                            <TieredPaywallCard enrollUrl={enrollUrl} chapterNumber={chapter?.chapter_number || null} fullPassLink={fullPassLink} chapterLink={chapterLink} />
+                            <TieredPaywallCard enrollUrl={enrollUrl} chapterNumber={chapter?.chapter_number || null} fullPassLink={fullPassLink} chapterLink={chapterLink} campusContext={campusContext} />
                           </div>
                         )}
                       </div>
@@ -1345,7 +1345,7 @@ export default function ChapterCramTool({ overrideChapterId, campusContext }: Ch
               {accessExpired ? "Purchase a new pass to regain access." : "Get full access to all study tools and practice problems."}
             </DialogDescription>
           </DialogHeader>
-          <TieredPaywallCard enrollUrl={enrollUrl} chapterNumber={chapter?.chapter_number || null} fullPassLink={fullPassLink} chapterLink={chapterLink} />
+          <TieredPaywallCard enrollUrl={enrollUrl} chapterNumber={chapter?.chapter_number || null} fullPassLink={fullPassLink} chapterLink={chapterLink} campusContext={campusContext} />
         </DialogContent>
       </Dialog>
 
