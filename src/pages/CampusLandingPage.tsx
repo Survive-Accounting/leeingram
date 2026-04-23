@@ -126,7 +126,7 @@ export default function CampusLandingPage() {
   };
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center text-white text-sm" style={{ background: BG_GRADIENT }}>Loading...</div>;
+    return <div className="flex min-h-screen items-center justify-center text-sm" style={{ background: BG_GRADIENT, color: NAVY }}>Loading...</div>;
   }
 
   return (
@@ -137,14 +137,14 @@ export default function CampusLandingPage() {
         {/* Header */}
         <div className="max-w-[1100px] mx-auto w-full px-4 sm:px-6 pt-10 pb-8 text-center">
           <h1
-            className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight text-white"
-            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 8px rgba(0,0,0,0.4)" }}
+            className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight"
+            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
           >
             Your exam is closer than you think.
           </h1>
           <p
             className="mt-3 text-[15px] sm:text-[17px]"
-            style={{ color: "rgba(255,255,255,0.85)", fontFamily: "Inter, sans-serif" }}
+            style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
           >
             Everything you need to stop panicking and start studying.
           </p>
