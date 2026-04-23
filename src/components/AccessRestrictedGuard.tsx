@@ -1,8 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const LEE_EMAILS = ["lee@survivestudios.com", "lee@surviveaccounting.com"];
 
@@ -19,16 +21,44 @@ const RESTRICTED_PATHS = [
   "/asset-stats",
 ];
 
+/** Paths additionally accessible to lead VAs */
+const LEAD_VA_PATHS = ["/admin/ai-features"];
+
 export function useIsLee() {
   const { user } = useAuth();
   return LEE_EMAILS.includes(user?.email ?? "");
 }
 
+function useIsLeadVa() {
+  const { user } = useAuth();
+  const [isLead, setIsLead] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    const email = user?.email;
+    if (!email) { setIsLead(false); return; }
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("va_accounts")
+        .select("role")
+        .eq("email", email)
+        .maybeSingle();
+      if (!cancelled) setIsLead(data?.role === "lead_va");
+    })();
+    return () => { cancelled = true; };
+  }, [user?.email]);
+  return isLead;
+}
+
 export function AccessRestrictedGuard({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const isLee = useIsLee();
+  const isLeadVa = useIsLeadVa();
 
   if (isLee) return <>{children}</>;
+  if (isLeadVa && LEAD_VA_PATHS.some((p) => location.pathname.startsWith(p))) {
+    return <>{children}</>;
+  }
 
   return (
     <>
