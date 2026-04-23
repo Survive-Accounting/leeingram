@@ -69,6 +69,7 @@ const VaAdmin = lazy(() => import("./pages/VaAdmin"));
 const VaDashboard = lazy(() => import("./pages/VaDashboard"));
 const VaHome = lazy(() => import("./pages/VaHome"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const StudentPassDashboard = lazy(() => import("./pages/StudentPassDashboard"));
 const StudentInboxPage = lazy(() => import("./pages/StudentInboxPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ChapterComplete = lazy(() => import("./pages/ChapterComplete"));
@@ -284,7 +285,7 @@ const AppRoutes = () => {
         <Route path="/study-tools/formula-recall" element={<ProtectedRoute><StudyToolsFormulaRecall /></ProtectedRoute>} />
         <Route path="/study-tools/entry-builder" element={<ProtectedRoute><StudyToolsEntryBuilder /></ProtectedRoute>} />
         <Route path="/study-tools/problem-dissector" element={<ProtectedRoute><StudyToolsProblemDissector /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<StudentPassDashboard />} />
         <Route path="/campus-ops" element={<ProtectedRoute><CampusOperations /></ProtectedRoute>} />
         <Route path="/campus-ops/campuses" element={<ProtectedRoute><CampusOperations><CampusesPage /></CampusOperations></ProtectedRoute>} />
         <Route path="/campus-ops/campuses/new" element={<ProtectedRoute><CampusOperations><CampusNew /></CampusOperations></ProtectedRoute>} />
