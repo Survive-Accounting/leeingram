@@ -103,15 +103,15 @@ export default function StagingGetStartedModal({
     if (!trimmed) return;
     setFallbackLoading(true);
     try {
-      const { error } = await supabase.from("survive_ai_subscribers").insert({
+      const { error } = await supabase.from("landing_page_leads").insert({
         email: trimmed,
-        tag: "non_edu_fallback",
-        source_context: {
-          source: "get_started_modal",
-          preselected_course_slug: preselectedCourseSlug ?? null,
-        },
+        email_type: "non_edu",
+        university_domain: trimmed.split("@")[1] || null,
+        course_slug: preselectedCourseSlug ?? null,
+        intent_tag: "intent_get_started_modal",
+        source: "non_edu_fallback",
       });
-      if (error && error.code !== "23505") throw error;
+      if (error) throw error;
       setView("non_edu_success");
     } catch {
       toast.error("Something went wrong. Try again.");

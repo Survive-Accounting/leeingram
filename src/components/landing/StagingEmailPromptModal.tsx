@@ -100,17 +100,19 @@ export default function StagingEmailPromptModal({
     if (!trimmed) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("survive_ai_subscribers").insert({
+      const { error } = await supabase.from("landing_page_leads").insert({
         email: trimmed,
-        tag: "non_edu_fallback",
-        source_context: {
-          course_name: courseName ?? null,
-          chapter_number: chapterNumber ?? null,
-          chapter_name: chapterName ?? null,
-        },
+        email_type: "non_edu",
+        university_domain: trimmed.split("@")[1] || null,
+        course_slug: null,
+        intent_tag: chapterNumber != null
+          ? `intent_chapter_${chapterNumber}`
+          : courseName
+            ? `intent_course_${courseName}`
+            : "intent_email_prompt",
+        source: "non_edu_fallback",
       });
-      // Ignore unique-violation (already on the list) — treat as success.
-      if (error && error.code !== "23505") throw error;
+      if (error) throw error;
       setView("non_edu_success");
     } catch {
       toast.error("Something went wrong. Try again.");

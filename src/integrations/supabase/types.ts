@@ -865,6 +865,33 @@ export type Database = {
           },
         ]
       }
+      campus_enrollments: {
+        Row: {
+          created_at: string
+          enrollment_count: number
+          id: string
+          university_domain: string
+          university_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enrollment_count?: number
+          id?: string
+          university_domain: string
+          university_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enrollment_count?: number
+          id?: string
+          university_domain?: string
+          university_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       campus_pricing: {
         Row: {
           anchor_price_cents: number | null
@@ -3584,6 +3611,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      landing_page_leads: {
+        Row: {
+          campus_signup_number: number | null
+          course_slug: string | null
+          created_at: string
+          email: string
+          email_type: string
+          id: string
+          intent_tag: string | null
+          source: string | null
+          university_domain: string | null
+          university_name: string | null
+        }
+        Insert: {
+          campus_signup_number?: number | null
+          course_slug?: string | null
+          created_at?: string
+          email: string
+          email_type?: string
+          id?: string
+          intent_tag?: string | null
+          source?: string | null
+          university_domain?: string | null
+          university_name?: string | null
+        }
+        Update: {
+          campus_signup_number?: number | null
+          course_slug?: string | null
+          created_at?: string
+          email?: string
+          email_type?: string
+          id?: string
+          intent_tag?: string | null
+          source?: string | null
+          university_domain?: string | null
+          university_name?: string | null
+        }
+        Relationships: []
       }
       lesson_outputs: {
         Row: {
