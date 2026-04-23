@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Check, Sword, PenLine, MonitorPlay, ShieldCheck, ChevronDown } from "lucide-react";
+import { Check, Sword, PenLine, MonitorPlay, ShieldCheck, ChevronDown, Sparkles, Infinity as InfinityIcon } from "lucide-react";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import {
@@ -23,7 +23,9 @@ const BG_GRADIENT =
  * are bundled into the tier. The tier is only available if the campus
  * progression has enough remaining courses.
  */
-type TierId = "current" | "next1" | "next2" | "full";
+type TierId = "current" | "next1" | "next2" | "full" | "lifetime";
+
+const LIFETIME_PRICE = 850;
 
 interface AccessTier {
   id: TierId;
@@ -308,9 +310,100 @@ export default function GetAccess() {
               })}
             </div>
 
+            {/* Lifetime upsell — appears after big-tier selection */}
+            {(tier === "next2" || tier === "full" || tier === "lifetime") && (
+              <button
+                type="button"
+                onClick={() => setTier("lifetime")}
+                aria-pressed={tier === "lifetime"}
+                className="w-full text-left rounded-xl p-5 mb-5 transition-all hover:-translate-y-0.5"
+                style={{
+                  background:
+                    tier === "lifetime"
+                      ? `linear-gradient(135deg, ${NAVY} 0%, #1E3A66 100%)`
+                      : `linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)`,
+                  border: `2px solid ${tier === "lifetime" ? "#D4AF37" : "#F59E0B"}`,
+                  boxShadow:
+                    tier === "lifetime"
+                      ? "0 12px 32px rgba(20,33,61,0.25), 0 0 0 4px rgba(212,175,55,0.15)"
+                      : "0 8px 24px rgba(245,158,11,0.18)",
+                  fontFamily: "Inter, sans-serif",
+                }}
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Sparkles
+                      className="w-4 h-4 shrink-0"
+                      style={{ color: tier === "lifetime" ? "#FFD700" : "#B45309" }}
+                    />
+                    <span
+                      className="text-[10px] font-bold uppercase tracking-[0.12em]"
+                      style={{ color: tier === "lifetime" ? "#FFD700" : "#B45309" }}
+                    >
+                      Premium · Lifetime
+                    </span>
+                  </div>
+                  <div
+                    className="text-[18px] font-bold leading-none shrink-0"
+                    style={{ color: tier === "lifetime" ? "#fff" : NAVY }}
+                  >
+                    ${LIFETIME_PRICE}
+                  </div>
+                </div>
+                <div
+                  className="text-[15px] font-semibold mb-2"
+                  style={{ color: tier === "lifetime" ? "#fff" : NAVY }}
+                >
+                  Upgrade to Lifetime Access
+                </div>
+                <ul className="flex flex-col gap-1 text-[12px]">
+                  {["All courses", "All future updates", "One-time payment"].map((line) => (
+                    <li
+                      key={line}
+                      className="flex items-center gap-1.5"
+                      style={{ color: tier === "lifetime" ? "rgba(255,255,255,0.85)" : "#475569" }}
+                    >
+                      <InfinityIcon className="w-3 h-3 shrink-0" />
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+              </button>
+            )}
+
             {/* Dynamic summary box */}
-            {selectedTier && (() => {
+            {(() => {
               const startIdx = progression.courses.findIndex((c) => c.slug === course);
+
+              if (tier === "lifetime") {
+                return (
+                  <div
+                    className="rounded-lg p-4 mb-5"
+                    style={{
+                      background: "#F8FAFC",
+                      border: "1px solid #E2E8F0",
+                      fontFamily: "Inter, sans-serif",
+                    }}
+                  >
+                    <div className="flex flex-col gap-2.5 text-[13px]">
+                      <div className="flex gap-2">
+                        <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>You get:</span>
+                        <span style={{ color: NAVY }}>Every course, forever</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>Total:</span>
+                        <span className="font-bold" style={{ color: NAVY }}>${LIFETIME_PRICE}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>Access:</span>
+                        <span style={{ color: NAVY }}>Lifetime — including all future updates</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (!selectedTier) return null;
               const includedCourses = progression.courses
                 .slice(startIdx, startIdx + 1 + selectedTier.coursesAhead)
                 .map((c) => c.code ?? c.name);
@@ -335,21 +428,15 @@ export default function GetAccess() {
                 >
                   <div className="flex flex-col gap-2.5 text-[13px]">
                     <div className="flex gap-2">
-                      <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>
-                        You get:
-                      </span>
+                      <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>You get:</span>
                       <span style={{ color: NAVY }}>{includedCourses.join(", ")}</span>
                     </div>
                     <div className="flex gap-2">
-                      <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>
-                        Total:
-                      </span>
+                      <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>Total:</span>
                       <span className="font-bold" style={{ color: NAVY }}>${selectedTier.price}</span>
                     </div>
                     <div className="flex gap-2">
-                      <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>
-                        Access:
-                      </span>
+                      <span className="font-semibold shrink-0" style={{ color: "#64748B", minWidth: 60 }}>Access:</span>
                       <span style={{ color: NAVY }}>{accessPhrase}</span>
                     </div>
                   </div>
@@ -376,18 +463,29 @@ export default function GetAccess() {
             />
 
             {/* CTA */}
-            <button
-              onClick={handleCheckout}
-              disabled={!email.trim() || !selectedTier}
-              className="w-full rounded-xl py-4 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-                fontFamily: "Inter, sans-serif",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px rgba(206,17,38,0.35)",
-              }}
-            >
-              {selectedTier ? `Get Access — $${selectedTier.price} →` : "Get Access →"}
-            </button>
+            {(() => {
+              const ctaPrice = tier === "lifetime" ? LIFETIME_PRICE : selectedTier?.price;
+              const ctaLabel =
+                tier === "lifetime"
+                  ? `Get Lifetime Access — $${LIFETIME_PRICE} →`
+                  : ctaPrice
+                  ? `Get Access — $${ctaPrice} →`
+                  : "Get Access →";
+              return (
+                <button
+                  onClick={handleCheckout}
+                  disabled={!email.trim() || (!selectedTier && tier !== "lifetime")}
+                  className="w-full rounded-xl py-4 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+                    fontFamily: "Inter, sans-serif",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px rgba(206,17,38,0.35)",
+                  }}
+                >
+                  {ctaLabel}
+                </button>
+              );
+            })()}
 
             <div className="mt-3 flex items-center justify-center gap-1.5 text-[12px]" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
               <ShieldCheck className="w-3.5 h-3.5" />
