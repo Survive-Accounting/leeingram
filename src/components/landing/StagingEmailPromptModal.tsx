@@ -59,12 +59,16 @@ export default function StagingEmailPromptModal({
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
+  const [view, setView] = useState<"edu" | "non_edu" | "non_edu_success">("edu");
+  const [fallbackEmail, setFallbackEmail] = useState("");
 
   useEffect(() => {
     if (open) {
       setEmail("");
       setCelebration(null);
       setSubmitting(false);
+      setView("edu");
+      setFallbackEmail("");
     }
   }, [open]);
 
@@ -72,11 +76,44 @@ export default function StagingEmailPromptModal({
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) return;
+
+    // Non-.edu fallback (whitelisted staff/VA emails bypass)
+    if (!trimmed.endsWith(".edu") && !isWhitelistedEmail(trimmed)) {
+      setFallbackEmail(trimmed);
+      setView("non_edu");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const result = await onSubmit(trimmed);
       // If parent returns null, it has already navigated (e.g. Ole Miss skip).
       if (result) setCelebration(result);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleFallbackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = fallbackEmail.trim().toLowerCase();
+    if (!trimmed) return;
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from("survive_ai_subscribers").insert({
+        email: trimmed,
+        tag: "non_edu_fallback",
+        source_context: {
+          course_name: courseName ?? null,
+          chapter_number: chapterNumber ?? null,
+          chapter_name: chapterName ?? null,
+        },
+      });
+      // Ignore unique-violation (already on the list) — treat as success.
+      if (error && error.code !== "23505") throw error;
+      setView("non_edu_success");
+    } catch {
+      toast.error("Something went wrong. Try again.");
     } finally {
       setSubmitting(false);
     }
