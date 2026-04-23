@@ -17,6 +17,7 @@ function getFinalsCountdownText(): string | null {
   if (days <= 0) return null;
   const weeks = Math.floor(days / 7);
   if (weeks < 1) return "Final exams are almost here.";
+  if (weeks === 1) return "Final exams are 1 week away.";
   return `Final exams are ${weeks} weeks away.`;
 }
 
@@ -397,29 +398,38 @@ export default function StagingCoursesSection({
                   <div className="flex flex-col gap-2">
                     {[
                       {
-                        tag: "intent_lee_on_demand",
-                        title: "Lee on Demand",
-                        subtext: "Personalized tutoring videos",
-                        Icon: Video,
-                      },
-                      {
                         tag: "intent_cram_tools",
                         title: "Cram Tools",
                         subtext: "Study tools for every chapter",
                         Icon: BookOpen,
+                        disabled: false,
                       },
                       {
                         tag: "intent_practice_problems",
                         title: "Practice Problems",
-                        subtext: "Check your work with Lee's solutions",
+                        subtext:
+                          problemCount && problemCount > 0
+                            ? `${problemCount.toLocaleString()} problems with Lee's solutions`
+                            : "Check your work with Lee's solutions",
                         Icon: PenLine,
+                        disabled: false,
+                      },
+                      {
+                        tag: "intent_lee_on_demand",
+                        title: "Lee on Demand",
+                        subtext: "Personalized tutoring videos — coming soon",
+                        Icon: Video,
+                        disabled: true,
                       },
                     ].map((stat) => (
                       <button
                         key={stat.tag}
                         type="button"
-                        onClick={() => handleStatClick(stat.tag)}
-                        className="rounded-lg p-3 text-left transition-all hover:bg-white/5 group flex items-center justify-between gap-2 w-full"
+                        onClick={() => !stat.disabled && handleStatClick(stat.tag)}
+                        disabled={stat.disabled}
+                        className={`rounded-lg p-3 text-left transition-all group flex items-center justify-between gap-2 w-full ${
+                          stat.disabled ? "cursor-not-allowed opacity-50" : "hover:bg-white/5"
+                        }`}
                       >
                         <div className="min-w-0 flex-1">
                           <div className="text-[12px] sm:text-[13px] font-bold leading-tight text-white flex items-center gap-2">
@@ -433,13 +443,15 @@ export default function StagingCoursesSection({
                             {stat.subtext}
                           </div>
                         </div>
-                        <span
-                          aria-hidden="true"
-                          className="text-[16px] flex-shrink-0 transition-transform group-hover:translate-x-0.5"
-                          style={{ color: "rgba(255,255,255,0.5)" }}
-                        >
-                          →
-                        </span>
+                        {!stat.disabled && (
+                          <span
+                            aria-hidden="true"
+                            className="text-[16px] flex-shrink-0 transition-transform group-hover:translate-x-0.5"
+                            style={{ color: "rgba(255,255,255,0.5)" }}
+                          >
+                            →
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
