@@ -76,7 +76,7 @@ export default function StagingFinalExamSection({ children }: Props) {
           pointerEvents: "none",
           zIndex: 2,
           background:
-            "radial-gradient(ellipse 70% 50% at 50% 35%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 40%, rgba(0,0,0,0) 75%)",
+            "radial-gradient(ellipse 75% 60% at 50% 40%, rgba(10,20,40,0) 0%, rgba(10,20,40,0.18) 60%, rgba(10,20,40,0.45) 100%)",
         }}
       />
       <div className="relative" style={{ zIndex: 3 }}>
