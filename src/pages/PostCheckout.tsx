@@ -84,15 +84,17 @@ export default function PostCheckout() {
             phase: "failed",
             reason:
               result?.payment_status === "unpaid"
-                ? "Your payment did not complete."
-                : "We couldn't verify your payment.",
+                ? "Your payment didn't go through. No charge was made."
+                : "We couldn't confirm your payment just yet.",
           });
         }
       } catch (err) {
         if (cancelled) return;
-        const msg =
-          err instanceof Error ? err.message : "Verification failed.";
-        setState({ phase: "failed", reason: msg });
+        console.error("[post-checkout verify]", err);
+        setState({
+          phase: "failed",
+          reason: "Something went wrong while confirming your payment.",
+        });
       }
     };
 
