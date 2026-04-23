@@ -93,8 +93,31 @@ export default function StagingCoursesSection({
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [problemCount, setProblemCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [powerPhase, setPowerPhase] = useState<"off" | "warm" | "expand" | "flash" | "on">("off");
+  const laptopRef = useRef<HTMLDivElement>(null);
 
   const selected = ordered.find((c) => c.slug === selectedSlug);
+
+  // Power-on sequence triggered when a course is selected
+  useEffect(() => {
+    if (!selected) {
+      setPowerPhase("off");
+      return;
+    }
+    setPowerPhase("warm");
+    const t1 = setTimeout(() => setPowerPhase("expand"), 200);
+    const t2 = setTimeout(() => setPowerPhase("flash"), 500);
+    const t3 = setTimeout(() => setPowerPhase("on"), 600);
+    const t4 = setTimeout(() => {
+      laptopRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 1100);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+    };
+  }, [selectedSlug]);
 
   useEffect(() => {
     if (!selected) {
