@@ -64,6 +64,7 @@ export default function StagingLandingPage() {
   const [capturedEmail, setCapturedEmail] = useState<string>("");
   const [pendingCourse, setPendingCourse] = useState<CtaCourse | null>(null);
   const [pendingChapterNumber, setPendingChapterNumber] = useState<number | null>(null);
+  const [pendingChapterName, setPendingChapterName] = useState<string | null>(null);
   const [emailPromptOpen, setEmailPromptOpen] = useState(false);
   const [emailPromptLoading, setEmailPromptLoading] = useState(false);
   const [resolving, setResolving] = useState(false);
@@ -121,6 +122,7 @@ export default function StagingLandingPage() {
   const handleCardClick = async (course: CtaCourse) => {
     setPendingCourse(course);
     setPendingChapterNumber(null);
+    setPendingChapterName(null);
     if (capturedEmail) {
       const data = await resolveEmail(capturedEmail, course);
       if (data) navigate(`/campus/${data.campus_slug}/${course.slug}`);
@@ -130,9 +132,10 @@ export default function StagingLandingPage() {
   };
 
   /** Chapter row click — same flow but routes to specific chapter. */
-  const handleChapterClick = async (course: CtaCourse, chapterNumber: number) => {
+  const handleChapterClick = async (course: CtaCourse, chapterNumber: number, chapterName?: string) => {
     setPendingCourse(course);
     setPendingChapterNumber(chapterNumber);
+    setPendingChapterName(chapterName ?? null);
     if (capturedEmail) {
       const data = await resolveEmail(capturedEmail, course);
       if (data) navigate(`/campus/${data.campus_slug}/${course.slug}/${chapterNumber}`);
@@ -207,6 +210,8 @@ export default function StagingLandingPage() {
         onSubmit={(email) => (pendingCourse ? resolveEmail(email, pendingCourse) : Promise.resolve(null))}
         onContinue={handleContinue}
         courseName={pendingCourse?.name}
+        chapterNumber={pendingChapterNumber}
+        chapterName={pendingChapterName}
         loading={emailPromptLoading || resolving}
       />
 

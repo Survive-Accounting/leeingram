@@ -34,7 +34,7 @@ interface Course {
 interface StagingCoursesSectionProps {
   courses: Course[];
   onCardClick: (course: Course) => void;
-  onChapterClick?: (course: Course, chapterNumber: number) => void;
+  onChapterClick?: (course: Course, chapterNumber: number, chapterName?: string) => void;
   onExpansionClick?: () => void;
   /** Opens the Get Started email modal; passes selected slug for preselection. */
   onGetStartedClick?: (preselectedSlug: string | null) => void;
@@ -157,7 +157,7 @@ export default function StagingCoursesSection({
   const handleChapterRowClick = (ch: Chapter) => {
     if (!selected) return;
     tagIntent(`intent_chapter_${ch.chapter_number}`);
-    if (onChapterClick) onChapterClick(selected, ch.chapter_number);
+    if (onChapterClick) onChapterClick(selected, ch.chapter_number, ch.chapter_name);
     else onCardClick(selected);
   };
 

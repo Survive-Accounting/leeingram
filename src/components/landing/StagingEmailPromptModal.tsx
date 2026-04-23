@@ -26,6 +26,8 @@ interface StagingEmailPromptModalProps {
   onSubmit: (email: string) => Promise<CelebrationData | null> | CelebrationData | null;
   onContinue: (data: CelebrationData) => void;
   courseName?: string;
+  chapterNumber?: number | null;
+  chapterName?: string | null;
   loading?: boolean;
 }
 
@@ -47,6 +49,8 @@ export default function StagingEmailPromptModal({
   onSubmit,
   onContinue,
   courseName,
+  chapterNumber,
+  chapterName,
   loading = false,
 }: StagingEmailPromptModalProps) {
   const [email, setEmail] = useState("");
@@ -101,11 +105,16 @@ export default function StagingEmailPromptModal({
               >
                 Enter your school email
               </h2>
-              {courseName && (
+              {chapterNumber != null ? (
+                <p className="text-[13px] mt-1" style={{ color: "#6B7280" }}>
+                  Takes you straight to Ch. {chapterNumber}
+                  {chapterName ? ` — ${chapterName}` : ""} study tools.
+                </p>
+              ) : courseName ? (
                 <p className="text-[13px] mt-1" style={{ color: "#6B7280" }}>
                   Takes you straight to {courseName} study tools.
                 </p>
-              )}
+              ) : null}
             </div>
             <input
               type="email"
