@@ -40,25 +40,32 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         @media (max-width: 768px) {
           .staging-hero { min-height: auto; padding-top: 32px; padding-bottom: 40px; display: block; }
         }
-        .staging-hero-bg {
+        .staging-hero-video {
           position: absolute;
           inset: 0;
-          background-image: url('${HERO_IMAGE}');
-          background-size: cover;
-          background-position: center center;
-          background-repeat: no-repeat;
-          background-attachment: fixed;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
           z-index: 0;
-        }
-        @media (max-width: 768px) {
-          .staging-hero-bg { background-attachment: scroll; }
         }
         .staging-hero-overlay-left {
           position: absolute;
           inset: 0;
-          background: linear-gradient(to right, ${NAVY} 0%, ${NAVY}cc 25%, ${NAVY}99 55%, ${NAVY}99 100%);
+          background: linear-gradient(to right, ${NAVY}cc 0%, ${NAVY}99 40%, ${NAVY}80 100%);
           opacity: 1;
           z-index: 1;
+        }
+        .staging-hero-card {
+          background: rgba(20, 33, 61, 0.72);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 16px;
+          padding: 28px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+        }
+        @media (min-width: 768px) {
+          .staging-hero-card { padding: 36px 40px; }
         }
         .staging-hero-overlay-bottom {
           position: absolute;
@@ -191,11 +198,20 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         }
       `}</style>
 
-      <div className="staging-hero-bg" />
+      <video
+        className="staging-hero-video"
+        src="/videos/hero-loop.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        poster={HERO_IMAGE}
+      />
       <div className="staging-hero-overlay-left" />
 
       <div className="relative z-[3] mx-auto max-w-[1100px] px-4 sm:px-6 py-12 md:py-20 w-full">
-        <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
+        <div className="staging-hero-card flex flex-col md:flex-row items-center gap-6 md:gap-10">
           {/* LEFT — Photo (smaller, ~33% width) */}
           <div className="w-full md:w-[33%] flex flex-col items-center md:items-start shrink-0">
             <div className="relative w-full max-w-[240px] md:max-w-[300px]">
