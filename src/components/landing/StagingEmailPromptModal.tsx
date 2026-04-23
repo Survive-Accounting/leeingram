@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, X } from "lucide-react";
+import { DevShortcut } from "@/components/DevShortcut";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -131,6 +132,9 @@ export default function StagingEmailPromptModal({
             >
               {loading || submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue →"}
             </button>
+            <div className="mt-3 text-center">
+              <DevShortcut label="[DEV] Skip to preview →" to="/campus/general/intermediate-accounting-2" />
+            </div>
           </form>
         ) : (
           <div className="text-center space-y-5 py-2">
@@ -155,6 +159,9 @@ export default function StagingEmailPromptModal({
             >
               Start Studying →
             </button>
+            <div>
+              <DevShortcut label="[DEV] Skip modal →" to="/campus/general/intermediate-accounting-2" onClick={onClose} />
+            </div>
           </div>
         )}
       </DialogContent>

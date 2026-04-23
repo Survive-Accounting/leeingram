@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { CtaCourse } from "@/components/landing/StagingCtaModal";
+import { DevShortcut } from "@/components/DevShortcut";
 
 const RED = "#CE1126";
 const NAVY = "#14213D";
@@ -154,6 +155,9 @@ export default function StagingGetStartedModal({
                   "Continue →"
                 )}
               </button>
+              <div className="mt-3 text-center">
+                <DevShortcut label="[DEV] Skip to preview →" to="/campus/general/intermediate-accounting-2" />
+              </div>
             </form>
           )}
 

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { DevShortcut } from "@/components/DevShortcut";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -243,6 +244,9 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue →"}
             </button>
+            <div className="mt-3 text-center">
+              <DevShortcut label="[DEV] Skip to preview →" to="/campus/general/intermediate-accounting-2" />
+            </div>
           </form>
         )}
 
