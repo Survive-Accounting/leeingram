@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, Sword, PenLine, MonitorPlay, ShieldCheck, ChevronDown, Sparkles, Infinity as InfinityIcon } from "lucide-react";
 import StagingNavbar from "@/components/landing/StagingNavbar";
@@ -75,6 +75,14 @@ export default function GetAccess() {
   const [course, setCourse] = useState<CourseSlug>(resolvedCourseSlug);
   const [tier, setTier] = useState<TierId>("current");
   const [email, setEmail] = useState(emailParam);
+  const [showStickyBar, setShowStickyBar] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowStickyBar(window.scrollY > 480);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   /**
    * Build per-tier display data given the currently selected course.
@@ -544,6 +552,53 @@ export default function GetAccess() {
         onScrollToCourses={() => navigate("/staging")}
         onScrollToContact={() => navigate("/staging")}
       />
+
+      {/* Sticky bottom bar — appears after scroll */}
+      {(() => {
+        const stickyPrice = tier === "lifetime" ? LIFETIME_PRICE : selectedTier?.price;
+        const stickyName =
+          tier === "lifetime"
+            ? "Lifetime Access"
+            : selectedTier?.title ?? "Get Access";
+        if (!stickyPrice) return null;
+        return (
+          <div
+            className={`fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 ${
+              showStickyBar ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none"
+            }`}
+            style={{
+              background: "rgba(255,255,255,0.96)",
+              backdropFilter: "blur(12px)",
+              borderTop: "1px solid rgba(20,33,61,0.1)",
+              boxShadow: "0 -8px 24px rgba(20,33,61,0.08)",
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+              <div className="min-w-0 flex items-baseline gap-2">
+                <span className="text-[13px] sm:text-[14px] font-semibold truncate" style={{ color: NAVY }}>
+                  {stickyName}
+                </span>
+                <span className="text-[14px] sm:text-[16px] font-bold shrink-0" style={{ color: NAVY }}>
+                  ${stickyPrice}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="rounded-lg px-4 sm:px-5 py-2.5 text-[13px] sm:text-[14px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.98] shrink-0"
+                style={{
+                  background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+                  boxShadow: "0 4px 12px rgba(206,17,38,0.3)",
+                }}
+              >
+                Get Access →
+              </button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
