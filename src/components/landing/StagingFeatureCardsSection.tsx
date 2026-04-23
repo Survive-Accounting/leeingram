@@ -121,6 +121,16 @@ export default function StagingFeatureCardsSection({
           background: "linear-gradient(180deg, rgba(10,20,40,0.85) 0%, rgba(10,20,40,0.95) 100%)",
         }}
       />
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse 70% 60% at 50% 45%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 40%, rgba(0,0,0,0) 75%)",
+        }}
+      />
 
       <div className="max-w-[1100px] mx-auto w-full relative" style={{ zIndex: 1 }}>
         <div className="text-center mb-10">
