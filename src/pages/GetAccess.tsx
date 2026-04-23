@@ -482,10 +482,10 @@ export default function GetAccess() {
               const ctaPrice = tier === "lifetime" ? LIFETIME_PRICE : selectedTier?.price;
               const ctaLabel =
                 tier === "lifetime"
-                  ? `Get Lifetime Access — $${LIFETIME_PRICE} →`
+                  ? `Get Access Now — $${LIFETIME_PRICE}`
                   : ctaPrice
-                  ? `Get Access — $${ctaPrice} →`
-                  : "Get Access →";
+                  ? `Get Access Now — $${ctaPrice}`
+                  : "Get Access Now";
               return (
                 <button
                   onClick={handleCheckout}
