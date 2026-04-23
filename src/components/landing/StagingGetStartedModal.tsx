@@ -138,7 +138,67 @@ export default function StagingGetStartedModal({
         <div className="pt-7" />
 
         <div className="px-6 sm:px-8 pb-7">
-          {step === 1 && (
+          {view === "non_edu_success" && (
+            <div className="text-center space-y-4 py-2">
+              <div className="text-4xl leading-none" aria-hidden="true">✉️</div>
+              <h2
+                className="text-[20px] font-semibold"
+                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+              >
+                You're on the list — we'll be in touch.
+              </h2>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-[13px] font-medium hover:underline"
+                style={{ color: "#6B7280" }}
+              >
+                Close
+              </button>
+            </div>
+          )}
+
+          {view === "non_edu" && (
+            <form onSubmit={handleFallbackSubmit} className="space-y-4">
+              <div>
+                <h2
+                  className="text-[20px] font-semibold"
+                  style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                >
+                  Looks like that's not a school email.
+                </h2>
+                <p className="text-[13px] mt-2 leading-relaxed" style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>
+                  Survive Accounting is built for college students — but we don't want to leave you out. Drop your email and we'll send you a free preview link.
+                </p>
+              </div>
+              <input
+                type="email"
+                value={fallbackEmail}
+                onChange={(e) => setFallbackEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                disabled={fallbackLoading}
+                autoFocus
+                className="w-full rounded-lg px-4 py-3 text-[14px] outline-none focus:border-[#14213D]"
+                style={{
+                  background: "#F8F9FA",
+                  border: "1px solid #E5E7EB",
+                  color: NAVY,
+                  fontFamily: "Inter, sans-serif",
+                }}
+              />
+              <button
+                type="submit"
+                disabled={fallbackLoading}
+                className="w-full rounded-lg py-3 text-[14px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-80 disabled:cursor-wait flex items-center justify-center gap-2"
+                style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.3)" }}
+              >
+                {fallbackLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send Me Access →"}
+              </button>
+            </form>
+          )}
+
+          {view === "main" && step === 1 && (
             <form onSubmit={handleStep1}>
               <h2
                 className="text-[22px] sm:text-[26px] leading-tight text-center"
