@@ -245,32 +245,10 @@ export default function StagingCoursesSection({
           )}
         </div>
 
-        {/* Preview Free button — appears once a course is selected */}
-        {selected && (
-          <>
-            <button
-              onClick={handlePreviewFreeClick}
-              className="mt-4 w-full rounded-xl px-5 py-3.5 text-[14px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
-              style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.25)" }}
-            >
-              Free Preview →
-            </button>
-            <p
-              className="mt-2 text-center text-[12px]"
-              style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
-            >
-              Already have an account?{" "}
-              <Link to="/login" className="underline hover:no-underline" style={{ color: NAVY, fontWeight: 600 }}>
-                Log in →
-              </Link>
-            </p>
-          </>
-        )}
-
         {/* Stats + Chapters — only after selection */}
         {selected && (
           <div
-            className="mt-5 rounded-2xl p-5 sm:p-6 animate-fade-in"
+            className="mt-5 rounded-2xl p-3 sm:p-4 animate-fade-in"
             style={{
               background: "#fff",
               boxShadow: "0 4px 20px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)",
@@ -278,29 +256,31 @@ export default function StagingCoursesSection({
             }}
           >
             {loading ? (
-              <div className="flex flex-col md:flex-row gap-5 md:gap-6 animate-pulse">
-                <div className="md:w-[30%] md:shrink-0 flex flex-col gap-3">
-                  {[0, 1, 2].map((i) => (
-                    <div key={i} className="rounded-xl p-3 sm:p-3.5" style={{ background: "#F1F2F5" }}>
-                      <div className="h-3 rounded w-3/4 mb-2" style={{ background: "#E5E7EB" }} />
-                      <div className="h-2 rounded w-1/2" style={{ background: "#E5E7EB" }} />
-                    </div>
-                  ))}
+              <div className="flex flex-col md:flex-row gap-3 animate-pulse items-stretch">
+                <div className="md:w-[35%] md:shrink-0 rounded-xl p-4" style={{ background: "#1a1a2e" }}>
+                  <div className="flex flex-col gap-3">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="rounded-lg p-3" style={{ background: "rgba(255,255,255,0.06)" }}>
+                        <div className="h-3 rounded w-3/4 mb-2" style={{ background: "rgba(255,255,255,0.12)" }} />
+                        <div className="h-2 rounded w-1/2" style={{ background: "rgba(255,255,255,0.08)" }} />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="md:w-[70%] md:flex-1 flex flex-col gap-2">
+                <div className="md:w-[65%] md:flex-1 rounded-xl p-4 flex flex-col gap-2" style={{ background: "#F9F9F9", border: "1px solid #E5E7EB" }}>
                   {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="h-5 rounded" style={{ background: "#F1F2F5" }} />
+                    <div key={i} className="h-5 rounded" style={{ background: "#EEF0F3" }} />
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col md:flex-row gap-5 md:gap-6">
-                {/* LEFT — navy callout block with stat items */}
-                <div className="md:w-[30%] md:shrink-0">
-                  <div
-                    className="rounded-xl p-3 flex flex-col gap-2"
-                    style={{ background: NAVY }}
-                  >
+              <div className="flex flex-col md:flex-row gap-3 items-stretch">
+                {/* LEFT — navy callout block with stat items + CTA */}
+                <div
+                  className="md:w-[35%] md:shrink-0 rounded-xl p-4 pr-6 flex flex-col"
+                  style={{ background: "#1a1a2e" }}
+                >
+                  <div className="flex flex-col gap-2 flex-1">
                     {[
                       {
                         tag: "intent_practice_problems",
@@ -339,22 +319,34 @@ export default function StagingCoursesSection({
                       </button>
                     ))}
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={handlePreviewFreeClick}
+                    className="mt-4 w-full rounded-lg px-4 py-3 text-[14px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
+                    style={{ background: RED, boxShadow: "0 4px 14px rgba(206,17,38,0.3)" }}
+                  >
+                    Start Free Preview →
+                  </button>
                 </div>
 
-                {/* RIGHT — chapter list */}
-                <div className="md:w-[70%] md:flex-1">
+                {/* RIGHT — chapter list, own framed box */}
+                <div
+                  className="md:w-[65%] md:flex-1 rounded-xl p-4"
+                  style={{ background: "#F9F9F9", border: "1px solid #E5E7EB" }}
+                >
                   {chapters.length === 0 ? (
                     <p className="text-[13px]" style={{ color: "#9CA3AF" }}>
                       No chapters available yet.
                     </p>
                   ) : (
-                    <ul className="flex flex-col -mx-2">
+                    <ul className="flex flex-col -mx-1">
                       {chapters.map((ch) => (
                         <li key={ch.id}>
                           <button
                             type="button"
                             onClick={() => handleChapterRowClick(ch)}
-                            className="w-full flex items-baseline gap-2 text-[14px] text-left rounded-lg px-2 py-2 transition-colors hover:bg-slate-50 cursor-pointer"
+                            className="w-full flex items-baseline gap-2 text-[14px] text-left rounded-lg px-2 py-2 transition-colors hover:bg-white cursor-pointer"
                             style={{ color: NAVY }}
                           >
                             <span className="text-[12px] font-semibold w-12 flex-shrink-0" style={{ color: "#9CA3AF" }}>
