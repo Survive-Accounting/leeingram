@@ -58,6 +58,7 @@ export default function StagingEmailPromptModal({
   chapterNumber,
   chapterName,
   loading = false,
+  intent = "default",
 }: StagingEmailPromptModalProps) {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
