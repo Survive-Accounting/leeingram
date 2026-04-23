@@ -252,7 +252,10 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                   Get Started →
                 </button>
                 <button
-                  onClick={onGetStartedClick}
+                  onClick={() => {
+                    const el = document.getElementById("courses-section");
+                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
                   className="text-[14px] font-medium underline underline-offset-4 transition-opacity hover:opacity-80"
                   style={{
                     color: "rgba(255,255,255,0.9)",
