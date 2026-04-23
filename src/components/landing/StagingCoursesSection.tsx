@@ -287,7 +287,7 @@ export default function StagingCoursesSection({
                         title: problemCount && problemCount > 0
                           ? `${problemCount} Practice Problems`
                           : "Hundreds of Practice Problems",
-                        subtext: "Step-by-step AI solutions",
+                        subtext: "Check your work with Lee's solutions",
                       },
                       { tag: "intent_cram_tools", title: "Get Cram Resources", subtext: "Study tools for every chapter" },
                       { tag: "intent_lee_on_demand", title: "Get Lee on Demand", subtext: "Personalized tutoring videos" },
