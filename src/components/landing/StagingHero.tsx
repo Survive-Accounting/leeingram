@@ -297,7 +297,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
               <span className="block hero-anim-line2">
-                AI-assisted study tools designed to get you unstuck fast.
+                AI study tools designed to get you unstuck — fast.
               </span>
             </h1>
 
@@ -307,7 +307,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
               >
                 <p style={{ fontSize: "15px", lineHeight: 1.6 }}>
-                  Built by accounting tutor Lee Ingram. Trusted by 1,200+ students since 2015.
+                  Built by accounting tutor Lee Ingram. Tailored to students who are serious about passing. Trusted by 1,200+ since 2015.
                 </p>
               </div>
               <Tooltip><TooltipTrigger asChild><span /></TooltipTrigger><TooltipContent /></Tooltip>
