@@ -12,12 +12,13 @@ export default function StagingNavbar({ onCtaClick }: StagingNavbarProps) {
   const navigate = useNavigate();
 
   return (
-    <div className="relative z-50 px-4 pt-4">
+    <div className="relative z-50 w-full">
       <nav
-        className="mx-auto max-w-[1000px] rounded-xl px-5 h-14 flex items-center justify-between"
-        style={{ 
-          background: "rgba(255,255,255,0.98)", 
-          boxShadow: "0 4px 20px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)",
+        className="w-full px-5 sm:px-8 h-16 flex items-center justify-between border-b"
+        style={{
+          background: "rgba(255,255,255,0.98)",
+          borderColor: "rgba(0,0,0,0.06)",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
           backdropFilter: "blur(12px)",
         }}
       >
