@@ -53,11 +53,59 @@ export default function ContactForm() {
   };
 
   return (
-    <section style={{ background: "#0F1A2E" }} className="py-12 px-4">
-      <div className="mx-auto max-w-[640px]">
+    <section className="relative py-12 px-4 overflow-hidden">
+      <style>{`
+        .contact-bg-video {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          z-index: 0;
+          pointer-events: none;
+        }
+        .contact-bg-base {
+          position: absolute;
+          inset: 0;
+          background: #14213D;
+          z-index: 0;
+        }
+        .contact-bg-overlay {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          pointer-events: none;
+          background: linear-gradient(to bottom, rgba(20,33,61,0.55) 0%, rgba(20,33,61,0.35) 40%, rgba(20,33,61,0.55) 100%);
+        }
+      `}</style>
+      <div className="contact-bg-base" />
+      <video
+        ref={(el) => {
+          if (!el) return;
+          el.muted = true;
+          const tryPlay = () => el.play().catch(() => {});
+          tryPlay();
+        }}
+        className="contact-bg-video"
+        autoPlay
+        loop
+        muted
+        playsInline
+        // @ts-ignore
+        webkit-playsinline="true"
+        disablePictureInPicture
+        disableRemotePlayback
+        preload="auto"
+        aria-hidden="true"
+      >
+        <source src="/videos/hero-loop.mp4" type="video/mp4" />
+      </video>
+      <div className="contact-bg-overlay" />
+
+      <div className="relative mx-auto max-w-[640px]" style={{ zIndex: 2 }}>
         <h2
           className="text-center text-[20px] sm:text-[24px] text-white mb-8"
-          style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+          style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 8px rgba(0,0,0,0.7)" }}
         >
           Have a question? I've got you.
         </h2>
