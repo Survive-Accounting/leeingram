@@ -49,7 +49,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         .staging-hero-overlay-left {
           position: absolute;
           inset: 0;
-          background: linear-gradient(to right, ${NAVY}cc 0%, ${NAVY}99 40%, ${NAVY}80 100%);
+          background: linear-gradient(to right, ${NAVY}f2 0%, ${NAVY}e6 40%, ${NAVY}d9 100%);
           opacity: 1;
           z-index: 1;
         }
