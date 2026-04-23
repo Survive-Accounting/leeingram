@@ -295,9 +295,12 @@ export default function StagingCoursesSection({
               </div>
             ) : (
               <div className="flex flex-col md:flex-row gap-5 md:gap-6">
-                {/* LEFT — stat items as clickable buttons */}
+                {/* LEFT — navy callout block with stat items */}
                 <div className="md:w-[30%] md:shrink-0">
-                  <div className="flex flex-col gap-3">
+                  <div
+                    className="rounded-xl p-3 flex flex-col gap-2"
+                    style={{ background: NAVY }}
+                  >
                     {[
                       {
                         tag: "intent_practice_problems",
@@ -313,19 +316,15 @@ export default function StagingCoursesSection({
                         key={stat.tag}
                         type="button"
                         onClick={() => handleStatClick(stat.tag)}
-                        className="rounded-xl p-3 sm:p-3.5 text-left transition-all hover:bg-slate-100 hover:shadow-sm group flex items-center justify-between gap-2 w-full"
-                        style={{ background: "#F8F8FA" }}
+                        className="rounded-lg p-3 text-left transition-all hover:bg-white/5 group flex items-center justify-between gap-2 w-full"
                       >
                         <div className="min-w-0 flex-1">
-                          <div
-                            className="text-[12px] sm:text-[13px] font-bold leading-tight"
-                            style={{ color: NAVY }}
-                          >
+                          <div className="text-[12px] sm:text-[13px] font-bold leading-tight text-white">
                             {stat.title}
                           </div>
                           <div
                             className="text-[10px] sm:text-[11px] mt-1 leading-snug"
-                            style={{ color: "#6B7280" }}
+                            style={{ color: "rgba(255,255,255,0.6)" }}
                           >
                             {stat.subtext}
                           </div>
@@ -333,7 +332,7 @@ export default function StagingCoursesSection({
                         <span
                           aria-hidden="true"
                           className="text-[16px] flex-shrink-0 transition-transform group-hover:translate-x-0.5"
-                          style={{ color: "#9CA3AF" }}
+                          style={{ color: "rgba(255,255,255,0.5)" }}
                         >
                           →
                         </span>
