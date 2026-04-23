@@ -131,14 +131,8 @@ export default function StagingCoursesSection({
                   style={{ background: GREEN, animation: "betaPulse 1.8s ease-in-out infinite" }}
                 />
               </span>
-              Spring 2026 Beta is Live
+              Spring 2026 is Live
             </span>
-            <p
-              className="text-[13px] sm:text-[14px]"
-              style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}
-            >
-              AI study tools for accounting · Curated by a real tutor
-            </p>
           </div>
 
           <ul className="space-y-2.5 mb-8">
