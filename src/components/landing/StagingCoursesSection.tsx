@@ -102,8 +102,8 @@ export default function StagingCoursesSection({
       <div className="mx-auto max-w-[720px]">
 
         <p
-          className="text-center text-[13px] sm:text-[14px] font-semibold uppercase tracking-[0.15em] mb-4"
-          style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
+          className="text-center mb-4 text-[22px] sm:text-[28px] md:text-[34px] leading-tight"
+          style={{ color: "#14213D", fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
         >
           Which course are you studying?
         </p>
