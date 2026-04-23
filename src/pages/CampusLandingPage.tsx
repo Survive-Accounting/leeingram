@@ -280,12 +280,14 @@ interface CardProps {
 }
 
 function Card({ title, body, buttonLabel, onClick, comingSoon, disabled, buttonBg, extra }: CardProps) {
-  const bg = buttonBg || RED;
+  const bg = buttonBg || NAVY;
+  const isGreen = bg === GREEN;
   return (
     <div
       className="bg-white rounded-2xl px-5 py-4 flex flex-col"
       style={{
-        boxShadow: "0 12px 40px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08)",
+        boxShadow: "0 12px 40px rgba(20,33,61,0.10), 0 2px 6px rgba(20,33,61,0.06)",
+        border: "1px solid rgba(20,33,61,0.06)",
       }}
     >
       <h3
@@ -305,11 +307,11 @@ function Card({ title, body, buttonLabel, onClick, comingSoon, disabled, buttonB
           onClick={disabled ? undefined : onClick}
           disabled={disabled}
           aria-disabled={disabled}
-          className={`w-full rounded-lg py-3 text-[14px] font-semibold text-white transition-all ${disabled ? "cursor-not-allowed" : "hover:brightness-110 active:scale-[0.99]"}`}
+          className={`self-start rounded-lg px-4 py-2 text-[13px] font-semibold text-white transition-all ${disabled ? "cursor-not-allowed" : "hover:brightness-110 active:scale-[0.99]"}`}
           style={{
             background: bg,
             fontFamily: "Inter, sans-serif",
-            boxShadow: disabled ? "none" : `0 4px 14px ${bg === RED ? "rgba(206,17,38,0.3)" : "rgba(22,163,74,0.3)"}`,
+            boxShadow: disabled ? "none" : `0 2px 8px ${isGreen ? "rgba(22,163,74,0.25)" : "rgba(20,33,61,0.20)"}`,
           }}
         >
           {buttonLabel}
