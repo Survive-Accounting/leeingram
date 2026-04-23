@@ -78,10 +78,13 @@ export default function StagingCoursesSection({
   courses,
   onCardClick,
   onChapterClick,
+  onGetStartedClick,
 }: StagingCoursesSectionProps) {
   const ordered = DISPLAY_ORDER
     .map((slug) => courses.find((c) => c.slug === slug))
     .filter(Boolean) as Course[];
+
+  const countdownText = useMemo(() => getFinalsCountdownText(), []);
 
   // No pre-selection
   const [selectedSlug, setSelectedSlug] = useState<string>("");
