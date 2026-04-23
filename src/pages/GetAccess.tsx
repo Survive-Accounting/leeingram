@@ -71,10 +71,34 @@ export default function GetAccess() {
   const courseCode = resolvedCourse.code;
 
   const [course, setCourse] = useState<CourseSlug>(resolvedCourseSlug);
-  const [plan, setPlan] = useState<"semester" | "chapter">("semester");
+  const [tier, setTier] = useState<TierId>("current");
   const [email, setEmail] = useState(emailParam);
 
-  const selectedPlan = PLANS.find((p) => p.id === plan)!;
+  /**
+   * Build per-tier display data given the currently selected course.
+   * Tiers that would extend beyond the campus progression are dropped.
+   */
+  const tiers = useMemo(() => {
+    const courses = progression.courses;
+    const startIdx = courses.findIndex((c) => c.slug === course);
+    const remaining = startIdx === -1 ? 0 : courses.length - startIdx - 1;
+
+    return ACCESS_TIERS.filter((t) => t.coursesAhead <= remaining).map((t) => {
+      const span = courses.slice(startIdx, startIdx + 1 + t.coursesAhead);
+      const labels = span.map((c) => c.code ?? c.name);
+      const subtext =
+        t.coursesAhead === 0
+          ? `${labels[0]} — Access through August 31`
+          : t.coursesAhead === 1
+          ? `${labels[0]} + ${labels[1]}`
+          : labels.join(" → ");
+      return { ...t, subtext };
+    });
+  }, [progression, course]);
+
+  // Fall back to the first available tier if the previously selected one
+  // is no longer valid (e.g. user picked the last course in the sequence).
+  const selectedTier = tiers.find((t) => t.id === tier) ?? tiers[0];
 
   const handleCheckout = () => {
     // Hook up Stripe later; for now route to staging campus checkout flow.
