@@ -16,23 +16,28 @@ const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
 
-const PLANS = [
-  {
-    id: "semester",
-    label: "Semester Pass",
-    price: 99,
-    anchor: 250,
-    tag: "Most Popular",
-    description: "Full access through end of semester. Best for finals prep.",
-  },
-  {
-    id: "chapter",
-    label: "Single Chapter",
-    price: 30,
-    anchor: null,
-    tag: null,
-    description: "Just need help with one chapter? Grab access to that one.",
-  },
+/**
+ * Progressive access tiers — fixed pricing, dynamic course labels.
+ *
+ * `coursesAhead` = how many additional courses (after the current one)
+ * are bundled into the tier. The tier is only available if the campus
+ * progression has enough remaining courses.
+ */
+type TierId = "current" | "next1" | "next2" | "full";
+
+interface AccessTier {
+  id: TierId;
+  title: string;
+  price: number;
+  coursesAhead: number;
+  badge?: string;
+}
+
+const ACCESS_TIERS: AccessTier[] = [
+  { id: "current", title: "Current Course",                price: 150, coursesAhead: 0 },
+  { id: "next1",   title: "Continue to Next Course",       price: 250, coursesAhead: 1 },
+  { id: "next2",   title: "Stay Covered (Next 2 Courses)", price: 325, coursesAhead: 2 },
+  { id: "full",    title: "Full Accounting Sequence",      price: 475, coursesAhead: 3, badge: "Best value" },
 ];
 
 const INCLUDES = [
