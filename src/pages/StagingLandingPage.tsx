@@ -122,6 +122,7 @@ export default function StagingLandingPage() {
   const handleCardClick = async (course: CtaCourse) => {
     setPendingCourse(course);
     setPendingChapterNumber(null);
+    setPendingChapterName(null);
     if (capturedEmail) {
       const data = await resolveEmail(capturedEmail, course);
       if (data) navigate(`/campus/${data.campus_slug}/${course.slug}`);
@@ -131,9 +132,10 @@ export default function StagingLandingPage() {
   };
 
   /** Chapter row click — same flow but routes to specific chapter. */
-  const handleChapterClick = async (course: CtaCourse, chapterNumber: number) => {
+  const handleChapterClick = async (course: CtaCourse, chapterNumber: number, chapterName?: string) => {
     setPendingCourse(course);
     setPendingChapterNumber(chapterNumber);
+    setPendingChapterName(chapterName ?? null);
     if (capturedEmail) {
       const data = await resolveEmail(capturedEmail, course);
       if (data) navigate(`/campus/${data.campus_slug}/${course.slug}/${chapterNumber}`);
