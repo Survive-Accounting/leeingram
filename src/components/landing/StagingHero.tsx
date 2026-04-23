@@ -299,7 +299,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
               >
                 <p className="text-[14px] md:text-[16px] leading-relaxed">
-                  Hey! I'm Lee Ingram. I built Survive Accounting for one reason — to help you walk into your exam confident you'll own it.
+                  I'm Lee Ingram, and I built Survive Accounting to help you walk into your exam feeling confident you'll own it.
                 </p>
               </div>
 
