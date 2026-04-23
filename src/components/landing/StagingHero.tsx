@@ -314,8 +314,8 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               <Tooltip><TooltipTrigger asChild><span /></TooltipTrigger><TooltipContent /></Tooltip>
             </TooltipProvider>
 
-            {/* CTA inside card */}
-            <div className="mt-7 flex justify-center md:justify-start hero-anim-btn">
+            {/* CTA inside card — centered within the right (2/3) column */}
+            <div className="mt-7 flex flex-col items-center hero-anim-btn">
               <div className="relative">
                 <div
                   aria-hidden="true"
@@ -336,7 +336,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 `}</style>
                 <button
                   onClick={onGetStartedClick}
-                  className="relative rounded-xl px-10 py-4 text-[17px] md:text-[19px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+                  className="relative rounded-xl px-14 py-4 text-[17px] md:text-[19px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
                   style={{
                     background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
                     fontFamily: "Inter, sans-serif",
@@ -349,32 +349,35 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                   Get Access
                 </button>
               </div>
-            </div>
-            <div
-              className="mt-2.5 flex items-center justify-center md:justify-start gap-1.5 hero-anim-btn"
-              style={{
-                color: "rgba(255,255,255,0.65)",
-                fontFamily: "Inter, sans-serif",
-                fontSize: "11px",
-                textShadow: subtextShadow,
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M11 17l-5-5 5-5" />
-                <path d="M6 12h12" />
-                <path d="M13 7l5 5-5 5" />
-              </svg>
-              <span>7-day refund guarantee</span>
+              <div
+                className="mt-2.5 flex items-center justify-center gap-1.5"
+                style={{
+                  color: "rgba(255,255,255,0.65)",
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: "11px",
+                  textShadow: subtextShadow,
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M11 17l-5-5 5-5" />
+                  <path d="M6 12h12" />
+                  <path d="M13 7l5 5-5 5" />
+                </svg>
+                <span>7-day refund guarantee</span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* "See how it works" sits below the card */}
+        {/* "See what you'll get" sits below the card */}
         <div className="mt-6 md:mt-8 flex justify-center hero-anim-btn">
           <button
             onClick={() => {
-              const el = document.getElementById("courses-section");
-              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+              const el = document.getElementById("exam-coming-up");
+              if (el) {
+                const top = el.getBoundingClientRect().top + window.scrollY;
+                window.scrollTo({ top, behavior: "smooth" });
+              }
             }}
             className="text-[16px] md:text-[17px] font-semibold underline underline-offset-[6px] decoration-2 transition-opacity hover:opacity-100 opacity-90 px-3 py-1.5"
             style={{
@@ -385,7 +388,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               border: "none",
             }}
           >
-            See how it works ↓
+            See what you'll get ↓
           </button>
         </div>
       </div>

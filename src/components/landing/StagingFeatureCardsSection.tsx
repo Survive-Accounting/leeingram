@@ -68,9 +68,11 @@ export default function StagingFeatureCardsSection({
 }: Props) {
   return (
     <section
+      id="exam-coming-up"
       className="py-20 px-4 sm:px-6 relative overflow-hidden"
       style={{
         background: `linear-gradient(180deg, #0F1A2E 0%, ${NAVY} 50%, #0B1426 100%)`,
+        scrollMarginTop: "0px",
       }}
     >
       <div className="max-w-[1100px] mx-auto w-full relative">
