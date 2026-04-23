@@ -44,10 +44,9 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           inset: 0;
           background-image: url('${HERO_IMAGE}');
           background-size: cover;
-          background-position: 60% 40%;
+          background-position: center center;
           background-repeat: no-repeat;
           background-attachment: fixed;
-          transform: scaleX(-1);
           z-index: 0;
         }
         @media (max-width: 768px) {
