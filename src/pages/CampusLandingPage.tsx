@@ -9,7 +9,9 @@ import { toast } from "sonner";
 const NAVY = "#14213D";
 const RED = "#CE1126";
 const GREEN = "#16A34A";
-const BG_GRADIENT = "linear-gradient(160deg, #1a1a2e 0%, #16213e 40%, #c0392b 100%)";
+// Powder blue gradient that converges toward the center, drawing the eye to the CTA in the sticky bar.
+const BG_GRADIENT =
+  "radial-gradient(ellipse at 50% 95%, #BFDBFE 0%, #DBEAFE 35%, #EFF6FF 65%, #F8FAFC 100%)";
 
 const COURSE_SLUG_MAP: Record<string, string> = {
   "intermediate-accounting-2": "44444444-4444-4444-4444-444444444444",
@@ -124,7 +126,7 @@ export default function CampusLandingPage() {
   };
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center text-white text-sm" style={{ background: BG_GRADIENT }}>Loading...</div>;
+    return <div className="flex min-h-screen items-center justify-center text-sm" style={{ background: BG_GRADIENT, color: NAVY }}>Loading...</div>;
   }
 
   return (
@@ -135,14 +137,14 @@ export default function CampusLandingPage() {
         {/* Header */}
         <div className="max-w-[1100px] mx-auto w-full px-4 sm:px-6 pt-10 pb-8 text-center">
           <h1
-            className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight text-white"
-            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 8px rgba(0,0,0,0.4)" }}
+            className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight"
+            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
           >
             Your exam is closer than you think.
           </h1>
           <p
             className="mt-3 text-[15px] sm:text-[17px]"
-            style={{ color: "rgba(255,255,255,0.85)", fontFamily: "Inter, sans-serif" }}
+            style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
           >
             Everything you need to stop panicking and start studying.
           </p>
@@ -154,7 +156,7 @@ export default function CampusLandingPage() {
             <Card
               title="Survival Tools"
               body="Built for late night cramming. Flashcards, journal entries, formulas — optimized for speed."
-              buttonLabel="Explore Survival Tools →"
+              buttonLabel="Browse Tools →"
               onClick={() => {
                 trackEvent("preview_cram_click", { campus_slug: campusSlug, course_slug: courseSlug });
                 if (firstChapterId) navigate(`/cram/${firstChapterId}?preview=true`);
@@ -169,6 +171,47 @@ export default function CampusLandingPage() {
                 trackEvent("preview_problems_click", { campus_slug: campusSlug, course_slug: courseSlug });
                 if (firstChapterId) navigate(`/campus/${campusSlug}/${courseSlug}/chapter-1`);
               }}
+            />
+
+            <Card
+              title="On Demand Videos"
+              body="Lee's full video library, 24/7. Binge what's there, request what's not. New videos drop every week."
+              buttonLabel={waitlistJoined ? "You're on the list 👍" : "Request Early Access"}
+              onClick={handleOnDemandClick}
+              disabled={waitlistJoined}
+              buttonBg={waitlistJoined ? GREEN : NAVY}
+              extra={
+                showEmailInput && !waitlistJoined ? (
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      type="email"
+                      value={waitlistEmail}
+                      onChange={(e) => setWaitlistEmail(e.target.value)}
+                      placeholder="your@university.edu"
+                      disabled={waitlistLoading}
+                      className="flex-1 rounded-lg px-3 text-[13px] outline-none focus:ring-2"
+                      style={{
+                        minHeight: 40,
+                        background: "#F8F9FA",
+                        border: "1px solid #E5E7EB",
+                        color: NAVY,
+                        fontFamily: "Inter, sans-serif",
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") submitWaitlist(waitlistEmail);
+                      }}
+                    />
+                    <button
+                      onClick={() => submitWaitlist(waitlistEmail)}
+                      disabled={waitlistLoading}
+                      className="rounded-lg px-4 text-[13px] font-semibold text-white disabled:opacity-60"
+                      style={{ background: NAVY, fontFamily: "Inter, sans-serif" }}
+                    >
+                      {waitlistLoading ? "..." : "Join →"}
+                    </button>
+                  </div>
+                ) : null
+              }
             />
 
             <Card
@@ -237,12 +280,14 @@ interface CardProps {
 }
 
 function Card({ title, body, buttonLabel, onClick, comingSoon, disabled, buttonBg, extra }: CardProps) {
-  const bg = buttonBg || RED;
+  const bg = buttonBg || NAVY;
+  const isGreen = bg === GREEN;
   return (
     <div
       className="bg-white rounded-2xl px-5 py-4 flex flex-col"
       style={{
-        boxShadow: "0 12px 40px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08)",
+        boxShadow: "0 12px 40px rgba(20,33,61,0.10), 0 2px 6px rgba(20,33,61,0.06)",
+        border: "1px solid rgba(20,33,61,0.06)",
       }}
     >
       <h3
@@ -262,11 +307,11 @@ function Card({ title, body, buttonLabel, onClick, comingSoon, disabled, buttonB
           onClick={disabled ? undefined : onClick}
           disabled={disabled}
           aria-disabled={disabled}
-          className={`w-full rounded-lg py-3 text-[14px] font-semibold text-white transition-all ${disabled ? "cursor-not-allowed" : "hover:brightness-110 active:scale-[0.99]"}`}
+          className={`self-start rounded-lg px-4 py-2 text-[13px] font-semibold text-white transition-all ${disabled ? "cursor-not-allowed" : "hover:brightness-110 active:scale-[0.99]"}`}
           style={{
             background: bg,
             fontFamily: "Inter, sans-serif",
-            boxShadow: disabled ? "none" : `0 4px 14px ${bg === RED ? "rgba(206,17,38,0.3)" : "rgba(22,163,74,0.3)"}`,
+            boxShadow: disabled ? "none" : `0 2px 8px ${isGreen ? "rgba(22,163,74,0.25)" : "rgba(20,33,61,0.20)"}`,
           }}
         >
           {buttonLabel}
