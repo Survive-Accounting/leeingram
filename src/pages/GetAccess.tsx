@@ -4,6 +4,7 @@ import { Check, Sword, PenLine, MonitorPlay, ShieldCheck, ChevronDown, Sparkles,
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { supabase } from "@/integrations/supabase/client";
+import { useEmailGate } from "@/contexts/EmailGateContext";
 import {
   getCampusProgression,
   resolveCourseSlug,
@@ -75,9 +76,38 @@ export default function GetAccess() {
 
   const [course, setCourse] = useState<CourseSlug>(resolvedCourseSlug);
   const [tier, setTier] = useState<TierId>("current");
-  const [email, setEmail] = useState(
-    emailParam || (typeof window !== "undefined" ? sessionStorage.getItem("student_email") || "" : ""),
-  );
+
+  // Resolve email: URL param → localStorage → sessionStorage.
+  // If a URL param exists, persist it to both stores so subsequent visits
+  // (and other tabs) stay frictionless.
+  const initialEmail = useMemo(() => {
+    if (typeof window === "undefined") return emailParam;
+    if (emailParam) {
+      try {
+        localStorage.setItem("student_email", emailParam);
+        sessionStorage.setItem("student_email", emailParam);
+      } catch { /* ignore */ }
+      return emailParam;
+    }
+    try {
+      return (
+        localStorage.getItem("student_email") ||
+        sessionStorage.getItem("student_email") ||
+        ""
+      );
+    } catch {
+      return "";
+    }
+  }, [emailParam]);
+
+  const [email, setEmail] = useState(initialEmail);
+  useEffect(() => {
+    if (initialEmail && initialEmail !== email) setEmail(initialEmail);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialEmail]);
+
+  const { requestAccess } = useEmailGate();
+
   const [showStickyBar, setShowStickyBar] = useState(false);
 
   useEffect(() => {
@@ -119,9 +149,17 @@ export default function GetAccess() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const handleCheckout = async () => {
-    if (!email.trim()) return;
     const cleanEmail = email.trim().toLowerCase();
-    sessionStorage.setItem("student_email", cleanEmail);
+    if (!cleanEmail) {
+      // No email captured — reopen the gate. After submit, it navigates back
+      // to /get-access?...&email=... which will populate state automatically.
+      requestAccess({ course });
+      return;
+    }
+    try {
+      localStorage.setItem("student_email", cleanEmail);
+      sessionStorage.setItem("student_email", cleanEmail);
+    } catch { /* ignore */ }
 
     const startIdx = progression.courses.findIndex((c) => c.slug === course);
     const includedCourses =
@@ -485,7 +523,6 @@ export default function GetAccess() {
                   onClick={handleCheckout}
                   disabled={
                     checkoutLoading ||
-                    !email.trim() ||
                     (!selectedTier && tier !== "lifetime")
                   }
                   className="w-full rounded-xl py-4 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
