@@ -33,6 +33,8 @@ const DISPLAY_ORDER = [
 const SUBTEXT_BY_SLUG: Record<string, string> = {
   "intro-accounting-1": "Financial Principles",
   "intro-accounting-2": "Managerial Principles",
+  "intermediate-accounting-1": "The weed-out course.",
+  "intermediate-accounting-2": "The weed-out course, part 2.",
 };
 
 const TEXTBOOK_BY_SLUG: Record<string, string> = {
