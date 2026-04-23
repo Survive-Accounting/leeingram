@@ -203,10 +203,11 @@ export default function StagingCoursesSection({
 
           {open && (
             <div
-              className="absolute z-20 left-0 right-0 mt-2 rounded-2xl overflow-hidden"
+              className="absolute left-0 right-0 mt-2 rounded-2xl overflow-hidden"
               style={{
                 background: "#fff",
                 boxShadow: "0 12px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06)",
+                zIndex: 110,
               }}
             >
               {ordered.map((c) => {
