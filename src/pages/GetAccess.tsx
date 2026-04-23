@@ -215,17 +215,20 @@ export default function GetAccess() {
               className="text-[22px] sm:text-[26px] mb-5"
               style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
             >
-              Get started
+              Select your access
             </h2>
 
             {/* Step 1 — course */}
             <label className="block text-[12px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-              1. Your course
+              1. Your current course
             </label>
             <div className="relative mb-5">
               <select
                 value={course}
-                onChange={(e) => setCourse(e.target.value as CourseSlug)}
+                onChange={(e) => {
+                  setCourse(e.target.value as CourseSlug);
+                  setTier("current");
+                }}
                 className="w-full appearance-none rounded-lg px-4 py-3 text-[14px] outline-none focus:ring-2"
                 style={{
                   background: "#F8FAFC",
@@ -241,57 +244,64 @@ export default function GetAccess() {
               <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: NAVY }} />
             </div>
 
-            {/* Step 2 — plan */}
+            {/* Step 2 — access tier */}
             <label className="block text-[12px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-              2. Pick a plan
+              2. How long do you want access?
             </label>
-            <div className="flex flex-col gap-2 mb-5">
-              {PLANS.map((p) => {
-                const active = plan === p.id;
+            <div role="radiogroup" className="flex flex-col gap-2 mb-5">
+              {tiers.map((t) => {
+                const active = (selectedTier?.id ?? "current") === t.id;
                 return (
                   <button
-                    key={p.id}
-                    onClick={() => setPlan(p.id as "semester" | "chapter")}
+                    key={t.id}
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setTier(t.id)}
                     className="text-left rounded-lg p-4 transition-all"
                     style={{
                       background: active ? "#F0F9FF" : "#fff",
                       border: `2px solid ${active ? NAVY : "#E2E8F0"}`,
                       fontFamily: "Inter, sans-serif",
+                      boxShadow: active ? "0 4px 12px rgba(20,33,61,0.08)" : "none",
                     }}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-2.5 min-w-0">
                         <div
-                          className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
+                          className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5"
                           style={{ border: `2px solid ${active ? NAVY : "#CBD5E1"}` }}
                         >
                           {active && <div className="w-2 h-2 rounded-full" style={{ background: NAVY }} />}
                         </div>
-                        <span className="text-[14px] font-semibold" style={{ color: NAVY }}>
-                          {p.label}
-                        </span>
-                        {p.tag && (
-                          <span
-                            className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
-                            style={{ background: RED, color: "#fff" }}
-                          >
-                            {p.tag}
-                          </span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[14px] font-semibold" style={{ color: NAVY }}>
+                              {t.title}
+                            </span>
+                            {t.badge && (
+                              <span
+                                className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                                style={{ background: RED, color: "#fff" }}
+                              >
+                                {t.badge}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[12px] mt-1" style={{ color: "#64748B" }}>
+                            {t.subtext}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-[16px] font-bold leading-none" style={{ color: NAVY }}>
+                          ${t.price}
+                        </div>
+                        {t.coursesAhead > 0 && (
+                          <div className="text-[10px] mt-0.5" style={{ color: "#94A3B8" }}>
+                            total
+                          </div>
                         )}
                       </div>
-                      <div className="flex items-baseline gap-1.5 shrink-0">
-                        {p.anchor && (
-                          <span className="text-[12px] line-through" style={{ color: "#94A3B8" }}>
-                            ${p.anchor}
-                          </span>
-                        )}
-                        <span className="text-[16px] font-bold" style={{ color: NAVY }}>
-                          ${p.price}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-[12px] mt-1.5 pl-6" style={{ color: "#64748B" }}>
-                      {p.description}
                     </div>
                   </button>
                 );
@@ -319,7 +329,7 @@ export default function GetAccess() {
             {/* CTA */}
             <button
               onClick={handleCheckout}
-              disabled={!email.trim()}
+              disabled={!email.trim() || !selectedTier}
               className="w-full rounded-xl py-4 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
@@ -327,7 +337,7 @@ export default function GetAccess() {
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px rgba(206,17,38,0.35)",
               }}
             >
-              Buy {selectedPlan.label} — ${selectedPlan.price} →
+              {selectedTier ? `Get Access — $${selectedTier.price} →` : "Get Access →"}
             </button>
 
             <div className="mt-3 flex items-center justify-center gap-1.5 text-[12px]" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
