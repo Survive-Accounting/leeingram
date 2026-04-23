@@ -105,11 +105,16 @@ export default function StagingEmailPromptModal({
               >
                 Enter your school email
               </h2>
-              {courseName && (
+              {chapterNumber != null ? (
+                <p className="text-[13px] mt-1" style={{ color: "#6B7280" }}>
+                  Takes you straight to Ch. {chapterNumber}
+                  {chapterName ? ` — ${chapterName}` : ""} study tools.
+                </p>
+              ) : courseName ? (
                 <p className="text-[13px] mt-1" style={{ color: "#6B7280" }}>
                   Takes you straight to {courseName} study tools.
                 </p>
-              )}
+              ) : null}
             </div>
             <input
               type="email"
