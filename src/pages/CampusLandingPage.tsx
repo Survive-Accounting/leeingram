@@ -135,7 +135,7 @@ export default function CampusLandingPage() {
             {/* Card 2 — Practice Problems */}
             <Card
               title={`${problemLabel} Practice Problems`}
-              body="Run through mock textbook problems and check your work with Lee's solutions."
+              body="Run through textbook problems. Check your work with Lee's solutions."
               buttonLabel="Browse Problems →"
               onClick={() => {
                 trackEvent("preview_problems_click", { campus_slug: campusSlug, course_slug: courseSlug });
