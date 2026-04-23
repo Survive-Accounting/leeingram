@@ -4,9 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import CampusHeader from "@/components/campus/CampusHeader";
 import PreviewPurchaseBar from "@/components/PreviewPurchaseBar";
 import { useEventTracking } from "@/hooks/useEventTracking";
+import { toast } from "sonner";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
+const GREEN = "#16A34A";
 const BG_GRADIENT = "linear-gradient(160deg, #1a1a2e 0%, #16213e 40%, #c0392b 100%)";
 
 const COURSE_SLUG_MAP: Record<string, string> = {
@@ -23,6 +25,8 @@ const COURSE_NAMES: Record<string, string> = {
   "intro-accounting-2": "Introductory Accounting 2",
 };
 
+const WAITLIST_TAG = "tutoring_on_demand_waitlist";
+
 export default function CampusLandingPage() {
   const { campusSlug = "general", courseSlug = "intermediate-accounting-2" } = useParams();
   const navigate = useNavigate();
@@ -35,6 +39,12 @@ export default function CampusLandingPage() {
   const [loading, setLoading] = useState(true);
   const [problemCount, setProblemCount] = useState<number | null>(null);
   const [firstChapterId, setFirstChapterId] = useState<string | null>(null);
+
+  // On-demand videos waitlist state
+  const [waitlistJoined, setWaitlistJoined] = useState(false);
+  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
 
   useEffect(() => {
     trackPageView("campus_landing", { campus_slug: campusSlug, course_slug: courseSlug });
@@ -79,6 +89,40 @@ export default function CampusLandingPage() {
     load();
   }, [campusSlug, courseSlug, courseId]);
 
+  const submitWaitlist = async (email: string) => {
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast.error("Enter a valid email");
+      return;
+    }
+    setWaitlistLoading(true);
+    try {
+      const { error } = await (supabase as any).from("waitlist_signups").upsert(
+        { email: trimmed, tag: WAITLIST_TAG, campus_slug: campusSlug, course_slug: courseSlug },
+        { onConflict: "email,tag" },
+      );
+      if (error) throw error;
+      sessionStorage.setItem("student_email", trimmed);
+      setWaitlistJoined(true);
+      setShowEmailInput(false);
+      trackEvent("waitlist_join", { tag: WAITLIST_TAG, campus_slug: campusSlug });
+    } catch {
+      toast.error("Something went wrong. Try again.");
+    } finally {
+      setWaitlistLoading(false);
+    }
+  };
+
+  const handleOnDemandClick = () => {
+    if (waitlistJoined) return;
+    const existing = sessionStorage.getItem("student_email");
+    if (existing) {
+      submitWaitlist(existing);
+    } else {
+      setShowEmailInput(true);
+    }
+  };
+
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center text-white text-sm" style={{ background: BG_GRADIENT }}>Loading...</div>;
   }
@@ -108,9 +152,9 @@ export default function CampusLandingPage() {
         <div className="max-w-[1100px] mx-auto w-full px-4 sm:px-6 pb-32">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
             <Card
-              title="Cram Tools"
-              body="Flashcards, journal entries, formulas — the stuff that actually shows up on your exam."
-              buttonLabel="Explore Cram Tools →"
+              title="Survival Tools"
+              body="Built for late night cramming. Flashcards, journal entries, formulas — optimized for speed."
+              buttonLabel="Explore Survival Tools →"
               onClick={() => {
                 trackEvent("preview_cram_click", { campus_slug: campusSlug, course_slug: courseSlug });
                 if (firstChapterId) navigate(`/cram/${firstChapterId}?preview=true`);
@@ -119,7 +163,7 @@ export default function CampusLandingPage() {
 
             <Card
               title="Practice Problems"
-              body="Work the problems. Check your answers. Try not to cry. (Lee's solutions help with that last part.)"
+              body="Your solutions manual sucks. Ours actually teaches you something."
               buttonLabel="Browse Problems →"
               onClick={() => {
                 trackEvent("preview_problems_click", { campus_slug: campusSlug, course_slug: courseSlug });
@@ -128,9 +172,44 @@ export default function CampusLandingPage() {
             />
 
             <Card
-              title="Tutor on Tap"
-              body="Submit a tutoring question — Lee sends back a personal video answer. Like magic."
-              comingSoon
+              title="On Demand Videos"
+              body="Lee's full video library, 24/7. Binge what's there, request what's not. New videos drop every week."
+              buttonLabel={waitlistJoined ? "You're on the list 👍" : "Request Early Access →"}
+              onClick={handleOnDemandClick}
+              disabled={waitlistJoined}
+              buttonBg={waitlistJoined ? GREEN : RED}
+              extra={
+                showEmailInput && !waitlistJoined ? (
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      type="email"
+                      value={waitlistEmail}
+                      onChange={(e) => setWaitlistEmail(e.target.value)}
+                      placeholder="your@university.edu"
+                      disabled={waitlistLoading}
+                      className="flex-1 rounded-lg px-3 text-[13px] outline-none focus:ring-2"
+                      style={{
+                        minHeight: 40,
+                        background: "#F8F9FA",
+                        border: "1px solid #E5E7EB",
+                        color: NAVY,
+                        fontFamily: "Inter, sans-serif",
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") submitWaitlist(waitlistEmail);
+                      }}
+                    />
+                    <button
+                      onClick={() => submitWaitlist(waitlistEmail)}
+                      disabled={waitlistLoading}
+                      className="rounded-lg px-4 text-[13px] font-semibold text-white disabled:opacity-60"
+                      style={{ background: NAVY, fontFamily: "Inter, sans-serif" }}
+                    >
+                      {waitlistLoading ? "..." : "Join →"}
+                    </button>
+                  </div>
+                ) : null
+              }
             />
           </div>
         </div>
@@ -153,9 +232,12 @@ interface CardProps {
   onClick?: () => void;
   comingSoon?: boolean;
   disabled?: boolean;
+  buttonBg?: string;
+  extra?: React.ReactNode;
 }
 
-function Card({ title, body, buttonLabel, onClick, comingSoon, disabled }: CardProps) {
+function Card({ title, body, buttonLabel, onClick, comingSoon, disabled, buttonBg, extra }: CardProps) {
+  const bg = buttonBg || RED;
   return (
     <div
       className="bg-white rounded-2xl px-5 py-4 flex flex-col"
@@ -180,12 +262,17 @@ function Card({ title, body, buttonLabel, onClick, comingSoon, disabled }: CardP
           onClick={disabled ? undefined : onClick}
           disabled={disabled}
           aria-disabled={disabled}
-          className={`w-full rounded-lg py-3 text-[14px] font-semibold text-white transition-all ${disabled ? "cursor-not-allowed opacity-70" : "hover:brightness-110 active:scale-[0.99]"}`}
-          style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.3)" }}
+          className={`w-full rounded-lg py-3 text-[14px] font-semibold text-white transition-all ${disabled ? "cursor-not-allowed" : "hover:brightness-110 active:scale-[0.99]"}`}
+          style={{
+            background: bg,
+            fontFamily: "Inter, sans-serif",
+            boxShadow: disabled ? "none" : `0 4px 14px ${bg === RED ? "rgba(206,17,38,0.3)" : "rgba(22,163,74,0.3)"}`,
+          }}
         >
           {buttonLabel}
         </button>
       )}
+      {extra}
       {comingSoon && (
         <p
           className="text-[12px] font-medium text-center mt-2"
