@@ -525,6 +525,8 @@ function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }:
   const [tab, setTab] = useState<"survival" | "practice">("survival");
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [contentKey, setContentKey] = useState(0);
+  const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
+  const [scalingId, setScalingId] = useState<string | null>(null);
 
   // Skeleton min-duration 400ms
   useEffect(() => {
@@ -533,13 +535,36 @@ function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }:
     return () => clearTimeout(t);
   }, [tab, loading]);
 
-  // Bump key when tab changes for fade transition
+  // Bump key when tab/chapter changes for fade transition
   useEffect(() => {
     setContentKey((k) => k + 1);
-  }, [tab]);
+  }, [tab, activeChapter?.id]);
 
   const tagFor = (ch: Chapter) =>
     `intent_${tab === "survival" ? "cram_tools" : "practice_problems"}_ch${ch.chapter_number}`;
+
+  const handleChapterPick = (ch: Chapter) => {
+    onChapterClick(ch, tagFor(ch)); // fire intent tag
+    setScalingId(ch.id);
+    setTimeout(() => {
+      setActiveChapter(ch);
+      setScalingId(null);
+    }, 150);
+  };
+
+  // If a chapter is active, render the ChapterView
+  if (activeChapter) {
+    return (
+      <ChapterView
+        courseName={courseName}
+        chapter={activeChapter}
+        tab={tab}
+        onTabChange={setTab}
+        onBack={() => setActiveChapter(null)}
+        onChange={onChange}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col h-full" style={{ fontFamily: "Inter, sans-serif" }}>
@@ -639,7 +664,7 @@ function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }:
               <button
                 key={ch.id}
                 type="button"
-                onClick={() => onChapterClick(ch, tagFor(ch))}
+                onClick={() => handleChapterPick(ch)}
                 className="relative rounded-lg p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
                 style={{
                   background: "#fff",
@@ -648,6 +673,8 @@ function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }:
                   opacity: 0,
                   animation: `demoCardIn 320ms ease-out forwards`,
                   animationDelay: `${i * 80}ms`,
+                  transform: scalingId === ch.id ? "scale(1.05)" : undefined,
+                  transition: scalingId === ch.id ? "transform 150ms ease-out" : undefined,
                 }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLElement).style.borderColor = NAVY;
@@ -666,6 +693,294 @@ function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }:
                   {ch.chapter_name}
                 </p>
               </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── ChapterView (renders inside the laptop screen when a chapter is selected) ──
+interface ChapterViewProps {
+  courseName: string;
+  chapter: Chapter;
+  tab: "survival" | "practice";
+  onTabChange: (t: "survival" | "practice") => void;
+  onBack: () => void;
+  onChange: () => void;
+}
+
+type SurvivalPill = "flashcards" | "journal_entries" | "formulas";
+type PracticePill = "be" | "ex" | "p";
+
+interface ProblemRow {
+  id: string;
+  asset_name: string;
+  source_ref: string | null;
+}
+
+function ChapterView({ courseName, chapter, tab, onTabChange, onBack, onChange }: ChapterViewProps) {
+  const [survivalPill, setSurvivalPill] = useState<SurvivalPill>("flashcards");
+  const [practicePill, setPracticePill] = useState<PracticePill>("be");
+  const [pillSkeleton, setPillSkeleton] = useState(true);
+  const [contentKey, setContentKey] = useState(0);
+  const [problems, setProblems] = useState<ProblemRow[]>([]);
+  const [problemsLoading, setProblemsLoading] = useState(false);
+  const [activeProblemId, setActiveProblemId] = useState<string | null>(null);
+  const [solutionLoading, setSolutionLoading] = useState(false);
+
+  useEffect(() => {
+    setPillSkeleton(true);
+    setContentKey((k) => k + 1);
+    const t = setTimeout(() => setPillSkeleton(false), 400);
+    return () => clearTimeout(t);
+  }, [tab, survivalPill, practicePill]);
+
+  useEffect(() => {
+    if (tab !== "practice") return;
+    setProblemsLoading(true);
+    const prefix = practicePill === "be" ? "BE" : practicePill === "ex" ? "EX" : "P";
+    (supabase as any)
+      .from("teaching_assets")
+      .select("id, asset_name, source_ref")
+      .eq("chapter_id", chapter.id)
+      .eq("status", "approved")
+      .ilike("source_ref", `${prefix}%`)
+      .order("source_ref")
+      .then(({ data }: any) => {
+        setProblems(
+          (data ?? []).map((d: any) => ({ id: d.id, asset_name: d.asset_name, source_ref: d.source_ref })),
+        );
+        setProblemsLoading(false);
+      });
+  }, [tab, practicePill, chapter.id]);
+
+  const handleViewSolution = (id: string) => {
+    setActiveProblemId(id);
+    setSolutionLoading(true);
+    setTimeout(() => setSolutionLoading(false), 600);
+  };
+
+  const renderShimmer = (count: number, height = 64) => (
+    <div className="space-y-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          className="rounded-lg w-full"
+          style={{
+            height,
+            background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+            backgroundSize: "200% 100%",
+            animation: "demoShimmer 1.5s linear infinite",
+            border: "1px solid #E5E7EB",
+          }}
+        />
+      ))}
+    </div>
+  );
+
+  // Solution viewer with paywall placeholders
+  if (activeProblemId) {
+    const problem = problems.find((p) => p.id === activeProblemId);
+    return (
+      <div className="flex flex-col h-full" style={{ fontFamily: "Inter, sans-serif" }}>
+        <style>{`
+          @keyframes demoShimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+          @keyframes demoFadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+        `}</style>
+        <div className="flex items-center justify-between mb-3 px-1">
+          <button
+            type="button"
+            onClick={() => setActiveProblemId(null)}
+            className="text-[12px] font-semibold hover:opacity-70"
+            style={{ color: NAVY, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            ← Back to problems
+          </button>
+          <p className="text-[11px]" style={{ color: "#9CA3AF" }}>
+            {courseName} › Ch {chapter.chapter_number}
+          </p>
+        </div>
+        {solutionLoading ? (
+          renderShimmer(4, 80)
+        ) : (
+          <div style={{ animation: "demoFadeIn 300ms ease-out" }}>
+            <div className="rounded-lg p-4 mb-3" style={{ background: "#fff", border: "1px solid #E5E7EB" }}>
+              <p className="text-[10px] font-semibold uppercase mb-1" style={{ color: "#9CA3AF", letterSpacing: "0.06em" }}>
+                Problem {problem?.source_ref}
+              </p>
+              <p className="text-[13px]" style={{ color: NAVY }}>
+                Survive Company A purchased equipment for $24,000 with a useful life of 6 years and a residual value of $0. Compute depreciation using the straight-line method.
+              </p>
+            </div>
+            {["Explanation", "Journal Entries", "Final Answer"].map((label) => (
+              <div
+                key={label}
+                className="relative rounded-lg p-4 mb-2 overflow-hidden"
+                style={{ background: "#fff", border: "1px solid #E5E7EB", minHeight: 80 }}
+              >
+                <p className="text-[12px] font-bold mb-1" style={{ color: NAVY }}>{label}</p>
+                <div style={{ filter: "blur(5px)", userSelect: "none" }}>
+                  <p className="text-[12px]" style={{ color: "#6B7280" }}>
+                    Step 1: Calculate annual depreciation expense.<br />
+                    Cost − Residual / Useful life = $24,000 / 6 = $4,000 per year.
+                  </p>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(255,255,255,0.45)" }}>
+                  <span
+                    className="text-[11px] font-semibold uppercase px-2.5 py-1 rounded"
+                    style={{ background: NAVY, color: "#fff", letterSpacing: "0.06em" }}
+                  >
+                    🔒 Unlock with access
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const survivalPills: { key: SurvivalPill; label: string }[] = [
+    { key: "flashcards", label: "Flashcards" },
+    { key: "journal_entries", label: "Journal Entries" },
+    { key: "formulas", label: "Formulas" },
+  ];
+  const practicePills: { key: PracticePill; label: string }[] = [
+    { key: "be", label: "Brief Exercises" },
+    { key: "ex", label: "Exercises" },
+    { key: "p", label: "Problems" },
+  ];
+
+  return (
+    <div className="flex flex-col h-full" style={{ fontFamily: "Inter, sans-serif" }}>
+      <style>{`
+        @keyframes demoShimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes demoFadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+      `}</style>
+
+      {/* Breadcrumb */}
+      <div className="flex items-center justify-between mb-3 px-1 gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            type="button"
+            onClick={onBack}
+            className="text-[12px] font-semibold hover:opacity-70 shrink-0"
+            style={{ color: NAVY, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            ← Back
+          </button>
+          <p className="text-[11px] truncate" style={{ color: "#9CA3AF" }}>
+            {courseName} › Ch {chapter.chapter_number}: {chapter.chapter_name}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onChange}
+          className="text-[12px] font-semibold hover:opacity-70 shrink-0"
+          style={{ color: NAVY, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        >
+          Change →
+        </button>
+      </div>
+
+      {/* Tab bar */}
+      <div className="flex gap-1 p-1 rounded-lg mb-3" style={{ background: "#EEF0F3", border: "1px solid #E5E7EB" }}>
+        {[
+          { key: "survival" as const, label: "Survival Tools" },
+          { key: "practice" as const, label: "Practice Problems" },
+        ].map((t) => {
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => onTabChange(t.key)}
+              className="flex-1 py-2 text-[13px] font-semibold rounded-md transition-all"
+              style={{
+                background: active ? NAVY : "transparent",
+                color: active ? "#fff" : "#6B7280",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Pills */}
+      <div className="flex flex-wrap gap-2 mb-4 px-1">
+        {(tab === "survival" ? survivalPills : practicePills).map((pill: any) => {
+          const active = tab === "survival" ? survivalPill === pill.key : practicePill === pill.key;
+          return (
+            <button
+              key={pill.key}
+              type="button"
+              onClick={() => {
+                if (tab === "survival") setSurvivalPill(pill.key);
+                else setPracticePill(pill.key);
+              }}
+              className="px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all"
+              style={{
+                background: active ? NAVY : "transparent",
+                color: active ? "#fff" : NAVY,
+                border: `1px solid ${NAVY}`,
+                cursor: "pointer",
+              }}
+            >
+              {pill.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Content */}
+      <div key={contentKey} style={{ animation: "demoFadeIn 200ms ease-out" }}>
+        {pillSkeleton || (tab === "practice" && problemsLoading) ? (
+          renderShimmer(tab === "practice" ? 5 : 3, tab === "practice" ? 56 : 80)
+        ) : tab === "survival" ? (
+          <div className="rounded-lg p-8 text-center" style={{ background: "#fff", border: "1px solid #E5E7EB" }}>
+            <p className="text-[13px] font-bold mb-1" style={{ color: NAVY }}>
+              {survivalPills.find((p) => p.key === survivalPill)?.label}
+            </p>
+            <p className="text-[12px]" style={{ color: "#9CA3AF" }}>
+              Content coming soon for this chapter.
+            </p>
+          </div>
+        ) : problems.length === 0 ? (
+          <p className="text-[13px] text-center py-6" style={{ color: "#9CA3AF" }}>
+            No problems available for this type yet.
+          </p>
+        ) : (
+          <div className="space-y-1.5">
+            {problems.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all hover:shadow-sm"
+                style={{ background: "#fff", border: "1px solid #E5E7EB" }}
+              >
+                <span
+                  className="text-[11px] font-bold uppercase shrink-0"
+                  style={{ color: NAVY, minWidth: 48, letterSpacing: "0.04em" }}
+                >
+                  {p.source_ref}
+                </span>
+                <span className="flex-1 text-[12px] truncate" style={{ color: "#6B7280" }}>
+                  Practice problem
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleViewSolution(p.id)}
+                  className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-md hover:opacity-80 transition-opacity"
+                  style={{ background: NAVY, color: "#fff", border: "none", cursor: "pointer" }}
+                >
+                  View Solution →
+                </button>
+              </div>
             ))}
           </div>
         )}
