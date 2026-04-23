@@ -101,6 +101,53 @@ export default function StagingLandingPage() {
         sessionStorage.setItem("sa_email_override", data.email_override || "");
       }
 
+      // Increment campus enrollment count + capture lead for .edu submissions.
+      const universityDomain = trimmed.split("@")[1] || null;
+      const universityName = (data?.campus_name as string | undefined) ?? null;
+      let campusSignupNumber: number | null = (data?.student_number as number | undefined) ?? null;
+
+      if (universityDomain) {
+        try {
+          const { data: existing } = await supabase
+            .from("campus_enrollments")
+            .select("enrollment_count")
+            .eq("university_domain", universityDomain)
+            .maybeSingle();
+          const nextCount = (existing?.enrollment_count ?? 0) + 1;
+          await supabase
+            .from("campus_enrollments")
+            .upsert(
+              {
+                university_domain: universityDomain,
+                university_name: universityName,
+                enrollment_count: nextCount,
+              },
+              { onConflict: "university_domain" },
+            );
+          campusSignupNumber = campusSignupNumber ?? nextCount;
+        } catch {
+          /* non-blocking */
+        }
+      }
+
+      try {
+        const intentTag = pendingChapterNumber != null
+          ? `intent_chapter_${pendingChapterNumber}`
+          : `intent_course_${course.slug}`;
+        await supabase.from("landing_page_leads").insert({
+          email: trimmed,
+          email_type: "edu",
+          university_name: universityName,
+          university_domain: universityDomain,
+          course_slug: course.slug,
+          intent_tag: intentTag,
+          campus_signup_number: campusSignupNumber,
+          source: "landing_page",
+        });
+      } catch {
+        /* non-blocking */
+      }
+
       // Ole Miss skips the founding-student modal entirely — straight to preview.
       if (data?.campus_slug === "ole-miss") {
         setEmailPromptOpen(false);
