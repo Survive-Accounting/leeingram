@@ -37,14 +37,40 @@ export default function PostCheckout() {
         const result = data as {
           verified?: boolean;
           email?: string | null;
+          customer_email?: string | null;
           payment_status?: string;
+          amount_total?: number | null;
+          metadata?: Record<string, string> | null;
         } | null;
 
         if (result?.verified) {
-          if (result.email) {
-            sessionStorage.setItem("student_email", result.email.toLowerCase());
+          const email = (result.customer_email ?? result.email ?? "").toLowerCase() || null;
+          const md = result.metadata ?? {};
+          const includedCourses = (md.includedCourses ?? "")
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          const purchase = {
+            email,
+            campus: md.campus ?? null,
+            selectedCourse: md.selectedCourse ?? null,
+            selectedPlan: md.selectedPlan ?? null,
+            includedCourses,
+            amountPaid:
+              typeof result.amount_total === "number"
+                ? result.amount_total / 100
+                : md.amount
+                  ? Number(md.amount)
+                  : null,
+            verifiedAt: new Date().toISOString(),
+          };
+          if (email) sessionStorage.setItem("student_email", email);
+          try {
+            localStorage.setItem("sa_purchase_context", JSON.stringify(purchase));
+          } catch {
+            // storage may be full or disabled — non-fatal
           }
-          setState({ phase: "verified", email: result.email ?? null });
+          setState({ phase: "verified", email });
           // Brief success flash, then redirect
           setTimeout(() => {
             if (!cancelled) navigate("/dashboard", { replace: true });
