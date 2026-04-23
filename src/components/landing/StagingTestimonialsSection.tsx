@@ -10,47 +10,40 @@ interface StagingTestimonialsSectionProps {
   onCtaClick: () => void;
 }
 
-/** Slot machine digit — cycles random digits then locks on target. */
-function SlotDigit({ target, delay, active }: { target: number; delay: number; active: boolean }) {
-  const [digit, setDigit] = useState(0);
+/** Counter that animates from 0 to target with ease-out. */
+function Counter({ target, active }: { target: number; active: boolean }) {
+  const [value, setValue] = useState(0);
   const lockedRef = useRef(false);
 
   useEffect(() => {
     if (!active || lockedRef.current) return;
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReduced) {
-      setDigit(target);
+      setValue(target);
       lockedRef.current = true;
       return;
     }
-    const startAt = performance.now() + delay;
-    const totalDuration = 1500 - delay;
+    const startAt = performance.now();
+    const duration = 1800;
     let raf = 0;
     const tick = (now: number) => {
-      if (now < startAt) {
-        raf = requestAnimationFrame(tick);
-        return;
-      }
       const elapsed = now - startAt;
-      const t = Math.min(elapsed / totalDuration, 1);
-      // ease-out: faster early, slower late
+      const t = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - t, 3);
+      const current = Math.floor(eased * target);
+      setValue(current);
       if (t >= 1) {
-        setDigit(target);
+        setValue(target);
         lockedRef.current = true;
         return;
       }
-      // Spin frequency decreases as we ease out
-      const spinInterval = 40 + eased * 200;
-      const phase = Math.floor(elapsed / spinInterval);
-      setDigit(phase % 10);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [active, target, delay]);
+  }, [active, target]);
 
-  return <span style={{ display: "inline-block", minWidth: "0.6em", textAlign: "center" }}>{digit}</span>;
+  return <span>{value.toLocaleString()}</span>;
 }
 
 export default function StagingTestimonialsSection({ onCtaClick }: StagingTestimonialsSectionProps) {
