@@ -33,6 +33,8 @@ interface StagingEmailPromptModalProps {
   chapterNumber?: number | null;
   chapterName?: string | null;
   loading?: boolean;
+  /** When 'pricing', shows pricing-specific headline copy. */
+  intent?: "default" | "pricing";
 }
 
 /** Tier copy keyed by founding student number N. */
@@ -56,6 +58,7 @@ export default function StagingEmailPromptModal({
   chapterNumber,
   chapterName,
   loading = false,
+  intent = "default",
 }: StagingEmailPromptModalProps) {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -154,9 +157,13 @@ export default function StagingEmailPromptModal({
                 className="text-[18px] font-semibold"
                 style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
               >
-                Enter your school email
+                {intent === "pricing" ? "What's your school email?" : "Enter your school email"}
               </h2>
-              {chapterNumber != null ? (
+              {intent === "pricing" ? (
+                <p className="text-[13px] mt-1" style={{ color: "#6B7280" }}>
+                  We'll use this to find your campus pricing.
+                </p>
+              ) : chapterNumber != null ? (
                 <p className="text-[13px] mt-1" style={{ color: "#6B7280" }}>
                   Takes you straight to Ch. {chapterNumber}
                   {chapterName ? ` — ${chapterName}` : ""} study tools.

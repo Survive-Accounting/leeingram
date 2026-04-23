@@ -66,6 +66,7 @@ export default function StagingLandingPage() {
   const [pendingChapterNumber, setPendingChapterNumber] = useState<number | null>(null);
   const [pendingChapterName, setPendingChapterName] = useState<string | null>(null);
   const [emailPromptOpen, setEmailPromptOpen] = useState(false);
+  const [emailPromptIntent, setEmailPromptIntent] = useState<"default" | "pricing">("default");
   const [emailPromptLoading, setEmailPromptLoading] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [getStartedOpen, setGetStartedOpen] = useState(false);
@@ -174,6 +175,7 @@ export default function StagingLandingPage() {
       const data = await resolveEmail(capturedEmail, course);
       if (data) navigate(`/campus/${data.campus_slug}/${course.slug}`);
     } else {
+      setEmailPromptIntent("default");
       setEmailPromptOpen(true);
     }
   };
@@ -187,6 +189,7 @@ export default function StagingLandingPage() {
       const data = await resolveEmail(capturedEmail, course);
       if (data) navigate(`/campus/${data.campus_slug}/${course.slug}/${chapterNumber}`);
     } else {
+      setEmailPromptIntent("default");
       setEmailPromptOpen(true);
     }
   };
@@ -215,7 +218,16 @@ export default function StagingLandingPage() {
       {/* Spacer for staging banner */}
       <div style={{ height: 24 }} />
 
-      <StagingNavbar onCtaClick={() => handleCardClick(defaultCourse)} />
+      <StagingNavbar
+        onCtaClick={() => handleCardClick(defaultCourse)}
+        onPricingClick={() => {
+          setPendingCourse(defaultCourse);
+          setPendingChapterNumber(null);
+          setPendingChapterName(null);
+          setEmailPromptIntent("pricing");
+          setEmailPromptOpen(true);
+        }}
+      />
 
       <StagingHero
         liveCourse={defaultCourse}
@@ -253,13 +265,17 @@ export default function StagingLandingPage() {
 
       <StagingEmailPromptModal
         open={emailPromptOpen}
-        onClose={() => setEmailPromptOpen(false)}
+        onClose={() => {
+          setEmailPromptOpen(false);
+          setEmailPromptIntent("default");
+        }}
         onSubmit={(email) => (pendingCourse ? resolveEmail(email, pendingCourse) : Promise.resolve(null))}
         onContinue={handleContinue}
         courseName={pendingCourse?.name}
         chapterNumber={pendingChapterNumber}
         chapterName={pendingChapterName}
         loading={emailPromptLoading || resolving}
+        intent={emailPromptIntent}
       />
 
       <StagingGetStartedModal
