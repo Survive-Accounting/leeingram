@@ -196,7 +196,7 @@ export default function GetAccess() {
             <div className="relative mb-5">
               <select
                 value={course}
-                onChange={(e) => setCourse(e.target.value)}
+                onChange={(e) => setCourse(e.target.value as CourseSlug)}
                 className="w-full appearance-none rounded-lg px-4 py-3 text-[14px] outline-none focus:ring-2"
                 style={{
                   background: "#F8FAFC",
@@ -205,8 +205,8 @@ export default function GetAccess() {
                   fontFamily: "Inter, sans-serif",
                 }}
               >
-                {COURSES.map((c) => (
-                  <option key={c.slug} value={c.slug}>{c.name}</option>
+                {progression.courses.map((c) => (
+                  <option key={c.slug} value={c.slug}>{formatCourseLabel(c)}</option>
                 ))}
               </select>
               <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: NAVY }} />
