@@ -161,8 +161,8 @@ export default function StagingLandingPage() {
         ⚠️ STAGING — Changes here won't affect the live homepage
       </div>
 
-      {/* Floating navbar spacer */}
-      <div style={{ height: 80 }} />
+      {/* Spacer for staging banner */}
+      <div style={{ height: 24 }} />
 
       <StagingNavbar onCtaClick={() => handleCardClick(defaultCourse)} />
 
