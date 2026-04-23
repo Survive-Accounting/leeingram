@@ -1,10 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, Video, BookOpen, PenLine } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
+const FINALS_DATE = new Date(2026, 4, 4); // May 4, 2026 (local)
+
+/** Returns weeks-only countdown text, or null after May 4. */
+function getFinalsCountdownText(): string | null {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(FINALS_DATE.getFullYear(), FINALS_DATE.getMonth(), FINALS_DATE.getDate());
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const days = Math.ceil((target.getTime() - today.getTime()) / msPerDay);
+  if (days <= 0) return null;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 1) return "Final exams are almost here.";
+  return `Final exams are ${weeks} weeks away.`;
+}
 
 interface Course {
   id: string;
@@ -21,6 +35,8 @@ interface StagingCoursesSectionProps {
   onCardClick: (course: Course) => void;
   onChapterClick?: (course: Course, chapterNumber: number) => void;
   onExpansionClick?: () => void;
+  /** Opens the Get Started email modal; passes selected slug for preselection. */
+  onGetStartedClick?: (preselectedSlug: string | null) => void;
 }
 
 const DISPLAY_ORDER = [
@@ -62,10 +78,13 @@ export default function StagingCoursesSection({
   courses,
   onCardClick,
   onChapterClick,
+  onGetStartedClick,
 }: StagingCoursesSectionProps) {
   const ordered = DISPLAY_ORDER
     .map((slug) => courses.find((c) => c.slug === slug))
     .filter(Boolean) as Course[];
+
+  const countdownText = useMemo(() => getFinalsCountdownText(), []);
 
   // No pre-selection
   const [selectedSlug, setSelectedSlug] = useState<string>("");
@@ -300,6 +319,44 @@ export default function StagingCoursesSection({
               })}
             </div>
           )}
+        </div>
+
+        {/* Below-dropdown stack: countdown + urgency CTA */}
+        <div style={{ marginTop: 20, marginBottom: 20 }} className="flex flex-col items-center gap-1.5">
+          {countdownText && (
+            <p
+              className="text-center"
+              style={{
+                color: "rgba(255,255,255,0.85)",
+                fontSize: 13,
+                fontFamily: "Inter, sans-serif",
+                fontWeight: 400,
+                textShadow: "1px 1px 4px rgba(0,0,0,0.5)",
+              }}
+            >
+              {countdownText}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => onGetStartedClick?.(selected?.slug ?? null)}
+            className="text-center hover:opacity-90 transition-opacity"
+            style={{
+              color: "#fff",
+              fontSize: 13,
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 400,
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
+              textShadow: "1px 1px 4px rgba(0,0,0,0.5)",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            Start studying now →
+          </button>
         </div>
 
         {/* Stats + Chapters — only after selection */}

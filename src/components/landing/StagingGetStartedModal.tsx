@@ -24,6 +24,8 @@ interface StagingGetStartedModalProps {
   open: boolean;
   onClose: () => void;
   courses: CtaCourse[];
+  /** If provided, modal opens at Step 2 with this course preselected. */
+  preselectedCourseSlug?: string | null;
   /** Should validate + resolve campus and (when ready) navigate. */
   onSubmit: (email: string, course: CtaCourse) => Promise<void>;
 }
@@ -32,6 +34,7 @@ export default function StagingGetStartedModal({
   open,
   onClose,
   courses,
+  preselectedCourseSlug,
   onSubmit,
 }: StagingGetStartedModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
@@ -43,14 +46,18 @@ export default function StagingGetStartedModal({
 
   useEffect(() => {
     if (open) {
+      const preset = preselectedCourseSlug
+        ? courses.find((c) => c.slug === preselectedCourseSlug) ?? null
+        : null;
       setStep(1);
       setEmail("");
       setEmailError(null);
       setStep1Loading(false);
-      setSelectedCourse(null);
+      setSelectedCourse(preset);
       setStep2Loading(false);
     }
-  }, [open]);
+  }, [open, preselectedCourseSlug, courses]);
+
 
   const handleStep1 = (e: React.FormEvent) => {
     e.preventDefault();

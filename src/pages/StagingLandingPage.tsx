@@ -68,6 +68,7 @@ export default function StagingLandingPage() {
   const [emailPromptLoading, setEmailPromptLoading] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [getStartedOpen, setGetStartedOpen] = useState(false);
+  const [getStartedPreselectedSlug, setGetStartedPreselectedSlug] = useState<string | null>(null);
 
   useEffect(() => {
     trackPageView("staging_landing");
@@ -171,7 +172,10 @@ export default function StagingLandingPage() {
         futureCourses={[]}
         onLiveCourseClick={() => handleCardClick(defaultCourse)}
         onNotifyClick={() => handleCardClick(defaultCourse)}
-        onGetStartedClick={() => setGetStartedOpen(true)}
+        onGetStartedClick={() => {
+          setGetStartedPreselectedSlug(null);
+          setGetStartedOpen(true);
+        }}
       />
 
       <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />
@@ -181,6 +185,10 @@ export default function StagingLandingPage() {
           courses={COURSES}
           onCardClick={handleCardClick}
           onChapterClick={handleChapterClick}
+          onGetStartedClick={(slug) => {
+            setGetStartedPreselectedSlug(slug);
+            setGetStartedOpen(true);
+          }}
         />
       </div>
 
@@ -206,6 +214,7 @@ export default function StagingLandingPage() {
         open={getStartedOpen}
         onClose={() => setGetStartedOpen(false)}
         courses={COURSES}
+        preselectedCourseSlug={getStartedPreselectedSlug}
         onSubmit={async (email, course) => {
           setPendingCourse(course);
           setPendingChapterNumber(null);
