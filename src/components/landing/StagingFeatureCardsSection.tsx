@@ -110,8 +110,8 @@ export default function StagingFeatureCardsSection({
         <div className="mx-auto max-w-[1040px] grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 justify-items-stretch">
           <Card
             icon={Sword}
-            iconColor="#16a34a"
-            tint="#f0fdf4"
+            iconColor="#5C8B6F"
+            tint="#FFFFFF"
             title="Survival Tools"
             body="Built for late night cramming. Flashcards, journal entries, formulas — optimized for speed."
             buttonLabel="Browse Tools →"
@@ -119,8 +119,8 @@ export default function StagingFeatureCardsSection({
           />
           <Card
             icon={PenLine}
-            iconColor="#d97706"
-            tint="#fffbeb"
+            iconColor="#A47B4A"
+            tint="#FFFFFF"
             title="Practice Problems"
             body="Your solutions manual sucks. Mine actually teach you something."
             buttonLabel="Browse Problems →"
@@ -128,8 +128,8 @@ export default function StagingFeatureCardsSection({
           />
           <Card
             icon={MonitorPlay}
-            iconColor="#2563eb"
-            tint="#eff6ff"
+            iconColor="#4B6A8F"
+            tint="#FFFFFF"
             title="On Demand Videos"
             body="Lee's full video library, 24/7. Binge what's there, request what's not. New videos drop every week."
             buttonLabel="Request Early Access"
