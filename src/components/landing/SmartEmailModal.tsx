@@ -243,6 +243,9 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue →"}
             </button>
+            <div className="mt-3 text-center">
+              <DevShortcut label="[DEV] Skip to preview →" to="/campus/general/intermediate-accounting-2" />
+            </div>
           </form>
         )}
 

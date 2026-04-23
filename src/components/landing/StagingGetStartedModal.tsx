@@ -154,6 +154,9 @@ export default function StagingGetStartedModal({
                   "Continue →"
                 )}
               </button>
+              <div className="mt-3 text-center">
+                <DevShortcut label="[DEV] Skip to preview →" to="/campus/general/intermediate-accounting-2" />
+              </div>
             </form>
           )}
 
