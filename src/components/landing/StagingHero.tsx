@@ -295,21 +295,22 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           {/* RIGHT — Text (67%) */}
           <div className="flex-1 w-full md:w-[67%] flex flex-col justify-center text-center md:text-left md:pl-10">
             <h1
-              className="text-white leading-[1.15] tracking-tight text-[26px] sm:text-[36px] md:text-[40px]"
-              style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, fontStyle: "italic", textShadow: headlineShadow }}
+              className="text-white leading-[1.15] tracking-tight text-[26px] sm:text-[36px] md:text-[38px]"
+              style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
               <span className="block hero-anim-line2">
-                Generic AI wasn't built for your accounting exam prep. This is.
+                <span className="md:block">Generic AI isn't built for accounting exam prep.</span>{" "}
+                <span className="md:block">This is.</span>
               </span>
             </h1>
 
             <TooltipProvider delayDuration={150}>
               <div
-                className="mt-5 mx-auto md:mx-0 max-w-[560px] hero-anim-sub"
+                className="mt-5 mx-auto md:mx-0 max-w-[600px] hero-anim-sub"
                 style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
               >
                 <p style={{ fontSize: "15px", lineHeight: 1.6 }}>
-                  AI-assisted study tools built by a real tutor — designed to get you unstuck fast.
+                  Prep for your exams with AI-assisted study tools built by the OG accounting tutor since 2015 — designed to get you unstuck fast.
                 </p>
               </div>
               {/* Hidden tooltip provider preserved for future use */}
@@ -319,11 +320,16 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         </div>
 
         {/* CTAs — moved BELOW the card so mobile shows button without scrolling */}
-        <div className="mt-6 md:mt-8 flex flex-col items-center gap-2 hero-anim-btn">
+        <div className="mt-7 md:mt-10 flex flex-col items-center gap-3 hero-anim-btn">
           <button
             onClick={onGetStartedClick}
-            className="rounded-lg px-8 py-3.5 text-[15px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
-            style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.35)" }}
+            className="relative rounded-xl px-10 py-4 text-[17px] md:text-[18px] font-bold text-white transition-all hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.99]"
+            style={{
+              background: RED,
+              fontFamily: "Inter, sans-serif",
+              boxShadow:
+                "0 0 0 1px rgba(255,255,255,0.08), 0 10px 30px rgba(206,17,38,0.45), 0 20px 60px rgba(120,40,180,0.35), 0 30px 80px rgba(20,33,61,0.55)",
+            }}
           >
             Get Started
           </button>
@@ -332,9 +338,9 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               const el = document.getElementById("courses-section");
               if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
             }}
-            className="text-[14px] font-medium underline underline-offset-4 transition-opacity hover:opacity-80 px-2 py-1"
+            className="text-[15px] md:text-[16px] font-medium underline underline-offset-4 transition-opacity hover:opacity-80 px-2 py-1"
             style={{
-              color: "rgba(255,255,255,0.8)",
+              color: "rgba(255,255,255,0.85)",
               fontFamily: "Inter, sans-serif",
               textShadow: subtextShadow,
               background: "none",
