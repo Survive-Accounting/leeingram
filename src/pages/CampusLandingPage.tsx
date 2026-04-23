@@ -126,7 +126,7 @@ export default function CampusLandingPage() {
             {/* Card 1 — Cram Tools */}
             <Card
               title="Cram Tools"
-              body="Brain blast through flashcards, journal entries, formulas, and more."
+              body="Brain blast through flashcards, journal entries, formulas and more."
               buttonLabel="Explore Cram Tools →"
               onClick={() => {
                 trackEvent("preview_cram_click", { campus_slug: campusSlug, course_slug: courseSlug });
@@ -137,7 +137,7 @@ export default function CampusLandingPage() {
             {/* Card 2 — Practice Problems */}
             <Card
               title={`${problemLabel} Practice Problems`}
-              body="Run through textbook problems. Check your work with Lee's solutions."
+              body="Check your work with Lee's interactive solutions."
               buttonLabel="Browse Problems →"
               onClick={() => {
                 trackEvent("preview_problems_click", { campus_slug: campusSlug, course_slug: courseSlug });
@@ -147,8 +147,8 @@ export default function CampusLandingPage() {
 
             {/* Card 3 — Lee on Demand */}
             <Card
-              title="Lee on Demand"
-              body="Submit a question from any page on the platform — Lee sends back a personal video answer."
+              title="Lee on Demand (New!)"
+              body="Submit a question—Lee sends back a personal video answer."
               buttonLabel="Learn More →"
               disabled
             />
