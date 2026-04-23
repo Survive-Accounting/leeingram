@@ -63,6 +63,7 @@ export default function CampusLandingPage() {
   const [topicsByChapter, setTopicsByChapter] = useState<Record<string, Topic[]>>({});
   const [priceCents, setPriceCents] = useState(12500);
   const [loading, setLoading] = useState(true);
+  const [problemCount, setProblemCount] = useState<number | null>(null);
 
   // Tour state
   const [showCramGrid, setShowCramGrid] = useState(false);
@@ -119,6 +120,14 @@ export default function CampusLandingPage() {
           });
           setTopicsByChapter(grouped);
         }
+
+        // Total approved problem count for this course
+        const { count } = await (supabase as any)
+          .from("teaching_assets")
+          .select("id", { count: "exact", head: true })
+          .in("chapter_id", chapterIds)
+          .eq("status", "approved");
+        if (typeof count === "number") setProblemCount(count);
       }
 
       setLoading(false);
@@ -160,15 +169,13 @@ export default function CampusLandingPage() {
       <CampusHeader campusName={campusName} courseName={courseName} />
 
       <div className="flex-1 max-w-[780px] mx-auto w-full px-4 py-8 pb-28">
-        {/* Value prop */}
-        <p className="text-center text-lg mb-8" style={{ color: "#6B7280" }}>
-          Everything you need to study for your exam.
+        {/* Header */}
+        <h1 className="text-3xl sm:text-4xl font-bold text-center mb-3" style={{ color: "#14213D" }}>
+          You're in. Start exploring.
+        </h1>
+        <p className="text-center text-base sm:text-lg mb-10" style={{ color: "#6B7280" }}>
+          Previewing {courseName} for {campusName || "your school"} — get full access to unlock everything.
         </p>
-
-        {/* Tour section */}
-        <h2 className="text-2xl font-bold text-center mb-6" style={{ color: "#14213D" }}>
-          See what's included
-        </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Card 1: Cram Tools */}
@@ -186,7 +193,7 @@ export default function CampusLandingPage() {
               Explore Cram Tools
             </h3>
             <p className="text-[14px] mb-4" style={{ color: "#6B7280" }}>
-              Flashcards, formulas, journal entries & more
+              Journal entries, formulas, flashcards — AI-generated using prompts curated by Lee, updated from real student feedback.
             </p>
             <Button variant="outline" className="w-full" onClick={(e) => { e.stopPropagation(); setShowCramGrid(!showCramGrid); if (!showCramGrid) setShowProblemPicker(false); }}>
               {showCramGrid ? <span className="flex items-center gap-1">Hide Chapters <ChevronUp className="w-4 h-4" /></span> : <span className="flex items-center gap-1">Explore Cram Tools <ChevronDown className="w-4 h-4" /></span>}
@@ -208,7 +215,7 @@ export default function CampusLandingPage() {
               Browse Practice Problems
             </h3>
             <p className="text-[14px] mb-4" style={{ color: "#6B7280" }}>
-              Hundreds of problems with step-by-step explanations
+              {problemCount && problemCount > 0 ? `${problemCount}+` : "Hundreds of"} problems with AI-enabled solutions. Request a video from Lee when you're stuck — he'll send one back.
             </p>
             <Button variant="outline" className="w-full" onClick={(e) => { e.stopPropagation(); setShowProblemPicker(!showProblemPicker); if (!showProblemPicker) setShowCramGrid(false); }}>
               {showProblemPicker ? <span className="flex items-center gap-1">Hide Problems <ChevronUp className="w-4 h-4" /></span> : <span className="flex items-center gap-1">Browse Problems <ChevronDown className="w-4 h-4" /></span>}
