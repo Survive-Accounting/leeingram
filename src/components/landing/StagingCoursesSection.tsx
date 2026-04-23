@@ -69,22 +69,33 @@ export default function StagingCoursesSection({
   const [selectedSlug, setSelectedSlug] = useState<string>("");
   const [open, setOpen] = useState(false);
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [problemCount, setProblemCount] = useState<number | null>(null);
 
   const selected = ordered.find((c) => c.slug === selectedSlug);
 
   useEffect(() => {
     if (!selected) {
       setChapters([]);
+      setProblemCount(null);
       return;
     }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("chapters")
-        .select("id, chapter_number, chapter_name, course_id")
-        .eq("course_id", selected.id)
-        .order("chapter_number", { ascending: true });
-      if (!cancelled) setChapters((data ?? []) as Chapter[]);
+      const [{ data: chData }, { count }] = await Promise.all([
+        supabase
+          .from("chapters")
+          .select("id, chapter_number, chapter_name, course_id")
+          .eq("course_id", selected.id)
+          .order("chapter_number", { ascending: true }),
+        (supabase as any)
+          .from("teaching_assets")
+          .select("id", { count: "exact", head: true })
+          .eq("course_id", selected.id)
+          .not("asset_approved_at", "is", null),
+      ]);
+      if (cancelled) return;
+      setChapters((chData ?? []) as Chapter[]);
+      setProblemCount(typeof count === "number" ? count : null);
     })();
     return () => {
       cancelled = true;
