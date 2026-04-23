@@ -101,12 +101,13 @@ Deno.serve(async (req) => {
       .update({ status: "processing", started_at: new Date().toISOString() })
       .in("id", itemIds);
 
-    // Fire-and-forget each job — do NOT await the slow OpenAI calls.
-    // The HTTP response from the child will eventually mark the row done/failed
-    // via the .then() handler below. EdgeRuntime.waitUntil keeps the worker alive
-    // long enough for the response to arrive, but the parent returns immediately.
+    // Dispatch SERIALLY — await each child before starting the next. This (combined
+    // with the per-job delay) guarantees we never have more than one OpenAI request
+    // in flight per worker, keeping us well under the TPM cap. On 429, we re-queue
+    // the job (up to MAX_RETRIES) so transient rate limits self-heal overnight.
     let dispatched = 0;
     let invalidCount = 0;
+    let retriedCount = 0;
 
     for (const item of items) {
       const handler = JOB_HANDLERS[item.job_type];
@@ -118,48 +119,57 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const childPromise = fetch(`${supabaseUrl}/functions/v1/${handler.fn}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${serviceRoleKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(handler.body(item.payload)),
-      })
-        .then(async (res) => {
-          let errMsg: string | null = null;
-          let ok = res.ok;
-          try {
-            const result = await res.json();
-            if (!res.ok || result?.error) {
-              ok = false;
-              errMsg = result?.error || `HTTP ${res.status}`;
-            }
-          } catch {
-            if (!res.ok) errMsg = `HTTP ${res.status}`;
-          }
-          await sb.from("background_jobs")
-            .update({
-              status: ok ? "done" : "failed",
-              completed_at: new Date().toISOString(),
-              error: errMsg,
-            })
-            .eq("id", item.id);
-          console.log(`${ok ? "✓" : "✗"} ${item.job_type} ${item.id}${errMsg ? ": " + errMsg : ""}`);
-        })
-        .catch(async (err) => {
-          const msg = err instanceof Error ? err.message : String(err);
-          await sb.from("background_jobs")
-            .update({ status: "failed", completed_at: new Date().toISOString(), error: msg })
-            .eq("id", item.id);
-          console.error(`✗ ${item.job_type} ${item.id}: ${msg}`);
+      let ok = false;
+      let errMsg: string | null = null;
+      try {
+        const res = await fetch(`${supabaseUrl}/functions/v1/${handler.fn}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${serviceRoleKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(handler.body(item.payload)),
         });
+        ok = res.ok;
+        try {
+          const result = await res.json();
+          if (!res.ok || result?.error) {
+            ok = false;
+            errMsg = result?.error || `HTTP ${res.status}`;
+          }
+        } catch {
+          if (!res.ok) errMsg = `HTTP ${res.status}`;
+        }
+      } catch (err) {
+        ok = false;
+        errMsg = err instanceof Error ? err.message : String(err);
+      }
 
-      // Keep the worker alive until the child finishes, but don't block the response.
-      // @ts-ignore — EdgeRuntime is provided by Supabase Edge Functions runtime.
-      if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
-        // @ts-ignore
-        EdgeRuntime.waitUntil(childPromise);
+      // Retry on 429 (rate limit) up to MAX_RETRIES by re-queuing the job
+      const is429 = !!errMsg && /\b429\b|rate[_ ]limit/i.test(errMsg);
+      const retryCount = Number(item.payload?._retry_count ?? 0);
+      if (!ok && is429 && retryCount < MAX_RETRIES) {
+        const newPayload = { ...item.payload, _retry_count: retryCount + 1 };
+        await sb.from("background_jobs")
+          .update({
+            status: "queued",
+            started_at: null,
+            completed_at: null,
+            error: `retry ${retryCount + 1}/${MAX_RETRIES}: ${errMsg?.slice(0, 200)}`,
+            payload: newPayload,
+          })
+          .eq("id", item.id);
+        retriedCount++;
+        console.log(`↻ ${item.job_type} ${item.id} — re-queued (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+      } else {
+        await sb.from("background_jobs")
+          .update({
+            status: ok ? "done" : "failed",
+            completed_at: new Date().toISOString(),
+            error: errMsg,
+          })
+          .eq("id", item.id);
+        console.log(`${ok ? "✓" : "✗"} ${item.job_type} ${item.id}${errMsg ? ": " + errMsg : ""}`);
       }
       dispatched++;
 
@@ -193,6 +203,7 @@ Deno.serve(async (req) => {
       processed: items.length,
       dispatched,
       invalid: invalidCount,
+      retried: retriedCount,
       remaining,
       done: remaining === 0,
     }), {
