@@ -63,6 +63,7 @@ export default function CampusLandingPage() {
   const [topicsByChapter, setTopicsByChapter] = useState<Record<string, Topic[]>>({});
   const [priceCents, setPriceCents] = useState(12500);
   const [loading, setLoading] = useState(true);
+  const [problemCount, setProblemCount] = useState<number | null>(null);
 
   // Tour state
   const [showCramGrid, setShowCramGrid] = useState(false);
