@@ -75,7 +75,9 @@ export default function GetAccess() {
 
   const [course, setCourse] = useState<CourseSlug>(resolvedCourseSlug);
   const [tier, setTier] = useState<TierId>("current");
-  const [email, setEmail] = useState(emailParam);
+  const [email, setEmail] = useState(
+    emailParam || (typeof window !== "undefined" ? sessionStorage.getItem("student_email") || "" : ""),
+  );
   const [showStickyBar, setShowStickyBar] = useState(false);
 
   useEffect(() => {
@@ -459,23 +461,15 @@ export default function GetAccess() {
               );
             })()}
 
-            {/* Step 3 — email */}
-            <label className="block text-[12px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-              3. Your email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@university.edu"
-              className="w-full rounded-lg px-4 py-3 text-[14px] outline-none focus:ring-2 mb-5"
-              style={{
-                background: "#F8FAFC",
-                border: "1px solid #E2E8F0",
-                color: NAVY,
-                fontFamily: "Inter, sans-serif",
-              }}
-            />
+            {/* Captured email — non-editable */}
+            {email.trim() && (
+              <p
+                className="mb-4 text-[12px]"
+                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+              >
+                Purchasing for: <span style={{ color: "#64748B" }}>{email.trim()}</span>
+              </p>
+            )}
 
             {/* CTA */}
             {(() => {
