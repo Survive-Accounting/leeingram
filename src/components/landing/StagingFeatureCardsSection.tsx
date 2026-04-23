@@ -69,7 +69,7 @@ export default function StagingFeatureCardsSection({
   return (
     <section
       id="exam-coming-up"
-      className="pt-20 pb-8 px-4 sm:px-6 relative overflow-hidden"
+      className="pt-24 sm:pt-28 pb-16 px-4 sm:px-6 relative overflow-hidden"
       style={{
         background: `linear-gradient(180deg, #6F7C92 0%, #2A3654 8%, #14213D 22%, ${NAVY} 100%)`,
         scrollMarginTop: "0px",
@@ -133,7 +133,7 @@ export default function StagingFeatureCardsSection({
       />
 
       <div className="max-w-[1100px] mx-auto w-full relative" style={{ zIndex: 1 }}>
-        <div className="text-center mb-10">
+        <div className="text-center mb-16 md:mb-20">
           <h2
             className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight text-white"
             style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 12px rgba(0,0,0,0.5)" }}
@@ -143,14 +143,14 @@ export default function StagingFeatureCardsSection({
               : "Your next exam is coming up."}
           </h2>
           <p
-            className="mt-4 text-[16px] sm:text-[18px]"
+            className="mt-2 text-[16px] sm:text-[18px]"
             style={{ color: "rgba(255,255,255,0.78)", fontFamily: "Inter, sans-serif" }}
           >
             Get exactly what you need to study smarter.
           </p>
 
           {/* Subtle underlined link */}
-          <div className="mt-5 flex justify-center">
+          <div className="mt-8 flex justify-center">
             <button
               type="button"
               onClick={onStartStudying}
@@ -167,10 +167,7 @@ export default function StagingFeatureCardsSection({
           </div>
         </div>
 
-        {/* Padding spacer between CTA and feature cards */}
-        <div className="h-8 md:h-12" aria-hidden="true" />
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
+        <div className="mx-auto max-w-[1040px] grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 justify-items-stretch">
           <Card
             icon={Sword}
             iconColor="#16a34a"
