@@ -221,13 +221,7 @@ export default function StagingLandingPage() {
 
       <StagingNavbar
         onCtaClick={() => handleCardClick(defaultCourse)}
-        onPricingClick={() => {
-          setPendingCourse(defaultCourse);
-          setPendingChapterNumber(null);
-          setPendingChapterName(null);
-          setEmailPromptIntent("pricing");
-          setEmailPromptOpen(true);
-        }}
+        onPricingClick={() => navigate("/get-access")}
       />
 
       <StagingHero
