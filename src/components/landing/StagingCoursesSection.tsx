@@ -71,6 +71,7 @@ interface Chapter {
 export default function StagingCoursesSection({
   courses,
   onCardClick,
+  onChapterClick,
 }: StagingCoursesSectionProps) {
   const ordered = DISPLAY_ORDER
     .map((slug) => courses.find((c) => c.slug === slug))
