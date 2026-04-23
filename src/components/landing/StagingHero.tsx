@@ -359,6 +359,14 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
       </div>
 
       <div className="staging-hero-overlay-bottom" />
+
+      <Dialog open={introOpen} onOpenChange={setIntroOpen}>
+        <DialogContent className="max-w-lg">
+          <div className="flex items-center justify-center aspect-video bg-muted rounded-md">
+            <p className="text-muted-foreground text-sm">Intro video coming soon</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
