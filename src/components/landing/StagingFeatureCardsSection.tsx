@@ -81,7 +81,9 @@ export default function StagingFeatureCardsSection({
             className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight text-white"
             style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 12px rgba(0,0,0,0.5)" }}
           >
-            Your next exam is coming up.
+            {new Date() < new Date("2026-05-16T00:00:00")
+              ? "Final exams are 1 week away."
+              : "Your next exam is coming up."}
           </h2>
           <p
             className="mt-4 text-[16px] sm:text-[18px]"
@@ -90,21 +92,20 @@ export default function StagingFeatureCardsSection({
             Get exactly what you need to study smarter.
           </p>
 
-          {/* Red CTA */}
-          <div className="mt-7 flex justify-center">
+          {/* Subtle underlined link */}
+          <div className="mt-5 flex justify-center">
             <button
               type="button"
               onClick={onStartStudying}
-              className="rounded-xl px-8 py-3.5 text-[16px] md:text-[17px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+              className="text-[15px] md:text-[16px] font-semibold underline underline-offset-[6px] decoration-2 transition-opacity hover:opacity-100 opacity-90 px-2 py-1.5"
               style={{
-                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+                color: "rgba(255,255,255,0.92)",
                 fontFamily: "Inter, sans-serif",
-                boxShadow:
-                  "inset 0 1px 0 rgba(255,255,255,0.25), 0 0 0 1px rgba(255,255,255,0.08), 0 10px 28px rgba(206,17,38,0.45)",
-                letterSpacing: "0.01em",
+                background: "none",
+                border: "none",
               }}
             >
-              Start Studying →
+              Start studying now →
             </button>
           </div>
         </div>
