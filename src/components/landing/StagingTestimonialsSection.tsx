@@ -96,7 +96,7 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
             className="text-center mb-8 text-[22px] sm:text-[28px] md:text-[34px] leading-tight"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 700 }}
           >
-            <span style={{ fontWeight: 400 }}>I've helped{" "}</span>
+            <span style={{ fontWeight: 400 }}>Join{" "}</span>
             <span
               ref={counterRef}
               className="inline-block align-baseline"
@@ -113,14 +113,14 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
                 Updated as students join.
               </TooltipContent>
             </Tooltip>
-            {" "}<span style={{ fontWeight: 400 }}>accounting students{" "}</span>
+            {" "}<span style={{ fontWeight: 400 }}>students who went from{" "}</span>
             <span style={{ color: "#888888", opacity: 0.5, fontStyle: "italic", textDecoration: "line-through", fontWeight: 400 }}>
-              survive
+              surviving
             </span>{" "}
+            <span style={{ fontWeight: 400 }}>to{" "}</span>
             <span style={{ color: RED, fontWeight: 700, fontSize: "1.08em" }}>
-              thrive
-            </span>{" "}
-            <span style={{ fontWeight: 400 }}>since 2015.</span>
+              thriving
+            </span>
           </p>
         </TooltipProvider>
 
