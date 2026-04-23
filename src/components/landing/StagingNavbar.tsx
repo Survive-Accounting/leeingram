@@ -33,14 +33,6 @@ export default function StagingNavbar({ onCtaClick }: StagingNavbarProps) {
         {/* Right side */}
         <div className="flex items-center gap-4 sm:gap-5">
           <button
-            onClick={() => navigate("/greek-landing")}
-            className="text-[13px] font-medium transition-opacity hover:opacity-70"
-            style={{ color: NAVY, opacity: 0.7, fontFamily: "Inter, sans-serif" }}
-          >
-            For Greek Orgs
-          </button>
-
-          <button
             onClick={() => navigate("/login")}
             className="text-[13px] font-semibold transition-all hover:brightness-110 active:scale-[0.98]"
             style={{

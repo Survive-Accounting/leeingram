@@ -1,5 +1,6 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import heroImage from "@/assets/staging-hero.jpg";
+import leeStadiumPhoto from "@/assets/hero-lee-stadium.jpg";
 
 const RED = "#CE1126";
 const NAVY = "#14213D";
@@ -194,13 +195,13 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
       <div className="staging-hero-overlay-left" />
 
       <div className="relative z-[3] mx-auto max-w-[1100px] px-4 sm:px-6 py-12 md:py-20 w-full">
-        <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
-          {/* LEFT — Photo */}
-          <div className="w-full md:w-[42%] flex justify-center md:justify-start">
-            <div className="relative w-full max-w-[300px] md:max-w-none">
+        <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
+          {/* LEFT — Photo (smaller, ~33% width) */}
+          <div className="w-full md:w-[33%] flex justify-center md:justify-start shrink-0">
+            <div className="relative w-full max-w-[240px] md:max-w-[300px]">
               <img
-                src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg"
-                alt="Lee Ingram"
+                src={leeStadiumPhoto}
+                alt="Lee Ingram at Ole Miss stadium"
                 className="w-full rounded-lg hero-anim-photo"
                 style={{
                   borderRadius: 8,
@@ -208,44 +209,6 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                   border: "1px solid rgba(255,255,255,0.1)",
                 }}
               />
-              {/* Hand-drawn annotation pointing at Lee */}
-              <div className="photo-annotation">
-                <svg
-                  className="photo-annotation-svg"
-                  viewBox="0 0 100 100"
-                  preserveAspectRatio="none"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                >
-                  <defs>
-                    <marker
-                      id="annotation-arrowhead"
-                      viewBox="0 0 10 10"
-                      refX="8"
-                      refY="5"
-                      markerWidth="5"
-                      markerHeight="5"
-                      orient="auto-start-reverse"
-                      markerUnits="strokeWidth"
-                    >
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="white" />
-                    </marker>
-                  </defs>
-                  {/* Curved arrow: from label (65, 18) curving down-left to Lee's face (38, 40) */}
-                  <path
-                    className="photo-annotation-path"
-                    d="M 65 18 Q 72 35, 55 38 T 38 40"
-                    stroke="white"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    vectorEffect="non-scaling-stroke"
-                    fill="none"
-                    markerEnd="url(#annotation-arrowhead)"
-                  />
-                </svg>
-                <span className="photo-annotation-label">That's me</span>
-              </div>
             </div>
           </div>
 
@@ -259,23 +222,28 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 textShadow: subtextShadow,
               }}
             >
-              Ole Miss · Tutor since 2015
+              Lee Ingram · Accounting Tutor Since 2015
             </p>
             <h1
-              className="text-white leading-[1.15] tracking-tight text-[28px] sm:text-[36px] md:text-[44px]"
+              className="text-white leading-[1.15] tracking-tight text-[32px] sm:text-[40px] md:text-[52px]"
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
               <span className="block hero-anim-line2">
-                Accounting exams are more ace-able than you think.
+                Stop memorizing. Start mastering.
               </span>
             </h1>
 
-            <p
-              className="mt-5 text-[15px] md:text-[16px] leading-relaxed mx-auto md:mx-0 max-w-[520px] hero-anim-sub"
-              style={{ color: "rgba(255,255,255,0.85)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
+            <div
+              className="mt-5 mx-auto md:mx-0 max-w-[560px] hero-anim-sub space-y-3"
+              style={{ color: "rgba(255,255,255,0.88)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
             >
-              I'm Lee Ingram, Ole Miss alum and tutor. Helping you ace accounting exams is my passion. Survive Accounting is an AI-enabled platform I'm building specifically for accounting students who want to master the material — not just memorize it.
-            </p>
+              <p className="text-[15px] md:text-[17px] leading-relaxed">
+                I've helped 1,000+ students ace accounting since 2015.
+              </p>
+              <p className="text-[15px] md:text-[17px] leading-relaxed">
+                Survive Accounting is my AI-enabled study platform — built from real tutoring, so you walk into every exam confident.
+              </p>
+            </div>
 
             <TooltipProvider delayDuration={150}>
               <div className="mt-8 flex flex-col sm:flex-row items-center sm:items-center gap-4 sm:gap-6 justify-center md:justify-start hero-anim-btn">
