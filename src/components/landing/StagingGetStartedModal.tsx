@@ -3,7 +3,9 @@ import { X, Loader2 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { CtaCourse } from "@/components/landing/StagingCtaModal";
 import { DevShortcut } from "@/components/DevShortcut";
-import { isAllowedEmail } from "@/lib/emailWhitelist";
+import { isAllowedEmail, isWhitelistedEmail } from "@/lib/emailWhitelist";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const RED = "#CE1126";
 const NAVY = "#14213D";
