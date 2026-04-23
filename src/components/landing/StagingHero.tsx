@@ -28,7 +28,13 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
   const subtextShadow = "1px 1px 4px rgba(0,0,0,0.6)";
 
   return (
-    <section className="relative w-full overflow-hidden staging-hero">
+    <section
+      className="relative w-full overflow-hidden staging-hero"
+      style={{
+        background:
+          "linear-gradient(180deg, #FFFFFF 0%, #F1F5F9 60%, #E2E8F0 100%)",
+      }}
+    >
       <style>{`
         .staging-hero {
           min-height: 85vh;
@@ -38,27 +44,12 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         @media (max-width: 768px) {
           .staging-hero { min-height: auto; padding-top: 12px; padding-bottom: 32px; display: block; }
         }
-        .staging-hero-video {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          z-index: 0;
-        }
-        .staging-hero-overlay-left {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(to right, ${NAVY}f2 0%, ${NAVY}e6 40%, ${NAVY}d9 100%);
-          opacity: 1;
-          z-index: 1;
-        }
         .staging-hero-card {
           background: #0B0F1A;
           border: 1px solid rgba(255,255,255,0.08);
           border-radius: 16px;
           padding: 24px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+          box-shadow: 0 30px 80px rgba(20,33,61,0.28), 0 10px 30px rgba(20,33,61,0.18);
         }
         @media (min-width: 768px) {
           .staging-hero-card { padding: 36px 40px; }
@@ -68,8 +59,8 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           left: 0;
           right: 0;
           bottom: 0;
-          height: 160px;
-          background: linear-gradient(to bottom, rgba(248,248,248,0) 0%, #F8F8F8 100%);
+          height: 120px;
+          background: linear-gradient(to bottom, rgba(248,250,252,0) 0%, #F8FAFC 100%);
           z-index: 2;
           pointer-events: none;
         }
@@ -209,30 +200,6 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         }
       `}</style>
 
-      <video
-        ref={(el) => {
-          if (!el) return;
-          el.muted = true;
-          const tryPlay = () => el.play().catch(() => {});
-          tryPlay();
-          const onInteract = () => { tryPlay(); document.removeEventListener("touchstart", onInteract); document.removeEventListener("click", onInteract); };
-          document.addEventListener("touchstart", onInteract, { once: true, passive: true });
-          document.addEventListener("click", onInteract, { once: true });
-        }}
-        className="staging-hero-video"
-        autoPlay
-        loop
-        muted
-        playsInline
-        // @ts-ignore
-        webkit-playsinline="true"
-        disablePictureInPicture
-        disableRemotePlayback
-        preload="auto"
-      >
-        <source src="/videos/hero-loop.mp4" type="video/mp4" />
-      </video>
-      <div className="staging-hero-overlay-left" />
 
       <div className="relative z-[3] mx-auto max-w-[950px] px-4 sm:px-6 py-4 md:py-20 w-full">
         <div className="staging-hero-card flex flex-col md:flex-row items-center md:items-stretch gap-6 md:gap-0">
