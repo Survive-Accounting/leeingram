@@ -210,6 +210,8 @@ export default function StagingLandingPage() {
         onSubmit={(email) => (pendingCourse ? resolveEmail(email, pendingCourse) : Promise.resolve(null))}
         onContinue={handleContinue}
         courseName={pendingCourse?.name}
+        chapterNumber={pendingChapterNumber}
+        chapterName={pendingChapterName}
         loading={emailPromptLoading || resolving}
       />
 
