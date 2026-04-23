@@ -149,9 +149,17 @@ export default function GetAccess() {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const handleCheckout = async () => {
-    if (!email.trim()) return;
     const cleanEmail = email.trim().toLowerCase();
-    sessionStorage.setItem("student_email", cleanEmail);
+    if (!cleanEmail) {
+      // No email captured — reopen the gate. After submit, it navigates back
+      // to /get-access?...&email=... which will populate state automatically.
+      requestAccess({ course });
+      return;
+    }
+    try {
+      localStorage.setItem("student_email", cleanEmail);
+      sessionStorage.setItem("student_email", cleanEmail);
+    } catch { /* ignore */ }
 
     const startIdx = progression.courses.findIndex((c) => c.slug === course);
     const includedCourses =
