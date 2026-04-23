@@ -246,15 +246,19 @@ interface CardProps {
   disabled?: boolean;
   buttonBg?: string;
   extra?: React.ReactNode;
+  icon?: LucideIcon;
+  iconColor?: string;
+  tint?: string;
 }
 
-function Card({ title, body, buttonLabel, onClick, comingSoon, disabled, buttonBg, extra }: CardProps) {
+function Card({ title, body, buttonLabel, onClick, comingSoon, disabled, buttonBg, extra, icon: Icon, iconColor, tint }: CardProps) {
   const bg = buttonBg || NAVY;
   const isGreen = bg === GREEN;
   return (
     <div
-      className="bg-white rounded-2xl px-5 py-4 flex flex-col"
+      className="rounded-2xl px-5 py-5 flex flex-col items-center text-center"
       style={{
+        background: tint || "#fff",
         boxShadow: "0 12px 40px rgba(20,33,61,0.10), 0 2px 6px rgba(20,33,61,0.06)",
         border: "1px solid rgba(20,33,61,0.06)",
       }}
