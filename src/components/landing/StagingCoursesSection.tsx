@@ -311,11 +311,10 @@ export default function StagingCoursesSection({
             <p
               className="text-center"
               style={{
-                color: "rgba(255,255,255,0.85)",
+                color: "#475569",
                 fontSize: 13,
                 fontFamily: "Inter, sans-serif",
                 fontWeight: 400,
-                textShadow: "1px 1px 4px rgba(0,0,0,0.5)",
               }}
             >
               {countdownText}
@@ -324,15 +323,14 @@ export default function StagingCoursesSection({
           <button
             type="button"
             onClick={() => onGetStartedClick?.(selected?.slug ?? null)}
-            className="text-center hover:opacity-90 transition-opacity"
+            className="text-center hover:opacity-80 transition-opacity"
             style={{
-              color: "#fff",
+              color: NAVY,
               fontSize: 13,
               fontFamily: "Inter, sans-serif",
-              fontWeight: 400,
+              fontWeight: 600,
               textDecoration: "underline",
               textUnderlineOffset: 3,
-              textShadow: "1px 1px 4px rgba(0,0,0,0.5)",
               background: "transparent",
               border: "none",
               cursor: "pointer",
