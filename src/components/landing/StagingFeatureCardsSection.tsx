@@ -73,8 +73,6 @@ export default function StagingFeatureCardsSection({
       style={{ scrollMarginTop: "0px" }}
     >
       <div className="max-w-[1100px] mx-auto w-full relative" style={{ zIndex: 1 }}>
-
-      <div className="max-w-[1100px] mx-auto w-full relative" style={{ zIndex: 1 }}>
         <div className="text-center mb-16 md:mb-20">
           <h2
             className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight text-white"
