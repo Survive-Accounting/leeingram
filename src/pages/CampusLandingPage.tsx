@@ -108,13 +108,13 @@ export default function CampusLandingPage() {
             className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight text-white"
             style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 8px rgba(0,0,0,0.6)" }}
           >
-            {courseName}
+            Survive {courseName}
           </h1>
           <p
             className="mt-2 text-[15px] sm:text-[17px]"
             style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif", textShadow: "1px 1px 4px rgba(0,0,0,0.5)" }}
           >
-            {campusName || "Your School"}
+            at {campusName || "Your School"}
           </p>
         </div>
 
@@ -124,7 +124,7 @@ export default function CampusLandingPage() {
             {/* Card 1 — Cram Tools */}
             <Card
               title="Cram Tools"
-              body="Journal entries, formulas, flashcards — AI-generated using prompts curated by Lee."
+              body="Memorize journal entries, formulas, and more with AI-enabled study tools curated by Lee Ingram."
               buttonLabel="Explore Cram Tools →"
               onClick={() => {
                 trackEvent("preview_cram_click", { campus_slug: campusSlug, course_slug: courseSlug });
@@ -135,7 +135,7 @@ export default function CampusLandingPage() {
             {/* Card 2 — Practice Problems */}
             <Card
               title={`${problemLabel} Practice Problems`}
-              body="Downloadable practice problems with AI-enabled solutions curated by Lee."
+              body="Downloadable exercises with AI-enabled solutions curated by Lee Ingram."
               buttonLabel="Browse Problems →"
               onClick={() => {
                 trackEvent("preview_problems_click", { campus_slug: campusSlug, course_slug: courseSlug });
@@ -146,7 +146,9 @@ export default function CampusLandingPage() {
             {/* Card 3 — Ask Lee */}
             <Card
               title="Ask Lee"
-              body="Submit a question from any page — Lee sends back a personal video answer. Crowdfund your question with classmates to move it up the queue faster."
+              body="Submit a question — Lee sends back a personal video answer. Get upvotes from classmates to move it up the queue faster."
+              buttonLabel="Learn More →"
+              disabled
               comingSoon
             />
           </div>
@@ -169,9 +171,10 @@ interface CardProps {
   buttonLabel?: string;
   onClick?: () => void;
   comingSoon?: boolean;
+  disabled?: boolean;
 }
 
-function Card({ title, body, buttonLabel, onClick, comingSoon }: CardProps) {
+function Card({ title, body, buttonLabel, onClick, comingSoon, disabled }: CardProps) {
   return (
     <div
       className="bg-white rounded-2xl p-6 flex flex-col"
@@ -191,10 +194,12 @@ function Card({ title, body, buttonLabel, onClick, comingSoon }: CardProps) {
       >
         {body}
       </p>
-      {buttonLabel && onClick && (
+      {buttonLabel && (
         <button
-          onClick={onClick}
-          className="w-full rounded-lg py-3 text-[14px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.99]"
+          onClick={disabled ? undefined : onClick}
+          disabled={disabled}
+          aria-disabled={disabled}
+          className={`w-full rounded-lg py-3 text-[14px] font-semibold text-white transition-all ${disabled ? "cursor-not-allowed opacity-70" : "hover:brightness-110 active:scale-[0.99]"}`}
           style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.3)" }}
         >
           {buttonLabel}
