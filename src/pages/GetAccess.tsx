@@ -524,7 +524,11 @@ export default function GetAccess() {
               return (
                 <button
                   onClick={handleCheckout}
-                  disabled={!email.trim() || (!selectedTier && tier !== "lifetime")}
+                  disabled={
+                    checkoutLoading ||
+                    !email.trim() ||
+                    (!selectedTier && tier !== "lifetime")
+                  }
                   className="w-full rounded-xl py-4 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
@@ -532,10 +536,19 @@ export default function GetAccess() {
                     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px rgba(206,17,38,0.35)",
                   }}
                 >
-                  {ctaLabel}
+                  {checkoutLoading ? "Redirecting to checkout…" : ctaLabel}
                 </button>
               );
             })()}
+
+            {checkoutError && (
+              <div
+                className="mt-2 text-[12px] text-center"
+                style={{ color: RED, fontFamily: "Inter, sans-serif" }}
+              >
+                {checkoutError}
+              </div>
+            )}
 
             <div className="mt-3 flex flex-col items-center gap-1.5 text-[12px]" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
               <div className="flex items-center gap-1.5">
