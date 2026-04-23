@@ -214,6 +214,9 @@ export default function NonEduFallbackFlow({
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send Me Access →"}
         </button>
+        <div className="text-center pt-1">
+          <DevShortcut label="[DEV] Bypass →" to="/campus/general/intermediate-accounting-2" />
+        </div>
       </form>
     );
   }
