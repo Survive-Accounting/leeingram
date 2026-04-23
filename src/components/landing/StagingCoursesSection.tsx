@@ -525,6 +525,8 @@ function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }:
   const [tab, setTab] = useState<"survival" | "practice">("survival");
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [contentKey, setContentKey] = useState(0);
+  const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
+  const [scalingId, setScalingId] = useState<string | null>(null);
 
   // Skeleton min-duration 400ms
   useEffect(() => {
@@ -533,13 +535,36 @@ function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }:
     return () => clearTimeout(t);
   }, [tab, loading]);
 
-  // Bump key when tab changes for fade transition
+  // Bump key when tab/chapter changes for fade transition
   useEffect(() => {
     setContentKey((k) => k + 1);
-  }, [tab]);
+  }, [tab, activeChapter?.id]);
 
   const tagFor = (ch: Chapter) =>
     `intent_${tab === "survival" ? "cram_tools" : "practice_problems"}_ch${ch.chapter_number}`;
+
+  const handleChapterPick = (ch: Chapter) => {
+    onChapterClick(ch, tagFor(ch)); // fire intent tag
+    setScalingId(ch.id);
+    setTimeout(() => {
+      setActiveChapter(ch);
+      setScalingId(null);
+    }, 150);
+  };
+
+  // If a chapter is active, render the ChapterView
+  if (activeChapter) {
+    return (
+      <ChapterView
+        courseName={courseName}
+        chapter={activeChapter}
+        tab={tab}
+        onTabChange={setTab}
+        onBack={() => setActiveChapter(null)}
+        onChange={onChange}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col h-full" style={{ fontFamily: "Inter, sans-serif" }}>
