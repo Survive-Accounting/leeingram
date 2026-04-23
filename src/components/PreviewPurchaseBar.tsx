@@ -39,18 +39,18 @@ export default function PreviewPurchaseBar(_props: PreviewPurchaseBarProps) {
     <a href={STRIPE_PAYMENT_LINK} target="_blank" rel="noopener noreferrer">
       <button
         className={`inline-flex items-center gap-2 rounded-lg font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98] ${
-          compact ? "px-4 py-2.5 text-[13px]" : "px-6 py-3 text-[15px]"
+          compact ? "px-4 py-2.5 text-[13px]" : "px-7 py-3.5 text-[16px]"
         }`}
         style={{
-          background: NAVY,
-          border: "1px solid rgba(255,255,255,0.15)",
-          minHeight: compact ? undefined : 48,
+          background: "#CE1126",
+          border: "1px solid rgba(255,255,255,0.18)",
+          minHeight: compact ? undefined : 52,
+          boxShadow: "0 6px 20px rgba(206,17,38,0.45), inset 0 1px 0 rgba(255,255,255,0.18)",
         }}
       >
-        <ShoppingCart size={compact ? 14 : 16} className="text-white" />
-        Buy Full Access —{" "}
-        <span className="line-through opacity-50 font-normal">$250</span>{" "}
-        <span>$99</span>
+        <ShoppingCart size={compact ? 14 : 18} className="text-white" />
+        Buy Survive Accounting — <span>$99</span>{" "}
+        <span className="line-through opacity-60 font-normal">$250</span>
       </button>
     </a>
   );
