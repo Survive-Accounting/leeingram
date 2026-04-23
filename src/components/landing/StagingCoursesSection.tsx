@@ -289,8 +289,8 @@ export default function StagingCoursesSection({
                           : "Hundreds of Practice Problems",
                         subtext: "Step-by-step AI solutions",
                       },
-                      { tag: "intent_cram_tools", title: "Cram Tools", subtext: "Every chapter covered" },
-                      { tag: "intent_lee_on_demand", title: "Lee on Demand", subtext: "Personalized tutoring videos" },
+                      { tag: "intent_cram_tools", title: "Get Cram Resources", subtext: "Study tools for every chapter" },
+                      { tag: "intent_lee_on_demand", title: "Get Lee on Demand", subtext: "Personalized tutoring videos" },
                     ].map((stat) => (
                       <button
                         key={stat.tag}
@@ -323,7 +323,7 @@ export default function StagingCoursesSection({
                   <button
                     type="button"
                     onClick={handlePreviewFreeClick}
-                    className="mt-4 w-full rounded-lg px-4 py-3 text-[14px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
+                    className="mt-2 w-full rounded-lg px-4 py-3 text-[14px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
                     style={{ background: RED, boxShadow: "0 4px 14px rgba(206,17,38,0.3)" }}
                   >
                     Start Free Preview →
@@ -335,6 +335,12 @@ export default function StagingCoursesSection({
                   className="md:w-[65%] md:flex-1 rounded-xl p-4"
                   style={{ background: "#F9F9F9", border: "1px solid #E5E7EB" }}
                 >
+                  <div
+                    className="text-[10px] font-semibold uppercase tracking-wider mb-3 px-2"
+                    style={{ color: "#9CA3AF" }}
+                  >
+                    What's Covered
+                  </div>
                   {chapters.length === 0 ? (
                     <p className="text-[13px]" style={{ color: "#9CA3AF" }}>
                       No chapters available yet.
