@@ -253,7 +253,7 @@ export default function StagingCoursesSection({
               className="mt-4 w-full rounded-xl px-5 py-3.5 text-[14px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
               style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.25)" }}
             >
-              Preview Free →
+              Free Preview →
             </button>
             <p
               className="mt-2 text-center text-[12px]"
