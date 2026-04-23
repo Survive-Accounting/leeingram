@@ -150,7 +150,7 @@ export default function StagingCoursesSection({
   return (
     <section
       id="courses-section"
-      className="relative px-4 sm:px-6 scroll-mt-24 overflow-hidden pt-20 pb-[640px] md:pb-[160px]"
+      className="relative px-4 sm:px-6 scroll-mt-24 overflow-hidden pt-20 pb-[320px] md:pb-[120px]"
     >
       <style>{`
         @keyframes betaPulse {
@@ -164,14 +164,12 @@ export default function StagingCoursesSection({
           height: 100%;
           object-fit: cover;
           z-index: 0;
-          opacity: 0.18;
-          filter: blur(2px) saturate(1.1);
           pointer-events: none;
         }
         .courses-bg-base {
           position: absolute;
           inset: 0;
-          background: #F8F8FA;
+          background: ${NAVY};
           z-index: 0;
         }
         .courses-bg-overlay {
@@ -179,9 +177,7 @@ export default function StagingCoursesSection({
           inset: 0;
           z-index: 1;
           pointer-events: none;
-          background:
-            radial-gradient(ellipse at 50% 40%, rgba(248,248,250,0.55) 0%, rgba(248,248,250,0.85) 60%, rgba(248,248,250,0.95) 100%),
-            linear-gradient(to bottom, rgba(248,248,250,1) 0%, rgba(248,248,250,0.6) 18%, rgba(248,248,250,0.6) 75%, rgba(20,33,61,0.18) 100%);
+          background: linear-gradient(to bottom, rgba(20,33,61,0.55) 0%, rgba(20,33,61,0.35) 40%, rgba(20,33,61,0.55) 100%);
         }
       `}</style>
 
@@ -219,8 +215,8 @@ export default function StagingCoursesSection({
       <div className="relative mx-auto max-w-[920px]" style={{ zIndex: 2 }}>
 
         <p
-          className="text-center mb-4 text-[22px] sm:text-[28px] md:text-[34px] leading-tight"
-          style={{ color: "#14213D", fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+          className="text-center mb-4 text-[26px] sm:text-[32px] md:text-[38px] leading-tight text-white"
+          style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 8px rgba(0,0,0,0.7)" }}
         >
           Which course are you studying?
         </p>
