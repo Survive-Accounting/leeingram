@@ -76,9 +76,38 @@ export default function GetAccess() {
 
   const [course, setCourse] = useState<CourseSlug>(resolvedCourseSlug);
   const [tier, setTier] = useState<TierId>("current");
-  const [email, setEmail] = useState(
-    emailParam || (typeof window !== "undefined" ? sessionStorage.getItem("student_email") || "" : ""),
-  );
+
+  // Resolve email: URL param → localStorage → sessionStorage.
+  // If a URL param exists, persist it to both stores so subsequent visits
+  // (and other tabs) stay frictionless.
+  const initialEmail = useMemo(() => {
+    if (typeof window === "undefined") return emailParam;
+    if (emailParam) {
+      try {
+        localStorage.setItem("student_email", emailParam);
+        sessionStorage.setItem("student_email", emailParam);
+      } catch { /* ignore */ }
+      return emailParam;
+    }
+    try {
+      return (
+        localStorage.getItem("student_email") ||
+        sessionStorage.getItem("student_email") ||
+        ""
+      );
+    } catch {
+      return "";
+    }
+  }, [emailParam]);
+
+  const [email, setEmail] = useState(initialEmail);
+  useEffect(() => {
+    if (initialEmail && initialEmail !== email) setEmail(initialEmail);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialEmail]);
+
+  const { requestAccess } = useEmailGate();
+
   const [showStickyBar, setShowStickyBar] = useState(false);
 
   useEffect(() => {
