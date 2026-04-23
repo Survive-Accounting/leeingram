@@ -109,7 +109,6 @@ export default function GetAccess() {
             }}
             title="[Placeholder] Wire to real campus/course data later"
           >
-            <span style={{ opacity: 0.5 }}>[placeholder]</span>
             For {campusName ?? campusParam} {courseCode ?? ""} students
           </div>
         )}
