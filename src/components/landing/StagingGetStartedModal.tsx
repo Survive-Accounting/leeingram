@@ -268,6 +268,9 @@ export default function StagingGetStartedModal({
                   )}
                 </button>
               )}
+              <div className="mt-3 text-center">
+                <DevShortcut label="[DEV] Bypass →" to="/campus/general/intermediate-accounting-2" />
+              </div>
             </div>
           )}
         </div>
