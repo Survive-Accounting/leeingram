@@ -173,11 +173,11 @@ export default function ChapterPreviewPage() {
       </div>
 
       <div className="flex-1 max-w-[780px] mx-auto w-full px-4 pb-28 space-y-8">
-        {/* Cram Tools */}
+        {/* Survival Tools */}
         {cramSections.length > 0 && (
           <section>
             <h2 className="text-xl font-bold mb-4" style={{ color: "#14213D" }}>
-              Cram Tools
+              Survival Tools
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {cramSections.map(s => (

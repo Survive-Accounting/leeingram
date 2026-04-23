@@ -376,11 +376,11 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
               </h3>
             </div>
 
-            {/* Cram Tools */}
+            {/* Survival Tools */}
             <div id="section-cram">
               <p className="text-[13px] font-semibold mb-3 flex items-center gap-2" style={{ color: NAVY }}>
                 <Brain className="w-4 h-4" />
-                Chapter Cram Tools
+                Chapter Survival Tools
               </p>
               {renderCramPreview()}
               {/* Paywall signal */}
@@ -389,7 +389,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                 style={{ background: "rgba(20,33,61,0.03)", border: "1px dashed #D1D5DB", color: "#6B7280" }}
               >
                 <Lock className="w-3.5 h-3.5 shrink-0" style={{ color: "#9CA3AF" }} />
-                Full interactive cram tools available after purchase
+                Full interactive survival tools available after purchase
               </div>
             </div>
 
@@ -581,7 +581,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
 
                       {isExpanded && (
                         <div className="ml-6 pl-3 py-1 space-y-0.5" style={{ borderLeft: "2px solid #E5E7EB" }}>
-                          {/* Chapter Cram Tools */}
+                          {/* Chapter Survival Tools */}
                           <button
                             onClick={() => handleSidebarClick(ch.id, ch.number, ch.name, "cram")}
                             className="w-full text-left flex items-center gap-2 px-2.5 py-2 rounded-md transition-colors text-[12px] hover:bg-gray-50"
@@ -592,7 +592,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                             }}
                           >
                             <Brain className="w-3.5 h-3.5 shrink-0" />
-                            <span>Chapter Cram Tools</span>
+                            <span>Chapter Survival Tools</span>
                           </button>
 
                           {/* Practice Problems (expandable) */}

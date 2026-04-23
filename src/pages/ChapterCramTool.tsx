@@ -1141,7 +1141,7 @@ export default function ChapterCramTool({ overrideChapterId, campusContext }: Ch
               <div style={{ background: "#F8F8FA", border: "1px solid #E5E7EB", borderRadius: 12, padding: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
                 <div className="flex items-center justify-between" style={{ paddingLeft: 4, marginBottom: 16 }}>
                   <p className="text-[22px]" style={{ color: theme.navy, fontWeight: 700 }}>
-                    Chapter Cram Tools
+                    Chapter Survival Tools
                   </p>
                   <span className="text-[13px] font-semibold" style={{ color: theme.text }}>
                     {gotItSet.size} ✓ / {visibleToolCards.length}

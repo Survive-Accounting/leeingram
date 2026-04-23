@@ -399,7 +399,7 @@ export default function StagingCoursesSection({
                     {[
                       {
                         tag: "intent_cram_tools",
-                        title: "Cram Tools",
+                        title: "Survival Tools",
                         subtext: "Study tools for every chapter",
                         Icon: BookOpen,
                         disabled: false,
