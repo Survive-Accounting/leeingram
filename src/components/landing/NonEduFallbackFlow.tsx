@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Loader2, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { DevShortcut } from "@/components/DevShortcut";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
