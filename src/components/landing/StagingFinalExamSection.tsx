@@ -37,8 +37,8 @@ export default function StagingFinalExamSection({ children }: Props) {
           animation: finalExamGridDrift 120s linear infinite;
           opacity: 0.25;
           filter: blur(1.2px);
-          mask-image: radial-gradient(ellipse at 50% 30%, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%);
-          -webkit-mask-image: radial-gradient(ellipse at 50% 30%, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%);
+          mask-image: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.9) 100%);
+          -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.9) 100%);
         }
         .final-exam-orb {
           position: absolute; border-radius: 9999px; filter: blur(90px);
