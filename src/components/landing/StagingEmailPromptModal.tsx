@@ -80,25 +80,11 @@ export default function StagingEmailPromptModal({
 
     const isEdu = trimmed.endsWith(".edu") || isWhitelistedEmail(trimmed);
 
-    // Non-.edu still proceeds — log lead, then continue through the normal flow.
-    // resolve-campus will route them to the General campus.
+    // Non-.edu → switch to role/email/share fallback flow.
     if (!isEdu) {
-      try {
-        await supabase.from("landing_page_leads").insert({
-          email: trimmed,
-          email_type: "non_edu",
-          university_domain: trimmed.split("@")[1] || null,
-          course_slug: null,
-          intent_tag: chapterNumber != null
-            ? `intent_chapter_${chapterNumber}`
-            : courseName
-              ? `intent_course_${courseName}`
-              : "intent_email_prompt",
-          source: "non_edu_fallback",
-        });
-      } catch {
-        /* non-blocking */
-      }
+      setFallbackEmail(trimmed);
+      setView("non_edu");
+      return;
     }
 
     setSubmitting(true);
@@ -106,33 +92,6 @@ export default function StagingEmailPromptModal({
       const result = await onSubmit(trimmed);
       // If parent returns null, it has already navigated (e.g. Ole Miss skip).
       if (result) setCelebration(result);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleFallbackSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = fallbackEmail.trim().toLowerCase();
-    if (!trimmed) return;
-    setSubmitting(true);
-    try {
-      const { error } = await supabase.from("landing_page_leads").insert({
-        email: trimmed,
-        email_type: "non_edu",
-        university_domain: trimmed.split("@")[1] || null,
-        course_slug: null,
-        intent_tag: chapterNumber != null
-          ? `intent_chapter_${chapterNumber}`
-          : courseName
-            ? `intent_course_${courseName}`
-            : "intent_email_prompt",
-        source: "non_edu_fallback",
-      });
-      if (error) throw error;
-      setView("non_edu_success");
-    } catch {
-      toast.error("Something went wrong. Try again.");
     } finally {
       setSubmitting(false);
     }
