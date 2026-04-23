@@ -1,6 +1,7 @@
 import { Sword, PenLine, MonitorPlay, type LucideIcon } from "lucide-react";
 
 const NAVY = "#14213D";
+const RED = "#CE1126";
 
 interface CardProps {
   title: string;
@@ -18,8 +19,8 @@ function Card({ title, body, buttonLabel, icon: Icon, iconColor, tint, onClick }
       className="rounded-2xl px-5 py-5 flex flex-col items-center text-center"
       style={{
         background: tint,
-        boxShadow: "0 12px 40px rgba(20,33,61,0.10), 0 2px 6px rgba(20,33,61,0.06)",
-        border: "1px solid rgba(20,33,61,0.06)",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.30), 0 2px 6px rgba(0,0,0,0.18)",
+        border: "1px solid rgba(255,255,255,0.08)",
       }}
     >
       <div className="mb-3 flex items-center justify-center" style={{ height: 48 }}>
@@ -56,30 +57,58 @@ interface Props {
   onBrowseTools?: () => void;
   onBrowseProblems?: () => void;
   onRequestEarlyAccess?: () => void;
+  onStartStudying?: () => void;
 }
 
 export default function StagingFeatureCardsSection({
   onBrowseTools,
   onBrowseProblems,
   onRequestEarlyAccess,
+  onStartStudying,
 }: Props) {
   return (
-    <section className="py-16 px-4 sm:px-6" style={{ background: "#F8FAFC" }}>
-      <div className="max-w-[1100px] mx-auto w-full">
-        <div className="text-center mb-12">
+    <section
+      className="py-20 px-4 sm:px-6 relative overflow-hidden"
+      style={{
+        background: `linear-gradient(180deg, #0F1A2E 0%, ${NAVY} 50%, #0B1426 100%)`,
+      }}
+    >
+      <div className="max-w-[1100px] mx-auto w-full relative">
+        <div className="text-center mb-10">
           <h2
-            className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight"
-            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+            className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight text-white"
+            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 12px rgba(0,0,0,0.5)" }}
           >
             Your next exam is coming up.
           </h2>
           <p
             className="mt-4 text-[16px] sm:text-[18px]"
-            style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
+            style={{ color: "rgba(255,255,255,0.78)", fontFamily: "Inter, sans-serif" }}
           >
             Get exactly what you need to study smarter.
           </p>
+
+          {/* Red CTA */}
+          <div className="mt-7 flex justify-center">
+            <button
+              type="button"
+              onClick={onStartStudying}
+              className="rounded-xl px-8 py-3.5 text-[16px] md:text-[17px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+              style={{
+                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+                fontFamily: "Inter, sans-serif",
+                boxShadow:
+                  "inset 0 1px 0 rgba(255,255,255,0.25), 0 0 0 1px rgba(255,255,255,0.08), 0 10px 28px rgba(206,17,38,0.45)",
+                letterSpacing: "0.01em",
+              }}
+            >
+              Start Studying →
+            </button>
+          </div>
         </div>
+
+        {/* Padding spacer between CTA and feature cards */}
+        <div className="h-8 md:h-12" aria-hidden="true" />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
           <Card
