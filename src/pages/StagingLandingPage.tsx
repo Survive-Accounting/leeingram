@@ -66,6 +66,7 @@ export default function StagingLandingPage() {
   const [pendingChapterNumber, setPendingChapterNumber] = useState<number | null>(null);
   const [pendingChapterName, setPendingChapterName] = useState<string | null>(null);
   const [emailPromptOpen, setEmailPromptOpen] = useState(false);
+  const [emailPromptIntent, setEmailPromptIntent] = useState<"default" | "pricing">("default");
   const [emailPromptLoading, setEmailPromptLoading] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [getStartedOpen, setGetStartedOpen] = useState(false);
