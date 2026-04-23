@@ -320,27 +320,49 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         </div>
 
         {/* CTAs — moved BELOW the card so mobile shows button without scrolling */}
-        <div className="mt-7 md:mt-10 flex flex-col items-center gap-3 hero-anim-btn">
-          <button
-            onClick={onGetStartedClick}
-            className="relative rounded-xl px-10 py-4 text-[17px] md:text-[18px] font-bold text-white transition-all hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.99]"
-            style={{
-              background: RED,
-              fontFamily: "Inter, sans-serif",
-              boxShadow:
-                "0 0 0 1px rgba(255,255,255,0.08), 0 10px 30px rgba(206,17,38,0.45), 0 20px 60px rgba(120,40,180,0.35), 0 30px 80px rgba(20,33,61,0.55)",
-            }}
-          >
-            Get Started
-          </button>
+        <div className="mt-8 md:mt-12 flex flex-col items-center gap-5 hero-anim-btn">
+          <div className="relative">
+            {/* Ambient glow that aligns with animated background lighting */}
+            <div
+              aria-hidden="true"
+              className="absolute -inset-8 rounded-full pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(closest-side, rgba(206,17,38,0.55) 0%, rgba(120,40,180,0.35) 45%, rgba(20,33,61,0) 75%)",
+                filter: "blur(28px)",
+                zIndex: 0,
+                animation: "heroBtnGlow 4s ease-in-out infinite",
+              }}
+            />
+            <style>{`
+              @keyframes heroBtnGlow {
+                0%, 100% { opacity: 0.85; transform: scale(1); }
+                50%      { opacity: 1;    transform: scale(1.06); }
+              }
+            `}</style>
+            <button
+              onClick={onGetStartedClick}
+              className="relative rounded-xl px-12 py-5 text-[19px] md:text-[21px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-1 active:translate-y-0 active:scale-[0.99]"
+              style={{
+                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+                fontFamily: "Inter, sans-serif",
+                boxShadow:
+                  "inset 0 1px 0 rgba(255,255,255,0.25), 0 0 0 1px rgba(255,255,255,0.1), 0 14px 36px rgba(206,17,38,0.55), 0 28px 70px rgba(120,40,180,0.4), 0 40px 100px rgba(20,33,61,0.6)",
+                letterSpacing: "0.01em",
+                zIndex: 1,
+              }}
+            >
+              Get Started
+            </button>
+          </div>
           <button
             onClick={() => {
               const el = document.getElementById("courses-section");
               if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
             }}
-            className="text-[15px] md:text-[16px] font-medium underline underline-offset-4 transition-opacity hover:opacity-80 px-2 py-1"
+            className="text-[16px] md:text-[17px] font-semibold underline underline-offset-[6px] decoration-2 transition-opacity hover:opacity-100 opacity-90 px-3 py-1.5"
             style={{
-              color: "rgba(255,255,255,0.85)",
+              color: "rgba(255,255,255,0.92)",
               fontFamily: "Inter, sans-serif",
               textShadow: subtextShadow,
               background: "none",
