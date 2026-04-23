@@ -258,7 +258,7 @@ export default function StagingGetStartedModal({
             </form>
           )}
 
-          {step === 2 && (
+          {view === "main" && step === 2 && (
             <div>
               <h2
                 className="text-[22px] sm:text-[26px] leading-tight text-center"
