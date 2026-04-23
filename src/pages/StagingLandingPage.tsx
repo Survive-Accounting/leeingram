@@ -175,6 +175,7 @@ export default function StagingLandingPage() {
       const data = await resolveEmail(capturedEmail, course);
       if (data) navigate(`/campus/${data.campus_slug}/${course.slug}`);
     } else {
+      setEmailPromptIntent("default");
       setEmailPromptOpen(true);
     }
   };
@@ -188,6 +189,7 @@ export default function StagingLandingPage() {
       const data = await resolveEmail(capturedEmail, course);
       if (data) navigate(`/campus/${data.campus_slug}/${course.slug}/${chapterNumber}`);
     } else {
+      setEmailPromptIntent("default");
       setEmailPromptOpen(true);
     }
   };
