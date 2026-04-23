@@ -259,16 +259,9 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
             >
               <span className="block hero-anim-line2">
-                Stop memorizing. Start mastering.
+                AI-enabled study tools created by a real tutor.
               </span>
             </h1>
-
-            <p
-              className="mt-3 text-[15px] md:text-[18px] italic hero-anim-sub"
-              style={{ color: "rgba(255,255,255,0.85)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
-            >
-              AI-enabled study tools created by a real accounting tutor.
-            </p>
 
             <div
               className="mt-5 mx-auto md:mx-0 max-w-[560px] hero-anim-sub space-y-5"
