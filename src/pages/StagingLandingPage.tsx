@@ -64,6 +64,7 @@ export default function StagingLandingPage() {
   const [capturedEmail, setCapturedEmail] = useState<string>("");
   const [pendingCourse, setPendingCourse] = useState<CtaCourse | null>(null);
   const [pendingChapterNumber, setPendingChapterNumber] = useState<number | null>(null);
+  const [pendingChapterName, setPendingChapterName] = useState<string | null>(null);
   const [emailPromptOpen, setEmailPromptOpen] = useState(false);
   const [emailPromptLoading, setEmailPromptLoading] = useState(false);
   const [resolving, setResolving] = useState(false);
