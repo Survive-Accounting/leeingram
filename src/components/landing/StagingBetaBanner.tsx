@@ -2,7 +2,7 @@ const NAVY = "#14213D";
 const GREEN = "#16A34A";
 
 const BULLETS = [
-  "Cram tools for every chapter in your course — journal entries, formulas, flashcards",
+  "Survival tools for every chapter in your course — journal entries, formulas, flashcards",
   "Explore 2,500 practice problems with AI explanations curated by Lee's tutoring experience",
   "Ask Lee questions when you're stuck — get personalized video responses",
 ];

@@ -3395,7 +3395,7 @@ function CramToolsGrid({ chapterId, chapterNum, purposeCount, keyTermsCount, acc
   return (
     <div className="mt-6 rounded-xl px-4 sm:px-6 py-5 sm:py-6" style={{ background: "#F8F8FA", border: `1px solid ${t.border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
       <p className="text-[18px] sm:text-[20px]" style={{ color: "#14213D", fontWeight: 700, paddingLeft: 4, marginBottom: 16 }}>
-        Chapter Cram Tools · Ch {chapterNum || "?"}
+        Chapter Survival Tools · Ch {chapterNum || "?"}
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {CRAM_CARDS.map((card) => {
