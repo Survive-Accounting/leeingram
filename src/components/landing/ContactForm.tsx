@@ -53,7 +53,28 @@ export default function ContactForm() {
   };
 
   return (
-    <section className="relative pt-20 sm:pt-24 pb-24 sm:pb-28 px-4">
+    <section
+      className="relative pt-20 sm:pt-24 pb-24 sm:pb-28 px-4 overflow-hidden"
+      style={{ background: "linear-gradient(180deg, #14213D 0%, #0B1426 100%)" }}
+    >
+      <style>{`
+        @keyframes contactGridDrift {
+          0%   { background-position: 0px 0px, 0px 0px; }
+          100% { background-position: 120px 120px, 120px 120px; }
+        }
+      `}</style>
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px)",
+          backgroundSize: "120px 120px, 120px 120px",
+          animation: "contactGridDrift 2400s linear infinite",
+          opacity: 0.4,
+          zIndex: 0,
+        }}
+      />
       <div className="relative mx-auto max-w-[640px]" style={{ zIndex: 1 }}>
         <h2
           className="text-center text-[24px] sm:text-[30px] text-white mb-3"
