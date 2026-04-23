@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { Button } from "@/components/ui/button";
-import { LogOut, Layers, Building2 } from "lucide-react";
+import { LogOut, Layers, Building2, Sparkles } from "lucide-react";
 import { useEffect } from "react";
 
 const NAVY = "#14213D";
@@ -19,6 +19,12 @@ const cards = [
     subtitle: "Campuses, Students, Pricing, Analytics",
     icon: Building2,
     route: "/campus-ops",
+  },
+  {
+    title: "AI Features",
+    subtitle: "Survive This, Trial Passes, Priority Queue",
+    icon: Sparkles,
+    route: "/admin/ai-features",
   },
 ];
 
@@ -57,7 +63,7 @@ export default function DomainSelect() {
       </h1>
 
       {/* Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full max-w-3xl">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
