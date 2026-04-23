@@ -71,7 +71,7 @@ export default function StagingFeatureCardsSection({
       id="exam-coming-up"
       className="pt-20 pb-8 px-4 sm:px-6 relative overflow-hidden"
       style={{
-        background: `linear-gradient(180deg, #0F1A2E 0%, ${NAVY} 100%)`,
+        background: `linear-gradient(180deg, #6F7C92 0%, #2A3654 8%, #14213D 22%, ${NAVY} 100%)`,
         scrollMarginTop: "0px",
       }}
     >
