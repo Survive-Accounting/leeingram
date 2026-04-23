@@ -66,8 +66,8 @@ export default function StagingLandingPage() {
   const [pendingChapterNumber, setPendingChapterNumber] = useState<number | null>(null);
   const [emailPromptOpen, setEmailPromptOpen] = useState(false);
   const [emailPromptLoading, setEmailPromptLoading] = useState(false);
-  
   const [resolving, setResolving] = useState(false);
+  const [getStartedOpen, setGetStartedOpen] = useState(false);
 
   useEffect(() => {
     trackPageView("staging_landing");
