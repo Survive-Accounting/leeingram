@@ -13,6 +13,7 @@ import { CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, Ey
 import { JETooltip } from "@/components/JETooltip";
 import { isCanonicalJE, type CanonicalJEPayload } from "@/lib/journalEntryParser";
 import { toast } from "sonner";
+import { buildGetAccessUrl } from "@/lib/getAccessUrl";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
