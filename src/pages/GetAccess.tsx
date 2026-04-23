@@ -58,7 +58,25 @@ const INCLUDES = [
 
 export default function GetAccess() {
   const navigate = useNavigate();
-  const [course, setCourse] = useState(COURSES[0].slug);
+  const [searchParams] = useSearchParams();
+
+  const campusParam = (searchParams.get("campus") || "").toLowerCase();
+  const courseParam = (searchParams.get("course") || "").toLowerCase();
+
+  // Resolve course slug from param (matches slug or known aliases).
+  const resolvedCourseSlug = useMemo(() => {
+    if (!courseParam) return COURSES[0].slug;
+    const match = COURSES.find(
+      (c) => c.slug === courseParam || c.aliases.includes(courseParam),
+    );
+    return match?.slug ?? COURSES[0].slug;
+  }, [courseParam]);
+
+  const campusName = CAMPUS_LABELS[campusParam] || null;
+  const courseCode = COURSE_CODES[resolvedCourseSlug] || null;
+  const showContextLabel = Boolean(campusParam && courseParam);
+
+  const [course, setCourse] = useState(resolvedCourseSlug);
   const [plan, setPlan] = useState<"semester" | "chapter">("semester");
   const [email, setEmail] = useState("");
 
