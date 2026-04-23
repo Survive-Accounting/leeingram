@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, Video, BookOpen, PenLine } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -93,8 +93,31 @@ export default function StagingCoursesSection({
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [problemCount, setProblemCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [powerPhase, setPowerPhase] = useState<"off" | "warm" | "expand" | "flash" | "on">("off");
+  const laptopRef = useRef<HTMLDivElement>(null);
 
   const selected = ordered.find((c) => c.slug === selectedSlug);
+
+  // Power-on sequence triggered when a course is selected
+  useEffect(() => {
+    if (!selected) {
+      setPowerPhase("off");
+      return;
+    }
+    setPowerPhase("warm");
+    const t1 = setTimeout(() => setPowerPhase("expand"), 200);
+    const t2 = setTimeout(() => setPowerPhase("flash"), 500);
+    const t3 = setTimeout(() => setPowerPhase("on"), 600);
+    const t4 = setTimeout(() => {
+      laptopRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 1100);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+    };
+  }, [selectedSlug]);
 
   useEffect(() => {
     if (!selected) {
@@ -186,7 +209,7 @@ export default function StagingCoursesSection({
 
         <div className="relative">
           <p
-            className="relative text-center mb-4 text-[26px] sm:text-[32px] md:text-[38px] leading-tight text-white"
+            className="relative text-center mb-2 text-[26px] sm:text-[32px] md:text-[38px] leading-tight text-white"
             style={{
               fontFamily: "'DM Serif Display', serif",
               fontWeight: 400,
@@ -195,6 +218,12 @@ export default function StagingCoursesSection({
             }}
           >
             Which course are you studying?
+          </p>
+          <p
+            className="text-center mb-4 text-[13px] sm:text-[14px]"
+            style={{ color: "rgba(255,255,255,0.7)", fontFamily: "Inter, sans-serif" }}
+          >
+            Select your course to start the demo →
           </p>
         </div>
 
@@ -315,18 +344,11 @@ export default function StagingCoursesSection({
           </button>
         </div>
 
-        {/* Stats + Chapters — only after selection */}
-        {selected && (
-          <div
-            className="mt-5 rounded-2xl p-3 sm:p-4 animate-fade-in"
-            style={{
-              background: "#fff",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)",
-              fontFamily: "Inter, sans-serif",
-            }}
-          >
-            {loading ? (
-              <div className="flex flex-col md:flex-row gap-3 animate-pulse items-stretch">
+        {/* Inner content: stats + chapters (rendered inside laptop on desktop, raw on mobile) */}
+        {(() => {
+          const innerContent = selected ? (
+            loading ? (
+              <div className="flex flex-col md:flex-row gap-3 animate-pulse items-stretch h-full">
                 <div className="md:w-[35%] md:shrink-0 rounded-xl p-4" style={{ background: "#1a1a2e" }}>
                   <div className="flex flex-col gap-3">
                     {[0, 1, 2].map((i) => (
@@ -344,7 +366,7 @@ export default function StagingCoursesSection({
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col md:flex-row gap-3 md:items-start">
+              <div className="flex flex-col md:flex-row gap-3 md:items-start h-full">
                 {/* LEFT — navy callout block with stat items + CTA */}
                 <div
                   className="md:w-[35%] md:shrink-0 rounded-xl p-4 pr-6 flex flex-col"
@@ -426,7 +448,7 @@ export default function StagingCoursesSection({
 
                 {/* RIGHT — chapter list, own framed box */}
                 <div
-                  className="md:w-[65%] md:flex-1 rounded-xl p-4"
+                  className="md:w-[65%] md:flex-1 rounded-xl p-4 overflow-y-auto"
                   style={{ background: "#F9F9F9", border: "1px solid #E5E7EB" }}
                 >
                   <div
@@ -460,9 +482,152 @@ export default function StagingCoursesSection({
                   )}
                 </div>
               </div>
-            )}
-          </div>
-        )}
+            )
+          ) : null;
+
+          return (
+            <>
+              {/* DESKTOP — MacBook frame */}
+              <div ref={laptopRef} className="hidden md:block mt-6">
+                <style>{`
+                  @keyframes mbScanlines {
+                    0% { background-position: 0 0; }
+                    100% { background-position: 0 4px; }
+                  }
+                  @keyframes mbCrtExpand {
+                    0% { transform: scaleY(0.01); opacity: 1; }
+                    100% { transform: scaleY(1); opacity: 1; }
+                  }
+                  @keyframes mbContentFade {
+                    0% { opacity: 0; }
+                    100% { opacity: 1; }
+                  }
+                `}</style>
+                {/* Lid */}
+                <div
+                  className="relative mx-auto"
+                  style={{
+                    background: "linear-gradient(180deg, #d8dadd 0%, #c2c4c8 100%)",
+                    borderRadius: "18px 18px 6px 6px",
+                    padding: "14px 14px 18px 14px",
+                    boxShadow: "0 30px 60px -20px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.6)",
+                    border: "1px solid #a8aaae",
+                  }}
+                >
+                  {/* Screen bezel */}
+                  <div
+                    style={{
+                      background: "#0a0a0a",
+                      borderRadius: 8,
+                      padding: 12,
+                      border: "1px solid #1a1a1a",
+                      boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.04)",
+                    }}
+                  >
+                    {/* Camera dot */}
+                    <div className="flex justify-center mb-2">
+                      <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#222", boxShadow: "inset 0 0 2px rgba(255,255,255,0.15)" }} />
+                    </div>
+                    {/* Screen — 16:10 */}
+                    <div
+                      className="relative w-full overflow-hidden"
+                      style={{
+                        aspectRatio: "16 / 10",
+                        background: powerPhase === "off" || powerPhase === "warm" ? "#000" : "#fff",
+                        borderRadius: 3,
+                        transition: powerPhase === "warm" ? "background 200ms linear" : undefined,
+                      }}
+                    >
+                      {/* Faint scanlines on off state */}
+                      {(powerPhase === "off" || powerPhase === "warm") && (
+                        <div
+                          className="absolute inset-0 pointer-events-none"
+                          style={{
+                            backgroundImage: "repeating-linear-gradient(to bottom, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px)",
+                            animation: "mbScanlines 6s linear infinite",
+                          }}
+                        />
+                      )}
+                      {/* Warm dark-gray flash */}
+                      {powerPhase === "warm" && (
+                        <div className="absolute inset-0" style={{ background: "#1a1a1a", opacity: 0.6 }} />
+                      )}
+                      {/* CRT expand white bar */}
+                      {powerPhase === "expand" && (
+                        <div
+                          className="absolute left-0 right-0 top-1/2 -translate-y-1/2 bg-white"
+                          style={{
+                            height: "100%",
+                            transformOrigin: "center",
+                            animation: "mbCrtExpand 300ms ease-out forwards",
+                          }}
+                        />
+                      )}
+                      {/* White flash */}
+                      {powerPhase === "flash" && (
+                        <div className="absolute inset-0 bg-white" />
+                      )}
+                      {/* Content fade-in */}
+                      {powerPhase === "on" && innerContent && (
+                        <div
+                          className="absolute inset-0 overflow-y-auto p-4"
+                          style={{
+                            background: "#F8F8FA",
+                            animation: "mbContentFade 400ms ease-out forwards",
+                          }}
+                        >
+                          {innerContent}
+                        </div>
+                      )}
+                      {/* Off / placeholder text */}
+                      {powerPhase === "off" && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <p
+                            className="text-[12px] tracking-wider uppercase"
+                            style={{ color: "rgba(255,255,255,0.18)", fontFamily: "Inter, sans-serif" }}
+                          >
+                            Select a course to begin
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {/* Hinge / base */}
+                <div
+                  className="mx-auto relative"
+                  style={{
+                    background: "linear-gradient(180deg, #b8bbbf 0%, #9da0a4 100%)",
+                    height: 14,
+                    width: "104%",
+                    marginLeft: "-2%",
+                    borderRadius: "0 0 18px 18px",
+                    boxShadow: "0 6px 14px rgba(0,0,0,0.3)",
+                  }}
+                >
+                  <div
+                    className="absolute left-1/2 -translate-x-1/2 top-0 rounded-b-lg"
+                    style={{ width: "18%", height: 5, background: "rgba(0,0,0,0.18)" }}
+                  />
+                </div>
+              </div>
+
+              {/* MOBILE — content directly, no frame */}
+              {selected && (
+                <div
+                  className="mt-5 rounded-2xl p-3 sm:p-4 animate-fade-in md:hidden"
+                  style={{
+                    background: "#fff",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                >
+                  {innerContent}
+                </div>
+              )}
+            </>
+          );
+        })()}
 
       </div>
     </section>
