@@ -88,23 +88,6 @@ export default function StagingFeatureCardsSection({
           >
             Get exactly what you need to study smarter.
           </p>
-
-          {/* Subtle underlined link */}
-          <div className="mt-8 flex justify-center">
-            <button
-              type="button"
-              onClick={onStartStudying}
-              className="text-[15px] md:text-[16px] font-semibold underline underline-offset-[6px] decoration-2 transition-opacity hover:opacity-80 px-2 py-1.5"
-              style={{
-                color: NAVY,
-                fontFamily: "Inter, sans-serif",
-                background: "none",
-                border: "none",
-              }}
-            >
-              Start studying now →
-            </button>
-          </div>
         </div>
 
         <div className="mx-auto max-w-[1040px] grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 justify-items-stretch">
