@@ -175,7 +175,7 @@ export default function StagingLandingPage() {
         onGetStartedClick={() => setGetStartedOpen(true)}
       />
 
-      
+      <StagingOrbsTransition />
 
       <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />
 
