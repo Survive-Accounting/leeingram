@@ -74,21 +74,11 @@ export default function StagingGetStartedModal({
     const eduRegex = /^[^\s@]+@[^\s@]+\.edu$/i;
     const isEdu = eduRegex.test(trimmed) || isWhitelistedEmail(trimmed);
 
-    // Non-.edu still proceeds — they get routed to the General campus.
-    // We log the lead immediately so we don't lose them if they bail at step 2.
+    // Non-.edu → switch to role/email/share fallback flow.
     if (!isEdu) {
-      try {
-        await supabase.from("landing_page_leads").insert({
-          email: trimmed,
-          email_type: "non_edu",
-          university_domain: trimmed.split("@")[1] || null,
-          course_slug: preselectedCourseSlug ?? null,
-          intent_tag: "intent_get_started_modal",
-          source: "non_edu_fallback",
-        });
-      } catch {
-        /* non-blocking */
-      }
+      setFallbackEmail(trimmed);
+      setView("non_edu");
+      return;
     }
 
     setEmailError(null);
