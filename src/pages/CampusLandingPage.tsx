@@ -5,6 +5,7 @@ import CampusHeader from "@/components/campus/CampusHeader";
 import PreviewPurchaseBar from "@/components/PreviewPurchaseBar";
 import { useEventTracking } from "@/hooks/useEventTracking";
 import heroBg from "@/assets/staging-hero.jpg";
+import { BookOpen, PenLine, Video, type LucideIcon } from "lucide-react";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -139,6 +140,7 @@ export default function CampusLandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
             {/* Card 1 — Cram Tools */}
             <Card
+              icon={BookOpen}
               title="Cram Tools"
               body="Brain blast through flashcards, journal entries, formulas and more."
               buttonLabel="Explore Cram Tools →"
@@ -150,6 +152,7 @@ export default function CampusLandingPage() {
 
             {/* Card 2 — Practice Problems */}
             <Card
+              icon={PenLine}
               title={`${problemLabel} Practice Problems`}
               body="Check your work with Lee's interactive solutions."
               buttonLabel="Browse Problems →"
@@ -161,11 +164,81 @@ export default function CampusLandingPage() {
 
             {/* Card 3 — Lee on Demand */}
             <Card
+              icon={Video}
               title="Lee on Demand (New!)"
               body="Submit a question—Lee sends back a personal video answer."
               buttonLabel="Learn More →"
               disabled
             />
+          </div>
+        </div>
+      </div>
+
+      <PreviewPurchaseBar
+        priceCents={priceCents}
+        campusSlug={campusSlug}
+        courseSlug={courseSlug}
+        email={sessionStorage.getItem("student_email") || undefined}
+      />
+    </div>
+  );
+}
+
+interface CardProps {
+  icon?: LucideIcon;
+  title: string;
+  body: string;
+  buttonLabel?: string;
+  onClick?: () => void;
+  comingSoon?: boolean;
+  disabled?: boolean;
+}
+
+function Card({ icon: Icon, title, body, buttonLabel, onClick, comingSoon, disabled }: CardProps) {
+  return (
+    <div
+      className="bg-white rounded-2xl px-5 py-5 flex flex-col items-center text-center"
+      style={{
+        boxShadow: "0 12px 40px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08)",
+      }}
+    >
+      {Icon && (
+        <Icon size={24} strokeWidth={2} className="mb-2" style={{ color: NAVY }} />
+      )}
+      <h3
+        className="text-[20px] font-bold mb-2"
+        style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+      >
+        {title}
+      </h3>
+      <p
+        className="text-[13px] leading-snug mb-4 flex-1"
+        style={{ color: "#4B5563", fontFamily: "Inter, sans-serif" }}
+      >
+        {body}
+      </p>
+      {buttonLabel && (
+        <button
+          onClick={disabled ? undefined : onClick}
+          disabled={disabled}
+          aria-disabled={disabled}
+          className={`w-full rounded-lg py-3 text-[14px] font-semibold text-white transition-all ${disabled ? "cursor-not-allowed opacity-70" : "hover:brightness-110 active:scale-[0.99]"}`}
+          style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 14px rgba(206,17,38,0.3)" }}
+        >
+          {buttonLabel}
+        </button>
+      )}
+      {comingSoon && (
+        <p
+          className="text-[12px] font-medium text-center mt-2"
+          style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}
+        >
+          Coming soon
+        </p>
+      )}
+    </div>
+  );
+}
           </div>
         </div>
       </div>
