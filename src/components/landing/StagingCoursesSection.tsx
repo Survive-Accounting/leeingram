@@ -274,7 +274,7 @@ export default function StagingCoursesSection({
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col md:flex-row gap-3 items-stretch">
+              <div className="flex flex-col md:flex-row gap-3 md:items-start">
                 {/* LEFT — navy callout block with stat items + CTA */}
                 <div
                   className="md:w-[35%] md:shrink-0 rounded-xl p-4 pr-6 flex flex-col"
