@@ -34,7 +34,7 @@ interface Course {
 interface StagingCoursesSectionProps {
   courses: Course[];
   onCardClick: (course: Course) => void;
-  onChapterClick?: (course: Course, chapterNumber: number) => void;
+  onChapterClick?: (course: Course, chapterNumber: number, chapterName?: string) => void;
   onExpansionClick?: () => void;
   /** Opens the Get Started email modal; passes selected slug for preselection. */
   onGetStartedClick?: (preselectedSlug: string | null) => void;
