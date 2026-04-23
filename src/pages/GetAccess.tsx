@@ -102,21 +102,32 @@ export default function GetAccess() {
       />
 
       {/* Hero */}
-      <section className="px-4 sm:px-6 pt-12 md:pt-20 pb-10 text-center">
-        {showContextLabel && (
+      <section className="px-4 sm:px-6 pt-12 md:pt-20 pb-10 text-center relative">
+        {/* Subtle Ole Miss powder-blue accent bar */}
+        {isOleMiss && (
           <div
-            className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full text-[12px] font-semibold uppercase tracking-wider"
+            aria-hidden
+            className="absolute top-0 left-1/2 -translate-x-1/2 h-1 rounded-b-full"
             style={{
-              background: "rgba(20,33,61,0.06)",
-              color: NAVY,
-              fontFamily: "Inter, sans-serif",
-              border: "1px dashed rgba(20,33,61,0.25)",
+              width: 120,
+              background: `linear-gradient(90deg, #A6CCE2 0%, ${NAVY} 50%, ${RED} 100%)`,
+              opacity: 0.85,
             }}
-            title="[Placeholder] Wire to real campus/course data later"
-          >
-            For {campusName ?? campusParam} {courseCode ?? ""} students
-          </div>
+          />
         )}
+
+        <div
+          className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full text-[12px] font-semibold uppercase tracking-wider"
+          style={{
+            background: isOleMiss ? "rgba(166,204,226,0.22)" : "rgba(20,33,61,0.06)",
+            color: NAVY,
+            fontFamily: "Inter, sans-serif",
+            border: isOleMiss ? "1px solid rgba(20,33,61,0.18)" : "1px dashed rgba(20,33,61,0.25)",
+          }}
+        >
+          For {campusName} {courseCode ?? "ACCY 201"} students
+        </div>
+
         <h1
           className="text-[34px] sm:text-[44px] md:text-[54px] leading-tight"
           style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
