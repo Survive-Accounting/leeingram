@@ -185,8 +185,6 @@ export default function StagingLandingPage() {
         />
       </div>
 
-      <ClosingCtaSection onCtaClick={() => handleCardClick(defaultCourse)} />
-
       <div ref={contactRef}>
         <ContactForm />
       </div>
