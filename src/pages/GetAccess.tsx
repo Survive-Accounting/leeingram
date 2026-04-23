@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, Sword, PenLine, MonitorPlay, ShieldCheck, ChevronDown } from "lucide-react";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
@@ -10,11 +10,25 @@ const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
 const COURSES = [
-  { slug: "intermediate-accounting-2", name: "Intermediate Accounting 2" },
-  { slug: "intermediate-accounting-1", name: "Intermediate Accounting 1" },
-  { slug: "intro-accounting-2", name: "Introductory Accounting 2" },
-  { slug: "intro-accounting-1", name: "Introductory Accounting 1" },
+  { slug: "intermediate-accounting-2", name: "Intermediate Accounting 2", aliases: ["ia2", "intermediate-2", "accy-304", "accy304"] },
+  { slug: "intermediate-accounting-1", name: "Intermediate Accounting 1", aliases: ["ia1", "intermediate-1", "accy-303", "accy303"] },
+  { slug: "intro-accounting-2", name: "Introductory Accounting 2", aliases: ["intro-2", "intro2", "accy-202", "accy202"] },
+  { slug: "intro-accounting-1", name: "Introductory Accounting 1", aliases: ["intro-1", "intro1", "accy-201", "accy201"] },
 ];
+
+// Placeholder campus name lookup — wire to real data later.
+const CAMPUS_LABELS: Record<string, string> = {
+  "ole-miss": "Ole Miss",
+  "mississippi-state": "Mississippi State",
+};
+
+// Placeholder course-code lookup for the small contextual label.
+const COURSE_CODES: Record<string, string> = {
+  "intro-accounting-1": "ACCY 201",
+  "intro-accounting-2": "ACCY 202",
+  "intermediate-accounting-1": "ACCY 303",
+  "intermediate-accounting-2": "ACCY 304",
+};
 
 const PLANS = [
   {
@@ -44,7 +58,25 @@ const INCLUDES = [
 
 export default function GetAccess() {
   const navigate = useNavigate();
-  const [course, setCourse] = useState(COURSES[0].slug);
+  const [searchParams] = useSearchParams();
+
+  const campusParam = (searchParams.get("campus") || "").toLowerCase();
+  const courseParam = (searchParams.get("course") || "").toLowerCase();
+
+  // Resolve course slug from param (matches slug or known aliases).
+  const resolvedCourseSlug = useMemo(() => {
+    if (!courseParam) return COURSES[0].slug;
+    const match = COURSES.find(
+      (c) => c.slug === courseParam || c.aliases.includes(courseParam),
+    );
+    return match?.slug ?? COURSES[0].slug;
+  }, [courseParam]);
+
+  const campusName = CAMPUS_LABELS[campusParam] || null;
+  const courseCode = COURSE_CODES[resolvedCourseSlug] || null;
+  const showContextLabel = Boolean(campusParam && courseParam);
+
+  const [course, setCourse] = useState(resolvedCourseSlug);
   const [plan, setPlan] = useState<"semester" | "chapter">("semester");
   const [email, setEmail] = useState("");
 
@@ -66,6 +98,21 @@ export default function GetAccess() {
 
       {/* Hero */}
       <section className="px-4 sm:px-6 pt-12 md:pt-20 pb-10 text-center">
+        {showContextLabel && (
+          <div
+            className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full text-[12px] font-semibold uppercase tracking-wider"
+            style={{
+              background: "rgba(20,33,61,0.06)",
+              color: NAVY,
+              fontFamily: "Inter, sans-serif",
+              border: "1px dashed rgba(20,33,61,0.25)",
+            }}
+            title="[Placeholder] Wire to real campus/course data later"
+          >
+            <span style={{ opacity: 0.5 }}>[placeholder]</span>
+            For {campusName ?? campusParam} {courseCode ?? ""} students
+          </div>
+        )}
         <h1
           className="text-[34px] sm:text-[44px] md:text-[54px] leading-tight"
           style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
