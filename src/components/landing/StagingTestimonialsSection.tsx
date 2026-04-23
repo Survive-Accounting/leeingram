@@ -4,7 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const NAVY = "#14213D";
 const RED = "#CE1126";
 const EMBED_ID = "484dc267-e1b2-425c-b5c6-49d9525cec9f";
-const TARGET_COUNT = 1000;
+const TARGET_COUNT = 1200;
 const FINALS_DATE = new Date(2026, 4, 4); // May 4, 2026 (local)
 
 /** Returns the countdown line text, or null if exam date has passed. */
