@@ -141,14 +141,8 @@ export default function CampusLandingPage() {
             className="text-[32px] sm:text-[44px] md:text-[52px] font-bold leading-tight"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
           >
-            Your exam is closer than you think.
+            Exactly what you need to start studying smarter.
           </h1>
-          <p
-            className="mt-3 text-[15px] sm:text-[17px]"
-            style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
-          >
-            Everything you need to stop panicking and start studying.
-          </p>
         </div>
 
         {/* Cards */}
