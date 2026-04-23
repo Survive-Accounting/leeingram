@@ -344,145 +344,23 @@ export default function StagingCoursesSection({
           </button>
         </div>
 
-        {/* Inner content: stats + chapters (rendered inside laptop on desktop, raw on mobile) */}
+        {/* Inner content: tab nav + chapter grid (rendered inside laptop on desktop, raw on mobile) */}
         {(() => {
           const innerContent = selected ? (
-            loading ? (
-              <div className="flex flex-col md:flex-row gap-3 animate-pulse items-stretch h-full">
-                <div className="md:w-[35%] md:shrink-0 rounded-xl p-4" style={{ background: "#1a1a2e" }}>
-                  <div className="flex flex-col gap-3">
-                    {[0, 1, 2].map((i) => (
-                      <div key={i} className="rounded-lg p-3" style={{ background: "rgba(255,255,255,0.06)" }}>
-                        <div className="h-3 rounded w-3/4 mb-2" style={{ background: "rgba(255,255,255,0.12)" }} />
-                        <div className="h-2 rounded w-1/2" style={{ background: "rgba(255,255,255,0.08)" }} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="md:w-[65%] md:flex-1 rounded-xl p-4 flex flex-col gap-2" style={{ background: "#F9F9F9", border: "1px solid #E5E7EB" }}>
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="h-5 rounded" style={{ background: "#EEF0F3" }} />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col md:flex-row gap-3 md:items-start h-full">
-                {/* LEFT — navy callout block with stat items + CTA */}
-                <div
-                  className="md:w-[35%] md:shrink-0 rounded-xl p-4 pr-6 flex flex-col"
-                  style={{ background: "#1a1a2e" }}
-                >
-                  <div className="flex flex-col gap-2">
-                    {[
-                      {
-                        tag: "intent_cram_tools",
-                        title: "Survival Tools",
-                        subtext: "Study tools for every chapter",
-                        Icon: BookOpen,
-                        disabled: false,
-                      },
-                      {
-                        tag: "intent_practice_problems",
-                        title: "Practice Problems",
-                        subtext:
-                          problemCount && problemCount > 0
-                            ? `${problemCount.toLocaleString()} problems with Lee's solutions`
-                            : "Check your work with Lee's solutions",
-                        Icon: PenLine,
-                        disabled: false,
-                      },
-                      {
-                        tag: "intent_lee_on_demand",
-                        title: "Lee on Demand",
-                        subtext: "Personalized tutoring videos — coming soon",
-                        Icon: Video,
-                        disabled: true,
-                      },
-                    ].map((stat) => (
-                      <button
-                        key={stat.tag}
-                        type="button"
-                        onClick={() => !stat.disabled && handleStatClick(stat.tag)}
-                        disabled={stat.disabled}
-                        className={`rounded-lg p-3 text-left transition-all group flex items-center justify-between gap-2 w-full ${
-                          stat.disabled ? "cursor-not-allowed opacity-50" : "hover:bg-white/5"
-                        }`}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="text-[12px] sm:text-[13px] font-bold leading-tight text-white flex items-center gap-2">
-                            <stat.Icon className="w-4 h-4 shrink-0 text-white" strokeWidth={2} />
-                            {stat.title}
-                          </div>
-                          <div
-                            className="text-[10px] sm:text-[11px] mt-1 leading-snug pl-6"
-                            style={{ color: "rgba(255,255,255,0.6)" }}
-                          >
-                            {stat.subtext}
-                          </div>
-                        </div>
-                        {!stat.disabled && (
-                          <span
-                            aria-hidden="true"
-                            className="text-[16px] flex-shrink-0 transition-transform group-hover:translate-x-0.5"
-                            style={{ color: "rgba(255,255,255,0.5)" }}
-                          >
-                            →
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handlePreviewFreeClick}
-                    className="mt-2 w-full rounded-lg px-4 py-3 text-[14px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
-                    style={{ background: RED, boxShadow: "0 4px 14px rgba(206,17,38,0.3)" }}
-                  >
-                    Start Free Preview →
-                  </button>
-                  <p className="mt-2 text-center text-[12px] text-white/60">
-                    Semester pass · Access through May 31
-                  </p>
-                </div>
-
-                {/* RIGHT — chapter list, own framed box */}
-                <div
-                  className="md:w-[65%] md:flex-1 rounded-xl p-4 overflow-y-auto"
-                  style={{ background: "#F9F9F9", border: "1px solid #E5E7EB" }}
-                >
-                  <div
-                    className="text-[10px] font-semibold uppercase tracking-wider mb-3 px-2"
-                    style={{ color: "#9CA3AF" }}
-                  >
-                    What's Covered
-                  </div>
-                  {chapters.length === 0 ? (
-                    <p className="text-[13px]" style={{ color: "#9CA3AF" }}>
-                      No chapters available yet.
-                    </p>
-                  ) : (
-                    <ul className="flex flex-col -mx-1">
-                      {chapters.map((ch) => (
-                        <li key={ch.id}>
-                          <button
-                            type="button"
-                            onClick={() => handleChapterRowClick(ch)}
-                            className="w-full flex items-baseline gap-2 text-[14px] text-left rounded-lg px-2 py-2 transition-colors hover:bg-white cursor-pointer"
-                            style={{ color: NAVY }}
-                          >
-                            <span className="text-[12px] font-semibold w-12 flex-shrink-0" style={{ color: "#9CA3AF" }}>
-                              Ch. {ch.chapter_number}
-                            </span>
-                            <span>{ch.chapter_name}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </div>
-            )
+            <DemoScreen
+              courseName={selected.name}
+              chapters={chapters}
+              loading={loading}
+              onChange={() => {
+                setSelectedSlug("");
+                setOpen(true);
+              }}
+              onChapterClick={(ch, tag) => {
+                tagIntent(tag);
+                if (onChapterClick) onChapterClick(selected, ch.chapter_number, ch.chapter_name);
+                else onCardClick(selected);
+              }}
+            />
           ) : null;
 
           return (
@@ -631,5 +509,167 @@ export default function StagingCoursesSection({
 
       </div>
     </section>
+  );
+}
+
+// ── DemoScreen (renders inside the laptop screen) ──
+interface DemoScreenProps {
+  courseName: string;
+  chapters: Chapter[];
+  loading: boolean;
+  onChange: () => void;
+  onChapterClick: (ch: Chapter, tag: string) => void;
+}
+
+function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }: DemoScreenProps) {
+  const [tab, setTab] = useState<"survival" | "practice">("survival");
+  const [showSkeleton, setShowSkeleton] = useState(true);
+  const [contentKey, setContentKey] = useState(0);
+
+  // Skeleton min-duration 400ms
+  useEffect(() => {
+    setShowSkeleton(true);
+    const t = setTimeout(() => setShowSkeleton(false), 400);
+    return () => clearTimeout(t);
+  }, [tab, loading]);
+
+  // Bump key when tab changes for fade transition
+  useEffect(() => {
+    setContentKey((k) => k + 1);
+  }, [tab]);
+
+  const tagFor = (ch: Chapter) =>
+    `intent_${tab === "survival" ? "cram_tools" : "practice_problems"}_ch${ch.chapter_number}`;
+
+  return (
+    <div className="flex flex-col h-full" style={{ fontFamily: "Inter, sans-serif" }}>
+      <style>{`
+        @keyframes demoCardIn {
+          0% { opacity: 0; transform: translateY(10px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes demoShimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        @keyframes demoFadeIn {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+      `}</style>
+
+      {/* Course label + change link */}
+      <div className="flex items-center justify-between mb-2 px-1">
+        <p className="text-[12px]" style={{ color: "#6B7280" }}>
+          {courseName}
+        </p>
+        <button
+          type="button"
+          onClick={onChange}
+          className="text-[12px] font-semibold hover:opacity-70 transition-opacity"
+          style={{ color: NAVY, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        >
+          Change →
+        </button>
+      </div>
+
+      {/* Tab bar */}
+      <div
+        className="flex gap-1 p-1 rounded-lg mb-4"
+        style={{ background: "#EEF0F3", border: "1px solid #E5E7EB" }}
+      >
+        {[
+          { key: "survival" as const, label: "Survival Tools" },
+          { key: "practice" as const, label: "Practice Problems" },
+        ].map((t) => {
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className="flex-1 py-2 text-[13px] font-semibold rounded-md transition-all"
+              style={{
+                background: active ? NAVY : "transparent",
+                color: active ? "#fff" : "#6B7280",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Choose a chapter label */}
+      <p
+        className="text-[11px] font-semibold uppercase mb-3 px-1"
+        style={{ color: "#9CA3AF", letterSpacing: "0.08em" }}
+      >
+        Choose a chapter
+      </p>
+
+      {/* Grid */}
+      <div key={contentKey} style={{ animation: "demoFadeIn 150ms ease-out" }}>
+        {showSkeleton || loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-lg"
+                style={{
+                  height: 64,
+                  background:
+                    "linear-gradient(90deg, #EEF0F3 0%, #F8F9FB 50%, #EEF0F3 100%)",
+                  backgroundSize: "200% 100%",
+                  animation: "demoShimmer 1.4s linear infinite",
+                  border: "1px solid #E5E7EB",
+                }}
+              />
+            ))}
+          </div>
+        ) : chapters.length === 0 ? (
+          <p className="text-[13px] text-center py-6" style={{ color: "#9CA3AF" }}>
+            No chapters available yet.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+            {chapters.map((ch, i) => (
+              <button
+                key={ch.id}
+                type="button"
+                onClick={() => onChapterClick(ch, tagFor(ch))}
+                className="relative rounded-lg p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
+                style={{
+                  background: "#fff",
+                  border: "1px solid #E5E7EB",
+                  cursor: "pointer",
+                  opacity: 0,
+                  animation: `demoCardIn 320ms ease-out forwards`,
+                  animationDelay: `${i * 80}ms`,
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = NAVY;
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = "#E5E7EB";
+                }}
+              >
+                <p
+                  className="text-[10px] font-semibold uppercase mb-1"
+                  style={{ color: "#9CA3AF", letterSpacing: "0.06em" }}
+                >
+                  Ch. {ch.chapter_number}
+                </p>
+                <p className="text-[13px] font-bold leading-tight text-center" style={{ color: NAVY }}>
+                  {ch.chapter_name}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
