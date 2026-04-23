@@ -136,7 +136,91 @@ export default function StagingEmailPromptModal({
           <X className="w-4 h-4" style={{ color: "#6B7280" }} />
         </button>
 
-        {!celebration ? (
+        {celebration ? (
+          <div className="text-center space-y-5 py-2">
+            <div className="text-5xl leading-none" aria-hidden="true">🎉</div>
+            <h2
+              className="text-[24px] md:text-[26px] leading-tight"
+              style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+            >
+              You're student #{n} from {campusName}!
+            </h2>
+            <p
+              className="text-[14px]"
+              style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}
+            >
+              {getTierSubheadline(n)}
+            </p>
+            <button
+              type="button"
+              onClick={() => celebration && onContinue(celebration)}
+              className="w-full rounded-lg text-white text-[15px] font-semibold transition-opacity hover:opacity-90"
+              style={{ minHeight: 48, background: RED, fontFamily: "Inter, sans-serif" }}
+            >
+              Start Studying →
+            </button>
+            <div>
+              <DevShortcut label="[DEV] Skip modal →" to="/campus/general/intermediate-accounting-2" onClick={onClose} />
+            </div>
+          </div>
+        ) : view === "non_edu_success" ? (
+          <div className="text-center space-y-4 py-4">
+            <div className="text-4xl leading-none" aria-hidden="true">✉️</div>
+            <h2
+              className="text-[20px] font-semibold"
+              style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+            >
+              You're on the list — we'll be in touch.
+            </h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-[13px] font-medium hover:underline"
+              style={{ color: "#6B7280" }}
+            >
+              Close
+            </button>
+          </div>
+        ) : view === "non_edu" ? (
+          <form onSubmit={handleFallbackSubmit} className="space-y-4">
+            <div>
+              <h2
+                className="text-[18px] font-semibold"
+                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+              >
+                Looks like that's not a school email.
+              </h2>
+              <p className="text-[13px] mt-2 leading-relaxed" style={{ color: "#6B7280" }}>
+                Survive Accounting is built for college students — but we don't want to leave you out. Drop your email and we'll send you a free preview link.
+              </p>
+            </div>
+            <input
+              type="email"
+              value={fallbackEmail}
+              onChange={(e) => setFallbackEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              disabled={submitting}
+              autoFocus
+              className="w-full rounded-lg px-4 text-[15px] outline-none focus:ring-2"
+              style={{
+                minHeight: 48,
+                background: "#F8F9FA",
+                border: "1px solid #E5E7EB",
+                color: NAVY,
+                fontFamily: "Inter, sans-serif",
+              }}
+            />
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full rounded-lg text-white text-[15px] font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
+              style={{ minHeight: 48, background: RED, fontFamily: "Inter, sans-serif" }}
+            >
+              {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Send Me Access →"}
+            </button>
+          </form>
+        ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <h2
@@ -185,33 +269,6 @@ export default function StagingEmailPromptModal({
               <DevShortcut label="[DEV] Skip to preview →" to="/campus/general/intermediate-accounting-2" />
             </div>
           </form>
-        ) : (
-          <div className="text-center space-y-5 py-2">
-            <div className="text-5xl leading-none" aria-hidden="true">🎉</div>
-            <h2
-              className="text-[24px] md:text-[26px] leading-tight"
-              style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
-            >
-              You're student #{n} from {campusName}!
-            </h2>
-            <p
-              className="text-[14px]"
-              style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}
-            >
-              {getTierSubheadline(n)}
-            </p>
-            <button
-              type="button"
-              onClick={() => celebration && onContinue(celebration)}
-              className="w-full rounded-lg text-white text-[15px] font-semibold transition-opacity hover:opacity-90"
-              style={{ minHeight: 48, background: RED, fontFamily: "Inter, sans-serif" }}
-            >
-              Start Studying →
-            </button>
-            <div>
-              <DevShortcut label="[DEV] Skip modal →" to="/campus/general/intermediate-accounting-2" onClick={onClose} />
-            </div>
-          </div>
         )}
       </DialogContent>
     </Dialog>
