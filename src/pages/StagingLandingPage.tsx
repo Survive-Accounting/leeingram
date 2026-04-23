@@ -193,14 +193,6 @@ export default function StagingLandingPage() {
         onScrollToContact={() => contactRef.current?.scrollIntoView({ behavior: "smooth" })}
       />
 
-      {/* Mobile bottom-bar spacer so content isn't covered */}
-      <div className="md:hidden" style={{ height: 110 }} />
-
-      <StagingStickyBar
-        onCtaClick={() => handleCardClick(defaultCourse)}
-        hidden={emailPromptOpen}
-      />
-
       <StagingEmailPromptModal
         open={emailPromptOpen}
         onClose={() => setEmailPromptOpen(false)}

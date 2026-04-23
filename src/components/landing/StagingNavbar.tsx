@@ -12,7 +12,7 @@ export default function StagingNavbar({ onCtaClick }: StagingNavbarProps) {
   const navigate = useNavigate();
 
   return (
-    <div className="relative z-50 w-full">
+    <div className="sticky top-6 z-50 w-full">
       <nav
         className="w-full px-5 sm:px-8 h-16 flex items-center justify-between border-b"
         style={{
