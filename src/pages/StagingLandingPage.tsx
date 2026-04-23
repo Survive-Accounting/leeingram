@@ -185,6 +185,10 @@ export default function StagingLandingPage() {
           courses={COURSES}
           onCardClick={handleCardClick}
           onChapterClick={handleChapterClick}
+          onGetStartedClick={(slug) => {
+            setGetStartedPreselectedSlug(slug);
+            setGetStartedOpen(true);
+          }}
         />
       </div>
 
