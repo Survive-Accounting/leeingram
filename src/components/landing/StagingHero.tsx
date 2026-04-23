@@ -263,12 +263,22 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               </span>
             </h1>
 
+            <p
+              className="mt-3 text-[15px] md:text-[18px] italic hero-anim-sub"
+              style={{ color: "rgba(255,255,255,0.85)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
+            >
+              AI-enabled study tools created by a real accounting tutor.
+            </p>
+
             <div
-              className="mt-5 mx-auto md:mx-0 max-w-[560px] hero-anim-sub space-y-3"
+              className="mt-5 mx-auto md:mx-0 max-w-[560px] hero-anim-sub space-y-5"
               style={{ color: "rgba(255,255,255,0.88)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
             >
               <p className="text-[15px] md:text-[17px] leading-relaxed">
-                Hey! I'm Lee Ingram. I built Survive Accounting for one reason — so you walk into your exam confident. Let's get you there together.
+                Hey! I'm Lee Ingram. I built Survive Accounting for one reason — so you walk into your exam confident.
+              </p>
+              <p className="text-[15px] md:text-[17px] leading-relaxed pt-2">
+                Let's get you there together.
               </p>
             </div>
 
