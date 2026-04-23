@@ -200,6 +200,7 @@ export default function StagingLandingPage() {
         <StagingCoursesSection
           courses={COURSES}
           onCardClick={handleCardClick}
+          onChapterClick={handleChapterClick}
           onExpansionClick={() => {
             setWaitlistInitialEmail("");
             setWaitlistOpen(true);
