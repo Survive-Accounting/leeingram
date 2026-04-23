@@ -176,8 +176,9 @@ const AppRoutes = () => {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Survive Accounting — default to Asset Factory */}
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<StagingLandingPage />} />
         <Route path="/staging" element={<StagingLandingPage />} />
+        <Route path="/old-home" element={<LandingPage />} />
         <Route path="/get-access" element={<GetAccess />} />
         <Route path="/post-checkout" element={<PostCheckout />} />
         <Route path="/greek-landing" element={<GreekLandingPage />} />
