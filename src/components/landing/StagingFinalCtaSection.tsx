@@ -1,16 +1,20 @@
 interface StagingFinalCtaSectionProps {
   onGetAccessClick: () => void;
-  onTryDemoClick: () => void;
+  onTryDemoClick?: () => void;
 }
 
 export default function StagingFinalCtaSection({
   onGetAccessClick,
-  onTryDemoClick,
 }: StagingFinalCtaSectionProps) {
   return (
     <section
       className="w-full px-4 sm:px-6 text-center relative overflow-hidden"
-      style={{ background: "#CC0000", paddingTop: 80, paddingBottom: 80 }}
+      style={{
+        background:
+          "radial-gradient(ellipse at 50% 40%, #D81221 0%, #C00018 60%, #A8000F 100%)",
+        paddingTop: 96,
+        paddingBottom: 96,
+      }}
     >
       <style>{`
         .final-cta-arrow { display: inline-block; transition: transform 0.25s ease; }
@@ -19,20 +23,35 @@ export default function StagingFinalCtaSection({
         .final-cta-btn:hover .final-cta-arrow-char::before { content: "→"; }
       `}</style>
 
-      {/* Ribbon echo — visual continuity with hero */}
+      {/* Soft top vignette — blends from page above */}
       <div
         aria-hidden="true"
         style={{
           position: "absolute",
-          bottom: -60,
-          right: -80,
-          width: 600,
+          top: 0,
+          left: 0,
+          right: 0,
           height: 120,
-          background: "linear-gradient(90deg, transparent 0%, rgba(255,200,200,0.4) 50%, transparent 100%)",
-          transform: "rotate(-25deg)",
-          filter: "blur(60px)",
-          zIndex: 0,
+          background:
+            "linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, transparent 100%)",
           pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+
+      {/* Soft bottom vignette */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 120,
+          background:
+            "linear-gradient(to top, rgba(0,0,0,0.12) 0%, transparent 100%)",
+          pointerEvents: "none",
+          zIndex: 0,
         }}
       />
 
@@ -47,34 +66,21 @@ export default function StagingFinalCtaSection({
           className="mt-4 text-[16px]"
           style={{ color: "rgba(255,255,255,0.9)", opacity: 0.9, fontFamily: "Inter, sans-serif" }}
         >
-          1,200+ students have passed accounting with my help. Now it’s your turn.
+          1,200+ students have passed accounting with my help. Now it's your turn.
         </p>
 
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+        <div className="mt-8 flex items-center justify-center">
           <button
             onClick={onGetAccessClick}
-            className="final-cta-btn rounded-xl px-8 py-4 text-[16px] font-bold transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="final-cta-btn rounded-xl px-9 py-4 text-[16px] font-bold transition-all hover:scale-[1.02] active:scale-[0.98]"
             style={{
               background: "#FFFFFF",
               color: "#CC0000",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.18)",
               fontFamily: "Inter, sans-serif",
             }}
           >
-            Get Full Access <span className="final-cta-arrow final-cta-arrow-char" />
-          </button>
-
-          <button
-            onClick={onTryDemoClick}
-            className="final-cta-btn rounded-xl px-8 py-4 text-[16px] font-bold transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{
-              background: "transparent",
-              color: "#FFFFFF",
-              border: "2px solid #FFFFFF",
-              fontFamily: "Inter, sans-serif",
-            }}
-          >
-            Try the Demo First <span className="final-cta-arrow final-cta-arrow-char" />
+            Start Studying <span className="final-cta-arrow final-cta-arrow-char" />
           </button>
         </div>
 

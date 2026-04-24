@@ -245,12 +245,13 @@ export default function StagingLandingPage() {
         />
       </div>
 
-      {/* Gradient bridge: demo (gray) → final CTA (red) */}
+      {/* Gradient bridge: demo (gray) → final CTA (red) — extended for a softer fade */}
       <div
         aria-hidden="true"
         style={{
-          height: 80,
-          background: "linear-gradient(to bottom, #F3F4F6, #CC0000)",
+          height: 160,
+          background:
+            "linear-gradient(to bottom, #F3F4F6 0%, #F0D8DC 45%, #E07A85 75%, #D81221 100%)",
         }}
       />
 
