@@ -218,8 +218,30 @@ export default function GetAccess() {
       </section>
 
       {/* Two-column layout: checkout LEFT (first on mobile), includes RIGHT */}
-      <section className="px-4 sm:px-6 pb-16">
-        <div className="max-w-[1100px] mx-auto grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-10 items-start">
+      <section className="px-4 sm:px-6 pb-16 relative">
+        <div className="max-w-[1100px] mx-auto relative grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-10 items-start">
+          {/* Soft tinted backdrop behind checkout column (desktop only) */}
+          <div
+            aria-hidden
+            className="hidden md:block absolute inset-y-0 pointer-events-none rounded-2xl"
+            style={{
+              left: "-24px",
+              width: "calc(60% + 12px)",
+              background: "#F1F5F9",
+              opacity: 0.7,
+            }}
+          />
+          {/* Soft gradient divider between columns */}
+          <div
+            aria-hidden
+            className="hidden md:block absolute inset-y-6 pointer-events-none"
+            style={{
+              left: "calc(60% + 4px)",
+              width: 1,
+              background:
+                "linear-gradient(180deg, rgba(20,33,61,0) 0%, rgba(20,33,61,0.10) 50%, rgba(20,33,61,0) 100%)",
+            }}
+          />
           {/* LEFT — Checkout (visually dominant) */}
           <div
             className="md:col-span-3 order-1 rounded-2xl p-6 sm:p-8"
