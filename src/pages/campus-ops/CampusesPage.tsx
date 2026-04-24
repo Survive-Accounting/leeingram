@@ -88,7 +88,8 @@ export default function CampusesPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Slug</TableHead>
                 <TableHead>Domains</TableHead>
-                <TableHead className="text-center">Students</TableHead>
+                <TableHead className="text-center">Paid</TableHead>
+                <TableHead className="text-center">Leads</TableHead>
                 <TableHead className="text-center">Status</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="text-center">Landing</TableHead>
