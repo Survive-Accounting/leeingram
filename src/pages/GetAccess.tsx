@@ -1,11 +1,13 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, ShieldCheck, X, Sparkles, ShoppingCart, ChevronDown } from "lucide-react";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
-import StagingTestimonialsSection from "@/components/landing/StagingTestimonialsSection";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmailGate } from "@/contexts/EmailGateContext";
+
+// Below-the-fold — lazy load to shrink initial bundle
+const StagingTestimonialsSection = lazy(() => import("@/components/landing/StagingTestimonialsSection"));
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -665,7 +667,9 @@ export default function GetAccess() {
         </div>
       </section>
 
-      <StagingTestimonialsSection onCtaClick={() => navigate("/staging")} />
+      <Suspense fallback={<div style={{ minHeight: 400 }} />}>
+        <StagingTestimonialsSection onCtaClick={() => navigate("/staging")} />
+      </Suspense>
 
       <LandingFooter
         onScrollToCourses={() => navigate("/staging")}
