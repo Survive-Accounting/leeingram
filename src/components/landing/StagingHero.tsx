@@ -170,23 +170,9 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             </button>
 
             <div
-              className="hero-anim-link flex items-center gap-3 text-[13px] font-medium"
-              style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+              className="hero-anim-link text-[13px] font-medium"
+              style={{ fontFamily: "Inter, sans-serif" }}
             >
-              <button
-                onClick={() => {
-                  const el = document.getElementById("about-lee");
-                  if (el) {
-                    const top = el.getBoundingClientRect().top + window.scrollY;
-                    window.scrollTo({ top, behavior: "smooth" });
-                  }
-                }}
-                className="transition-colors hover:underline"
-                style={{ color: NAVY, background: "none", border: "none", padding: 0 }}
-              >
-                About Lee
-              </button>
-              <span aria-hidden="true" style={{ color: "#CBD5E1" }}>·</span>
               <button
                 onClick={handleSeeHowItWorks}
                 className="transition-colors hover:underline"
