@@ -267,151 +267,154 @@ export default function GetAccess() {
               }
             `}</style>
 
-            {/* Prominent price badge — top right, partially overlapping card edge */}
-            <div className="absolute -top-6 right-4 sm:right-6 z-20 flex flex-col items-end">
-              <div
-                key={`pulse-${pulseKey}`}
-                className="relative rounded-2xl px-6 py-4 flex flex-col items-center justify-center animate-[pricePulse_400ms_ease-out] motion-reduce:animate-none"
-                style={{
-                  background: "#fff",
-                  border: `1.5px solid ${NAVY}`,
-                  boxShadow: "0 12px 32px rgba(20,33,61,0.18), 0 2px 8px rgba(20,33,61,0.08)",
-                  minWidth: 120,
-                }}
-              >
-                {hasDiscount && (
-                  <div
-                    className="text-[14px] line-through leading-none mb-1"
-                    style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                  >
-                    ${subtotal}
-                  </div>
-                )}
-                <div
-                  className="font-bold leading-none"
-                  style={{
-                    color: hasDiscount ? "#16A34A" : NAVY,
-                    fontSize: 40,
-                    letterSpacing: "-0.02em",
-                    fontFamily: "Inter, sans-serif",
-                  }}
+            {/* Header row — Secure Checkout + Price Badge */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <h2
+                  className="text-[24px] sm:text-[28px] leading-tight"
+                  style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
                 >
-                  ${totalPrice}
-                </div>
-                <div
-                  className="mt-1.5 text-[11px] font-medium"
-                  style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                  Secure Checkout
+                </h2>
+                <p
+                  className="mt-1 text-[12px] flex items-center gap-1"
+                  style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
                 >
-                  one-time
-                </div>
-
-                {/* Floating positive delta toasts only */}
-                {priceToasts.map((t) => (
+                  Powered by{" "}
                   <span
-                    key={t.id}
-                    className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-2 text-[15px] font-bold animate-[priceToast_1100ms_ease-out_forwards] motion-reduce:animate-[priceToastFade_900ms_ease-out_forwards]"
+                    className="font-semibold"
                     style={{
-                      color: "#16A34A",
+                      color: "#635BFF",
                       fontFamily: "Inter, sans-serif",
-                      textShadow: "0 1px 3px rgba(255,255,255,0.9)",
+                      letterSpacing: "-0.01em",
                     }}
                   >
-                    +${t.delta}
+                    Stripe
                   </span>
-                ))}
+                </p>
               </div>
 
-              {/* Promo code area under badge */}
-              <div className="mt-2 w-full flex flex-col items-end" style={{ minWidth: 120 }}>
-                {hasDiscount ? (
-                  <div className="flex flex-col items-end gap-0.5">
-                    <span
-                      className="text-[11px] font-semibold"
-                      style={{ color: "#16A34A", fontFamily: "Inter, sans-serif" }}
-                    >
-                      {appliedPromo!.code} applied
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleRemovePromo}
-                      className="text-[10px] underline hover:no-underline"
-                      style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ) : promoOpen ? (
-                  <div className="flex flex-col items-end gap-1">
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="text"
-                        value={promoInput}
-                        onChange={(e) => { setPromoInput(e.target.value); setPromoError(null); }}
-                        onKeyDown={(e) => { if (e.key === "Enter") handleApplyPromo(); }}
-                        placeholder="Code"
-                        className="rounded-md px-2 py-1 text-[12px] outline-none focus:ring-2 focus:ring-[#14213D]/20"
-                        style={{
-                          border: "1px solid #CBD5E1",
-                          width: 90,
-                          fontFamily: "Inter, sans-serif",
-                          color: NAVY,
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleApplyPromo}
-                        className="rounded-md px-2.5 py-1 text-[11px] font-semibold text-white hover:brightness-110"
-                        style={{ background: NAVY, fontFamily: "Inter, sans-serif" }}
-                      >
-                        Apply
-                      </button>
-                    </div>
-                    {promoError && (
-                      <span
-                        className="text-[10px]"
-                        style={{ color: RED, fontFamily: "Inter, sans-serif" }}
-                      >
-                        {promoError}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setPromoOpen(true)}
-                    className="text-[11px] underline hover:no-underline"
-                    style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
-                  >
-                    Promo code?
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Header — Secure Checkout */}
-            <div className="pr-[140px] sm:pr-[140px]">
-              <h2
-                className="text-[24px] sm:text-[28px] leading-tight"
-                style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
-              >
-                Secure Checkout
-              </h2>
-              <p
-                className="mt-1 text-[12px] flex items-center gap-1"
-                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-              >
-                Powered by{" "}
-                <span
-                  className="font-semibold"
+              {/* Price badge inside card, top-right */}
+              <div className="flex flex-col items-end shrink-0">
+                <div
+                  key={`pulse-${pulseKey}`}
+                  className="relative rounded-2xl px-5 py-3.5 flex flex-col items-center justify-center animate-[pricePulse_400ms_ease-out] motion-reduce:animate-none"
                   style={{
-                    color: "#635BFF",
-                    fontFamily: "Inter, sans-serif",
-                    letterSpacing: "-0.01em",
+                    background: "#F0F6FF",
+                    border: `1px solid ${NAVY}`,
+                    boxShadow: "0 10px 24px rgba(20,33,61,0.14), 0 2px 6px rgba(20,33,61,0.06)",
+                    minWidth: 120,
+                    transform: "translateY(-5px)",
                   }}
                 >
-                  Stripe
-                </span>
-              </p>
+                  {hasDiscount && (
+                    <div
+                      className="text-[13px] line-through leading-none mb-1"
+                      style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                    >
+                      ${subtotal}
+                    </div>
+                  )}
+                  <div
+                    className="font-bold leading-none"
+                    style={{
+                      color: hasDiscount ? "#16A34A" : NAVY,
+                      fontSize: 36,
+                      letterSpacing: "-0.02em",
+                      fontFamily: "Inter, sans-serif",
+                    }}
+                  >
+                    ${totalPrice}
+                  </div>
+                  <div
+                    className="mt-1 text-[12px] font-medium"
+                    style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
+                  >
+                    one-time
+                  </div>
+
+                  {/* Floating positive delta toasts only */}
+                  {priceToasts.map((t) => (
+                    <span
+                      key={t.id}
+                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-2 text-[15px] font-bold animate-[priceToast_1100ms_ease-out_forwards] motion-reduce:animate-[priceToastFade_900ms_ease-out_forwards]"
+                      style={{
+                        color: "#16A34A",
+                        fontFamily: "Inter, sans-serif",
+                        textShadow: "0 1px 3px rgba(255,255,255,0.9)",
+                      }}
+                    >
+                      +${t.delta}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Promo code area under badge */}
+                <div className="mt-2 flex flex-col items-end" style={{ minWidth: 120 }}>
+                  {hasDiscount ? (
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span
+                        className="text-[11px] font-semibold"
+                        style={{ color: "#16A34A", fontFamily: "Inter, sans-serif" }}
+                      >
+                        {appliedPromo!.code} applied
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRemovePromo}
+                        className="text-[10px] underline hover:no-underline"
+                        style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : promoOpen ? (
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="text"
+                          value={promoInput}
+                          onChange={(e) => { setPromoInput(e.target.value); setPromoError(null); }}
+                          onKeyDown={(e) => { if (e.key === "Enter") handleApplyPromo(); }}
+                          placeholder="Code"
+                          className="rounded-md px-2 py-1 text-[12px] outline-none focus:ring-2 focus:ring-[#14213D]/20"
+                          style={{
+                            border: "1px solid #CBD5E1",
+                            width: 90,
+                            fontFamily: "Inter, sans-serif",
+                            color: NAVY,
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleApplyPromo}
+                          className="rounded-md px-2.5 py-1 text-[11px] font-semibold text-white hover:brightness-110"
+                          style={{ background: NAVY, fontFamily: "Inter, sans-serif" }}
+                        >
+                          Apply
+                        </button>
+                      </div>
+                      {promoError && (
+                        <span
+                          className="text-[10px]"
+                          style={{ color: RED, fontFamily: "Inter, sans-serif" }}
+                        >
+                          {promoError}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setPromoOpen(true)}
+                      className="text-[11px] underline hover:no-underline"
+                      style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                    >
+                      Promo code?
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Product section */}
