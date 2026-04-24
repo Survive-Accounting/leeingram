@@ -118,6 +118,7 @@ export default function GetAccess() {
   const maxAdditional = Math.max(0, progression.courses.length - 1 - startIdx);
   const [extraCount, setExtraCount] = useState(0);
   const [lifetimeUpgrade, setLifetimeUpgrade] = useState(false);
+  const [includesOpen, setIncludesOpen] = useState(false);
 
   // The full list of selected courses (base + extras).
   const selectedCourses = useMemo(() => {
