@@ -104,6 +104,10 @@ export default function GetOrgAccess() {
   const [autoReupEnabled, setAutoReupEnabled] = useState(true);
   const [weeklySeatLimit, setWeeklySeatLimit] = useState<number>(20);
 
+  // --- Payment method preference ---
+  type PaymentMethod = "ach" | "card" | "manual";
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("ach");
+
   const [submitting, setSubmitting] = useState(false);
 
   // Load seat-pricing tiers from DB
@@ -328,6 +332,8 @@ export default function GetOrgAccess() {
         is_promo: tier?.is_promo,
         auto_reup_enabled: autoReupEnabled,
         weekly_seat_limit: autoReupEnabled ? weeklySeatLimit : null,
+        payment_method: paymentMethod,
+        org_account_status: paymentMethod === "manual" ? "pending_manual_payment" : "pending_payment",
       });
     } catch (err) {
       console.error("[get-org-access checkout]", err);
@@ -875,6 +881,104 @@ export default function GetOrgAccess() {
               </div>
             </div>
 
+            {/* Step 6 — Payment method */}
+            <div className="mt-7">
+              <div
+                className="text-[13px] font-semibold uppercase tracking-wider mb-2"
+                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+              >
+                6. Payment method
+              </div>
+
+              <div className="space-y-2">
+                {([
+                  {
+                    id: "ach" as const,
+                    title: "Bank account / ACH",
+                    badge: "Recommended",
+                    sub: "Bank account is recommended for chapter accounts to avoid card limits or declines.",
+                  },
+                  {
+                    id: "card" as const,
+                    title: "Card",
+                    badge: null,
+                    sub: "Visa, Mastercard, Amex, or Discover.",
+                  },
+                  {
+                    id: "manual" as const,
+                    title: "Manual invoice / check",
+                    badge: null,
+                    sub: "Manual payments can take up to 5 business days to activate.",
+                  },
+                ]).map((opt) => {
+                  const selected = paymentMethod === opt.id;
+                  return (
+                    <label
+                      key={opt.id}
+                      className="flex items-start gap-3 cursor-pointer rounded-xl p-3.5 transition-all"
+                      style={{
+                        background: selected ? "#F5F8FF" : "#fff",
+                        border: `1.5px solid ${selected ? NAVY : "#E0E7F0"}`,
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="payment_method"
+                        value={opt.id}
+                        checked={selected}
+                        onChange={() => setPaymentMethod(opt.id)}
+                        className="mt-1 h-4 w-4 cursor-pointer"
+                        style={{ accentColor: NAVY }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div
+                            className="text-[14px] font-semibold"
+                            style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                          >
+                            {opt.title}
+                          </div>
+                          {opt.badge && (
+                            <span
+                              className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                              style={{
+                                background: NAVY,
+                                color: "#fff",
+                                fontFamily: "Inter, sans-serif",
+                              }}
+                            >
+                              {opt.badge}
+                            </span>
+                          )}
+                        </div>
+                        <div
+                          className="text-[12px] mt-0.5"
+                          style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                        >
+                          {opt.sub}
+                        </div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+
+              {paymentMethod === "manual" && (
+                <div
+                  className="mt-2 rounded-lg p-3 text-[12px]"
+                  style={{
+                    background: "#FFF8E6",
+                    border: "1px solid #F5D88B",
+                    color: "#8A6A1F",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                >
+                  Your signup link will activate once we receive payment. We'll email{" "}
+                  <strong>{email || "your contact"}</strong> with invoice details.
+                </div>
+              )}
+            </div>
+
             {/* Submit */}
             <button
               type="button"
@@ -890,7 +994,9 @@ export default function GetOrgAccess() {
               {submitting
                 ? "Working…"
                 : tier
-                  ? `Continue → ${tier.seats} passes · $${tier.total.toLocaleString()}`
+                  ? paymentMethod === "manual"
+                    ? `Request invoice → ${tier.seats} passes · $${tier.total.toLocaleString()}`
+                    : `Continue → ${tier.seats} passes · $${tier.total.toLocaleString()}`
                   : "Continue"}
             </button>
 
