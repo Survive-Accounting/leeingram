@@ -85,7 +85,7 @@ export default function StagingCoursesSection({
     .map((slug) => courses.find((c) => c.slug === slug))
     .filter(Boolean) as Course[];
 
-  const countdownText = useMemo(() => getFinalsCountdownText(), []);
+  
 
   // No pre-selection
   const [selectedSlug, setSelectedSlug] = useState<string>("");
@@ -207,141 +207,16 @@ export default function StagingCoursesSection({
 
       <div className="relative mx-auto max-w-[920px]" style={{ zIndex: 2 }}>
 
-        <div className="relative">
-          <p
-            className="relative text-center mb-2 text-[26px] sm:text-[32px] md:text-[38px] leading-tight text-white"
-            style={{
-              fontFamily: "'DM Serif Display', serif",
-              fontWeight: 400,
-              textShadow: "2px 2px 12px rgba(0,0,0,0.5)",
-              zIndex: 1,
-            }}
-          >
-            Which course are you studying?
-          </p>
-          <p
-            className="text-center mb-4 text-[13px] sm:text-[14px]"
-            style={{ color: "rgba(255,255,255,0.7)", fontFamily: "Inter, sans-serif" }}
-          >
-            Select your course to start the demo →
-          </p>
-        </div>
-
-        {/* Dropdown */}
-        <div className="relative" style={{ zIndex: 100 }}>
-          <button
-            onClick={() => setOpen((v) => !v)}
-            className="w-full rounded-2xl px-5 py-4 flex items-center justify-between text-left transition-all hover:shadow-md"
-            style={{
-              background: "#fff",
-              borderLeft: `4px solid ${NAVY}`,
-              boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)",
-              fontFamily: "Inter, sans-serif",
-            }}
-          >
-            <div className="flex flex-col">
-              {selected ? (
-                <>
-                  <span className="text-[18px] sm:text-[20px] font-bold leading-tight" style={{ color: NAVY }}>
-                    {selected.name}
-                  </span>
-                  {SUBTEXT_BY_SLUG[selected.slug] && (
-                    <span className="text-[13px] mt-0.5" style={{ color: "#6B7280" }}>
-                      {SUBTEXT_BY_SLUG[selected.slug]}
-                    </span>
-                  )}
-                </>
-              ) : (
-                <span className="text-[17px] sm:text-[19px] font-semibold leading-tight" style={{ color: "#9CA3AF" }}>
-                  Select your course →
-                </span>
-              )}
-            </div>
-            <ChevronDown
-              className="w-5 h-5 flex-shrink-0 transition-transform"
-              style={{ color: NAVY, transform: open ? "rotate(180deg)" : "none" }}
-            />
-          </button>
-
-          {open && (
-            <div
-              className="absolute left-0 right-0 mt-2 rounded-2xl overflow-hidden"
-              style={{
-                background: "#fff",
-                boxShadow: "0 12px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06)",
-                zIndex: 110,
-              }}
-            >
-              {ordered.map((c) => {
-                const color = COLOR_BY_SLUG[c.slug];
-                return (
-                  <button
-                    key={c.slug}
-                    onClick={() => {
-                      setSelectedSlug(c.slug);
-                      setOpen(false);
-                    }}
-                    onMouseEnter={(e) => {
-                      if (color) e.currentTarget.style.background = color.tint;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "transparent";
-                    }}
-                    className="w-full px-5 py-3 text-left transition-colors"
-                    style={{
-                      fontFamily: "Inter, sans-serif",
-                      borderLeft: `4px solid ${color?.border ?? "transparent"}`,
-                    }}
-                  >
-                    <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
-                      {c.name}
-                    </div>
-                    {SUBTEXT_BY_SLUG[c.slug] && (
-                      <div className="text-[12px]" style={{ color: "#6B7280" }}>
-                        {SUBTEXT_BY_SLUG[c.slug]}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Below-dropdown stack: countdown + urgency CTA */}
-        <div style={{ marginTop: 20, marginBottom: 20 }} className="flex flex-col items-center gap-1.5">
-          {countdownText && (
-            <p
-              className="text-center"
-              style={{
-                color: "#475569",
-                fontSize: 13,
-                fontFamily: "Inter, sans-serif",
-                fontWeight: 400,
-              }}
-            >
-              {countdownText}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={() => onGetStartedClick?.(selected?.slug ?? null)}
-            className="text-center hover:opacity-80 transition-opacity"
-            style={{
-              color: NAVY,
-              fontSize: 13,
-              fontFamily: "Inter, sans-serif",
-              fontWeight: 600,
-              textDecoration: "underline",
-              textUnderlineOffset: 3,
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              padding: 0,
-            }}
-          >
-            Start studying now →
-          </button>
+        {/* Dropdown — rendered as a portal-like overlay above the laptop screen ONLY on mobile.
+            On desktop the dropdown lives INSIDE the laptop screen (rendered below in the off-state). */}
+        <div className="md:hidden relative" style={{ zIndex: 100 }}>
+          <DropdownButton
+            selected={selected}
+            open={open}
+            setOpen={setOpen}
+            ordered={ordered}
+            setSelectedSlug={setSelectedSlug}
+          />
         </div>
 
         {/* Inner content: tab nav + chapter grid (rendered inside laptop on desktop, raw on mobile) */}
@@ -380,6 +255,30 @@ export default function StagingCoursesSection({
                     0% { opacity: 0; }
                     100% { opacity: 1; }
                   }
+                  @keyframes demoCursorBlink {
+                    0%, 50% { opacity: 1; }
+                    51%, 100% { opacity: 0; }
+                  }
+                  @keyframes demoIdleFadeUp {
+                    0% { opacity: 0; transform: translateY(8px); }
+                    100% { opacity: 1; transform: translateY(0); }
+                  }
+                  .demo-cursor {
+                    display: inline-block;
+                    margin-left: 4px;
+                    color: #93C5FD;
+                    font-weight: 300;
+                    animation: demoCursorBlink 1.1s steps(1, end) infinite;
+                    text-shadow: 0 0 8px rgba(147,197,253,0.6);
+                  }
+                  .demo-idle-content > h2 {
+                    opacity: 0;
+                    animation: demoIdleFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.15s forwards;
+                  }
+                  .demo-dropdown-anim {
+                    opacity: 0;
+                    animation: demoIdleFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.45s forwards;
+                  }
                 `}</style>
                 {/* Lid */}
                 <div
@@ -406,31 +305,40 @@ export default function StagingCoursesSection({
                     <div className="flex justify-center mb-2">
                       <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#222", boxShadow: "inset 0 0 2px rgba(255,255,255,0.15)" }} />
                     </div>
-                    {/* Screen — 16:10 */}
+                    {/* Screen — 16:10 (always "powered on" with subtle glow) */}
                     <div
                       className="relative w-full overflow-hidden"
                       style={{
                         aspectRatio: "16 / 10",
-                        background: powerPhase === "off" || powerPhase === "warm" ? "#000" : "#fff",
+                        background:
+                          "radial-gradient(ellipse at 50% 0%, #1a2845 0%, #0f1a30 60%, #0a1224 100%)",
                         borderRadius: 3,
-                        transition: powerPhase === "warm" ? "background 200ms linear" : undefined,
+                        boxShadow:
+                          "inset 0 0 60px rgba(80,120,200,0.15), inset 0 0 120px rgba(20,33,61,0.4)",
                       }}
                     >
-                      {/* Faint scanlines on off state */}
-                      {(powerPhase === "off" || powerPhase === "warm") && (
-                        <div
-                          className="absolute inset-0 pointer-events-none"
-                          style={{
-                            backgroundImage: "repeating-linear-gradient(to bottom, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 3px)",
-                            animation: "mbScanlines 6s linear infinite",
-                          }}
-                        />
-                      )}
-                      {/* Warm dark-gray flash */}
+                      {/* Subtle scanlines */}
+                      <div
+                        className="absolute inset-0 pointer-events-none"
+                        style={{
+                          backgroundImage:
+                            "repeating-linear-gradient(to bottom, rgba(255,255,255,0.018) 0px, rgba(255,255,255,0.018) 1px, transparent 1px, transparent 3px)",
+                          animation: "mbScanlines 6s linear infinite",
+                        }}
+                      />
+                      {/* Soft top vignette glow */}
+                      <div
+                        className="absolute inset-0 pointer-events-none"
+                        style={{
+                          background:
+                            "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(120,160,255,0.08) 0%, transparent 70%)",
+                        }}
+                      />
+
+                      {/* Power-on flash overlays (only during transition into selected state) */}
                       {powerPhase === "warm" && (
                         <div className="absolute inset-0" style={{ background: "#1a1a1a", opacity: 0.6 }} />
                       )}
-                      {/* CRT expand white bar */}
                       {powerPhase === "expand" && (
                         <div
                           className="absolute left-0 right-0 top-1/2 -translate-y-1/2 bg-white"
@@ -441,11 +349,11 @@ export default function StagingCoursesSection({
                           }}
                         />
                       )}
-                      {/* White flash */}
                       {powerPhase === "flash" && (
                         <div className="absolute inset-0 bg-white" />
                       )}
-                      {/* Content fade-in */}
+
+                      {/* Content fade-in (course selected) */}
                       {powerPhase === "on" && innerContent && (
                         <div
                           className="absolute inset-0 overflow-y-auto p-4"
@@ -457,15 +365,30 @@ export default function StagingCoursesSection({
                           {innerContent}
                         </div>
                       )}
-                      {/* Off / placeholder text */}
+
+                      {/* Idle / off state — headline + dropdown LIVE INSIDE the screen */}
                       {powerPhase === "off" && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <p
-                            className="text-[12px] tracking-wider uppercase"
-                            style={{ color: "rgba(255,255,255,0.18)", fontFamily: "Inter, sans-serif" }}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center px-8 demo-idle-content">
+                          <h2
+                            className="text-center text-white leading-tight text-[22px] sm:text-[28px] md:text-[34px]"
+                            style={{
+                              fontFamily: "'DM Serif Display', serif",
+                              fontWeight: 400,
+                              textShadow: "0 2px 16px rgba(120,160,255,0.25)",
+                            }}
                           >
-                            Select a course to begin
-                          </p>
+                            Which course are you studying?
+                            <span className="demo-cursor" aria-hidden="true">_</span>
+                          </h2>
+                          <div className="w-full max-w-[460px] mt-6 demo-dropdown-anim">
+                            <DropdownButton
+                              selected={selected}
+                              open={open}
+                              setOpen={setOpen}
+                              ordered={ordered}
+                              setSelectedSlug={setSelectedSlug}
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
@@ -509,6 +432,99 @@ export default function StagingCoursesSection({
 
       </div>
     </section>
+  );
+}
+
+// ── DropdownButton (used both inside the laptop screen and on mobile) ──
+interface DropdownButtonProps {
+  selected: Course | undefined;
+  open: boolean;
+  setOpen: (v: boolean | ((p: boolean) => boolean)) => void;
+  ordered: Course[];
+  setSelectedSlug: (slug: string) => void;
+}
+
+function DropdownButton({ selected, open, setOpen, ordered, setSelectedSlug }: DropdownButtonProps) {
+  return (
+    <div className="relative" style={{ zIndex: 100 }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full rounded-2xl px-5 py-4 flex items-center justify-between text-left transition-all hover:shadow-md"
+        style={{
+          background: "#fff",
+          borderLeft: `4px solid ${NAVY}`,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04)",
+          fontFamily: "Inter, sans-serif",
+        }}
+      >
+        <div className="flex flex-col">
+          {selected ? (
+            <>
+              <span className="text-[18px] sm:text-[20px] font-bold leading-tight" style={{ color: NAVY }}>
+                {selected.name}
+              </span>
+              {SUBTEXT_BY_SLUG[selected.slug] && (
+                <span className="text-[13px] mt-0.5" style={{ color: "#6B7280" }}>
+                  {SUBTEXT_BY_SLUG[selected.slug]}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="text-[17px] sm:text-[19px] font-semibold leading-tight" style={{ color: "#9CA3AF" }}>
+              Select your course →
+            </span>
+          )}
+        </div>
+        <ChevronDown
+          className="w-5 h-5 flex-shrink-0 transition-transform"
+          style={{ color: NAVY, transform: open ? "rotate(180deg)" : "none" }}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="absolute left-0 right-0 mt-2 rounded-2xl overflow-hidden"
+          style={{
+            background: "#fff",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.06)",
+            zIndex: 110,
+          }}
+        >
+          {ordered.map((c) => {
+            const color = COLOR_BY_SLUG[c.slug];
+            return (
+              <button
+                key={c.slug}
+                onClick={() => {
+                  setSelectedSlug(c.slug);
+                  setOpen(false);
+                }}
+                onMouseEnter={(e) => {
+                  if (color) e.currentTarget.style.background = color.tint;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+                className="w-full px-5 py-3 text-left transition-colors"
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  borderLeft: `4px solid ${color?.border ?? "transparent"}`,
+                }}
+              >
+                <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
+                  {c.name}
+                </div>
+                {SUBTEXT_BY_SLUG[c.slug] && (
+                  <div className="text-[12px]" style={{ color: "#6B7280" }}>
+                    {SUBTEXT_BY_SLUG[c.slug]}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
