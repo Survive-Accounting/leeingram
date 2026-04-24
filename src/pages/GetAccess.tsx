@@ -233,7 +233,7 @@ export default function GetAccess() {
         {
           body: {
             email: cleanEmail,
-            campus: "ole-miss",
+            campus: campusParam || "ole-miss",
             selectedPlan: "study_pass",
             amount: totalPrice,
             includedSemesters: selectedSemesters.map((s) => s.label),
