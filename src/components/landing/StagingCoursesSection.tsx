@@ -195,7 +195,7 @@ export default function StagingCoursesSection({
       id="courses-section"
       className="relative px-4 sm:px-6 scroll-mt-0 overflow-hidden pt-12 md:pt-20 pb-[320px] md:pb-[120px]"
       style={{
-        background: `linear-gradient(180deg, #0F1A2E 0%, ${NAVY} 50%, #0B1426 100%)`,
+        background: "#f8fafc",
       }}
     >
       <style>{`
