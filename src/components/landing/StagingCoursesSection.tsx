@@ -655,7 +655,18 @@ const DEMO_TYPE_LABELS: Record<DemoAssetType, string> = {
 };
 
 function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick }: DemoScreenProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Detect narrow laptop screen — collapse sidebar by default on mobile
+  const [isNarrow, setIsNarrow] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 600 : false
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onResize = () => setIsNarrow(window.innerWidth < 600);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const [sidebarOpen, setSidebarOpen] = useState(!isNarrow);
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<DemoAssetType>("BE");
   const [problems, setProblems] = useState<DemoProblem[]>([]);
@@ -664,8 +675,14 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
   const [problemDetail, setProblemDetail] = useState<DemoProblemDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [solutionOpen, setSolutionOpen] = useState(false);
+  const [chapterCounts, setChapterCounts] = useState<Record<DemoAssetType, number>>({ BE: 0, EX: 0, P: 0 });
 
   const selectedChapter = chapters.find((c) => c.id === selectedChapterId) ?? null;
+
+  // When narrow, force sidebar collapsed unless user explicitly toggles
+  useEffect(() => {
+    if (isNarrow) setSidebarOpen(false);
+  }, [isNarrow]);
 
   // Reset selection if chapters list changes (new course)
   useEffect(() => {
@@ -681,6 +698,65 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
     setProblemDetail(null);
     setSolutionOpen(false);
   }, [selectedChapterId, activeType]);
+
+  // Fetch counts per type when chapter changes
+  useEffect(() => {
+    if (!selectedChapter) {
+      setChapterCounts({ BE: 0, EX: 0, P: 0 });
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await (supabase as any)
+        .from("teaching_assets")
+        .select("source_ref")
+        .eq("chapter_id", selectedChapter.id)
+        .not("asset_approved_at", "is", null)
+        .limit(2000);
+      if (cancelled || error) return;
+      const counts: Record<DemoAssetType, number> = { BE: 0, EX: 0, P: 0 };
+      ((data ?? []) as { source_ref: string | null }[]).forEach((r) => {
+        const ref = (r.source_ref ?? "").toUpperCase();
+        if (ref.startsWith("BE") || ref.startsWith("QS")) counts.BE += 1;
+        else if (ref.startsWith("E")) counts.EX += 1;
+        else if (ref.startsWith("P")) counts.P += 1;
+      });
+      setChapterCounts(counts);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedChapter?.id]);
+
+  // Keyboard navigation: arrow up/down to move within problems, Enter to select, Escape to close solution
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && solutionOpen) {
+        setSolutionOpen(false);
+        return;
+      }
+      if (problems.length === 0) return;
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Enter") return;
+      // Don't hijack typing in inputs
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      const idx = problems.findIndex((p) => p.id === selectedProblemId);
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const next = idx < 0 ? 0 : Math.min(idx + 1, problems.length - 1);
+        setSelectedProblemId(problems[next].id);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const next = idx <= 0 ? 0 : idx - 1;
+        setSelectedProblemId(problems[next].id);
+      } else if (e.key === "Enter" && idx >= 0) {
+        e.preventDefault();
+        setSolutionOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [problems, selectedProblemId, solutionOpen]);
 
   // Fetch problems when chapter or type changes
   useEffect(() => {
@@ -912,6 +988,58 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
           min-width: 0;
           flex: 1;
         }
+        .demo-thin-scroll::-webkit-scrollbar { width: 4px; }
+        .demo-thin-scroll::-webkit-scrollbar-track { background: transparent; }
+        .demo-thin-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.15);
+          border-radius: 2px;
+        }
+        .demo-pill-count {
+          display: inline-block;
+          margin-left: 6px;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 1px 5px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.12);
+          color: inherit;
+          opacity: 0.55;
+        }
+        .demo-pill-active .demo-pill-count {
+          opacity: 1;
+          background: rgba(20,33,61,0.12);
+          color: #14213D;
+        }
+        .demo-solution-locked {
+          position: relative;
+          max-height: 56px;
+          overflow: hidden;
+        }
+        .demo-solution-fade {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 110%;
+          background: linear-gradient(to bottom, transparent 0%, #14213D 80%);
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          padding-bottom: 6px;
+          pointer-events: none;
+        }
+        .demo-solution-unlock {
+          pointer-events: auto;
+          font-size: 11px;
+          font-weight: 600;
+          font-family: Inter, sans-serif;
+          color: #D4AF37;
+          background: rgba(212,175,55,0.15);
+          border: none;
+          padding: 6px 14px;
+          border-radius: 999px;
+          cursor: pointer;
+        }
       `}</style>
 
       {/* Top bar */}
@@ -955,9 +1083,17 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
             fontWeight: 600,
             color: "rgba(255,255,255,0.7)",
             fontFamily: "Inter, sans-serif",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            paddingLeft: 8,
+            paddingRight: 8,
           }}
+          title={isNarrow && selectedChapter ? `Ch. ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}` : "Survive Accounting"}
         >
-          Survive Accounting
+          {isNarrow && selectedChapter
+            ? `Ch. ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}`
+            : "Survive Accounting"}
         </div>
         <div style={{ width: 28 }} />
       </div>
@@ -966,6 +1102,7 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
       <div className="flex flex-1 min-h-0">
         {/* Left sidebar */}
         <aside
+          className="demo-thin-scroll"
           style={{
             width: sidebarOpen ? 220 : 0,
             minWidth: sidebarOpen ? 220 : 0,
@@ -1067,7 +1204,7 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
 
         {/* Right panel */}
         <main
-          className="flex-1 relative"
+          className="flex-1 relative demo-thin-scroll"
           style={{
             background: "#14213D",
             overflowY: "auto",
@@ -1120,11 +1257,13 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
               >
                 {typePills.map((p) => {
                   const active = activeType === p.key;
+                  const count = chapterCounts[p.key];
                   return (
                     <button
                       key={p.key}
                       type="button"
                       onClick={() => setActiveType(p.key)}
+                      className={active ? "demo-pill-active" : ""}
                       style={{
                         padding: "6px 14px",
                         borderRadius: 999,
@@ -1139,6 +1278,7 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
                       }}
                     >
                       {p.label}
+                      {count > 0 && <span className="demo-pill-count">{count}</span>}
                     </button>
                   );
                 })}
@@ -1163,13 +1303,18 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
                 ) : problems.length === 0 ? (
                   <div
                     style={{
-                      fontSize: 13,
+                      fontSize: 12,
                       color: "rgba(255,255,255,0.3)",
                       textAlign: "center",
-                      padding: 24,
+                      padding: 28,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 8,
                     }}
                   >
-                    No {DEMO_TYPE_LABELS[activeType]} in this chapter yet.
+                    <span style={{ fontSize: 24, lineHeight: 1 }}>📝</span>
+                    <span>No {DEMO_TYPE_LABELS[activeType]} in this chapter yet.</span>
                   </div>
                 ) : (
                   problems.map((p) => {
@@ -1264,74 +1409,57 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
                           ))}
                       </div>
 
-                      {/* See Solution button */}
-                      <div style={{ padding: "12px 24px" }}>
-                        <button
-                          type="button"
-                          onClick={() => setSolutionOpen((v) => !v)}
+                      {/* Locked solution preview — first 2 lines, gradient fade, unlock CTA */}
+                      <div style={{ padding: "12px 24px 20px" }}>
+                        <div
                           style={{
-                            padding: "8px 16px",
-                            background: RED,
-                            color: "#fff",
-                            borderRadius: 6,
-                            fontSize: 12,
-                            fontWeight: 600,
-                            fontFamily: "Inter, sans-serif",
-                            cursor: "pointer",
-                            border: "none",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "rgba(255,255,255,0.5)",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.06em",
+                            marginBottom: 6,
                           }}
                         >
-                          {solutionOpen ? "Hide Solution" : "See Solution"}
-                        </button>
-                      </div>
-
-                      {/* Solution */}
-                      {solutionOpen && (
-                        <div style={{ padding: "0 24px 16px" }}>
-                          {Array.isArray(problemDetail.survive_solution_json?.parts) &&
-                          problemDetail.survive_solution_json.parts.length > 0 ? (
-                            problemDetail.survive_solution_json.parts.map((part: any, i: number) => {
-                              const label =
-                                part?.label || part?.part_label || `(${String.fromCharCode(97 + i)})`;
-                              const answer =
-                                part?.answer ||
-                                part?.final_answer ||
-                                part?.text ||
-                                (typeof part === "string" ? part : "");
-                              return (
-                                <div
-                                  key={i}
-                                  style={{
-                                    fontSize: 12,
-                                    fontFamily: "Inter, sans-serif",
-                                    color: "rgba(255,255,255,0.8)",
-                                    lineHeight: 1.6,
-                                    marginBottom: 6,
-                                  }}
-                                >
-                                  <strong style={{ color: "rgba(255,255,255,0.95)" }}>{label}</strong>{" "}
-                                  {typeof answer === "string"
-                                    ? answer
-                                    : JSON.stringify(answer)}
-                                </div>
-                              );
-                            })
-                          ) : (
-                            <div
-                              style={{
-                                fontSize: 12,
-                                fontFamily: "Inter, sans-serif",
-                                color: "rgba(255,255,255,0.8)",
-                                lineHeight: 1.6,
-                                whiteSpace: "pre-wrap",
-                              }}
-                            >
-                              {(problemDetail.survive_solution_text || "").slice(0, 400)}
-                              {(problemDetail.survive_solution_text || "").length > 400 ? "..." : ""}
-                            </div>
-                          )}
+                          Solution
                         </div>
-                      )}
+                        <div className="demo-solution-locked">
+                          <div
+                            style={{
+                              fontSize: 12,
+                              fontFamily: "Inter, sans-serif",
+                              color: "rgba(255,255,255,0.78)",
+                              lineHeight: 1.6,
+                              whiteSpace: "pre-wrap",
+                            }}
+                          >
+                            {(() => {
+                              const parts = problemDetail.survive_solution_json?.parts;
+                              if (Array.isArray(parts) && parts.length > 0) {
+                                const first = parts[0];
+                                const label = first?.label || first?.part_label || "(a)";
+                                const answer =
+                                  first?.answer ||
+                                  first?.final_answer ||
+                                  first?.text ||
+                                  (typeof first === "string" ? first : "");
+                                const txt = typeof answer === "string" ? answer : JSON.stringify(answer);
+                                return `${label} ${txt}`;
+                              }
+                              return (problemDetail.survive_solution_text || "").slice(0, 240);
+                            })()}
+                          </div>
+                          <div className="demo-solution-fade">
+                            <button
+                              type="button"
+                              className="demo-solution-unlock"
+                              onClick={() => onGetStartedClick?.()}
+                            >
+                              🔒 Unlock full solutions
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
