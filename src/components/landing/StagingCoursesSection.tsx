@@ -564,7 +564,7 @@ interface DemoScreenProps {
 }
 
 function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }: DemoScreenProps) {
-  const [tab, setTab] = useState<"survival" | "practice">("survival");
+  const [tab, setTab] = useState<"survival" | "practice" | "videos">("survival");
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [contentKey, setContentKey] = useState(0);
   const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
@@ -582,8 +582,10 @@ function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }:
     setContentKey((k) => k + 1);
   }, [tab, activeChapter?.id]);
 
-  const tagFor = (ch: Chapter) =>
-    `intent_${tab === "survival" ? "cram_tools" : "practice_problems"}_ch${ch.chapter_number}`;
+  const tagFor = (ch: Chapter) => {
+    const slug = tab === "survival" ? "cram_tools" : tab === "practice" ? "practice_problems" : "cram_videos";
+    return `intent_${slug}_ch${ch.chapter_number}`;
+  };
 
   const handleChapterPick = (ch: Chapter) => {
     onChapterClick(ch, tagFor(ch)); // fire intent tag
@@ -648,6 +650,7 @@ function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }:
         {[
           { key: "survival" as const, label: "Study Tools" },
           { key: "practice" as const, label: "Practice Problems" },
+          { key: "videos" as const, label: "Cram Videos" },
         ].map((t) => {
           const active = tab === t.key;
           return (
@@ -747,8 +750,8 @@ function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }:
 interface ChapterViewProps {
   courseName: string;
   chapter: Chapter;
-  tab: "survival" | "practice";
-  onTabChange: (t: "survival" | "practice") => void;
+  tab: "survival" | "practice" | "videos";
+  onTabChange: (t: "survival" | "practice" | "videos") => void;
   onBack: () => void;
   onChange: () => void;
 }
@@ -933,6 +936,7 @@ function ChapterView({ courseName, chapter, tab, onTabChange, onBack, onChange }
         {[
           { key: "survival" as const, label: "Study Tools" },
           { key: "practice" as const, label: "Practice Problems" },
+          { key: "videos" as const, label: "Cram Videos" },
         ].map((t) => {
           const active = tab === t.key;
           return (
