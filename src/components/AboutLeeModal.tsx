@@ -25,6 +25,11 @@ function getSemesterCount(): number {
 
 export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
   const semesters = getSemesterCount();
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!open) setImgLoaded(false);
+  }, [open]);
 
   const handleReachOut = () => {
     onOpenChange(false);
