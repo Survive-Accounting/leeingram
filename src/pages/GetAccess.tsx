@@ -13,7 +13,7 @@ const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
 const PRICE = 150;
-const AUTO_RENEW_DISCOUNT = 50;
+const AUTO_RENEW_DISCOUNT_PCT = 20; // 20% off when auto-renew is enabled
 const EXTEND_PRICE = 100;
 const LIFETIME_UPGRADE_PRICE = 150;
 const MAX_EXTRA_SEMESTERS = 3; // 4 total including base
@@ -57,9 +57,11 @@ export default function GetAccess() {
   const showLifetime = extraCount >= 3;
   const showSavingsHint = extraCount >= 2;
 
-  // Auto-renew gives a $50 discount on the base price (only when no extra semesters added)
+  // Auto-renew gives 20% off the base price (only when no extra semesters added)
   const autoRenewActive = autoRenew && extraCount === 0;
-  const baseTotal = PRICE + extraCount * EXTEND_PRICE - (autoRenewActive ? AUTO_RENEW_DISCOUNT : 0);
+  const baseBeforeDiscount = PRICE + extraCount * EXTEND_PRICE;
+  const autoRenewSavings = autoRenewActive ? Math.round((baseBeforeDiscount * AUTO_RENEW_DISCOUNT_PCT) / 100) : 0;
+  const baseTotal = baseBeforeDiscount - autoRenewSavings;
   const subtotal = baseTotal + (showLifetime && lifetimeUpgrade ? LIFETIME_UPGRADE_PRICE : 0);
 
   // Promo state
@@ -390,6 +392,14 @@ export default function GetAccess() {
                   >
                     one-time payment
                   </div>
+                  {autoRenewActive && (
+                    <div
+                      className="mt-0.5 text-[10px] font-medium animate-fade-in"
+                      style={{ color: "#86EFAC", fontFamily: "Inter, sans-serif" }}
+                    >
+                      {AUTO_RENEW_DISCOUNT_PCT}% applied
+                    </div>
+                  )}
 
                   {/* Floating positive delta toasts only */}
                   {priceToasts.map((t) => (
@@ -514,29 +524,29 @@ export default function GetAccess() {
                 >
                   {selectedSemesters.map((s) => s.label).join(" · ")}
                 </div>
-                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                <label className="inline-flex items-start gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={autoRenew}
                     onChange={(e) => setAutoRenew(e.target.checked)}
-                    className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[#14213D]"
+                    className="h-3.5 w-3.5 mt-[3px] shrink-0 cursor-pointer accent-[#14213D]"
                   />
-                  <span className="text-[13px]" style={{ color: NAVY }}>
-                    Continue next semester —{" "}
-                    <span style={{ color: "#16A34A", fontWeight: 600 }}>
-                      save ${AUTO_RENEW_DISCOUNT}
+                  <span className="flex flex-col">
+                    <span className="text-[13px]" style={{ color: NAVY }}>
+                      Auto-renew next semester —{" "}
+                      <span style={{ color: "#16A34A", fontWeight: 600 }}>
+                        save {AUTO_RENEW_DISCOUNT_PCT}%
+                      </span>
+                    </span>
+                    <span
+                      className="text-[11px] mt-0.5"
+                      style={{ color: "#94A3B8" }}
+                    >
+                      We'll remind you before billing. Cancel anytime.
                     </span>
                   </span>
                 </label>
               </div>
-              {autoRenew && (
-                <p
-                  className="mt-1 text-[11px] sm:pl-0"
-                  style={{ color: "#94A3B8" }}
-                >
-                  We'll remind you before billing
-                </p>
-              )}
             </div>
 
             {/* CTA */}
