@@ -278,8 +278,13 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               <Tooltip><TooltipTrigger asChild><span /></TooltipTrigger><TooltipContent /></Tooltip>
             </TooltipProvider>
 
-            {/* CTA group — centered under button */}
-            <div className="mt-5 flex flex-col items-center md:items-start hero-anim-btn">
+          </div>
+          {/* End RIGHT column */}
+            </div>
+            {/* End inner photo+text row */}
+
+            {/* CTA group — centered across the entire card */}
+            <div className="mt-6 md:mt-8 flex justify-center hero-anim-btn">
               <div className="relative inline-block">
                 <div
                   aria-hidden="true"
@@ -347,8 +352,8 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 </div>
               </div>
             </div>
-          </div>
         </div>
+      </div>
       </div>
 
       <div className="staging-hero-overlay-bottom" />
