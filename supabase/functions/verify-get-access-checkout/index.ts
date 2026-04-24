@@ -32,9 +32,8 @@ Deno.serve(async (req) => {
     return bad("Valid session_id required");
   }
 
-  const stripeKey =
-    Deno.env.get("STRIPE_SECRET_KEY_LIVE") ||
-    Deno.env.get("STRIPE_SECRET_KEY_TEST");
+  // FORCED TEST MODE: must match create-get-access-checkout.
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
   if (!stripeKey) return bad("Stripe secret key not configured", 500);
 
   const stripe = new Stripe(stripeKey, { apiVersion: "2024-11-20.acacia" });

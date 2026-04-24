@@ -48,10 +48,8 @@ Deno.serve(async (req) => {
   if (!selectedPlan) return bad("selectedPlan required");
   if (!Number.isFinite(amount) || amount <= 0) return bad("amount must be a positive number");
 
-  // Prefer LIVE; fall back to TEST so the function works in both environments.
-  const stripeKey =
-    Deno.env.get("STRIPE_SECRET_KEY_LIVE") ||
-    Deno.env.get("STRIPE_SECRET_KEY_TEST");
+  // FORCED TEST MODE: always use test key for /get-access checkout.
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
 
   if (!stripeKey) return bad("Stripe secret key not configured", 500);
 
