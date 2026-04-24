@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles } from "lucide-react";
+// (icon imports removed — no longer used)
 import leeHeadshot from "@/assets/lee-headshot-original.png";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
 
@@ -126,9 +126,6 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 Lee Ingram
               </button>
             </div>
-            <div className="text-[12px] mt-1" style={{ color: "#64748B" }}>
-              Accounting tutor since 2015
-            </div>
           </div>
 
           {/* Headline */}
@@ -155,22 +152,11 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               maxWidth: 600,
             }}
           >
-            Study tools for Intro &amp; Intermediate Accounting — every chapter, one platform. Built by a real tutor.
-          </p>
-          <p
-            className="mt-3 hero-anim-sub"
-            style={{
-              color: "#94A3B8",
-              fontFamily: "Inter, sans-serif",
-              fontSize: "12.5px",
-              letterSpacing: "0.06em",
-            }}
-          >
-            Financial <span aria-hidden="true">•</span> Managerial <span aria-hidden="true">•</span> Intermediate 1 <span aria-hidden="true">•</span> Intermediate 2
+            Study tools for Intro &amp; Intermediate Accounting covering every chapter.
           </p>
 
-          {/* CTA + secondary links */}
-          <div className="mt-10 flex flex-col items-center gap-7">
+          {/* CTA */}
+          <div className="mt-8 flex flex-col items-center gap-5">
             <button
               onClick={onGetStartedClick}
               className="hero-anim-btn rounded-xl px-9 py-4 text-[16px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2"
@@ -184,6 +170,32 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             >
               Start Studying <span aria-hidden="true">→</span>
             </button>
+
+            {/* Four course pills — each opens email gate modal */}
+            <div className="hero-anim-link flex flex-wrap items-center justify-center gap-2 max-w-[520px]">
+              {[
+                "Financial Accounting",
+                "Managerial Accounting",
+                "Intermediate Accounting 1",
+                "Intermediate Accounting 2",
+              ].map((label) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={onGetStartedClick}
+                  className="rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition-all hover:-translate-y-0.5 hover:shadow-sm"
+                  style={{
+                    color: NAVY,
+                    background: "rgba(255,255,255,0.7)",
+                    border: "1px solid rgba(20,33,61,0.15)",
+                    fontFamily: "Inter, sans-serif",
+                    backdropFilter: "blur(4px)",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
 
             <button
               onClick={handleSeeHowItWorks}
