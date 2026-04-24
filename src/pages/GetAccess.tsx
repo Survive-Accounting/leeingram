@@ -21,28 +21,29 @@ const PRICE = 99;
 const EXTEND_PRICE = 50;
 
 /**
- * Semester access windows: renew Jan 1 (→ Jun 30) and Jul 1 (→ Dec 31).
- * Returns short format like "Jun 30".
+ * Returns the access end date for the Nth semester from now.
+ * Semesters run Jan 1 → Jun 30 and Jul 1 → Dec 31.
+ * stepsAhead = 0 → current semester end, 1 → next semester end, etc.
+ * Format: "Jun 30, 2026"
  */
-function getAccessWindow(extend: boolean): string {
+function getAccessEndDate(stepsAhead: number): string {
   const now = new Date();
-  const month = now.getMonth(); // 0-11
+  let year = now.getFullYear();
+  let isFirstHalf = now.getMonth() < 6; // true → ends Jun 30 of `year`
 
-  let endMonth = month < 6 ? 5 : 11; // June (5) or December (11)
-  let endDay = month < 6 ? 30 : 31;
-
-  if (extend) {
-    if (endMonth === 5) {
-      endMonth = 11;
-      endDay = 31;
+  for (let i = 0; i < stepsAhead; i++) {
+    if (isFirstHalf) {
+      isFirstHalf = false; // now ends Dec 31 same year
     } else {
-      endMonth = 5;
-      endDay = 30;
+      isFirstHalf = true;
+      year += 1; // wraps to Jun 30 next year
     }
   }
 
+  const endMonth = isFirstHalf ? 5 : 11;
+  const endDay = isFirstHalf ? 30 : 31;
   const monthName = new Date(2000, endMonth, 1).toLocaleString("en-US", { month: "short" });
-  return `${monthName} ${endDay}`;
+  return `${monthName} ${endDay}, ${year}`;
 }
 
 const INCLUDES = [
@@ -86,15 +87,33 @@ export default function GetAccess() {
   const courseCode = resolvedCourse.code;
   const courseLabel = formatCourseLabel(resolvedCourse);
 
-  // Next course in the campus progression (used for auto-renew label)
-  const currentIdx = progression.courses.findIndex((c) => c.slug === resolvedCourseSlug);
-  const nextCourse = currentIdx >= 0 ? progression.courses[currentIdx + 1] : undefined;
-  const nextCourseLabel = nextCourse?.code ?? nextCourse?.name ?? null;
+  // Index of the resolved course in the campus progression.
+  const startIdx = progression.courses.findIndex((c) => c.slug === resolvedCourseSlug);
 
-  const [autoRenew, setAutoRenew] = useState(false);
-  const totalPrice = autoRenew ? PRICE + EXTEND_PRICE : PRICE;
-  const baseAccess = getAccessWindow(false);
-  const extendedAccess = getAccessWindow(true);
+  // How many ADDITIONAL courses are stacked on top of the base course.
+  // 0 = just the resolved course; 1 = + next course; up to maxAdditional.
+  const maxAdditional = Math.max(0, progression.courses.length - 1 - startIdx);
+  const [extraCount, setExtraCount] = useState(0);
+
+  // The full list of selected courses (base + extras).
+  const selectedCourses = useMemo(() => {
+    const list = [];
+    for (let i = 0; i <= extraCount; i++) {
+      const course = progression.courses[startIdx + i];
+      if (course) {
+        list.push({
+          course,
+          accessEnd: getAccessEndDate(i),
+          previousAccessEnd: i === 0 ? null : getAccessEndDate(i - 1),
+          price: i === 0 ? PRICE : EXTEND_PRICE,
+        });
+      }
+    }
+    return list;
+  }, [progression.courses, startIdx, extraCount]);
+
+  const totalPrice = PRICE + extraCount * EXTEND_PRICE;
+  const canAddAnother = extraCount < maxAdditional;
 
   // Resolve email: URL param → localStorage → sessionStorage.
   const initialEmail = useMemo(() => {
@@ -142,6 +161,9 @@ export default function GetAccess() {
     setCheckoutError(null);
     setCheckoutLoading(true);
     try {
+      const includedCourses = selectedCourses.map(
+        ({ course }) => course.code ?? course.name,
+      );
       const { data, error } = await supabase.functions.invoke(
         "create-get-access-checkout",
         {
@@ -151,8 +173,9 @@ export default function GetAccess() {
             selectedCourse: resolvedCourseSlug,
             selectedPlan: "study_pass",
             amount: totalPrice,
-            includedCourses: [resolvedCourse.code ?? resolvedCourse.name],
-            autoRenew,
+            includedCourses,
+            autoRenew: extraCount > 0,
+            extraSemesters: extraCount,
             origin: window.location.origin,
           },
         },
@@ -258,100 +281,123 @@ export default function GetAccess() {
               Get Survive Accounting
             </h2>
 
-            {/* Product (course + product merged) */}
+            {/* Stackable course blocks */}
             <div className="mb-4">
               <div
                 className="text-[11px] font-semibold uppercase tracking-wider mb-1.5"
                 style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
               >
-                Product
+                {selectedCourses.length > 1 ? "Courses" : "Course"}
               </div>
-              <div
-                className="rounded-lg px-4 py-3"
-                style={{
-                  background: "#F8FAFC",
-                  border: "1px solid #E2E8F0",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
-                      Semester Study Pass{courseCode ? ` for ${courseCode}` : ""}
-                    </div>
-                    <div className="text-[12.5px] mt-0.5" style={{ color: "#64748B" }}>
-                      {resolvedCourse.name}
-                    </div>
-                    <div className="mt-2 flex items-baseline gap-2 flex-wrap">
-                      {autoRenew && (
-                        <span
-                          key={`old-${baseAccess}`}
-                          className="text-[12px] italic line-through animate-fade-in"
-                          style={{ color: "#94A3B8", opacity: 0.7 }}
+
+              <div className="flex flex-col gap-2">
+                {selectedCourses.map(({ course, accessEnd, previousAccessEnd, price }, idx) => (
+                  <div
+                    key={course.slug}
+                    className="rounded-lg px-4 py-3 animate-fade-in"
+                    style={{
+                      background: "#F8FAFC",
+                      border: "1px solid #E2E8F0",
+                      fontFamily: "Inter, sans-serif",
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
+                          Semester Study Pass{course.code ? ` — ${course.code}` : ""}
+                        </div>
+                        <div className="text-[12.5px] mt-0.5" style={{ color: "#64748B" }}>
+                          {course.name}
+                        </div>
+                        <div className="mt-2 flex flex-col gap-0.5">
+                          {previousAccessEnd && (
+                            <span
+                              className="text-[12px] italic line-through"
+                              style={{ color: "#94A3B8", opacity: 0.7 }}
+                            >
+                              Access ends {previousAccessEnd}
+                            </span>
+                          )}
+                          <span
+                            className="text-[12px] italic transition-all duration-300"
+                            style={{ color: "#64748B" }}
+                          >
+                            Access ends {accessEnd}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div
+                          className={idx === 0 ? "text-[18px] font-bold" : "text-[15px] font-semibold"}
+                          style={{ color: NAVY }}
                         >
-                          Access through {baseAccess}
-                        </span>
-                      )}
-                      <span
-                        key={autoRenew ? `new-${extendedAccess}` : `base-${baseAccess}`}
-                        className={`italic animate-fade-in transition-all duration-300 ${
-                          autoRenew ? "text-[13.5px] font-semibold" : "text-[12px]"
-                        }`}
-                        style={{ color: autoRenew ? NAVY : "#64748B" }}
-                      >
-                        Access through {autoRenew ? extendedAccess : baseAccess}
-                      </span>
+                          {idx === 0 ? `$${price}` : `+ $${price}`}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-[18px] font-bold" style={{ color: NAVY }}>
-                      ${PRICE}
+                ))}
+              </div>
+
+              {/* Total line — only when stacked */}
+              {selectedCourses.length > 1 && (
+                <div
+                  className="mt-3 flex items-center justify-end gap-2 animate-fade-in"
+                  style={{ fontFamily: "Inter, sans-serif" }}
+                >
+                  <div style={{ width: 80, borderTop: "1px solid #CBD5E1" }} />
+                  <div className="text-[15px] font-bold" style={{ color: NAVY }}>
+                    ${totalPrice} total
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Add another semester checkbox */}
+            {canAddAnother && (() => {
+              const nextCourse = progression.courses[startIdx + extraCount + 1];
+              const nextLabel = nextCourse?.code ?? nextCourse?.name ?? null;
+              return (
+                <label
+                  className="flex items-start gap-3 mb-3 p-3 rounded-lg cursor-pointer transition-all duration-200"
+                  style={{
+                    border: "1px solid #E2E8F0",
+                    background: "#fff",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={false}
+                    onChange={() => setExtraCount((c) => Math.min(c + 1, maxAdditional))}
+                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#14213D]"
+                  />
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-semibold" style={{ color: NAVY }}>
+                      Add another semester (+${EXTEND_PRICE})
                     </div>
-                    {autoRenew && (
-                      <div className="mt-1 animate-fade-in" style={{ fontFamily: "Inter, sans-serif" }}>
-                        <div className="text-[13px] font-medium" style={{ color: "#475569" }}>
-                          + ${EXTEND_PRICE}
-                        </div>
-                        <div
-                          className="my-1 ml-auto"
-                          style={{ width: 48, borderTop: "1px solid #CBD5E1" }}
-                        />
-                        <div className="text-[15px] font-bold" style={{ color: NAVY }}>
-                          ${totalPrice} total
-                        </div>
+                    {nextLabel && (
+                      <div className="text-[12px] mt-0.5 italic" style={{ color: "#94A3B8" }}>
+                        For {nextLabel}
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
-            </div>
+                </label>
+              );
+            })()}
 
-            {/* Extend +1 semester checkbox */}
-            <label
-              className="flex items-start gap-3 mb-6 p-3 rounded-lg cursor-pointer transition-all duration-200"
-              style={{
-                border: "1px solid #E2E8F0",
-                background: "#fff",
-                fontFamily: "Inter, sans-serif",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={autoRenew}
-                onChange={(e) => setAutoRenew(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#14213D]"
-              />
-              <div className="min-w-0">
-                <div className="text-[13px] font-semibold" style={{ color: NAVY }}>
-                  Extend +1 semester (+${EXTEND_PRICE})
-                </div>
-                {nextCourseLabel && (
-                  <div className="text-[12px] mt-0.5 italic" style={{ color: "#94A3B8" }}>
-                    For {nextCourseLabel}
-                  </div>
-                )}
-              </div>
-            </label>
+            {/* Remove last added semester */}
+            {extraCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setExtraCount((c) => Math.max(0, c - 1))}
+                className="mb-6 text-[12px] underline transition-opacity hover:opacity-70"
+                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+              >
+                Remove last semester
+              </button>
+            )}
+            {extraCount === 0 && <div className="mb-3" />}
 
             {/* Captured email — non-editable */}
             {email.trim() && (
