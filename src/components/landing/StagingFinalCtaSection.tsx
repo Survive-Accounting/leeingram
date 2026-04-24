@@ -21,16 +21,16 @@ export default function StagingFinalCtaSection({
 
       <div className="mx-auto max-w-[680px]">
         <h2
-          className="text-white font-bold leading-tight tracking-tight text-[32px] sm:text-[44px]"
-          style={{ fontFamily: "Inter, sans-serif" }}
+          className="text-white leading-tight tracking-tight text-[36px] sm:text-[52px]"
+          style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
         >
           Your exam isn't going to wait.
         </h2>
         <p
           className="mt-4 text-[16px]"
-          style={{ color: "rgba(255,255,255,0.85)", fontFamily: "Inter, sans-serif" }}
+          style={{ color: "rgba(255,255,255,0.9)", opacity: 0.9, fontFamily: "Inter, sans-serif" }}
         >
-          Join 1,200+ students who stopped panicking and started studying.
+          1,200+ students survived. Now it's your turn.
         </p>
 
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
@@ -65,7 +65,7 @@ export default function StagingFinalCtaSection({
           className="mt-6 text-[12px]"
           style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif" }}
         >
-          7-day refund guarantee · Instant access after purchase
+          7-day refund guarantee · Semester pass · Active through May 31
         </p>
       </div>
     </section>
