@@ -271,9 +271,9 @@ export default function StagingCoursesSection({
                     0% { opacity: 0; }
                     100% { opacity: 1; }
                   }
-                  @keyframes demoCursorBlink {
-                    0%, 45% { opacity: 1; }
-                    55%, 100% { opacity: 0.05; }
+                  @keyframes cursorBlink {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0; }
                   }
                   @keyframes demoIdleFadeUp {
                     0% { opacity: 0; transform: translateY(8px); }
