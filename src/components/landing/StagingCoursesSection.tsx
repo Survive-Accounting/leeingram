@@ -211,8 +211,8 @@ export default function StagingCoursesSection({
         <div className="md:hidden relative" style={{ zIndex: 100 }}>
           <div className="text-center mb-3">
             <span
-              className="inline-block text-[11px] font-semibold uppercase tracking-[0.18em]"
-              style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
+              className="inline-block text-[11px] font-semibold uppercase tracking-[0.2em] rounded-full px-3 py-1.5"
+              style={{ background: NAVY, color: "#FFFFFF", fontFamily: "Inter, sans-serif" }}
             >
               Try a demo
             </span>
