@@ -105,7 +105,8 @@ export default function CampusesPage() {
                   <TableCell className="font-medium">{c.name}</TableCell>
                   <TableCell className="text-muted-foreground text-xs font-mono">{c.slug}</TableCell>
                   <TableCell className="text-xs max-w-[200px] truncate">{c.domains?.join(", ") || "—"}</TableCell>
-                  <TableCell className="text-center">{c.studentCount}</TableCell>
+                  <TableCell className="text-center font-semibold text-green-700">{c.paidCount}</TableCell>
+                  <TableCell className="text-center text-muted-foreground">{c.leadCount}</TableCell>
                   <TableCell className="text-center">
                     <Badge variant={c.is_active ? "default" : "secondary"} className={c.is_active ? "bg-green-600" : ""}>
                       {c.is_active ? "Active" : "Inactive"}
