@@ -256,6 +256,8 @@ export default function StagingCoursesSection({
           const innerContent = selected ? (
             <DemoScreen
               courseName={selected.name}
+              chapters={chapters}
+              loading={loading}
               onChange={() => {
                 setSelectedSlug("");
                 setOpen(true);
@@ -608,13 +610,33 @@ function DropdownButton({ selected, open, setOpen, ordered, setSelectedSlug }: D
 }
 
 // ── DemoScreen (renders inside the laptop screen) ──
+type DemoAssetType = "BE" | "EX" | "P";
+
 interface DemoScreenProps {
   courseName: string;
+  chapters: Chapter[];
+  loading: boolean;
   onChange: () => void;
 }
 
-function DemoScreen({ courseName, onChange }: DemoScreenProps) {
+function DemoScreen({ courseName, chapters, loading, onChange }: DemoScreenProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+  const [activeType, setActiveType] = useState<DemoAssetType>("BE");
+
+  const selectedChapter = chapters.find((c) => c.id === selectedChapterId) ?? null;
+
+  // Reset selection if chapters list changes (new course)
+  useEffect(() => {
+    setSelectedChapterId(null);
+    setActiveType("BE");
+  }, [courseName]);
+
+  const typePills: { key: DemoAssetType; label: string }[] = [
+    { key: "BE", label: "Brief Exercises" },
+    { key: "EX", label: "Exercises" },
+    { key: "P", label: "Problems" },
+  ];
 
   return (
     <div
@@ -638,6 +660,70 @@ function DemoScreen({ courseName, onChange }: DemoScreenProps) {
         @keyframes demoRightPanelFadeUp {
           0% { opacity: 0; transform: translateY(8px); }
           100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes demoSkeletonShimmer {
+          0% { background-position: -200px 0; }
+          100% { background-position: calc(200px + 100%) 0; }
+        }
+        .demo-skeleton-row {
+          height: 36px;
+          margin: 4px 12px;
+          border-radius: 6px;
+          background: linear-gradient(
+            90deg,
+            rgba(255,255,255,0.04) 0%,
+            rgba(255,255,255,0.10) 50%,
+            rgba(255,255,255,0.04) 100%
+          );
+          background-size: 200px 100%;
+          background-repeat: no-repeat;
+          animation: demoSkeletonShimmer 1.4s ease-in-out infinite;
+        }
+        .demo-chapter-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 16px;
+          margin: 2px 8px;
+          border-radius: 6px;
+          cursor: pointer;
+          border-left: 3px solid transparent;
+          transition: background 150ms ease, border-color 150ms ease;
+        }
+        .demo-chapter-row:hover { background: rgba(255,255,255,0.06); }
+        .demo-chapter-row:hover .demo-chapter-name { color: rgba(255,255,255,1); }
+        .demo-chapter-row.is-selected {
+          background: rgba(206,17,38,0.2);
+          border-left-color: #CE1126;
+        }
+        .demo-chapter-row.is-selected .demo-chapter-name {
+          color: #fff;
+          font-weight: 600;
+        }
+        .demo-chapter-row.is-selected .demo-chapter-pill {
+          background: #CE1126;
+          color: #fff;
+        }
+        .demo-chapter-pill {
+          font-size: 10px;
+          font-weight: 700;
+          background: rgba(255,255,255,0.08);
+          color: rgba(255,255,255,0.6);
+          padding: 2px 6px;
+          border-radius: 4px;
+          white-space: nowrap;
+          transition: background 150ms ease, color 150ms ease;
+        }
+        .demo-chapter-name {
+          font-size: 13px;
+          font-weight: 500;
+          color: rgba(255,255,255,0.8);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          min-width: 0;
+          flex: 1;
+          transition: color 150ms ease, font-weight 150ms ease;
         }
       `}</style>
 
@@ -752,16 +838,43 @@ function DemoScreen({ courseName, onChange }: DemoScreenProps) {
             </button>
           </div>
 
-          {/* Sidebar body — placeholder */}
-          <div
-            style={{
-              fontSize: 13,
-              color: "rgba(255,255,255,0.3)",
-              textAlign: "center",
-              padding: 20,
-            }}
-          >
-            Loading chapters...
+          {/* Sidebar body — chapters list / loading / empty */}
+          <div style={{ paddingTop: 8, paddingBottom: 12 }}>
+            {loading ? (
+              <>
+                <div className="demo-skeleton-row" />
+                <div className="demo-skeleton-row" />
+                <div className="demo-skeleton-row" />
+                <div className="demo-skeleton-row" />
+              </>
+            ) : chapters.length === 0 ? (
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "rgba(255,255,255,0.3)",
+                  textAlign: "center",
+                  padding: 20,
+                }}
+              >
+                No chapters yet
+              </div>
+            ) : (
+              chapters.map((ch) => {
+                const isSelected = selectedChapterId === ch.id;
+                return (
+                  <div
+                    key={ch.id}
+                    className={`demo-chapter-row${isSelected ? " is-selected" : ""}`}
+                    onClick={() => setSelectedChapterId(ch.id)}
+                  >
+                    <span className="demo-chapter-pill">Ch. {ch.chapter_number}</span>
+                    <span className="demo-chapter-name" title={ch.chapter_name}>
+                      {ch.chapter_name}
+                    </span>
+                  </div>
+                );
+              })
+            )}
           </div>
         </aside>
 
@@ -775,20 +888,95 @@ function DemoScreen({ courseName, onChange }: DemoScreenProps) {
             animation: "demoRightPanelFadeUp 300ms ease-out 150ms forwards",
           }}
         >
-          <div
-            className="absolute inset-0 flex flex-col items-center justify-center text-center"
-            style={{ padding: 24 }}
-          >
-            <div style={{ fontSize: 32, lineHeight: 1, marginBottom: 12 }}>📚</div>
-            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", margin: 0 }}>
-              Select a chapter to begin
-            </p>
-          </div>
+          {selectedChapter ? (
+            <div className="absolute inset-0 flex flex-col">
+              {/* Chapter heading */}
+              <div
+                style={{
+                  padding: "20px 24px 16px",
+                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                  flexShrink: 0,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "rgba(255,255,255,0.4)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    marginBottom: 4,
+                  }}
+                >
+                  Ch. {selectedChapter.chapter_number}
+                </div>
+                <div
+                  style={{
+                    fontSize: 18,
+                    fontFamily: '"DM Serif Display", serif',
+                    color: "#fff",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {selectedChapter.chapter_name}
+                </div>
+              </div>
+
+              {/* Type pills */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  padding: "14px 24px",
+                  flexShrink: 0,
+                }}
+              >
+                {typePills.map((p) => {
+                  const active = activeType === p.key;
+                  return (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => setActiveType(p.key)}
+                      style={{
+                        padding: "6px 14px",
+                        borderRadius: 999,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        fontFamily: "Inter, sans-serif",
+                        cursor: "pointer",
+                        border: "none",
+                        transition: "all 150ms ease",
+                        background: active ? "#fff" : "rgba(255,255,255,0.08)",
+                        color: active ? "#14213D" : "rgba(255,255,255,0.5)",
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Problem list area — populated in next prompt */}
+              <div style={{ flex: 1 }} />
+            </div>
+          ) : (
+            <div
+              className="absolute inset-0 flex flex-col items-center justify-center text-center"
+              style={{ padding: 24 }}
+            >
+              <div style={{ fontSize: 32, lineHeight: 1, marginBottom: 12 }}>📚</div>
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", margin: 0 }}>
+                Select a chapter to begin
+              </p>
+            </div>
+          )}
         </main>
       </div>
     </div>
   );
 }
+
 
 // ── ChapterView (renders inside the laptop screen when a chapter is selected) ──
 interface ChapterViewProps {
