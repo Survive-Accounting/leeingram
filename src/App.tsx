@@ -188,6 +188,8 @@ const AppRoutes = () => {
         <Route path="/get-access" element={<GetAccess />} />
         <Route path="/get-org-access" element={<GetOrgAccess />} />
         <Route path="/org-dashboard" element={<OrgDashboard />} />
+        <Route path="/join-org/:code" element={<JoinOrg />} />
+        <Route path="/join/:code" element={<JoinOrg />} />
         <Route path="/post-checkout" element={<PostCheckout />} />
         <Route path="/greek-landing" element={<GreekLandingPage />} />
         <Route path="/survive" element={<Navigate to="/content" replace />} />
