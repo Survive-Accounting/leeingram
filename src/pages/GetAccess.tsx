@@ -92,13 +92,16 @@ export default function GetAccess() {
   
 
   // Index of the resolved course in the campus progression.
-  const startIdx = progression.courses.findIndex((c) => c.slug === resolvedCourseSlug);
+  const urlStartIdx = progression.courses.findIndex((c) => c.slug === resolvedCourseSlug);
+  const [startIdxOverride, setStartIdxOverride] = useState<number | null>(null);
+  const startIdx = startIdxOverride ?? urlStartIdx;
 
   // How many ADDITIONAL courses are stacked on top of the base course.
   // 0 = just the resolved course; 1 = + next course; up to maxAdditional.
   const maxAdditional = Math.max(0, progression.courses.length - 1 - startIdx);
   const [extraCount, setExtraCount] = useState(0);
   const [lifetimeUpgrade, setLifetimeUpgrade] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
   
 
   // The full list of selected courses (base + extras).
