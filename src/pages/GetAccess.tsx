@@ -385,10 +385,22 @@ export default function GetAccess() {
                     </div>
 
                     <div
-                      className="text-[11px] font-semibold uppercase tracking-wider mt-3"
+                      className="text-[11px] font-semibold uppercase tracking-wider mt-3 flex items-center gap-1"
                       style={{ color: "#94A3B8" }}
                     >
                       Access period
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" className="inline-flex" aria-label="Access period info">
+                              <Info className="w-3 h-3" style={{ color: "#94A3B8" }} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[220px] text-[12px]">
+                            Always includes final exam week.
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                     <div
                       key={`access-${extraCount}`}
@@ -488,7 +500,7 @@ export default function GetAccess() {
             <button
               onClick={handleCheckout}
               disabled={checkoutLoading}
-              className="w-full rounded-xl py-4 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-xl py-4 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{
                 background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
                 fontFamily: "Inter, sans-serif",
@@ -496,9 +508,14 @@ export default function GetAccess() {
                   "inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px rgba(206,17,38,0.35)",
               }}
             >
-              {checkoutLoading
-                ? "Redirecting to secure checkout..."
-                : `Get Access — $${totalPrice}`}
+              {checkoutLoading ? (
+                "Redirecting to secure checkout..."
+              ) : (
+                <>
+                  <ShoppingCart className="w-4 h-4" />
+                  {`Buy Access — $${totalPrice}`}
+                </>
+              )}
             </button>
 
             {checkoutError && (
@@ -517,6 +534,10 @@ export default function GetAccess() {
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 7-day refund guarantee
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" />
+                Instant access after purchase
               </div>
             </div>
 
