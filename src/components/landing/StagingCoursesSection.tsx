@@ -300,6 +300,20 @@ export default function StagingCoursesSection({
           animation: demoSpin 800ms linear infinite;
         }
         .demo-fade-up { animation: demoFadeUp 280ms ease-out forwards; }
+
+        .explore-cta { transition: transform 200ms ease, box-shadow 200ms ease, filter 200ms ease; }
+        .explore-cta:hover {
+          transform: scale(1.03);
+          box-shadow: 0 10px 22px -6px rgba(20,33,61,0.35);
+          filter: brightness(1.05);
+        }
+        .explore-cta:active { transform: scale(0.99); }
+        .explore-cta-arrow { display: inline-block; transition: transform 200ms ease; }
+        .explore-cta:hover .explore-cta-arrow { transform: translateX(3px); }
+        @media (prefers-reduced-motion: reduce) {
+          .explore-cta, .explore-cta-arrow { transition: none !important; }
+          .explore-cta:hover { transform: none; }
+        }
       `}</style>
 
       {/* Section heading + CTA */}
