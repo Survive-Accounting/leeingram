@@ -109,7 +109,7 @@ export default function GetAccess() {
 
   // Floating toast — only positive deltas (additions)
   const [priceToasts, setPriceToasts] = useState<Array<{ id: number; delta: number }>>([]);
-  const [discountToasts, setDiscountToasts] = useState<Array<{ id: number }>>([]);
+  const [discountToasts, setDiscountToasts] = useState<Array<{ id: number; amount: number }>>([]);
   const [pulseKey, setPulseKey] = useState(0);
   const prevSubtotalRef = React.useRef(subtotal);
 
