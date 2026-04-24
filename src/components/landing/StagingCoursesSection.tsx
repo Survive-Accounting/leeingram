@@ -262,6 +262,9 @@ export default function StagingCoursesSection({
                 setSelectedSlug("");
                 setOpen(true);
               }}
+              onGetStartedClick={() => {
+                if (onGetStartedClick) onGetStartedClick(selected.slug);
+              }}
             />
           ) : null;
 
@@ -617,12 +620,50 @@ interface DemoScreenProps {
   chapters: Chapter[];
   loading: boolean;
   onChange: () => void;
+  onGetStartedClick?: () => void;
 }
 
-function DemoScreen({ courseName, chapters, loading, onChange }: DemoScreenProps) {
+interface DemoProblem {
+  id: string;
+  source_ref: string | null;
+  source_number: string | null;
+  problem_title: string | null;
+}
+
+interface DemoProblemDetail {
+  survive_problem_text: string | null;
+  problem_title: string | null;
+  instruction_1: string | null;
+  instruction_2: string | null;
+  instruction_3: string | null;
+  instruction_4: string | null;
+  instruction_5: string | null;
+  survive_solution_text: string | null;
+  survive_solution_json: any;
+}
+
+const DEMO_TYPE_PREFIXES: Record<DemoAssetType, string[]> = {
+  BE: ["BE", "QS"],
+  EX: ["E"],
+  P: ["P"],
+};
+
+const DEMO_TYPE_LABELS: Record<DemoAssetType, string> = {
+  BE: "brief exercises",
+  EX: "exercises",
+  P: "problems",
+};
+
+function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick }: DemoScreenProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<DemoAssetType>("BE");
+  const [problems, setProblems] = useState<DemoProblem[]>([]);
+  const [problemsLoading, setProblemsLoading] = useState(false);
+  const [selectedProblemId, setSelectedProblemId] = useState<string | null>(null);
+  const [problemDetail, setProblemDetail] = useState<DemoProblemDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [solutionOpen, setSolutionOpen] = useState(false);
 
   const selectedChapter = chapters.find((c) => c.id === selectedChapterId) ?? null;
 
@@ -630,7 +671,96 @@ function DemoScreen({ courseName, chapters, loading, onChange }: DemoScreenProps
   useEffect(() => {
     setSelectedChapterId(null);
     setActiveType("BE");
+    setSelectedProblemId(null);
+    setProblemDetail(null);
   }, [courseName]);
+
+  // Reset problem selection when chapter or type changes
+  useEffect(() => {
+    setSelectedProblemId(null);
+    setProblemDetail(null);
+    setSolutionOpen(false);
+  }, [selectedChapterId, activeType]);
+
+  // Fetch problems when chapter or type changes
+  useEffect(() => {
+    if (!selectedChapter) {
+      setProblems([]);
+      setProblemsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setProblemsLoading(true);
+    (async () => {
+      const prefixes = DEMO_TYPE_PREFIXES[activeType];
+      // Use ilike OR for prefix matching on source_ref
+      let query = (supabase as any)
+        .from("teaching_assets")
+        .select("id, source_ref, source_number, problem_title")
+        .eq("chapter_id", selectedChapter.id)
+        .not("asset_approved_at", "is", null)
+        .order("source_ref", { ascending: true })
+        .limit(20);
+
+      const orFilter = prefixes.map((p) => `source_ref.ilike.${p}%`).join(",");
+      query = query.or(orFilter);
+
+      const { data, error } = await query;
+      if (cancelled) return;
+      if (error) {
+        console.error("[demo] problems fetch error", error);
+        setProblems([]);
+      } else {
+        // Filter strictly by prefix (so "E" doesn't match nothing weird, "P" excludes BE/QS already by .or)
+        const filtered = ((data ?? []) as DemoProblem[]).filter((row) => {
+          const ref = (row.source_ref ?? "").toUpperCase();
+          if (activeType === "BE") return ref.startsWith("BE") || ref.startsWith("QS");
+          if (activeType === "EX") return ref.startsWith("E") && !ref.startsWith("EX");
+          if (activeType === "P") return ref.startsWith("P") && !ref.startsWith("PR");
+          return false;
+        });
+        setProblems(filtered);
+      }
+      setProblemsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedChapter?.id, activeType]);
+
+  // Fetch problem detail when selected
+  useEffect(() => {
+    if (!selectedProblemId) {
+      setProblemDetail(null);
+      setDetailLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setDetailLoading(true);
+    setSolutionOpen(false);
+    const minDelay = new Promise((r) => setTimeout(r, 600));
+    (async () => {
+      const { data, error } = await (supabase as any)
+        .from("teaching_assets")
+        .select(
+          "survive_problem_text, problem_title, instruction_1, instruction_2, instruction_3, instruction_4, instruction_5, survive_solution_text, survive_solution_json"
+        )
+        .eq("id", selectedProblemId)
+        .maybeSingle();
+      await minDelay;
+      if (cancelled) return;
+      if (error) {
+        console.error("[demo] problem detail error", error);
+        setProblemDetail(null);
+      } else {
+        setProblemDetail((data ?? null) as DemoProblemDetail | null);
+      }
+      setDetailLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedProblemId]);
 
   const typePills: { key: DemoAssetType; label: string }[] = [
     { key: "BE", label: "Brief Exercises" },
@@ -724,6 +854,63 @@ function DemoScreen({ courseName, chapters, loading, onChange }: DemoScreenProps
           min-width: 0;
           flex: 1;
           transition: color 150ms ease, font-weight 150ms ease;
+        }
+        @keyframes demoSpin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes demoViewerFadeUp {
+          0% { opacity: 0; transform: translateY(10px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .demo-spinner {
+          width: 40px;
+          height: 40px;
+          border: 3px solid rgba(206,17,38,0.3);
+          border-top-color: #CE1126;
+          border-radius: 50%;
+          animation: demoSpin 800ms linear infinite;
+        }
+        .demo-problem-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 16px;
+          margin: 2px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          border-left: 3px solid transparent;
+          transition: background 150ms ease, border-color 150ms ease;
+        }
+        .demo-problem-row:hover { background: rgba(255,255,255,0.06); }
+        .demo-problem-row.is-selected {
+          background: rgba(206,17,38,0.15);
+          border-left-color: #CE1126;
+        }
+        .demo-problem-row.is-selected .demo-problem-badge {
+          background: #CE1126;
+          color: #fff;
+        }
+        .demo-problem-badge {
+          font-size: 10px;
+          font-weight: 700;
+          font-family: Inter, sans-serif;
+          background: rgba(255,255,255,0.1);
+          color: rgba(255,255,255,0.7);
+          padding: 2px 7px;
+          border-radius: 4px;
+          flex-shrink: 0;
+          transition: background 150ms ease, color 150ms ease;
+        }
+        .demo-problem-title {
+          font-size: 13px;
+          font-weight: 400;
+          font-family: Inter, sans-serif;
+          color: rgba(255,255,255,0.75);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          min-width: 0;
+          flex: 1;
         }
       `}</style>
 
@@ -957,8 +1144,227 @@ function DemoScreen({ courseName, chapters, loading, onChange }: DemoScreenProps
                 })}
               </div>
 
-              {/* Problem list area — populated in next prompt */}
-              <div style={{ flex: 1 }} />
+              {/* Problem list area */}
+              <div
+                style={{
+                  flex: selectedProblemId ? "0 0 auto" : 1,
+                  maxHeight: selectedProblemId ? 200 : undefined,
+                  overflowY: "auto",
+                  borderBottom: selectedProblemId ? "1px solid rgba(255,255,255,0.08)" : "none",
+                  paddingBottom: 8,
+                }}
+              >
+                {problemsLoading ? (
+                  <div style={{ paddingTop: 4 }}>
+                    <div className="demo-skeleton-row" style={{ marginLeft: 12, marginRight: 12 }} />
+                    <div className="demo-skeleton-row" style={{ marginLeft: 12, marginRight: 12 }} />
+                    <div className="demo-skeleton-row" style={{ marginLeft: 12, marginRight: 12 }} />
+                  </div>
+                ) : problems.length === 0 ? (
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "rgba(255,255,255,0.3)",
+                      textAlign: "center",
+                      padding: 24,
+                    }}
+                  >
+                    No {DEMO_TYPE_LABELS[activeType]} in this chapter yet.
+                  </div>
+                ) : (
+                  problems.map((p) => {
+                    const isSel = selectedProblemId === p.id;
+                    const ref = p.source_number || p.source_ref || "—";
+                    const title = p.problem_title || "Untitled problem";
+                    return (
+                      <div
+                        key={p.id}
+                        className={`demo-problem-row${isSel ? " is-selected" : ""}`}
+                        onClick={() => setSelectedProblemId(p.id)}
+                      >
+                        <span className="demo-problem-badge">{ref}</span>
+                        <span className="demo-problem-title" title={title}>
+                          {title}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Problem viewer (bottom half) */}
+              {selectedProblemId && (
+                <div
+                  key={selectedProblemId}
+                  style={{
+                    flex: 1,
+                    position: "relative",
+                    overflow: "hidden",
+                    animation: "demoViewerFadeUp 250ms ease-out forwards",
+                    opacity: 0,
+                  }}
+                >
+                  {detailLoading || !problemDetail ? (
+                    <div
+                      className="absolute inset-0 flex flex-col items-center justify-center"
+                      style={{ gap: 12 }}
+                    >
+                      <div className="demo-spinner" />
+                      <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: 0 }}>
+                        Loading problem...
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col" style={{ overflowY: "auto" }}>
+                      {/* Problem text */}
+                      {problemDetail.survive_problem_text && (
+                        <div
+                          style={{
+                            background: "rgba(0,0,0,0.2)",
+                            borderRadius: 8,
+                            padding: 16,
+                            margin: 12,
+                            fontSize: 13,
+                            fontFamily: "Inter, sans-serif",
+                            color: "rgba(255,255,255,0.85)",
+                            lineHeight: 1.7,
+                            overflowY: "auto",
+                            maxHeight: 180,
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          {problemDetail.survive_problem_text}
+                        </div>
+                      )}
+
+                      {/* Instructions */}
+                      <div style={{ padding: "0 24px" }}>
+                        {[
+                          problemDetail.instruction_1,
+                          problemDetail.instruction_2,
+                          problemDetail.instruction_3,
+                          problemDetail.instruction_4,
+                          problemDetail.instruction_5,
+                        ]
+                          .map((txt, i) => ({ txt, letter: String.fromCharCode(97 + i) }))
+                          .filter((x) => x.txt && x.txt.trim().length > 0)
+                          .map((x) => (
+                            <div
+                              key={x.letter}
+                              style={{
+                                fontSize: 12,
+                                fontFamily: "Inter, sans-serif",
+                                color: "rgba(255,255,255,0.65)",
+                                lineHeight: 1.6,
+                                marginBottom: 4,
+                              }}
+                            >
+                              ({x.letter}) {x.txt}
+                            </div>
+                          ))}
+                      </div>
+
+                      {/* See Solution button */}
+                      <div style={{ padding: "12px 24px" }}>
+                        <button
+                          type="button"
+                          onClick={() => setSolutionOpen((v) => !v)}
+                          style={{
+                            padding: "8px 16px",
+                            background: RED,
+                            color: "#fff",
+                            borderRadius: 6,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            fontFamily: "Inter, sans-serif",
+                            cursor: "pointer",
+                            border: "none",
+                          }}
+                        >
+                          {solutionOpen ? "Hide Solution" : "See Solution"}
+                        </button>
+                      </div>
+
+                      {/* Solution */}
+                      {solutionOpen && (
+                        <div style={{ padding: "0 24px 16px" }}>
+                          {Array.isArray(problemDetail.survive_solution_json?.parts) &&
+                          problemDetail.survive_solution_json.parts.length > 0 ? (
+                            problemDetail.survive_solution_json.parts.map((part: any, i: number) => {
+                              const label =
+                                part?.label || part?.part_label || `(${String.fromCharCode(97 + i)})`;
+                              const answer =
+                                part?.answer ||
+                                part?.final_answer ||
+                                part?.text ||
+                                (typeof part === "string" ? part : "");
+                              return (
+                                <div
+                                  key={i}
+                                  style={{
+                                    fontSize: 12,
+                                    fontFamily: "Inter, sans-serif",
+                                    color: "rgba(255,255,255,0.8)",
+                                    lineHeight: 1.6,
+                                    marginBottom: 6,
+                                  }}
+                                >
+                                  <strong style={{ color: "rgba(255,255,255,0.95)" }}>{label}</strong>{" "}
+                                  {typeof answer === "string"
+                                    ? answer
+                                    : JSON.stringify(answer)}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div
+                              style={{
+                                fontSize: 12,
+                                fontFamily: "Inter, sans-serif",
+                                color: "rgba(255,255,255,0.8)",
+                                lineHeight: 1.6,
+                                whiteSpace: "pre-wrap",
+                              }}
+                            >
+                              {(problemDetail.survive_solution_text || "").slice(0, 400)}
+                              {(problemDetail.survive_solution_text || "").length > 400 ? "..." : ""}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Demo badge */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  padding: "10px 12px 14px",
+                  flexShrink: 0,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => onGetStartedClick?.()}
+                  style={{
+                    fontSize: 10,
+                    fontFamily: "Inter, sans-serif",
+                    fontWeight: 500,
+                    background: "rgba(212,175,55,0.15)",
+                    color: "#D4AF37",
+                    padding: "6px 12px",
+                    borderRadius: 999,
+                    border: "none",
+                    cursor: "pointer",
+                    textAlign: "center",
+                  }}
+                >
+                  🔒 Full access unlocked with Get Started →
+                </button>
+              </div>
             </div>
           ) : (
             <div
