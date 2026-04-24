@@ -1257,11 +1257,13 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
               >
                 {typePills.map((p) => {
                   const active = activeType === p.key;
+                  const count = chapterCounts[p.key];
                   return (
                     <button
                       key={p.key}
                       type="button"
                       onClick={() => setActiveType(p.key)}
+                      className={active ? "demo-pill-active" : ""}
                       style={{
                         padding: "6px 14px",
                         borderRadius: 999,
@@ -1276,6 +1278,7 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
                       }}
                     >
                       {p.label}
+                      {count > 0 && <span className="demo-pill-count">{count}</span>}
                     </button>
                   );
                 })}
