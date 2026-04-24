@@ -958,36 +958,53 @@ function ChapterView({ courseName, chapter, tab, onTabChange, onBack, onChange }
         })}
       </div>
 
-      {/* Pills */}
-      <div className="flex flex-wrap gap-2 mb-4 px-1">
-        {(tab === "survival" ? survivalPills : practicePills).map((pill: any) => {
-          const active = tab === "survival" ? survivalPill === pill.key : practicePill === pill.key;
-          return (
-            <button
-              key={pill.key}
-              type="button"
-              onClick={() => {
-                if (tab === "survival") setSurvivalPill(pill.key);
-                else setPracticePill(pill.key);
-              }}
-              className="px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all"
-              style={{
-                background: active ? NAVY : "transparent",
-                color: active ? "#fff" : NAVY,
-                border: `1px solid ${NAVY}`,
-                cursor: "pointer",
-              }}
-            >
-              {pill.label}
-            </button>
-          );
-        })}
-      </div>
+      {/* Pills (only for survival + practice) */}
+      {tab !== "videos" && (
+        <div className="flex flex-wrap gap-2 mb-4 px-1">
+          {(tab === "survival" ? survivalPills : practicePills).map((pill: any) => {
+            const active = tab === "survival" ? survivalPill === pill.key : practicePill === pill.key;
+            return (
+              <button
+                key={pill.key}
+                type="button"
+                onClick={() => {
+                  if (tab === "survival") setSurvivalPill(pill.key);
+                  else setPracticePill(pill.key);
+                }}
+                className="px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all"
+                style={{
+                  background: active ? NAVY : "transparent",
+                  color: active ? "#fff" : NAVY,
+                  border: `1px solid ${NAVY}`,
+                  cursor: "pointer",
+                }}
+              >
+                {pill.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Content */}
       <div key={contentKey} style={{ animation: "demoFadeIn 200ms ease-out" }}>
         {pillSkeleton || (tab === "practice" && problemsLoading) ? (
           renderShimmer(tab === "practice" ? 5 : 3, tab === "practice" ? 56 : 80)
+        ) : tab === "videos" ? (
+          <div className="rounded-lg p-8 text-center" style={{ background: "#fff", border: "1px solid #E5E7EB" }}>
+            <div
+              className="mx-auto mb-3 flex items-center justify-center rounded-full"
+              style={{ width: 48, height: 48, background: "rgba(20,33,61,0.06)" }}
+            >
+              <Video size={22} color={NAVY} strokeWidth={1.6} />
+            </div>
+            <p className="text-[13px] font-bold mb-1" style={{ color: NAVY }}>
+              Cram Videos
+            </p>
+            <p className="text-[12px]" style={{ color: "#9CA3AF" }}>
+              Lee's full video library — binge what's there, request what's not.
+            </p>
+          </div>
         ) : tab === "survival" ? (
           <div className="rounded-lg p-8 text-center" style={{ background: "#fff", border: "1px solid #E5E7EB" }}>
             <p className="text-[13px] font-bold mb-1" style={{ color: NAVY }}>
