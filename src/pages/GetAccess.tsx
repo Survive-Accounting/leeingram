@@ -206,7 +206,13 @@ export default function GetAccess() {
       if (error) throw error;
       const url = (data as { url?: string } | null)?.url;
       if (!url) throw new Error("Checkout URL missing from response");
-      window.location.href = url;
+      // Break out of any parent iframe (e.g., Lovable preview) so Stripe Checkout
+      // can render — Stripe sets X-Frame-Options: DENY and will appear stuck inside an iframe.
+      if (window.top && window.top !== window.self) {
+        window.top.location.href = url;
+      } else {
+        window.location.href = url;
+      }
     } catch (err) {
       console.error("[get-access checkout]", err);
       setCheckoutError(
