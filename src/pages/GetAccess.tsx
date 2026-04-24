@@ -387,7 +387,7 @@ export default function GetAccess() {
       </section>
 
       {/* Testimonials below the checkout — same widget as home page */}
-      <TestimonialsSection />
+      <StagingTestimonialsSection />
 
       <LandingFooter
         onScrollToCourses={() => navigate("/staging")}
