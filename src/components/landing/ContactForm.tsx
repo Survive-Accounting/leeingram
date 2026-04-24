@@ -184,7 +184,7 @@ export default function ContactForm() {
               <button
                 type="submit"
                 disabled={sending}
-                className="w-full rounded-lg py-2.5 text-[13px] font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99]"
+                className="group w-full rounded-lg py-2.5 text-[13px] font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99] inline-flex items-center justify-center"
                 style={{
                   background: "#CE1126",
                   boxShadow: "0 2px 12px rgba(206,17,38,0.25)",
@@ -192,7 +192,7 @@ export default function ContactForm() {
                   fontFamily: "Inter, sans-serif",
                 }}
               >
-                {sending ? "Sending…" : "Send to Lee →"}
+                {sending ? "Sending…" : <>Send to Lee <AnimatedArrow /></>}
               </button>
             </form>
           </div>
