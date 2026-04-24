@@ -1,4 +1,7 @@
+import { useState } from "react";
+import { Sparkles } from "lucide-react";
 import leeHeadshot from "@/assets/lee-headshot-original.png";
+import { AboutLeeModal } from "@/components/AboutLeeModal";
 
 const RED = "#CE1126";
 const NAVY = "#14213D";
@@ -22,6 +25,8 @@ interface StagingHeroProps {
 }
 
 export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
+  const [aboutOpen, setAboutOpen] = useState(false);
+
   const handleSeeHowItWorks = () => {
     const el = document.getElementById("exam-coming-up");
     if (el) {
@@ -32,23 +37,15 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
 
   return (
     <section
-      className="relative w-full overflow-hidden staging-hero"
+      className="relative w-full overflow-hidden staging-hero isolate"
       style={{
-        background:
-          "linear-gradient(180deg, #EAF2FB 0%, #F5F9FE 45%, #FFFFFF 100%)",
+        background: [
+          "radial-gradient(circle at 50% 35%, rgba(191,219,254,0.45), transparent 45%)",
+          "radial-gradient(circle at 50% 72%, rgba(220,38,38,0.08), transparent 35%)",
+          "linear-gradient(180deg, #EEF6FF 0%, #F8FAFC 55%, #FFFFFF 100%)",
+        ].join(", "),
       }}
     >
-      {/* Soft radial glow behind headline for depth */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 45% at 50% 42%, rgba(120,160,255,0.18) 0%, rgba(206,17,38,0.04) 35%, rgba(255,255,255,0) 70%)",
-          filter: "blur(20px)",
-        }}
-      />
-
       <style>{`
         .staging-hero {
           min-height: 88vh;
@@ -77,7 +74,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         .hero-anim-headline { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.32s forwards; }
         .hero-anim-sub      { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.5s forwards; }
         .hero-anim-btn      { opacity: 0; animation: heroBtnIn  0.55s cubic-bezier(0.34,1.56,0.64,1) 0.7s forwards; }
-        .hero-anim-link     { opacity: 0; animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.9s forwards; }
+        .hero-anim-link     { opacity: 0; animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.95s forwards; }
 
         @media (prefers-reduced-motion: reduce) {
           .hero-anim-headshot, .hero-anim-eyebrow, .hero-anim-headline, .hero-anim-sub, .hero-anim-btn, .hero-anim-link {
@@ -89,7 +86,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         }
       `}</style>
 
-      <div className="relative z-[3] mx-auto max-w-[760px] px-4 sm:px-6 py-10 md:py-24 w-full">
+      <div className="relative z-10 mx-auto max-w-[760px] px-4 sm:px-6 py-10 md:py-24 w-full">
         <div className="flex flex-col items-center text-center">
           {/* Headshot */}
           <div className="hero-anim-headshot mb-6">
@@ -119,10 +116,18 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             style={{ fontFamily: "Inter, sans-serif" }}
           >
             <div className="text-[13px] font-semibold" style={{ color: NAVY }}>
-              Built by Lee Ingram
+              Built by{" "}
+              <button
+                type="button"
+                onClick={() => setAboutOpen(true)}
+                className="underline decoration-[1px] underline-offset-[3px] decoration-[rgba(20,33,61,0.25)] hover:decoration-[rgba(20,33,61,0.7)] transition-colors"
+                style={{ color: NAVY, background: "none", border: "none", padding: 0, font: "inherit", cursor: "pointer" }}
+              >
+                Lee Ingram
+              </button>
             </div>
             <div className="text-[12px] mt-1" style={{ color: "#64748B" }}>
-              Ole Miss alum &amp; accounting tutor since 2015
+              Accounting tutor since 2015
             </div>
           </div>
 
@@ -141,7 +146,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
 
           {/* Subtext */}
           <p
-            className="mt-7 hero-anim-sub"
+            className="mt-7 hero-anim-sub inline-flex items-center justify-center gap-1.5 flex-wrap"
             style={{
               color: "#475569",
               fontFamily: "Inter, sans-serif",
@@ -150,11 +155,16 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               maxWidth: 560,
             }}
           >
-            Get AI-powered study tools for your entire accounting course.
+            Get{" "}
+            <span className="inline-flex items-center gap-1">
+              <Sparkles className="w-[14px] h-[14px]" style={{ color: "#7C8DA6" }} aria-hidden="true" />
+              AI-powered
+            </span>{" "}
+            study tools for your entire accounting course.
           </p>
 
           {/* CTA + secondary links */}
-          <div className="mt-10 flex flex-col items-center gap-5">
+          <div className="mt-10 flex flex-col items-center gap-7">
             <button
               onClick={onGetStartedClick}
               className="hero-anim-btn rounded-xl px-9 py-4 text-[16px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2"
@@ -169,22 +179,25 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               Start Studying <span aria-hidden="true">→</span>
             </button>
 
-            <div
-              className="hero-anim-link text-[13px] font-medium"
-              style={{ fontFamily: "Inter, sans-serif" }}
+            <button
+              onClick={handleSeeHowItWorks}
+              className="hero-anim-link text-[13px] font-medium transition-colors hover:underline underline-offset-4"
+              style={{
+                color: "rgba(20,33,61,0.72)",
+                background: "none",
+                border: "none",
+                padding: 0,
+                fontFamily: "Inter, sans-serif",
+                cursor: "pointer",
+              }}
             >
-              <button
-                onClick={handleSeeHowItWorks}
-                className="transition-colors hover:underline"
-                style={{ color: NAVY, background: "none", border: "none", padding: 0 }}
-              >
-                How it works
-              </button>
-            </div>
+              See how it works →
+            </button>
           </div>
         </div>
       </div>
+
+      <AboutLeeModal open={aboutOpen} onOpenChange={setAboutOpen} />
     </section>
   );
 }
-
