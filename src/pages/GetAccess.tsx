@@ -44,10 +44,44 @@ function getShortSeasonLabel(stepsAhead: number): string {
   return `${isFirstHalf ? "Spring" : "Fall"} \u2019${yy}`;
 }
 
+function getFoundingTierCopy(n: number): string {
+  if (n <= 1) return "As a thank you — you get free access.";
+  if (n <= 5) return "As a thank you — you get access for $25.";
+  if (n <= 10) return "As a thank you — you get access for $50.";
+  if (n <= 25) return "You're in early — access is $100.";
+  if (n <= 50) return "You're in early — access is $125.";
+  if (n <= 100) return "Access is $150 for your campus.";
+  if (n <= 200) return "Access is $175 for your campus.";
+  return "Access is $250 for your campus.";
+}
+
 export default function GetAccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const emailParam = searchParams.get("email") || "";
+  const campusParam = searchParams.get("campus") || "";
+  const studentNumberParam = searchParams.get("n");
+  const studentNumber = studentNumberParam ? parseInt(studentNumberParam, 10) : null;
+  const [campusName, setCampusName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!campusParam) {
+      setCampusName(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("campuses")
+        .select("name")
+        .eq("slug", campusParam)
+        .maybeSingle();
+      if (!cancelled) setCampusName(data?.name ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [campusParam]);
 
   const [extraCount, setExtraCount] = useState(0);
   const [lifetimeUpgrade, setLifetimeUpgrade] = useState(false);
