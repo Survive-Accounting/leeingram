@@ -181,7 +181,7 @@ const OrgDashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen" style={{ background: BG_GRADIENT }}>
-        <StagingNavbar />
+        <StagingNavbar onCtaClick={() => {}} />
         <div className="mx-auto max-w-3xl px-6 pt-32 text-center">
           <RefreshCw className="mx-auto h-8 w-8 animate-spin text-slate-400" />
           <p className="mt-4 text-slate-600">Verifying your purchase…</p>
@@ -193,7 +193,7 @@ const OrgDashboard: React.FC = () => {
   if (error || !data) {
     return (
       <div className="min-h-screen" style={{ background: BG_GRADIENT }}>
-        <StagingNavbar />
+        <StagingNavbar onCtaClick={() => {}} />
         <div className="mx-auto max-w-2xl px-6 pt-32">
           <div className="rounded-2xl bg-white p-8 text-center shadow-sm ring-1 ring-rose-200">
             <AlertTriangle className="mx-auto h-10 w-10 text-rose-500" />
@@ -218,7 +218,7 @@ const OrgDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-24" style={{ background: BG_GRADIENT }}>
-      <StagingNavbar />
+      <StagingNavbar onCtaClick={() => {}} />
 
       <div className="mx-auto max-w-5xl px-6 pt-28">
         {/* ── Header ───────────────────────────────────────────── */}
