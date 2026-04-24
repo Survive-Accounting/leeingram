@@ -543,7 +543,7 @@ export default function GetAccess() {
             <button
               onClick={handleCheckout}
               disabled={checkoutLoading}
-              className="mt-4 w-full rounded-xl py-3.5 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="mt-5 w-full rounded-xl py-3.5 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{
                 background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
                 fontFamily: "Inter, sans-serif",
@@ -566,7 +566,15 @@ export default function GetAccess() {
                 className="mt-2 text-[12px] text-center"
                 style={{ color: RED, fontFamily: "Inter, sans-serif" }}
               >
-                {checkoutError}
+                Hmm, something went wrong on our end. Please try again, or{" "}
+                <a
+                  href="mailto:lee@surviveaccounting.com?subject=Checkout%20issue%20on%20Survive%20Study%20Pass"
+                  className="underline font-semibold hover:no-underline"
+                  style={{ color: RED }}
+                >
+                  contact lee@surviveaccounting.com
+                </a>{" "}
+                for help.
               </div>
             )}
 
