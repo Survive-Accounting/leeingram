@@ -667,7 +667,9 @@ export default function GetAccess() {
         </div>
       </section>
 
-      <StagingTestimonialsSection onCtaClick={() => navigate("/staging")} />
+      <Suspense fallback={<div style={{ minHeight: 400 }} />}>
+        <StagingTestimonialsSection onCtaClick={() => navigate("/staging")} />
+      </Suspense>
 
       <LandingFooter
         onScrollToCourses={() => navigate("/staging")}
