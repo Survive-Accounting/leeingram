@@ -193,9 +193,12 @@ export default function StagingCoursesSection({
   return (
     <section
       id="courses-section"
-      className="relative px-4 sm:px-6 scroll-mt-0 overflow-hidden pt-12 md:pt-20 pb-[320px] md:pb-[120px]"
+      className="relative px-4 sm:px-6 scroll-mt-0 overflow-hidden"
       style={{
-        background: "#f8fafc",
+        background: "#F3F4F6",
+        borderTop: "1px solid #E5E7EB",
+        paddingTop: 80,
+        paddingBottom: 80,
       }}
     >
       <style>{`
@@ -205,14 +208,36 @@ export default function StagingCoursesSection({
         }
       `}</style>
 
+      {/* Section intro — heading + subtext */}
+      <div className="mx-auto text-center mb-6" style={{ maxWidth: 560 }}>
+        <h2
+          className="text-[24px] sm:text-[28px] leading-tight"
+          style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: NAVY }}
+        >
+          See it in action
+        </h2>
+        <p
+          className="mt-3 text-[15px]"
+          style={{ fontFamily: "Inter, sans-serif", color: "#6B7280", maxWidth: 400, margin: "12px auto 0" }}
+        >
+          Pick a course, open a practice problem, and try the AI tools free.
+        </p>
+      </div>
+
       <div className="relative mx-auto max-w-[920px]" style={{ zIndex: 2 }}>
 
         {/* Mobile-only dropdown (desktop dropdown lives inside the laptop screen) */}
         <div className="md:hidden relative" style={{ zIndex: 100 }}>
           <div className="text-center mb-3">
             <span
-              className="inline-block text-[11px] font-semibold uppercase tracking-[0.2em] rounded-full px-3 py-1.5"
-              style={{ background: NAVY, color: "#FFFFFF", fontFamily: "Inter, sans-serif" }}
+              className="inline-block text-[12px] font-bold uppercase rounded-full"
+              style={{
+                background: NAVY,
+                color: "#FFFFFF",
+                fontFamily: "Inter, sans-serif",
+                padding: "8px 20px",
+                letterSpacing: "0.08em",
+              }}
             >
               Try a demo
             </span>
