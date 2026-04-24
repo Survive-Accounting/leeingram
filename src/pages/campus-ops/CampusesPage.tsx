@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Plus, ExternalLink } from "lucide-react";
 import CampusDetailModal from "@/components/campus-ops/CampusDetailModal";
 
 interface CampusRow {
