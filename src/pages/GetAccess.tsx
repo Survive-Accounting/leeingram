@@ -92,8 +92,9 @@ export default function GetAccess() {
   const nextCourseLabel = nextCourse?.code ?? nextCourse?.name ?? null;
 
   const [autoRenew, setAutoRenew] = useState(false);
-  const totalPrice = autoRenew ? PRICE * 2 : PRICE;
-  const accessThrough = getAccessWindow(autoRenew);
+  const totalPrice = autoRenew ? PRICE + EXTEND_PRICE : PRICE;
+  const baseAccess = getAccessWindow(false);
+  const extendedAccess = getAccessWindow(true);
 
   // Resolve email: URL param → localStorage → sessionStorage.
   const initialEmail = useMemo(() => {
