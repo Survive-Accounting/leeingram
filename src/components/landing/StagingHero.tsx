@@ -146,21 +146,27 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
 
           {/* Subtext */}
           <p
-            className="mt-7 hero-anim-sub inline-flex items-center justify-center gap-1.5 flex-wrap"
+            className="mt-5 hero-anim-sub"
             style={{
-              color: "#475569",
+              color: "#334155",
               fontFamily: "Inter, sans-serif",
               fontSize: "17px",
-              lineHeight: 1.6,
-              maxWidth: 560,
+              lineHeight: 1.55,
+              maxWidth: 600,
             }}
           >
-            Get{" "}
-            <span className="inline-flex items-center gap-1">
-              <Sparkles className="w-[14px] h-[14px]" style={{ color: "#7C8DA6" }} aria-hidden="true" />
-              AI-powered
-            </span>{" "}
-            study tools for your entire accounting course.
+            Study tools for Intro &amp; Intermediate Accounting — every chapter, one platform. Built by a real tutor.
+          </p>
+          <p
+            className="mt-3 hero-anim-sub"
+            style={{
+              color: "#94A3B8",
+              fontFamily: "Inter, sans-serif",
+              fontSize: "12.5px",
+              letterSpacing: "0.06em",
+            }}
+          >
+            Financial <span aria-hidden="true">•</span> Managerial <span aria-hidden="true">•</span> Intermediate 1 <span aria-hidden="true">•</span> Intermediate 2
           </p>
 
           {/* CTA + secondary links */}
