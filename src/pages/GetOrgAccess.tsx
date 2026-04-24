@@ -994,7 +994,9 @@ export default function GetOrgAccess() {
               {submitting
                 ? "Working…"
                 : tier
-                  ? `Continue → ${tier.seats} passes · $${tier.total.toLocaleString()}`
+                  ? paymentMethod === "manual"
+                    ? `Request invoice → ${tier.seats} passes · $${tier.total.toLocaleString()}`
+                    : `Continue → ${tier.seats} passes · $${tier.total.toLocaleString()}`
                   : "Continue"}
             </button>
 
