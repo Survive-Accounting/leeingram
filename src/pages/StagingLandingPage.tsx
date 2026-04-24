@@ -308,19 +308,18 @@ export default function StagingLandingPage() {
 function SocialProofStrip() {
   const NAVY = "#14213D";
   const MUTED = "#6B7280";
-  const AMBER = "#D4AF37";
   const stats: Array<{ label: React.ReactNode; bold: string }> = [
-    { label: <span style={{ color: AMBER, fontWeight: 700 }}>★ 4.9</span>, bold: "rating" },
-    { bold: "1,200+", label: "students helped" },
+    { bold: "2,500+", label: "practice problems" },
     { bold: "4", label: "courses covered" },
     { bold: "10+", label: "years tutoring" },
   ];
   return (
     <div
       style={{
-        background: "#FFFFFF",
-        borderBottom: "1px solid #F0F0F0",
-        padding: "20px 16px",
+        background: "#FDFAF4",
+        borderTop: "1px solid #F0EBE0",
+        borderBottom: "1px solid #F0EBE0",
+        padding: "18px 16px",
       }}
     >
       <div
@@ -329,7 +328,7 @@ function SocialProofStrip() {
       >
         {stats.map((s, i) => (
           <div key={i} className="flex items-center gap-2">
-            {i > 0 && <span style={{ color: "#D1D5DB" }}>·</span>}
+            {i > 0 && <span style={{ color: "#D1C9B8" }}>·</span>}
             <span
               style={{
                 fontSize: 13,
