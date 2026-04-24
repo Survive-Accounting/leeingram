@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MagicLinkModal from "./MagicLinkModal";
+import AnimatedArrow from "./AnimatedArrow";
 
 const NAVY = "#14213D";
 
@@ -102,10 +103,10 @@ export default function StagingNavbar({ onCtaClick, onPricingClick, transparentO
           </button>
           <button
             onClick={() => setLoginOpen(true)}
-            className="text-[13px] font-semibold hover:brightness-110 active:scale-[0.98]"
+            className="group text-[13px] font-semibold hover:brightness-110 active:scale-[0.98] inline-flex items-center"
             style={{ ...loginStyle, transition: "all 0.3s ease" }}
           >
-            Login
+            Log In <AnimatedArrow />
           </button>
         </div>
       </nav>
