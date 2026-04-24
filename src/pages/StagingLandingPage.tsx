@@ -247,7 +247,7 @@ export default function StagingLandingPage() {
         />
       </div>
 
-      <div ref={contactRef}>
+      <div ref={contactRef} id="contact-form">
         <ContactForm />
       </div>
 
