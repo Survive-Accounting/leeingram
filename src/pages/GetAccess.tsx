@@ -476,80 +476,80 @@ export default function GetAccess() {
             </div>
 
             {/* Product section */}
-            <div className="mt-4" style={{ fontFamily: "Inter, sans-serif" }}>
+            <div className="mt-3" style={{ fontFamily: "Inter, sans-serif" }}>
               <div
-                className="text-[12px] font-semibold uppercase tracking-wider"
+                className="text-[11px] font-semibold uppercase tracking-wider"
                 style={{ color: "#64748B" }}
               >
                 Product
               </div>
               <div
-                className="mt-1 text-[16px] font-semibold"
+                className="mt-0.5 text-[16px] font-semibold"
                 style={{ color: NAVY }}
               >
                 Survive Study Pass
               </div>
               {email.trim() && (
                 <p
-                  className="mt-1.5 text-[12px]"
+                  className="mt-1 text-[12px]"
                   style={{ color: "#94A3B8" }}
                 >
                   Purchasing for: <span style={{ color: "#64748B" }}>{email.trim()}</span>
                 </p>
               )}
               <p
-                className="mt-1 text-[12px]"
+                className="mt-0.5 text-[12px]"
                 style={{ color: "#94A3B8" }}
               >
                 🔒 One account per student
               </p>
             </div>
 
-            {/* Access Period */}
-            <div className="mt-6" style={{ fontFamily: "Inter, sans-serif" }}>
+            {/* Access Period — compact inline upsell */}
+            <div className="mt-3" style={{ fontFamily: "Inter, sans-serif" }}>
               <div
-                className="text-[12px] font-semibold uppercase tracking-wider"
+                className="text-[11px] font-semibold uppercase tracking-wider"
                 style={{ color: "#64748B" }}
               >
                 Access Period
               </div>
-              <div
-                className="mt-1 text-[16px] font-semibold"
-                style={{ color: NAVY }}
-              >
-                {selectedSemesters.map((s) => s.label).join(" · ")}
-              </div>
-
-              {/* Auto-renew checkbox */}
-              <label
-                className="mt-3 flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 animate-fade-in hover:brightness-[0.99]"
-                style={{
-                  border: autoRenew ? `2px solid ${NAVY}` : "1px solid #CBD5E1",
-                  background: autoRenew ? "#F0F6FF" : "#fff",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={autoRenew}
-                  onChange={(e) => setAutoRenew(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#14213D]"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-semibold" style={{ color: NAVY }}>
-                    Continue next semester — save ${AUTO_RENEW_DISCOUNT}
-                  </div>
-                  <div className="text-[12px] mt-0.5" style={{ color: "#64748B" }}>
-                    We'll remind you before billing
-                  </div>
+              <div className="mt-0.5 flex flex-col sm:flex-row sm:items-center sm:gap-3 gap-1.5">
+                <div
+                  className="text-[16px] font-semibold"
+                  style={{ color: NAVY }}
+                >
+                  {selectedSemesters.map((s) => s.label).join(" · ")}
                 </div>
-              </label>
+                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={autoRenew}
+                    onChange={(e) => setAutoRenew(e.target.checked)}
+                    className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[#14213D]"
+                  />
+                  <span className="text-[13px]" style={{ color: NAVY }}>
+                    Continue next semester —{" "}
+                    <span style={{ color: "#16A34A", fontWeight: 600 }}>
+                      save ${AUTO_RENEW_DISCOUNT}
+                    </span>
+                  </span>
+                </label>
+              </div>
+              {autoRenew && (
+                <p
+                  className="mt-1 text-[11px] sm:pl-0"
+                  style={{ color: "#94A3B8" }}
+                >
+                  We'll remind you before billing
+                </p>
+              )}
             </div>
 
             {/* CTA */}
             <button
               onClick={handleCheckout}
               disabled={checkoutLoading}
-              className="mt-6 w-full rounded-xl py-4 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="mt-4 w-full rounded-xl py-3.5 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{
                 background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
                 fontFamily: "Inter, sans-serif",
