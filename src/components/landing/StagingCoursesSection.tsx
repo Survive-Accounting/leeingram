@@ -404,7 +404,19 @@ export default function StagingCoursesSection({
                             }}
                           >
                             Which course are you studying?
-                            <span className="demo-cursor" aria-hidden="true">_</span>
+                            <span
+                              aria-hidden="true"
+                              style={{
+                                display: "inline-block",
+                                width: "3px",
+                                height: "1em",
+                                background: RED,
+                                marginLeft: "6px",
+                                verticalAlign: "middle",
+                                animation: "cursorBlink 1s step-end infinite",
+                                boxShadow: "0 0 10px rgba(206,17,38,0.5)",
+                              }}
+                            />
                           </h2>
                           <div className="relative w-full max-w-[460px] mt-4 demo-dropdown-anim">
                             <DropdownButton
