@@ -212,13 +212,6 @@ export default function StagingLandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8FAFC" }}>
-      {/* STAGING BANNER */}
-      <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 text-black text-center text-xs font-bold py-1 tracking-wide">
-        ⚠️ STAGING — Changes here won't affect the live homepage
-      </div>
-
-      {/* Spacer for staging banner */}
-      <div style={{ height: 24 }} />
 
       <StagingNavbar
         onCtaClick={() => requestAccess({ course: defaultCourse.slug })}
