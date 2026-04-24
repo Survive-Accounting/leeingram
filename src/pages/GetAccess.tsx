@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Check, Sword, PenLine, MonitorPlay, ShieldCheck, X, Sparkles, ShoppingCart, Info } from "lucide-react";
+import { Check, ShieldCheck, X, Sparkles, ShoppingCart, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
@@ -10,7 +10,6 @@ import { useEmailGate } from "@/contexts/EmailGateContext";
 import {
   getCampusProgression,
   resolveCourseSlug,
-  formatCourseLabel,
   type CourseSlug,
 } from "@/lib/campusProgressions";
 
@@ -69,24 +68,6 @@ function getAccessEndDate(stepsAhead: number): string {
   return `${monthName} ${endDay}, ${year}`;
 }
 
-const INCLUDES = [
-  {
-    icon: Sword,
-    label: "Study Tools",
-    body: "Flashcards, formulas, journal entries — built for late-night cramming.",
-  },
-  {
-    icon: PenLine,
-    label: "Practice Problems",
-    body: "Mock textbook problems with AI-assisted explanations.",
-  },
-  {
-    icon: MonitorPlay,
-    label: "On-Demand Videos",
-    body: "Send Lee a question — get a personalized video response.",
-    isNew: true,
-  },
-];
 
 export default function GetAccess() {
   const navigate = useNavigate();
@@ -108,7 +89,7 @@ export default function GetAccess() {
   const campusName = progression.campusName;
   const resolvedCourse = progression.courses.find((c) => c.slug === resolvedCourseSlug)!;
   const courseCode = resolvedCourse.code;
-  const courseLabel = formatCourseLabel(resolvedCourse);
+  
 
   // Index of the resolved course in the campus progression.
   const startIdx = progression.courses.findIndex((c) => c.slug === resolvedCourseSlug);
@@ -118,7 +99,7 @@ export default function GetAccess() {
   const maxAdditional = Math.max(0, progression.courses.length - 1 - startIdx);
   const [extraCount, setExtraCount] = useState(0);
   const [lifetimeUpgrade, setLifetimeUpgrade] = useState(false);
-  const [includesOpen, setIncludesOpen] = useState(false);
+  
 
   // The full list of selected courses (base + extras).
   const selectedCourses = useMemo(() => {
@@ -275,34 +256,11 @@ export default function GetAccess() {
         </p>
       </section>
 
-      {/* Two-column layout: checkout LEFT (first on mobile), includes RIGHT */}
+      {/* Single-column centered checkout */}
       <section className="px-4 sm:px-6 pb-16 relative">
-        <div className="max-w-[1100px] mx-auto relative grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-10 items-start">
-          {/* Soft tinted backdrop behind checkout column (desktop only) */}
+        <div className="max-w-[640px] mx-auto relative">
           <div
-            aria-hidden
-            className="hidden md:block absolute inset-y-0 pointer-events-none rounded-2xl"
-            style={{
-              left: "-24px",
-              width: "calc(60% + 12px)",
-              background: "#F1F5F9",
-              opacity: 0.7,
-            }}
-          />
-          {/* Soft gradient divider between columns */}
-          <div
-            aria-hidden
-            className="hidden md:block absolute inset-y-6 pointer-events-none"
-            style={{
-              left: "calc(60% + 4px)",
-              width: 1,
-              background:
-                "linear-gradient(180deg, rgba(20,33,61,0) 0%, rgba(20,33,61,0.10) 50%, rgba(20,33,61,0) 100%)",
-            }}
-          />
-          {/* LEFT — Checkout (visually dominant) */}
-          <div
-            className="md:col-span-3 order-1 rounded-2xl p-6 sm:p-8 relative z-10"
+            className="rounded-2xl p-6 sm:p-8 relative z-10"
             style={{
               background: "#fff",
               boxShadow: "0 16px 48px rgba(20,33,61,0.12), 0 2px 6px rgba(20,33,61,0.06)",
@@ -331,8 +289,8 @@ export default function GetAccess() {
               🔒 One account per student
             </p>
 
-            {/* Single compact product block — price-led, minimal labels */}
-            <div className="mb-4">
+            {/* Single compact product block — price-led */}
+            <div className="mb-5">
               <div
                 className="rounded-lg px-5 py-4"
                 style={{
@@ -346,11 +304,8 @@ export default function GetAccess() {
                     <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
                       Semester Study Pass
                     </div>
-                    <div
-                      className="mt-1.5 text-[13px] truncate"
-                      style={{ color: "#64748B" }}
-                    >
-                      {selectedCourses.map(({ course }) => course.code ?? course.name).join(" → ")}
+                    <div className="mt-1 text-[12px]" style={{ color: "#94A3B8" }}>
+                      {accessPeriodLabel}
                     </div>
                   </div>
 
@@ -375,76 +330,107 @@ export default function GetAccess() {
                     )}
                   </div>
                 </div>
-
-                {/* Removable extras (chips) — only shown when there's something removable */}
-                {selectedCourses.some(({ idx }, arrIdx) => arrIdx === selectedCourses.length - 1 && idx > 0) && (
-                  <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                    {selectedCourses.map(({ course, idx }, arrIdx) => {
-                      const isLast = arrIdx === selectedCourses.length - 1;
-                      const isRemovable = isLast && idx > 0;
-                      if (!isRemovable) return null;
-                      return (
-                        <span
-                          key={course.slug}
-                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold animate-fade-in"
-                          style={{
-                            background: "#fff",
-                            border: "1px solid #CBD5E1",
-                            color: NAVY,
-                          }}
-                        >
-                          {course.code ?? course.name}
-                          <button
-                            type="button"
-                            aria-label={`Remove ${course.code ?? course.name}`}
-                            onClick={() => setExtraCount((c) => Math.max(0, c - 1))}
-                            className="rounded-full hover:bg-slate-100 transition-colors p-0.5"
-                            style={{ color: "#94A3B8" }}
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Add semester checkbox(es) */}
-            {canAddAnother && (() => {
-              const isFirstAdd = extraCount === 0;
-              const label = isFirstAdd ? "Add next semester" : "Add another semester";
-              const subtext = isFirstAdd
-                ? "Continue your sequence"
-                : "Keep your access going";
-              return (
-                <label
-                  className="flex items-start gap-3 mb-3 p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-slate-50"
+            {/* Courses Included — grouped by sequence with pills */}
+            <div
+              className="mb-4 rounded-lg p-4"
+              style={{
+                border: "1px solid #E2E8F0",
+                background: "#fff",
+                fontFamily: "Inter, sans-serif",
+              }}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-[13px] font-semibold" style={{ color: NAVY }}>
+                  Courses Included
+                </div>
+                {extraCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setExtraCount(0)}
+                    className="text-[12px] hover:underline"
+                    style={{ color: "#64748B" }}
+                  >
+                    Reset sequence
+                  </button>
+                )}
+              </div>
+
+              {(() => {
+                const introSlugs = new Set(["intro-accounting-1", "intro-accounting-2"]);
+                const intermediateSlugs = new Set(["intermediate-accounting-1", "intermediate-accounting-2"]);
+                const introSelected = selectedCourses.filter(({ course }) => introSlugs.has(course.slug));
+                const intermediateSelected = selectedCourses.filter(({ course }) => intermediateSlugs.has(course.slug));
+
+                const renderRow = (
+                  title: string,
+                  rowItems: typeof selectedCourses,
+                ) => {
+                  if (rowItems.length === 0) return null;
+                  return (
+                    <div className="mb-2 last:mb-0">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "#94A3B8" }}>
+                        {title}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {rowItems.map(({ course, idx }) => {
+                          const isBase = idx === 0;
+                          const isLastAdded = idx === extraCount && extraCount > 0;
+                          return (
+                            <span
+                              key={course.slug}
+                              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold animate-fade-in"
+                              style={{
+                                background: isBase ? "rgba(20,33,61,0.06)" : "#fff",
+                                border: "1px solid #CBD5E1",
+                                color: NAVY,
+                              }}
+                            >
+                              {course.code ?? course.name}
+                              {isLastAdded && (
+                                <button
+                                  type="button"
+                                  aria-label={`Remove ${course.code ?? course.name}`}
+                                  onClick={() => setExtraCount((c) => Math.max(0, c - 1))}
+                                  className="rounded-full hover:bg-slate-100 transition-colors p-0.5"
+                                  style={{ color: "#94A3B8" }}
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                };
+
+                return (
+                  <>
+                    {renderRow("Intro Sequence", introSelected)}
+                    {renderRow("Intermediate Sequence", intermediateSelected)}
+                  </>
+                );
+              })()}
+
+              {canAddAnother && (
+                <button
+                  type="button"
+                  onClick={() => setExtraCount((c) => Math.min(c + 1, maxAdditional))}
+                  className="mt-3 w-full rounded-lg py-2 text-[13px] font-semibold transition-colors hover:bg-slate-50"
                   style={{
-                    border: "1px solid #E2E8F0",
+                    border: "1px dashed #CBD5E1",
+                    color: NAVY,
                     background: "#fff",
-                    fontFamily: "Inter, sans-serif",
                   }}
                 >
-                  <input
-                    type="checkbox"
-                    checked={false}
-                    onChange={() => setExtraCount((c) => Math.min(c + 1, maxAdditional))}
-                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#14213D]"
-                  />
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-semibold" style={{ color: NAVY }}>
-                      {label}
-                      <span style={{ color: "#64748B", fontWeight: 500 }}> (+${EXTEND_PRICE})</span>
-                    </div>
-                    <div className="text-[12px] mt-0.5" style={{ color: "#94A3B8" }}>
-                      {subtext}
-                    </div>
-                  </div>
-                </label>
-              );
-            })()}
+                  + Add next course <span style={{ color: "#94A3B8", fontWeight: 500 }}>(+${EXTEND_PRICE})</span>
+                </button>
+              )}
+            </div>
 
             {/* Lifetime upgrade — only when all semesters selected */}
             {showLifetime && (
@@ -553,143 +539,6 @@ export default function GetAccess() {
               </div>
             </div>
 
-          </div>
-
-          {/* RIGHT — What's included (minimal collapsible) */}
-          <div className="md:col-span-2 order-2 relative z-10 px-2 sm:px-4 pt-2">
-            <div
-              className="text-[14px]"
-              style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
-            >
-              Includes tools for every chapter in your course
-            </div>
-            <button
-              type="button"
-              onClick={() => setIncludesOpen((o) => !o)}
-              className="mt-2 text-[13px] inline-flex items-center gap-1 hover:underline"
-              style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-              aria-expanded={includesOpen}
-            >
-              See what's included
-              <span
-                className="inline-block transition-transform duration-200"
-                style={{ transform: includesOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-              >
-                ↓
-              </span>
-            </button>
-
-            <div
-              className="grid transition-all duration-300 ease-out"
-              style={{
-                gridTemplateRows: includesOpen ? "1fr" : "0fr",
-                opacity: includesOpen ? 1 : 0,
-              }}
-            >
-              <div className="overflow-hidden">
-                <ul className="mt-4 flex flex-col gap-3">
-                  {INCLUDES.map(({ icon: Icon, label, body, isNew }) => (
-                    <li key={label} className="flex gap-3">
-                      <div
-                        className="shrink-0 rounded-lg flex items-center justify-center"
-                        style={{ width: 32, height: 32, background: "#F1F5F9" }}
-                      >
-                        <Icon size={16} color={NAVY} strokeWidth={2} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span
-                            className="text-[13px] font-semibold"
-                            style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-                          >
-                            {label}
-                          </span>
-                          {isNew && (
-                            <span
-                              className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
-                              style={{ background: RED, color: "#fff" }}
-                            >
-                              New
-                            </span>
-                          )}
-                        </div>
-                        <div
-                          className="text-[12px] mt-0.5 leading-snug"
-                          style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
-                        >
-                          {body}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* Subtle product mock — laptop with sample content */}
-            <div className="mt-7 hidden md:block" aria-hidden="true">
-              <div
-                className="relative mx-auto"
-                style={{ maxWidth: 320, fontFamily: "Inter, sans-serif" }}
-              >
-                <div
-                  className="rounded-t-lg p-2"
-                  style={{
-                    background: "linear-gradient(180deg, #1f2d4f 0%, #14213D 100%)",
-                    boxShadow: "0 16px 32px rgba(20,33,61,0.18)",
-                  }}
-                >
-                  <div className="flex items-center gap-1 mb-2 px-1">
-                    <span style={{ width: 6, height: 6, borderRadius: 99, background: "rgba(255,255,255,0.25)" }} />
-                    <span style={{ width: 6, height: 6, borderRadius: 99, background: "rgba(255,255,255,0.25)" }} />
-                    <span style={{ width: 6, height: 6, borderRadius: 99, background: "rgba(255,255,255,0.25)" }} />
-                  </div>
-                  <div
-                    className="rounded"
-                    style={{ background: "#fff", padding: "16px 18px", minHeight: 130 }}
-                  >
-                    <div
-                      className="text-[10px] font-semibold uppercase tracking-wider mb-2.5"
-                      style={{ color: "#94A3B8" }}
-                    >
-                      Your study tools
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <div className="text-[14px] leading-tight" style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}>
-                        Journal Entries
-                      </div>
-                      <div className="text-[14px] leading-tight" style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}>
-                        Flashcards
-                      </div>
-                      <div className="text-[14px] leading-tight" style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}>
-                        Practice Problems
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  className="mx-auto rounded-b-xl"
-                  style={{
-                    height: 8,
-                    width: "108%",
-                    marginLeft: "-4%",
-                    background: "linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%)",
-                    boxShadow: "0 6px 16px rgba(20,33,61,0.12)",
-                  }}
-                />
-                <div
-                  className="mx-auto"
-                  style={{
-                    height: 3,
-                    width: "30%",
-                    marginTop: 1,
-                    background: "#94a3b8",
-                    borderBottomLeftRadius: 4,
-                    borderBottomRightRadius: 4,
-                  }}
-                />
-              </div>
-            </div>
           </div>
         </div>
       </section>
