@@ -84,7 +84,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         .product-card-3 { --rot: -2deg; animation-delay: 0.9s, 2.4s;  animation-duration: 0.7s, 7.5s; }
 
         @media (prefers-reduced-motion: reduce) {
-          .hero-anim-eyebrow, .hero-anim-headline, .hero-anim-sub, .hero-anim-bullets, .hero-anim-btn,
+          .hero-anim-eyebrow, .hero-anim-headline, .hero-anim-sub, .hero-anim-btn, .hero-anim-link, .hero-anim-cards-label,
           .product-card, .product-card-1, .product-card-2, .product-card-3 {
             opacity: 1 !important;
             animation: none !important;
