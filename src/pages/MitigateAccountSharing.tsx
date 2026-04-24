@@ -1,0 +1,304 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  ChevronDown,
+  Fingerprint,
+  Globe2,
+  Mail,
+  MonitorSmartphone,
+  Shield,
+  Sparkles,
+  Activity,
+  KeyRound,
+  Eye,
+  AlertTriangle,
+  Info,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+const NAVY = "#14213D";
+const RED = "#CE1126";
+
+type Category = {
+  key: string;
+  title: string;
+  icon: typeof Shield;
+  technical: string;
+  laymans: string;
+  mockup: { metric: string; value: string; hint: string }[];
+};
+
+const CATEGORIES: Category[] = [
+  {
+    key: "fingerprint",
+    title: "Device Fingerprinting",
+    icon: Fingerprint,
+    technical:
+      "Composite hash of canvas/WebGL renderer signatures, audio context output, installed font enumeration, screen dimensions, timezone, language, and hardware concurrency. Persisted as a 256-bit identifier per session and joined to student_purchases.user_id. A divergence threshold > 0.4 over a 7-day rolling window triggers a soft-lock event.",
+    laymans:
+      "Every browser leaves a unique 'thumbprint' — like a fingerprint at a crime scene. We quietly capture it the first time a student logs in. If the same account suddenly shows up on three or four very different thumbprints in the same week, we know the password is being passed around.",
+    mockup: [
+      { metric: "Unique fingerprints per student (7d)", value: "1.2 avg", hint: "Healthy: < 2.0" },
+      { metric: "Accounts flagged for sharing", value: "—", hint: "Data coming soon" },
+      { metric: "Soft-locks issued", value: "—", hint: "Data coming soon" },
+    ],
+  },
+  {
+    key: "ip-geo",
+    title: "IP / Geo Anomaly Detection",
+    icon: Globe2,
+    technical:
+      "Each viewer event in asset_events is enriched with IP→ASN→geo (city, region, country) at ingest. We compute the great-circle distance between consecutive sessions and divide by elapsed time. Velocities exceeding ~900 km/h ('impossible travel') flag the account. We also score IP entropy: H = -Σp(i)·log₂p(i) over the trailing 30 days.",
+    laymans:
+      "If your account is logged in from Mississippi at 2pm and Texas at 2:30pm, that's not possible — unless you're in a teleporter. We track those 'impossible trips.' We also notice if one account is suddenly being used from 12 different cities in a month.",
+    mockup: [
+      { metric: "Impossible-travel events (30d)", value: "—", hint: "Data coming soon" },
+      { metric: "Avg IPs per account", value: "—", hint: "Healthy: 1–3" },
+      { metric: "Top flagged accounts", value: "—", hint: "Data coming soon" },
+    ],
+  },
+  {
+    key: "concurrent",
+    title: "Concurrent Session Limits",
+    icon: MonitorSmartphone,
+    technical:
+      "Supabase JWT refresh tokens are tracked in a sessions table with last_seen_at heartbeats every 60s. When N > 2 active sessions overlap by > 5 minutes, the oldest session is invalidated server-side and a re-auth challenge is pushed. We exempt LearnWorlds iframe sessions matched by their referrer-validated parent token.",
+    laymans:
+      "You can have your laptop and phone open at the same time — that's normal. But if four devices are 'active' on one account at the same moment, somebody's sharing. We just sign the oldest one out automatically.",
+    mockup: [
+      { metric: "Median concurrent devices", value: "1.4", hint: "Healthy: 1–2" },
+      { metric: "Auto-revocations (30d)", value: "—", hint: "Data coming soon" },
+      { metric: "Re-auth challenges sent", value: "—", hint: "Data coming soon" },
+    ],
+  },
+  {
+    key: "watermark",
+    title: "Per-Student Watermarking",
+    icon: Eye,
+    technical:
+      "On render, the Solutions Viewer injects a low-opacity (alpha 0.04) repeating diagonal watermark containing SHA-256(email + asset_code + day) truncated to 12 chars. Screenshots leaked to forums can be reverse-mapped to the originating student via a lookup table. Detection is performed via OCR on inbound abuse reports.",
+    laymans:
+      "Every solutions page has the student's encrypted email lightly stamped across the background — too faint to notice while studying, but very visible if a screenshot ends up on Chegg or a group chat. We can trace it back to whoever leaked it.",
+    mockup: [
+      { metric: "Pages watermarked", value: "100%", hint: "All paid views" },
+      { metric: "Leaks traced (lifetime)", value: "—", hint: "Data coming soon" },
+      { metric: "DMCA takedowns issued", value: "—", hint: "Data coming soon" },
+    ],
+  },
+  {
+    key: "lw-binding",
+    title: "LearnWorlds Identity Binding",
+    icon: KeyRound,
+    technical:
+      "Embedded viewer URLs include {{USER_ID}}, {{USER_EMAIL}}, and {{COURSE_ID}} injected by LearnWorlds at render time. We validate document.referrer against an LW domain whitelist and persist the bound identity in sessionStorage['sa-lw-verified']. Mismatches between the embed identity and the active Supabase session trigger a binding_violation event.",
+    laymans:
+      "When a student opens a problem from inside their course, LearnWorlds tells us exactly who they are. If that ID doesn't match the email on the account, we know someone is logged into the wrong place — usually a sign of a borrowed login.",
+    mockup: [
+      { metric: "Binding violations (7d)", value: "—", hint: "Data coming soon" },
+      { metric: "LW-verified sessions", value: "—", hint: "Data coming soon" },
+      { metric: "Cross-account embed loads", value: "—", hint: "Data coming soon" },
+    ],
+  },
+  {
+    key: "behavioral",
+    title: "Behavioral Pattern Analysis",
+    icon: Activity,
+    technical:
+      "We model each account's typical access cadence: hour-of-day distribution, average session length, scroll depth percentiles, and accordion-open sequence. A per-account isolation forest scores deviation; anomaly score > 0.85 over a 5-event window opens an internal review ticket. Features are recomputed nightly.",
+    laymans:
+      "Every student has a study rhythm — when they log in, how fast they click, what sections they open first. If an account's behavior suddenly changes overnight (a night-owl becomes an early bird, a slow scroller starts speed-clicking), it usually means a different person is using it.",
+    mockup: [
+      { metric: "Behavior models trained", value: "—", hint: "Data coming soon" },
+      { metric: "Accounts under review", value: "—", hint: "Data coming soon" },
+      { metric: "False-positive rate", value: "—", hint: "Target: < 5%" },
+    ],
+  },
+  {
+    key: "edu-verify",
+    title: ".edu Email Enforcement",
+    icon: Mail,
+    technical:
+      "Signups are gated by a regex match on /\\.edu$/ and a domain MX-record lookup to confirm the school is real. The domain is then resolved against the campuses table to bind the account to a specific campus_id. Non-.edu signups are routed through the email_campus_overrides table for manual approval.",
+    laymans:
+      "You can't sign up without a real school email. That alone stops most casual sharing — students don't want to hand out their university login. And it ties every account to a specific school so we know who belongs where.",
+    mockup: [
+      { metric: ".edu signups (lifetime)", value: "—", hint: "Data coming soon" },
+      { metric: "Non-.edu attempts blocked", value: "—", hint: "Data coming soon" },
+      { metric: "Campuses bound", value: "—", hint: "Data coming soon" },
+    ],
+  },
+  {
+    key: "rate-limit",
+    title: "Velocity & Rate Limiting",
+    icon: AlertTriangle,
+    technical:
+      "Per-IP and per-account token-bucket throttles on /solutions/:assetCode renders, sized at 60 req/min and 600 req/hour respectively. Burst patterns inconsistent with human reading speed (e.g., 30 unique assets opened in < 2 min) trigger a CAPTCHA challenge served via Cloudflare Turnstile.",
+    laymans:
+      "A real student reads one problem at a time. A scraper or someone speed-downloading the whole library to share opens fifty pages in a minute. We notice that and slow them way down — or make them prove they're human.",
+    mockup: [
+      { metric: "Throttle events (24h)", value: "—", hint: "Data coming soon" },
+      { metric: "CAPTCHA challenges", value: "—", hint: "Data coming soon" },
+      { metric: "Likely scrapers blocked", value: "—", hint: "Data coming soon" },
+    ],
+  },
+];
+
+function CategoryRow({ category }: { category: Category }) {
+  const [open, setOpen] = useState(false);
+  const [layman, setLayman] = useState(false);
+  const Icon = category.icon;
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden transition-colors">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors"
+      >
+        <div
+          className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0"
+          style={{ background: "rgba(206,17,38,0.15)" }}
+        >
+          <Icon className="h-4.5 w-4.5" style={{ color: RED }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-white font-medium text-sm">{category.title}</p>
+        </div>
+
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center justify-center h-7 w-7 rounded-md text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-help"
+                aria-label="How it works"
+              >
+                <Info className="h-3.5 w-3.5" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent
+              side="left"
+              className="max-w-sm p-0 border-0 bg-transparent shadow-2xl"
+              onPointerDownOutside={(e) => e.preventDefault()}
+            >
+              <div
+                className="rounded-lg p-3 text-xs leading-relaxed"
+                style={{ background: NAVY, color: "white", border: "1px solid rgba(255,255,255,0.15)" }}
+              >
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <span
+                    className="text-[10px] uppercase tracking-wider font-semibold"
+                    style={{ color: layman ? "#86EFAC" : "#FCA5A5" }}
+                  >
+                    {layman ? "Plain English" : "Technical"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setLayman((l) => !l);
+                    }}
+                    className="text-[10px] px-2 py-0.5 rounded border border-white/25 hover:bg-white/10 transition-colors"
+                  >
+                    {layman ? "Switch to technical" : "Switch to plain English"}
+                  </button>
+                </div>
+                <p className="text-white/85">{layman ? category.laymans : category.technical}</p>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <ChevronDown
+          className={`h-4 w-4 text-white/50 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="border-t border-white/10 bg-black/20 px-4 py-4 animate-in fade-in slide-in-from-top-1">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="h-3.5 w-3.5" style={{ color: RED }} />
+            <p className="text-[11px] uppercase tracking-wider font-semibold text-white/60">
+              Dashboard mockup — data coming soon
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {category.mockup.map((m) => (
+              <div
+                key={m.metric}
+                className="rounded-lg p-3"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px dashed rgba(255,255,255,0.15)" }}
+              >
+                <p className="text-[10px] uppercase tracking-wider text-white/50 mb-1">{m.metric}</p>
+                <p className="text-white text-xl font-semibold mb-0.5">{m.value}</p>
+                <p className="text-[10px] text-white/40">{m.hint}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-3 flex items-center gap-2 text-[11px] text-white/50">
+            <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+            Wiring up live data — placeholder shown for layout review.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function MitigateAccountSharing() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen px-4 py-10" style={{ background: NAVY }}>
+      <div className="max-w-3xl mx-auto">
+        {/* Header */}
+        <button
+          onClick={() => navigate("/domains")}
+          className="inline-flex items-center gap-1.5 text-white/60 hover:text-white text-xs uppercase tracking-widest mb-6 transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Home
+        </button>
+
+        <div className="flex items-start gap-4 mb-8">
+          <div
+            className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "rgba(206,17,38,0.18)" }}
+          >
+            <Shield className="h-6 w-6" style={{ color: RED }} />
+          </div>
+          <div>
+            <h1 className="text-white text-2xl font-semibold tracking-tight mb-1">
+              Mitigate Account Sharing
+            </h1>
+            <p className="text-white/60 text-sm">
+              Eight layered defenses that protect paid access without making life harder for honest students.
+            </p>
+          </div>
+        </div>
+
+        {/* Categories */}
+        <div className="space-y-2">
+          {CATEGORIES.map((c) => (
+            <CategoryRow key={c.key} category={c} />
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 rounded-lg p-4 text-xs text-white/55" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <strong className="text-white/75">Defense in depth.</strong> No single signal proves abuse — we score across all eight and only act when multiple flags align. False positives stay rare; persistent sharers can't dodge every layer.
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -53,6 +53,7 @@ const StyleGuide = lazy(() => import("./pages/StyleGuide"));
 const EmailFactory = lazy(() => import("./pages/EmailFactory"));
 const Marketing = lazy(() => import("./pages/Marketing"));
 const DomainSelect = lazy(() => import("./pages/DomainSelect"));
+const MitigateAccountSharing = lazy(() => import("./pages/MitigateAccountSharing"));
 const Writing = lazy(() => import("./pages/Writing"));
 const Leeingram = lazy(() => import("./pages/Leeingram"));
 const ProfIngram = lazy(() => import("./pages/ProfIngram"));
@@ -242,6 +243,7 @@ const AppRoutes = () => {
         {/* Legacy redirect */}
         <Route path="/auth" element={<Navigate to="/admin" replace />} />
         <Route path="/domains" element={<ProtectedRoute><DomainSelect /></ProtectedRoute>} />
+        <Route path="/admin/mitigate-sharing" element={<ProtectedRoute><MitigateAccountSharing /></ProtectedRoute>} />
         <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
         <Route path="/content-roadmap" element={<ProtectedRoute><ContentRoadmap /></ProtectedRoute>} />
         <Route path="/chapter/:chapterId" element={<ProtectedRoute><ChapterPage /></ProtectedRoute>} />
