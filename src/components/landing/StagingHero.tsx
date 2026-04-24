@@ -204,7 +204,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             onClick={() => setAboutOpen(true)}
             className="hero-anim-eyebrow mb-8 text-[13px] font-semibold transition-colors"
             style={{
-              color: NAVY,
+              color: "rgba(255,255,255,0.85)",
               background: "none",
               border: "none",
               padding: 0,
@@ -213,7 +213,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             }}
           >
             Built by{" "}
-            <span className="underline decoration-[1px] underline-offset-[3px] decoration-[rgba(20,33,61,0.25)] group-hover:decoration-[rgba(20,33,61,0.7)]">
+            <span className="underline decoration-[1px] underline-offset-[3px] decoration-[rgba(255,255,255,0.4)] group-hover:decoration-[rgba(255,255,255,0.9)]">
               Lee Ingram
             </span>
           </button>
@@ -224,7 +224,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             style={{
               fontFamily: "'DM Serif Display', serif",
               fontWeight: 400,
-              color: NAVY,
+              color: "#FFFFFF",
               maxWidth: 720,
             }}
           >
@@ -235,7 +235,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           <p
             className="mt-5 hero-anim-sub"
             style={{
-              color: "#334155",
+              color: "rgba(255,255,255,0.75)",
               fontFamily: "Inter, sans-serif",
               fontSize: "17px",
               lineHeight: 1.55,
