@@ -64,64 +64,75 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           .staging-hero { min-height: auto; padding-top: 48px; padding-bottom: 72px; display: block; }
         }
 
-        /* ── Animated ribbons ─────────────────────────────────── */
-        .hero-ribbon {
+        /* ── Stripe-style angled color ribbons ─────────────────── */
+        .ribbon {
           position: absolute;
           border-radius: 50%;
-          filter: blur(80px);
+          filter: blur(90px);
           will-change: transform;
           mix-blend-mode: screen;
-        }
-        .hero-ribbon--red {
-          top: -10%;
-          left: -10%;
-          width: 75%;
-          height: 75%;
-          background: radial-gradient(ellipse at center, #FF1A1A 0%, rgba(255,26,26,0) 70%);
           opacity: 0.85;
-          animation: ribbonDriftA 18s ease-in-out infinite alternate;
         }
-        .hero-ribbon--navy {
-          bottom: -15%;
-          right: -10%;
-          width: 80%;
-          height: 80%;
-          background: radial-gradient(ellipse at center, #2E5BAA 0%, rgba(46,91,170,0) 70%);
-          opacity: 0.8;
-          animation: ribbonDriftB 22s ease-in-out infinite alternate;
+        .ribbon-1 {
+          width: 900px;
+          height: 700px;
+          top: -150px;
+          left: -200px;
+          background: radial-gradient(ellipse at center, #FF1A2E 0%, rgba(255,26,46,0) 65%);
+          transform: rotate(-35deg);
+          animation: ribbonDrift1 18s ease-in-out infinite alternate;
         }
-        .hero-ribbon--crimson {
-          top: 15%;
-          right: 0%;
-          width: 60%;
-          height: 60%;
-          background: radial-gradient(ellipse at center, #C41E3A 0%, rgba(196,30,58,0) 70%);
-          opacity: 0.7;
-          animation: ribbonDriftC 15s ease-in-out infinite alternate;
+        .ribbon-2 {
+          width: 800px;
+          height: 600px;
+          top: 10%;
+          right: -150px;
+          background: radial-gradient(ellipse at center, #2E5BAA 0%, rgba(46,91,170,0) 65%);
+          transform: rotate(-20deg);
+          animation: ribbonDrift2 22s ease-in-out infinite alternate;
         }
-        .hero-ribbon--cream {
+        .ribbon-3 {
+          width: 700px;
+          height: 500px;
+          bottom: -100px;
+          left: 20%;
+          background: radial-gradient(ellipse at center, #C41E3A 0%, rgba(196,30,58,0) 65%);
+          transform: rotate(-50deg);
+          animation: ribbonDrift3 16s ease-in-out infinite alternate;
+        }
+        .ribbon-4 {
+          width: 600px;
+          height: 800px;
           bottom: 5%;
-          left: 15%;
-          width: 55%;
-          height: 55%;
-          background: radial-gradient(ellipse at center, rgba(255,240,200,0.35) 0%, rgba(255,240,200,0) 70%);
+          right: 10%;
+          background: radial-gradient(ellipse at center, rgba(255,240,200,0.5) 0%, rgba(255,240,200,0) 65%);
           opacity: 0.9;
-          animation: ribbonDriftA 20s ease-in-out infinite alternate-reverse;
+          animation: ribbonDrift4 20s ease-in-out infinite alternate;
         }
-        @keyframes ribbonDriftA {
-          0%   { transform: translate(-5%, -5%) rotate(-5deg) scale(1); }
-          100% { transform: translate(5%, 5%) rotate(5deg) scale(1.08); }
+        @keyframes ribbonDrift1 {
+          0%   { transform: rotate(-35deg) translate(0px, 0px); }
+          100% { transform: rotate(-30deg) translate(-30px, -20px); }
         }
-        @keyframes ribbonDriftB {
-          0%   { transform: translate(5%, 5%) rotate(5deg) scale(1.05); }
-          100% { transform: translate(-5%, -5%) rotate(-6deg) scale(1); }
+        @keyframes ribbonDrift2 {
+          0%   { transform: rotate(-20deg) translate(0px, 0px); }
+          100% { transform: rotate(-25deg) translate(-20px, -40px); }
         }
-        @keyframes ribbonDriftC {
-          0%   { transform: translate(-6%, 4%) rotate(-3deg) scale(1); }
-          100% { transform: translate(6%, -4%) rotate(8deg) scale(1.1); }
+        @keyframes ribbonDrift3 {
+          0%   { transform: rotate(-50deg) translate(0px, 0px); }
+          100% { transform: rotate(-45deg) translate(-40px, -10px); }
+        }
+        @keyframes ribbonDrift4 {
+          0%   { transform: translate(0px, 0px); }
+          100% { transform: translate(-20px, 30px); }
         }
         @media (prefers-reduced-motion: reduce) {
-          .hero-ribbon { animation: none !important; }
+          .ribbon { animation: none !important; }
+        }
+        @media (max-width: 768px) {
+          .ribbon-1 { width: 500px; height: 400px; }
+          .ribbon-2 { width: 450px; height: 350px; }
+          .ribbon-3 { width: 400px; height: 300px; }
+          .ribbon-4 { width: 350px; height: 450px; }
         }
 
         @keyframes heroFadeUp {
