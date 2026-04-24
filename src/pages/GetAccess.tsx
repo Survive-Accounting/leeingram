@@ -626,11 +626,69 @@ export default function GetAccess() {
               </div>
             </div>
 
-            <div
-              className="mt-5 text-[11.5px] leading-relaxed"
-              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-            >
-              Built and maintained by Lee Ingram, Ole Miss accounting tutor since 2015.
+            {/* Subtle product mock — laptop with sample content */}
+            <div className="mt-7 hidden md:block" aria-hidden="true">
+              <div
+                className="relative mx-auto"
+                style={{ maxWidth: 320, fontFamily: "Inter, sans-serif" }}
+              >
+                <div
+                  className="rounded-t-lg p-2"
+                  style={{
+                    background: "linear-gradient(180deg, #1f2d4f 0%, #14213D 100%)",
+                    boxShadow: "0 16px 32px rgba(20,33,61,0.18)",
+                  }}
+                >
+                  <div className="flex items-center gap-1 mb-2 px-1">
+                    <span style={{ width: 6, height: 6, borderRadius: 99, background: "rgba(255,255,255,0.25)" }} />
+                    <span style={{ width: 6, height: 6, borderRadius: 99, background: "rgba(255,255,255,0.25)" }} />
+                    <span style={{ width: 6, height: 6, borderRadius: 99, background: "rgba(255,255,255,0.25)" }} />
+                  </div>
+                  <div
+                    className="rounded"
+                    style={{ background: "#fff", padding: "16px 18px", minHeight: 130 }}
+                  >
+                    <div
+                      className="text-[10px] font-semibold uppercase tracking-wider mb-2.5"
+                      style={{ color: "#94A3B8" }}
+                    >
+                      Your study tools
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="text-[14px] leading-tight" style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}>
+                        Journal Entries
+                      </div>
+                      <div className="text-[14px] leading-tight" style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}>
+                        Flashcards
+                      </div>
+                      <div className="text-[14px] leading-tight" style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}>
+                        Practice Problems
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className="mx-auto rounded-b-xl"
+                  style={{
+                    height: 8,
+                    width: "108%",
+                    marginLeft: "-4%",
+                    background: "linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%)",
+                    boxShadow: "0 6px 16px rgba(20,33,61,0.12)",
+                  }}
+                />
+                <div
+                  className="mx-auto"
+                  style={{
+                    height: 3,
+                    width: "30%",
+                    marginTop: 1,
+                    background: "#94a3b8",
+                    borderBottomLeftRadius: 4,
+                    borderBottomRightRadius: 4,
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
