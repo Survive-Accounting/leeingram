@@ -249,13 +249,13 @@ export default function StagingCoursesSection({
             <>
               {/* DESKTOP — MacBook frame */}
               <div ref={laptopRef} className="hidden md:block mt-6 mx-auto" style={{ maxWidth: 694 }}>
-                {/* Eyebrow above the laptop */}
+                {/* Eyebrow above the laptop — pill badge */}
                 <div className="text-center mb-4">
                   <span
-                    className="inline-block text-[11px] font-semibold uppercase tracking-[0.2em]"
-                    style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Inter, sans-serif" }}
+                    className="inline-block text-[11px] font-semibold uppercase tracking-[0.2em] rounded-full px-3 py-1.5"
+                    style={{ background: NAVY, color: "#FFFFFF", fontFamily: "Inter, sans-serif" }}
                   >
-                    Try a demo 👇
+                    Try a demo
                   </span>
                 </div>
                 <style>{`
