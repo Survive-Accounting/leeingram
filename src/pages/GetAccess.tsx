@@ -153,7 +153,7 @@ export default function GetAccess() {
             campus: progression.campusSlug,
             selectedCourse: resolvedCourseSlug,
             selectedPlan: "study_pass",
-            amount: PRICE,
+            amount: totalPrice,
             includedCourses: [resolvedCourse.code ?? resolvedCourse.name],
             autoRenew,
             origin: window.location.origin,
