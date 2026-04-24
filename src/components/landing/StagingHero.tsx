@@ -40,14 +40,20 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
   return (
     <section
       className="relative w-full overflow-hidden staging-hero isolate"
-      style={{
-        background: [
-          "radial-gradient(circle at 50% 35%, rgba(191,219,254,0.45), transparent 45%)",
-          "radial-gradient(circle at 50% 72%, rgba(220,38,38,0.08), transparent 35%)",
-          "linear-gradient(180deg, #EEF6FF 0%, #F8FAFC 55%, #FFFFFF 100%)",
-        ].join(", "),
-      }}
+      style={{ background: "#002147" }}
     >
+      {/* Animated ribbon layer — atmospheric glows behind content */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+        style={{ zIndex: 0 }}
+      >
+        <div className="hero-ribbon hero-ribbon--red" />
+        <div className="hero-ribbon hero-ribbon--navy" />
+        <div className="hero-ribbon hero-ribbon--crimson" />
+        <div className="hero-ribbon hero-ribbon--cream" />
+      </div>
+
       <style>{`
         .staging-hero {
           min-height: 88vh;
@@ -56,6 +62,65 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         }
         @media (max-width: 768px) {
           .staging-hero { min-height: auto; padding-top: 48px; padding-bottom: 72px; display: block; }
+        }
+
+        /* ── Animated ribbons ─────────────────────────────────── */
+        .hero-ribbon {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(100px);
+          will-change: transform;
+        }
+        .hero-ribbon--red {
+          top: -10%;
+          left: -10%;
+          width: 70%;
+          height: 70%;
+          background: radial-gradient(ellipse at center, #CC0000 0%, rgba(204,0,0,0) 70%);
+          opacity: 0.55;
+          animation: ribbonDriftA 18s ease-in-out infinite alternate;
+        }
+        .hero-ribbon--navy {
+          bottom: -15%;
+          right: -10%;
+          width: 75%;
+          height: 75%;
+          background: radial-gradient(ellipse at center, #1B3A6B 0%, rgba(27,58,107,0) 70%);
+          opacity: 0.5;
+          animation: ribbonDriftB 22s ease-in-out infinite alternate;
+        }
+        .hero-ribbon--crimson {
+          top: 20%;
+          right: 5%;
+          width: 55%;
+          height: 55%;
+          background: radial-gradient(ellipse at center, #8B0000 0%, rgba(139,0,0,0) 70%);
+          opacity: 0.45;
+          animation: ribbonDriftC 15s ease-in-out infinite alternate;
+        }
+        .hero-ribbon--cream {
+          bottom: 5%;
+          left: 15%;
+          width: 50%;
+          height: 50%;
+          background: radial-gradient(ellipse at center, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
+          opacity: 0.6;
+          animation: ribbonDriftA 20s ease-in-out infinite alternate-reverse;
+        }
+        @keyframes ribbonDriftA {
+          0%   { transform: translate(-5%, -5%) rotate(-5deg) scale(1); }
+          100% { transform: translate(5%, 5%) rotate(5deg) scale(1.08); }
+        }
+        @keyframes ribbonDriftB {
+          0%   { transform: translate(5%, 5%) rotate(5deg) scale(1.05); }
+          100% { transform: translate(-5%, -5%) rotate(-6deg) scale(1); }
+        }
+        @keyframes ribbonDriftC {
+          0%   { transform: translate(-6%, 4%) rotate(-3deg) scale(1); }
+          100% { transform: translate(6%, -4%) rotate(8deg) scale(1.1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .hero-ribbon { animation: none !important; }
         }
 
         @keyframes heroFadeUp {
@@ -139,7 +204,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             onClick={() => setAboutOpen(true)}
             className="hero-anim-eyebrow mb-8 text-[13px] font-semibold transition-colors"
             style={{
-              color: NAVY,
+              color: "rgba(255,255,255,0.85)",
               background: "none",
               border: "none",
               padding: 0,
@@ -148,7 +213,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             }}
           >
             Built by{" "}
-            <span className="underline decoration-[1px] underline-offset-[3px] decoration-[rgba(20,33,61,0.25)] group-hover:decoration-[rgba(20,33,61,0.7)]">
+            <span className="underline decoration-[1px] underline-offset-[3px] decoration-[rgba(255,255,255,0.4)] group-hover:decoration-[rgba(255,255,255,0.9)]">
               Lee Ingram
             </span>
           </button>
@@ -159,7 +224,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             style={{
               fontFamily: "'DM Serif Display', serif",
               fontWeight: 400,
-              color: NAVY,
+              color: "#FFFFFF",
               maxWidth: 720,
             }}
           >
@@ -170,7 +235,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           <p
             className="mt-5 hero-anim-sub"
             style={{
-              color: "#334155",
+              color: "rgba(255,255,255,0.75)",
               fontFamily: "Inter, sans-serif",
               fontSize: "17px",
               lineHeight: 1.55,
@@ -200,7 +265,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               onClick={handleSeeHowItWorks}
               className="hero-anim-link text-[13px] font-medium transition-colors hover:underline underline-offset-4"
               style={{
-                color: "rgba(20,33,61,0.72)",
+                color: "rgba(255,255,255,0.7)",
                 background: "none",
                 border: "none",
                 padding: 0,
