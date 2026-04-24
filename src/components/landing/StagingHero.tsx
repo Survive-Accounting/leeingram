@@ -107,21 +107,27 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
           >
             <div
-              className="rounded-full overflow-hidden"
+              className="rounded-full overflow-hidden relative"
               style={{
                 width: 120,
                 height: 120,
                 border: "3px solid #FFFFFF",
                 boxShadow:
                   "0 8px 24px rgba(20,33,61,0.18), 0 0 0 1px rgba(20,33,61,0.06)",
-                background: "#fff",
+                background: "linear-gradient(135deg, #DDE7F5 0%, #C8D6EC 100%)",
               }}
             >
               <img
                 src={leeHeadshot}
                 alt="Lee Ingram"
-                className="w-full h-full object-cover"
-                style={{ objectPosition: "center 15%" }}
+                loading="eager"
+                decoding="async"
+                onLoad={() => setImgLoaded(true)}
+                className="w-full h-full object-cover hero-anim-headshot-img"
+                style={{
+                  objectPosition: "center 15%",
+                  opacity: imgLoaded ? undefined : 0,
+                }}
               />
             </div>
           </button>
