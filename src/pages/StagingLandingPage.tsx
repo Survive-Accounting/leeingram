@@ -218,6 +218,7 @@ export default function StagingLandingPage() {
         transparentOnTop
         onCtaClick={() => requestAccess({ course: defaultCourse.slug })}
         onPricingClick={() => requestAccess({ course: defaultCourse.slug })}
+        onCoursesClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
       />
 
       <StagingHero
@@ -254,6 +255,7 @@ export default function StagingLandingPage() {
       <LandingFooter
         onScrollToCourses={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })}
         onScrollToContact={() => contactRef.current?.scrollIntoView({ behavior: "smooth" })}
+        onPricingClick={() => requestAccess({ course: defaultCourse.slug })}
       />
 
       <StagingEmailPromptModal

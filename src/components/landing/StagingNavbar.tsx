@@ -4,15 +4,22 @@ import MagicLinkModal from "./MagicLinkModal";
 import AnimatedArrow from "./AnimatedArrow";
 
 const NAVY = "#14213D";
+const RED = "#CC0000";
 
 interface StagingNavbarProps {
   onCtaClick: () => void;
   onPricingClick?: () => void;
+  onCoursesClick?: () => void;
   /** When true, navbar is transparent at top of page and turns solid white on scroll/hover. */
   transparentOnTop?: boolean;
 }
 
-export default function StagingNavbar({ onCtaClick, onPricingClick, transparentOnTop = false }: StagingNavbarProps) {
+export default function StagingNavbar({
+  onCtaClick,
+  onPricingClick,
+  onCoursesClick,
+  transparentOnTop = false,
+}: StagingNavbarProps) {
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -43,7 +50,7 @@ export default function StagingNavbar({ onCtaClick, onPricingClick, transparentO
         backdropFilter: "none",
       };
 
-  const textColor = isSolid ? NAVY : "#FFFFFF";
+  const accountingColor = isSolid ? NAVY : "#FFFFFF";
   const mutedTextColor = isSolid ? NAVY : "rgba(255,255,255,0.85)";
 
   const loginStyle: React.CSSProperties = isSolid
@@ -66,6 +73,18 @@ export default function StagingNavbar({ onCtaClick, onPricingClick, transparentO
         boxShadow: "none",
       };
 
+  const handleCourses = () => {
+    if (onCoursesClick) {
+      onCoursesClick();
+      return;
+    }
+    const el = document.getElementById("exam-coming-up");
+    if (el) {
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  };
+
   return (
     <div
       className={`${transparentOnTop ? "fixed" : "sticky"} top-0 left-0 right-0 z-50 w-full`}
@@ -79,18 +98,28 @@ export default function StagingNavbar({ onCtaClick, onPricingClick, transparentO
         {/* Logo */}
         <button
           onClick={() => navigate("/staging")}
-          className="text-[16px] sm:text-[18px] font-bold tracking-tight"
+          className="text-[16px] sm:text-[18px] tracking-tight"
           style={{
-            color: textColor,
             fontFamily: "'DM Serif Display', serif",
             transition: "color 0.3s ease",
           }}
         >
-          Survive Accounting{!isSolid ? "™" : ""}
+          <span style={{ color: RED, fontWeight: 800 }}>Survive</span>
+          <span style={{ color: accountingColor, fontWeight: 400 }}>
+            {" "}Accounting
+            <sup className="text-[9px] font-normal ml-0.5 opacity-70">™</sup>
+          </span>
         </button>
 
         {/* Right side */}
         <div className="flex items-center gap-4 sm:gap-5">
+          <button
+            onClick={handleCourses}
+            className="hidden sm:inline-block text-[13px] font-semibold transition-colors hover:opacity-70"
+            style={{ color: mutedTextColor, fontFamily: "Inter, sans-serif", transition: "color 0.3s ease" }}
+          >
+            Courses
+          </button>
           <button
             onClick={() => {
               if (onPricingClick) onPricingClick();
