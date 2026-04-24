@@ -178,6 +178,7 @@ const AppRoutes = () => {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Survive Accounting — default to Asset Factory */}
+        {/* PRIMARY LANDING PAGE — edit src/pages/StagingLandingPage.tsx */}
         <Route path="/" element={<StagingLandingPage />} />
         <Route path="/staging" element={<StagingLandingPage />} />
         <Route path="/old-home" element={<LandingPage />} />

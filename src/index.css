@@ -119,7 +119,6 @@ html {
   }
 
   html {
-    @apply dark;
     color-scheme: only light;
   }
 

@@ -1,4 +1,4 @@
-// Staging clone of LandingPage.tsx — experiment here, then push changes live
+// PRIMARY LANDING PAGE — edit this file (rendered at "/" and "/staging")
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import StagingNavbar from "@/components/landing/StagingNavbar";
