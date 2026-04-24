@@ -207,6 +207,32 @@ export default function StagingCoursesSection({
 
       <div className="relative mx-auto max-w-[920px]" style={{ zIndex: 2 }}>
 
+        {/* Section header — was previously in StagingFeatureCardsSection */}
+        <div className="text-center mb-10 md:mb-14">
+          <h2
+            className="text-[28px] sm:text-[40px] md:text-[48px] font-bold leading-tight text-white"
+            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+          >
+            {getFinalsCountdownText() ?? "Your next exam is coming up."}
+          </h2>
+          <p
+            className="mt-3 text-[15px] sm:text-[17px]"
+            style={{ color: "rgba(255,255,255,0.72)", fontFamily: "Inter, sans-serif" }}
+          >
+            Get exactly what you need to study smarter.
+          </p>
+        </div>
+
+        {/* "Try it yourself" eyebrow above laptop */}
+        <div className="text-center mb-3 md:mb-4">
+          <span
+            className="inline-block text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.18em]"
+            style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
+          >
+            Try it yourself
+          </span>
+        </div>
+
         {/* Dropdown — rendered as a portal-like overlay above the laptop screen ONLY on mobile.
             On desktop the dropdown lives INSIDE the laptop screen (rendered below in the off-state). */}
         <div className="md:hidden relative" style={{ zIndex: 100 }}>
@@ -538,7 +564,7 @@ interface DemoScreenProps {
 }
 
 function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }: DemoScreenProps) {
-  const [tab, setTab] = useState<"survival" | "practice">("survival");
+  const [tab, setTab] = useState<"survival" | "practice" | "videos">("survival");
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [contentKey, setContentKey] = useState(0);
   const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
@@ -556,8 +582,10 @@ function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }:
     setContentKey((k) => k + 1);
   }, [tab, activeChapter?.id]);
 
-  const tagFor = (ch: Chapter) =>
-    `intent_${tab === "survival" ? "cram_tools" : "practice_problems"}_ch${ch.chapter_number}`;
+  const tagFor = (ch: Chapter) => {
+    const slug = tab === "survival" ? "cram_tools" : tab === "practice" ? "practice_problems" : "cram_videos";
+    return `intent_${slug}_ch${ch.chapter_number}`;
+  };
 
   const handleChapterPick = (ch: Chapter) => {
     onChapterClick(ch, tagFor(ch)); // fire intent tag
@@ -622,6 +650,7 @@ function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }:
         {[
           { key: "survival" as const, label: "Study Tools" },
           { key: "practice" as const, label: "Practice Problems" },
+          { key: "videos" as const, label: "Cram Videos" },
         ].map((t) => {
           const active = tab === t.key;
           return (
@@ -721,8 +750,8 @@ function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }:
 interface ChapterViewProps {
   courseName: string;
   chapter: Chapter;
-  tab: "survival" | "practice";
-  onTabChange: (t: "survival" | "practice") => void;
+  tab: "survival" | "practice" | "videos";
+  onTabChange: (t: "survival" | "practice" | "videos") => void;
   onBack: () => void;
   onChange: () => void;
 }
@@ -907,6 +936,7 @@ function ChapterView({ courseName, chapter, tab, onTabChange, onBack, onChange }
         {[
           { key: "survival" as const, label: "Study Tools" },
           { key: "practice" as const, label: "Practice Problems" },
+          { key: "videos" as const, label: "Cram Videos" },
         ].map((t) => {
           const active = tab === t.key;
           return (
@@ -928,36 +958,53 @@ function ChapterView({ courseName, chapter, tab, onTabChange, onBack, onChange }
         })}
       </div>
 
-      {/* Pills */}
-      <div className="flex flex-wrap gap-2 mb-4 px-1">
-        {(tab === "survival" ? survivalPills : practicePills).map((pill: any) => {
-          const active = tab === "survival" ? survivalPill === pill.key : practicePill === pill.key;
-          return (
-            <button
-              key={pill.key}
-              type="button"
-              onClick={() => {
-                if (tab === "survival") setSurvivalPill(pill.key);
-                else setPracticePill(pill.key);
-              }}
-              className="px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all"
-              style={{
-                background: active ? NAVY : "transparent",
-                color: active ? "#fff" : NAVY,
-                border: `1px solid ${NAVY}`,
-                cursor: "pointer",
-              }}
-            >
-              {pill.label}
-            </button>
-          );
-        })}
-      </div>
+      {/* Pills (only for survival + practice) */}
+      {tab !== "videos" && (
+        <div className="flex flex-wrap gap-2 mb-4 px-1">
+          {(tab === "survival" ? survivalPills : practicePills).map((pill: any) => {
+            const active = tab === "survival" ? survivalPill === pill.key : practicePill === pill.key;
+            return (
+              <button
+                key={pill.key}
+                type="button"
+                onClick={() => {
+                  if (tab === "survival") setSurvivalPill(pill.key);
+                  else setPracticePill(pill.key);
+                }}
+                className="px-3 py-1.5 rounded-full text-[12px] font-semibold transition-all"
+                style={{
+                  background: active ? NAVY : "transparent",
+                  color: active ? "#fff" : NAVY,
+                  border: `1px solid ${NAVY}`,
+                  cursor: "pointer",
+                }}
+              >
+                {pill.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Content */}
       <div key={contentKey} style={{ animation: "demoFadeIn 200ms ease-out" }}>
         {pillSkeleton || (tab === "practice" && problemsLoading) ? (
           renderShimmer(tab === "practice" ? 5 : 3, tab === "practice" ? 56 : 80)
+        ) : tab === "videos" ? (
+          <div className="rounded-lg p-8 text-center" style={{ background: "#fff", border: "1px solid #E5E7EB" }}>
+            <div
+              className="mx-auto mb-3 flex items-center justify-center rounded-full"
+              style={{ width: 48, height: 48, background: "rgba(20,33,61,0.06)" }}
+            >
+              <Video size={22} color={NAVY} strokeWidth={1.6} />
+            </div>
+            <p className="text-[13px] font-bold mb-1" style={{ color: NAVY }}>
+              Cram Videos
+            </p>
+            <p className="text-[12px]" style={{ color: "#9CA3AF" }}>
+              Lee's full video library — binge what's there, request what's not.
+            </p>
+          </div>
         ) : tab === "survival" ? (
           <div className="rounded-lg p-8 text-center" style={{ background: "#fff", border: "1px solid #E5E7EB" }}>
             <p className="text-[13px] font-bold mb-1" style={{ color: NAVY }}>
