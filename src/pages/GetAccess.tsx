@@ -265,6 +265,33 @@ export default function GetAccess() {
                 0%, 100% { opacity: 0; }
                 30%, 70% { opacity: 1; }
               }
+              @keyframes priceShimmer {
+                0% { background-position: 200% 0; }
+                100% { background-position: -200% 0; }
+              }
+              .price-shimmer {
+                background-image: linear-gradient(100deg, ${NAVY} 0%, ${NAVY} 40%, rgba(255,255,255,0.95) 50%, ${NAVY} 60%, ${NAVY} 100%);
+                background-size: 200% 100%;
+                background-position: 200% 0;
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+                color: transparent;
+                animation: priceShimmer 1.6s ease-out 0.4s 1 both;
+              }
+              .price-shimmer-discount {
+                background-image: linear-gradient(100deg, #16A34A 0%, #16A34A 40%, rgba(255,255,255,0.95) 50%, #16A34A 60%, #16A34A 100%);
+                background-size: 200% 100%;
+                background-position: 200% 0;
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+                color: transparent;
+                animation: priceShimmer 1.6s ease-out 0.4s 1 both;
+              }
+              @media (prefers-reduced-motion: reduce) {
+                .price-shimmer, .price-shimmer-discount { animation: none; -webkit-text-fill-color: currentColor; }
+              }
             `}</style>
 
             {/* Header row — Secure Checkout + Price Badge */}
@@ -303,7 +330,7 @@ export default function GetAccess() {
                     background: "#F0F6FF",
                     border: `1px solid ${NAVY}`,
                     boxShadow: "0 10px 24px rgba(20,33,61,0.14), 0 2px 6px rgba(20,33,61,0.06)",
-                    minWidth: 120,
+                    minWidth: 160,
                     transform: "translateY(-5px)",
                   }}
                 >
@@ -316,18 +343,18 @@ export default function GetAccess() {
                     </div>
                   )}
                   <div
-                    className="font-bold leading-none"
+                    key={`shimmer-${totalPrice}`}
+                    className={`font-bold leading-none ${hasDiscount ? "price-shimmer-discount" : "price-shimmer"}`}
                     style={{
-                      color: hasDiscount ? "#16A34A" : NAVY,
-                      fontSize: 36,
-                      letterSpacing: "-0.02em",
+                      fontSize: 68,
+                      letterSpacing: "-0.03em",
                       fontFamily: "Inter, sans-serif",
                     }}
                   >
                     ${totalPrice}
                   </div>
                   <div
-                    className="mt-1 text-[12px] font-medium"
+                    className="mt-2 text-[12px] font-medium"
                     style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
                   >
                     one-time
