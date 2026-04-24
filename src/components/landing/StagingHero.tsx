@@ -68,43 +68,44 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         .hero-ribbon {
           position: absolute;
           border-radius: 50%;
-          filter: blur(100px);
+          filter: blur(80px);
           will-change: transform;
+          mix-blend-mode: screen;
         }
         .hero-ribbon--red {
           top: -10%;
           left: -10%;
-          width: 70%;
-          height: 70%;
-          background: radial-gradient(ellipse at center, #CC0000 0%, rgba(204,0,0,0) 70%);
-          opacity: 0.55;
+          width: 75%;
+          height: 75%;
+          background: radial-gradient(ellipse at center, #FF1A1A 0%, rgba(255,26,26,0) 70%);
+          opacity: 0.85;
           animation: ribbonDriftA 18s ease-in-out infinite alternate;
         }
         .hero-ribbon--navy {
           bottom: -15%;
           right: -10%;
-          width: 75%;
-          height: 75%;
-          background: radial-gradient(ellipse at center, #1B3A6B 0%, rgba(27,58,107,0) 70%);
-          opacity: 0.5;
+          width: 80%;
+          height: 80%;
+          background: radial-gradient(ellipse at center, #2E5BAA 0%, rgba(46,91,170,0) 70%);
+          opacity: 0.8;
           animation: ribbonDriftB 22s ease-in-out infinite alternate;
         }
         .hero-ribbon--crimson {
-          top: 20%;
-          right: 5%;
-          width: 55%;
-          height: 55%;
-          background: radial-gradient(ellipse at center, #8B0000 0%, rgba(139,0,0,0) 70%);
-          opacity: 0.45;
+          top: 15%;
+          right: 0%;
+          width: 60%;
+          height: 60%;
+          background: radial-gradient(ellipse at center, #C41E3A 0%, rgba(196,30,58,0) 70%);
+          opacity: 0.7;
           animation: ribbonDriftC 15s ease-in-out infinite alternate;
         }
         .hero-ribbon--cream {
           bottom: 5%;
           left: 15%;
-          width: 50%;
-          height: 50%;
-          background: radial-gradient(ellipse at center, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
-          opacity: 0.6;
+          width: 55%;
+          height: 55%;
+          background: radial-gradient(ellipse at center, rgba(255,240,200,0.35) 0%, rgba(255,240,200,0) 70%);
+          opacity: 0.9;
           animation: ribbonDriftA 20s ease-in-out infinite alternate-reverse;
         }
         @keyframes ribbonDriftA {
