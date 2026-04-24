@@ -248,7 +248,7 @@ export default function StagingCoursesSection({
           return (
             <>
               {/* DESKTOP — MacBook frame */}
-              <div ref={laptopRef} className="hidden md:block mt-6 mx-auto" style={{ maxWidth: 694 }}>
+              <div ref={laptopRef} className="hidden md:block mt-6 mx-auto" style={{ maxWidth: 860 }}>
                 {/* Eyebrow above the laptop — pill badge */}
                 <div className="text-center mb-4">
                   <span
