@@ -241,6 +241,11 @@ export default function StagingLandingPage() {
         />
       </div>
 
+      <StagingFinalCtaSection
+        onGetAccessClick={() => requestAccess({ course: defaultCourse.slug })}
+        onTryDemoClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+      />
+
       <div ref={contactRef} id="contact-form">
         <ContactForm />
       </div>
