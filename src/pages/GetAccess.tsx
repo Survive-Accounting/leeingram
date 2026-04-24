@@ -255,7 +255,7 @@ export default function GetAccess() {
       <section className="px-4 sm:px-6 pb-16 relative">
         <div className="max-w-[560px] mx-auto relative">
           <div
-            className="rounded-2xl p-6 sm:p-8 relative z-10"
+            className="rounded-2xl p-5 sm:p-6 relative z-10"
             style={{
               background: "#fff",
               boxShadow: "0 24px 60px rgba(20,33,61,0.10), 0 2px 8px rgba(20,33,61,0.04)",
