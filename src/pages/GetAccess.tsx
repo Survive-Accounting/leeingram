@@ -109,7 +109,7 @@ export default function GetAccess() {
 
   // Floating toast — only positive deltas (additions)
   const [priceToasts, setPriceToasts] = useState<Array<{ id: number; delta: number }>>([]);
-  const [discountToasts, setDiscountToasts] = useState<Array<{ id: number }>>([]);
+  const [discountToasts, setDiscountToasts] = useState<Array<{ id: number; amount: number }>>([]);
   const [pulseKey, setPulseKey] = useState(0);
   const prevSubtotalRef = React.useRef(subtotal);
 
@@ -421,14 +421,14 @@ export default function GetAccess() {
                   {discountToasts.map((t) => (
                     <span
                       key={t.id}
-                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-3 text-[13px] font-semibold whitespace-nowrap animate-[priceToast_800ms_ease-out_forwards] motion-reduce:animate-[priceToastFade_700ms_ease-out_forwards]"
+                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-3 text-[15px] font-bold whitespace-nowrap animate-[priceToast_800ms_ease-out_forwards] motion-reduce:animate-[priceToastFade_700ms_ease-out_forwards]"
                       style={{
-                        color: "#16A34A",
+                        color: RED,
                         fontFamily: "Inter, sans-serif",
                         textShadow: "0 1px 3px rgba(255,255,255,0.9)",
                       }}
                     >
-                      –{AUTO_RENEW_DISCOUNT_PCT}% applied
+                      -${t.amount}
                     </span>
                   ))}
                 </div>
@@ -549,7 +549,8 @@ export default function GetAccess() {
                       setAutoRenew(checked);
                       if (checked && extraCount === 0) {
                         const id = Date.now() + Math.random();
-                        setDiscountToasts((t) => [...t, { id }]);
+                        const amount = Math.round((PRICE * AUTO_RENEW_DISCOUNT_PCT) / 100);
+                        setDiscountToasts((t) => [...t, { id, amount }]);
                         setPulseKey((k) => k + 1);
                         setTimeout(() => {
                           setDiscountToasts((t) => t.filter((x) => x.id !== id));
