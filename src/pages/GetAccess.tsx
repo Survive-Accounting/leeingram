@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, ShieldCheck, X, Sparkles, ShoppingCart } from "lucide-react";
 import StagingNavbar from "@/components/landing/StagingNavbar";
