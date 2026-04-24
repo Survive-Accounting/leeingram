@@ -620,12 +620,50 @@ interface DemoScreenProps {
   chapters: Chapter[];
   loading: boolean;
   onChange: () => void;
+  onGetStartedClick?: () => void;
 }
 
-function DemoScreen({ courseName, chapters, loading, onChange }: DemoScreenProps) {
+interface DemoProblem {
+  id: string;
+  source_ref: string | null;
+  source_number: string | null;
+  problem_title: string | null;
+}
+
+interface DemoProblemDetail {
+  survive_problem_text: string | null;
+  problem_title: string | null;
+  instruction_1: string | null;
+  instruction_2: string | null;
+  instruction_3: string | null;
+  instruction_4: string | null;
+  instruction_5: string | null;
+  survive_solution_text: string | null;
+  survive_solution_json: any;
+}
+
+const DEMO_TYPE_PREFIXES: Record<DemoAssetType, string[]> = {
+  BE: ["BE", "QS"],
+  EX: ["E"],
+  P: ["P"],
+};
+
+const DEMO_TYPE_LABELS: Record<DemoAssetType, string> = {
+  BE: "brief exercises",
+  EX: "exercises",
+  P: "problems",
+};
+
+function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick }: DemoScreenProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<DemoAssetType>("BE");
+  const [problems, setProblems] = useState<DemoProblem[]>([]);
+  const [problemsLoading, setProblemsLoading] = useState(false);
+  const [selectedProblemId, setSelectedProblemId] = useState<string | null>(null);
+  const [problemDetail, setProblemDetail] = useState<DemoProblemDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [solutionOpen, setSolutionOpen] = useState(false);
 
   const selectedChapter = chapters.find((c) => c.id === selectedChapterId) ?? null;
 
@@ -633,7 +671,96 @@ function DemoScreen({ courseName, chapters, loading, onChange }: DemoScreenProps
   useEffect(() => {
     setSelectedChapterId(null);
     setActiveType("BE");
+    setSelectedProblemId(null);
+    setProblemDetail(null);
   }, [courseName]);
+
+  // Reset problem selection when chapter or type changes
+  useEffect(() => {
+    setSelectedProblemId(null);
+    setProblemDetail(null);
+    setSolutionOpen(false);
+  }, [selectedChapterId, activeType]);
+
+  // Fetch problems when chapter or type changes
+  useEffect(() => {
+    if (!selectedChapter) {
+      setProblems([]);
+      setProblemsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setProblemsLoading(true);
+    (async () => {
+      const prefixes = DEMO_TYPE_PREFIXES[activeType];
+      // Use ilike OR for prefix matching on source_ref
+      let query = (supabase as any)
+        .from("teaching_assets")
+        .select("id, source_ref, source_number, problem_title")
+        .eq("chapter_id", selectedChapter.id)
+        .not("asset_approved_at", "is", null)
+        .order("source_ref", { ascending: true })
+        .limit(20);
+
+      const orFilter = prefixes.map((p) => `source_ref.ilike.${p}%`).join(",");
+      query = query.or(orFilter);
+
+      const { data, error } = await query;
+      if (cancelled) return;
+      if (error) {
+        console.error("[demo] problems fetch error", error);
+        setProblems([]);
+      } else {
+        // Filter strictly by prefix (so "E" doesn't match nothing weird, "P" excludes BE/QS already by .or)
+        const filtered = ((data ?? []) as DemoProblem[]).filter((row) => {
+          const ref = (row.source_ref ?? "").toUpperCase();
+          if (activeType === "BE") return ref.startsWith("BE") || ref.startsWith("QS");
+          if (activeType === "EX") return ref.startsWith("E") && !ref.startsWith("EX");
+          if (activeType === "P") return ref.startsWith("P") && !ref.startsWith("PR");
+          return false;
+        });
+        setProblems(filtered);
+      }
+      setProblemsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedChapter?.id, activeType]);
+
+  // Fetch problem detail when selected
+  useEffect(() => {
+    if (!selectedProblemId) {
+      setProblemDetail(null);
+      setDetailLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setDetailLoading(true);
+    setSolutionOpen(false);
+    const minDelay = new Promise((r) => setTimeout(r, 600));
+    (async () => {
+      const { data, error } = await (supabase as any)
+        .from("teaching_assets")
+        .select(
+          "survive_problem_text, problem_title, instruction_1, instruction_2, instruction_3, instruction_4, instruction_5, survive_solution_text, survive_solution_json"
+        )
+        .eq("id", selectedProblemId)
+        .maybeSingle();
+      await minDelay;
+      if (cancelled) return;
+      if (error) {
+        console.error("[demo] problem detail error", error);
+        setProblemDetail(null);
+      } else {
+        setProblemDetail((data ?? null) as DemoProblemDetail | null);
+      }
+      setDetailLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedProblemId]);
 
   const typePills: { key: DemoAssetType; label: string }[] = [
     { key: "BE", label: "Brief Exercises" },
