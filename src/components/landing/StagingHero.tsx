@@ -30,9 +30,13 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
   const [imgLoaded, setImgLoaded] = useState(false);
 
   const handleSeeHowItWorks = () => {
-    const el = document.getElementById("exam-coming-up");
+    // Scroll to the demo / courses section.
+    const el =
+      document.getElementById("demo-section") ||
+      document.getElementById("courses-section") ||
+      document.getElementById("exam-coming-up");
     if (el) {
-      const top = el.getBoundingClientRect().top + window.scrollY;
+      const top = el.getBoundingClientRect().top + window.scrollY - 24;
       window.scrollTo({ top, behavior: "smooth" });
     }
   };

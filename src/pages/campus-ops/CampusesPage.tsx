@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Plus, ExternalLink } from "lucide-react";
 import CampusDetailModal from "@/components/campus-ops/CampusDetailModal";
 
 interface CampusRow {
@@ -73,6 +73,7 @@ export default function CampusesPage() {
                 <TableHead className="text-center">Students</TableHead>
                 <TableHead className="text-center">Status</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead className="text-center">Landing</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -93,6 +94,17 @@ export default function CampusesPage() {
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {new Date(c.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <a
+                      href={`/campus/${c.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                    >
+                      View <ExternalLink className="w-3 h-3" />
+                    </a>
                   </TableCell>
                 </TableRow>
               ))}

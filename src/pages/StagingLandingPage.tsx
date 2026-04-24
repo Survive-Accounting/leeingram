@@ -17,7 +17,7 @@ import StagingEmailPromptModal, { type CelebrationData } from "@/components/land
 import StagingGetStartedModal from "@/components/landing/StagingGetStartedModal";
 import StagingFinalCtaSection from "@/components/landing/StagingFinalCtaSection";
 import type { CtaCourse } from "@/components/landing/StagingCtaModal";
-import { useEmailGate } from "@/contexts/EmailGateContext";
+// (EmailGate context kept available globally for other surfaces)
 
 const COURSES: CtaCourse[] = [
   {
@@ -58,7 +58,7 @@ const COURSES: CtaCourse[] = [
 
 export default function StagingLandingPage() {
   const navigate = useNavigate();
-  const { requestAccess } = useEmailGate();
+  // Founding-student / non-edu flow handled by StagingEmailPromptModal directly.
   const contactRef = useRef<HTMLDivElement>(null);
   const coursesRef = useRef<HTMLDivElement>(null);
   const { trackPageView, trackEvent } = useEventTracking();
@@ -67,6 +67,7 @@ export default function StagingLandingPage() {
   const [pendingCourse, setPendingCourse] = useState<CtaCourse | null>(null);
   const [pendingChapterNumber, setPendingChapterNumber] = useState<number | null>(null);
   const [pendingChapterName, setPendingChapterName] = useState<string | null>(null);
+  const [pendingDestination, setPendingDestination] = useState<"preview" | "checkout">("preview");
   const [emailPromptOpen, setEmailPromptOpen] = useState(false);
   const [emailPromptIntent, setEmailPromptIntent] = useState<"default" | "pricing">("default");
   const [emailPromptLoading, setEmailPromptLoading] = useState(false);
@@ -152,11 +153,32 @@ export default function StagingLandingPage() {
         /* non-blocking */
       }
 
-      // Ole Miss skips the founding-student modal entirely — straight to preview.
+      // Build destination URL based on pendingDestination
+      const buildPath = (campusSlug: string, n?: number) => {
+        if (pendingDestination === "checkout") {
+          const params = new URLSearchParams({
+            campus: campusSlug,
+            course: course.slug,
+            email: trimmed,
+          });
+          if (n != null) params.set("n", String(n));
+          return `/get-access?${params.toString()}`;
+        }
+        const chapterSuffix = pendingChapterNumber != null ? `/${pendingChapterNumber}` : "";
+        return `/campus/${campusSlug}/${course.slug}${chapterSuffix}`;
+      };
+
+      // Ole Miss skips the founding-student modal entirely.
       if (data?.campus_slug === "ole-miss") {
         setEmailPromptOpen(false);
-        const chapterSuffix = pendingChapterNumber != null ? `/${pendingChapterNumber}` : "";
-        navigate(`/campus/${data.campus_slug}/${course.slug}${chapterSuffix}`);
+        navigate(buildPath("ole-miss", data?.student_number));
+        return null;
+      }
+
+      // Checkout intent: skip in-modal celebration; show it on /get-access instead.
+      if (pendingDestination === "checkout" && data?.campus_slug) {
+        setEmailPromptOpen(false);
+        navigate(buildPath(data.campus_slug, (data as CelebrationData)?.student_number));
         return null;
       }
 
@@ -169,11 +191,12 @@ export default function StagingLandingPage() {
     }
   };
 
-  /** Card / CTA click handler. */
+  /** Card / CTA click handler — preview destination. */
   const handleCardClick = async (course: CtaCourse) => {
     setPendingCourse(course);
     setPendingChapterNumber(null);
     setPendingChapterName(null);
+    setPendingDestination("preview");
     if (capturedEmail) {
       const data = await resolveEmail(capturedEmail, course);
       if (data) navigate(`/campus/${data.campus_slug}/${course.slug}`);
@@ -183,11 +206,35 @@ export default function StagingLandingPage() {
     }
   };
 
-  /** Chapter row click — same flow but routes to specific chapter. */
+  /** Get-access / Get-started CTA — checkout destination. */
+  const handleGetAccessClick = async (course: CtaCourse) => {
+    setPendingCourse(course);
+    setPendingChapterNumber(null);
+    setPendingChapterName(null);
+    setPendingDestination("checkout");
+    if (capturedEmail) {
+      const data = await resolveEmail(capturedEmail, course);
+      if (data) {
+        const params = new URLSearchParams({
+          campus: data.campus_slug,
+          course: course.slug,
+          email: capturedEmail,
+        });
+        if (data.student_number != null) params.set("n", String(data.student_number));
+        navigate(`/get-access?${params.toString()}`);
+      }
+    } else {
+      setEmailPromptIntent("pricing");
+      setEmailPromptOpen(true);
+    }
+  };
+
+  /** Chapter row click — preview destination. */
   const handleChapterClick = async (course: CtaCourse, chapterNumber: number, chapterName?: string) => {
     setPendingCourse(course);
     setPendingChapterNumber(chapterNumber);
     setPendingChapterName(chapterName ?? null);
+    setPendingDestination("preview");
     if (capturedEmail) {
       const data = await resolveEmail(capturedEmail, course);
       if (data) navigate(`/campus/${data.campus_slug}/${course.slug}/${chapterNumber}`);
@@ -200,6 +247,16 @@ export default function StagingLandingPage() {
   const handleContinue = (data: CelebrationData) => {
     if (!pendingCourse) return;
     setEmailPromptOpen(false);
+    if (pendingDestination === "checkout") {
+      const params = new URLSearchParams({
+        campus: data.campus_slug,
+        course: pendingCourse.slug,
+        email: capturedEmail,
+      });
+      if (data.student_number != null) params.set("n", String(data.student_number));
+      navigate(`/get-access?${params.toString()}`);
+      return;
+    }
     if (pendingChapterNumber != null) {
       navigate(`/campus/${data.campus_slug}/${pendingCourse.slug}/${pendingChapterNumber}`);
     } else {
@@ -216,24 +273,24 @@ export default function StagingLandingPage() {
 
       <StagingNavbar
         transparentOnTop
-        onCtaClick={() => requestAccess({ course: defaultCourse.slug })}
-        onPricingClick={() => requestAccess({ course: defaultCourse.slug })}
+        onCtaClick={() => handleGetAccessClick(defaultCourse)}
+        onPricingClick={() => handleGetAccessClick(defaultCourse)}
         onCoursesClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
       />
 
       <StagingHero
         liveCourse={defaultCourse}
         futureCourses={[]}
-        onLiveCourseClick={() => requestAccess({ course: defaultCourse.slug })}
+        onLiveCourseClick={() => handleGetAccessClick(defaultCourse)}
         onNotifyClick={() => handleCardClick(defaultCourse)}
-        onGetStartedClick={() => requestAccess({ course: defaultCourse.slug })}
+        onGetStartedClick={() => handleGetAccessClick(defaultCourse)}
       />
 
       <SocialProofStrip />
 
-      <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />
+      <StagingTestimonialsSection onCtaClick={() => handleGetAccessClick(defaultCourse)} />
 
-      <div ref={coursesRef}>
+      <div ref={coursesRef} id="demo-section">
         <StagingCoursesSection
           courses={COURSES}
           onCardClick={handleCardClick}
@@ -256,7 +313,7 @@ export default function StagingLandingPage() {
       />
 
       <StagingFinalCtaSection
-        onGetAccessClick={() => requestAccess({ course: defaultCourse.slug })}
+        onGetAccessClick={() => handleGetAccessClick(defaultCourse)}
         onTryDemoClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
       />
 
@@ -267,7 +324,7 @@ export default function StagingLandingPage() {
       <LandingFooter
         onScrollToCourses={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })}
         onScrollToContact={() => contactRef.current?.scrollIntoView({ behavior: "smooth" })}
-        onPricingClick={() => requestAccess({ course: defaultCourse.slug })}
+        onPricingClick={() => handleCardClick(defaultCourse)}
       />
 
       <StagingEmailPromptModal

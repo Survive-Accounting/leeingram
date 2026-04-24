@@ -210,6 +210,7 @@ const AppRoutes = () => {
         <Route path="/preview" element={<Preview />} />
         <Route path="/checkout/complete" element={<CheckoutComplete />} />
         <Route path="/checkout/cancelled" element={<CheckoutCancelled />} />
+        <Route path="/campus/:campusSlug" element={<StagingLandingPage />} />
         <Route path="/campus/:campusSlug/:courseSlug" element={<CampusLandingPage />} />
         <Route path="/campus/:campusSlug/:courseSlug/:chapterNumber" element={<CampusChapterPage />} />
         <Route path="/campus/:campusSlug/:courseSlug/:chapterNumber/:problemCode" element={<ProblemPreviewPage />} />

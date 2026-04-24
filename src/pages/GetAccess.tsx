@@ -44,10 +44,44 @@ function getShortSeasonLabel(stepsAhead: number): string {
   return `${isFirstHalf ? "Spring" : "Fall"} \u2019${yy}`;
 }
 
+function getFoundingTierCopy(n: number): string {
+  if (n <= 1) return "As a thank you — you get free access.";
+  if (n <= 5) return "As a thank you — you get access for $25.";
+  if (n <= 10) return "As a thank you — you get access for $50.";
+  if (n <= 25) return "You're in early — access is $100.";
+  if (n <= 50) return "You're in early — access is $125.";
+  if (n <= 100) return "Access is $150 for your campus.";
+  if (n <= 200) return "Access is $175 for your campus.";
+  return "Access is $250 for your campus.";
+}
+
 export default function GetAccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const emailParam = searchParams.get("email") || "";
+  const campusParam = searchParams.get("campus") || "";
+  const studentNumberParam = searchParams.get("n");
+  const studentNumber = studentNumberParam ? parseInt(studentNumberParam, 10) : null;
+  const [campusName, setCampusName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!campusParam) {
+      setCampusName(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("campuses")
+        .select("name")
+        .eq("slug", campusParam)
+        .maybeSingle();
+      if (!cancelled) setCampusName(data?.name ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [campusParam]);
 
   const [extraCount, setExtraCount] = useState(0);
   const [lifetimeUpgrade, setLifetimeUpgrade] = useState(false);
@@ -199,7 +233,7 @@ export default function GetAccess() {
         {
           body: {
             email: cleanEmail,
-            campus: "ole-miss",
+            campus: campusParam || "ole-miss",
             selectedPlan: "study_pass",
             amount: totalPrice,
             includedSemesters: selectedSemesters.map((s) => s.label),
@@ -267,6 +301,34 @@ export default function GetAccess() {
         onCtaClick={() => navigate("/staging")}
         onPricingClick={() => {}}
       />
+
+      {/* Founding-student celebration banner (top of checkout) */}
+      {studentNumber != null && campusName && campusParam !== "ole-miss" && (
+        <section className="px-4 sm:px-6 pt-8">
+          <div
+            className="max-w-[560px] mx-auto rounded-2xl px-5 py-4 text-center"
+            style={{
+              background: "linear-gradient(135deg, #FFF8E7 0%, #FFEFC4 100%)",
+              border: "1px solid #F4D58D",
+              boxShadow: "0 8px 24px rgba(206,17,38,0.08)",
+            }}
+          >
+            <div className="text-2xl mb-1" aria-hidden="true">🎉</div>
+            <div
+              className="text-[18px] sm:text-[20px] leading-tight"
+              style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+            >
+              You're student #{studentNumber} from {campusName}!
+            </div>
+            <div
+              className="mt-1 text-[13px] sm:text-[14px]"
+              style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}
+            >
+              {getFoundingTierCopy(studentNumber)}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Hero */}
       <section className="px-4 sm:px-6 pt-12 md:pt-20 pb-8 text-center relative">
