@@ -257,9 +257,9 @@ export default function GetAccess() {
                 })}
               </div>
 
-              {/* Add-semester button — fixed slot to prevent layout jumps */}
+              {/* Add-semester slot — becomes Lifetime upsell once all 4 semesters are added */}
               <div className="mt-3" style={{ minHeight: 40 }}>
-                {nextSemesterLabel && (
+                {nextSemesterLabel ? (
                   <button
                     type="button"
                     onClick={() => setExtraCount((c) => Math.min(c + 1, MAX_EXTRA_SEMESTERS))}
@@ -273,6 +273,31 @@ export default function GetAccess() {
                     + Add {nextSemesterLabel}{" "}
                     <span style={{ color: "#94A3B8", fontWeight: 500 }}>(+${EXTEND_PRICE})</span>
                   </button>
+                ) : (
+                  <label
+                    className="flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 animate-fade-in"
+                    style={{
+                      border: lifetimeUpgrade ? `1px solid ${NAVY}` : "1px dashed #CBD5E1",
+                      background: lifetimeUpgrade ? "rgba(20,33,61,0.04)" : "#fff",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={lifetimeUpgrade}
+                      onChange={(e) => setLifetimeUpgrade(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#14213D]"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: NAVY }}>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Upgrade to Lifetime Access
+                        <span style={{ color: "#64748B", fontWeight: 500 }}> (+${LIFETIME_UPGRADE_PRICE})</span>
+                      </div>
+                      <div className="text-[12px] mt-0.5" style={{ color: "#94A3B8" }}>
+                        Includes all future semesters
+                      </div>
+                    </div>
+                  </label>
                 )}
               </div>
             </div>
@@ -325,39 +350,10 @@ export default function GetAccess() {
               ) : (
                 <>
                   <ShoppingCart className="w-4 h-4" />
-                  Buy Access <span aria-hidden="true">→</span>
+                  Buy Study Pass <span aria-hidden="true">→</span>
                 </>
               )}
             </button>
-
-            {/* 4. Lifetime upgrade — only when all 4 semesters selected */}
-            {showLifetime && (
-              <label
-                className="flex items-start gap-3 mt-3 p-3 rounded-lg cursor-pointer transition-all duration-200 animate-fade-in"
-                style={{
-                  border: lifetimeUpgrade ? `1px solid ${NAVY}` : "1px solid #E2E8F0",
-                  background: lifetimeUpgrade ? "rgba(20,33,61,0.04)" : "#fff",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={lifetimeUpgrade}
-                  onChange={(e) => setLifetimeUpgrade(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#14213D]"
-                />
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: NAVY }}>
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Upgrade to Lifetime Access
-                    <span style={{ color: "#64748B", fontWeight: 500 }}> (+${LIFETIME_UPGRADE_PRICE})</span>
-                  </div>
-                  <div className="text-[12px] mt-0.5" style={{ color: "#94A3B8" }}>
-                    Includes all future semesters
-                  </div>
-                </div>
-              </label>
-            )}
 
             {checkoutError && (
               <div
