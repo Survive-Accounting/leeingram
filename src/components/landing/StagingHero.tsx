@@ -220,12 +220,13 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
 
           {/* Headline */}
           <h1
-            className="leading-[1.08] tracking-tight text-[36px] sm:text-[48px] md:text-[58px] hero-anim-headline"
+            className="leading-[1.08] tracking-tight text-[40px] md:text-[64px] hero-anim-headline"
             style={{
               fontFamily: "'DM Serif Display', serif",
               fontWeight: 400,
               color: "#FFFFFF",
-              maxWidth: 720,
+              maxWidth: 820,
+              textShadow: "0 2px 20px rgba(0,0,0,0.3)",
             }}
           >
             Accounting study tools that get you unstuck — fast.
@@ -235,11 +236,12 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           <p
             className="mt-5 hero-anim-sub"
             style={{
-              color: "rgba(255,255,255,0.75)",
+              color: "rgba(255,255,255,0.78)",
               fontFamily: "Inter, sans-serif",
               fontSize: "17px",
               lineHeight: 1.55,
               maxWidth: 600,
+              textShadow: "0 2px 20px rgba(0,0,0,0.3)",
             }}
           >
             Study tools for Intro &amp; Intermediate Accounting covering every chapter.
