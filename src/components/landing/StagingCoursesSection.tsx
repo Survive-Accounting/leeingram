@@ -207,35 +207,16 @@ export default function StagingCoursesSection({
 
       <div className="relative mx-auto max-w-[920px]" style={{ zIndex: 2 }}>
 
-        {/* Section header — was previously in StagingFeatureCardsSection */}
-        <div className="text-center mb-10 md:mb-14">
-          <h2
-            className="text-[28px] sm:text-[40px] md:text-[48px] font-bold leading-tight text-white"
-            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
-          >
-            {getFinalsCountdownText() ?? "Your next exam is coming up."}
-          </h2>
-          <p
-            className="mt-3 text-[15px] sm:text-[17px]"
-            style={{ color: "rgba(255,255,255,0.72)", fontFamily: "Inter, sans-serif" }}
-          >
-            Get exactly what you need to study smarter.
-          </p>
-        </div>
-
-        {/* "Try it yourself" eyebrow above laptop */}
-        <div className="text-center mb-3 md:mb-4">
-          <span
-            className="inline-block text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.18em]"
-            style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
-          >
-            Try it yourself
-          </span>
-        </div>
-
-        {/* Dropdown — rendered as a portal-like overlay above the laptop screen ONLY on mobile.
-            On desktop the dropdown lives INSIDE the laptop screen (rendered below in the off-state). */}
+        {/* Mobile-only dropdown (desktop dropdown lives inside the laptop screen) */}
         <div className="md:hidden relative" style={{ zIndex: 100 }}>
+          <div className="text-center mb-3">
+            <span
+              className="inline-block text-[11px] font-semibold uppercase tracking-[0.18em]"
+              style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
+            >
+              Try a demo
+            </span>
+          </div>
           <DropdownButton
             selected={selected}
             open={open}
@@ -282,8 +263,8 @@ export default function StagingCoursesSection({
                     100% { opacity: 1; }
                   }
                   @keyframes demoCursorBlink {
-                    0%, 50% { opacity: 1; }
-                    51%, 100% { opacity: 0; }
+                    0%, 45% { opacity: 1; }
+                    55%, 100% { opacity: 0.05; }
                   }
                   @keyframes demoIdleFadeUp {
                     0% { opacity: 0; transform: translateY(8px); }
@@ -294,8 +275,8 @@ export default function StagingCoursesSection({
                     margin-left: 4px;
                     color: #93C5FD;
                     font-weight: 300;
-                    animation: demoCursorBlink 1.1s steps(1, end) infinite;
-                    text-shadow: 0 0 8px rgba(147,197,253,0.6);
+                    animation: demoCursorBlink 1.6s ease-in-out infinite;
+                    text-shadow: 0 0 8px rgba(147,197,253,0.5);
                   }
                   .demo-idle-content > h2 {
                     opacity: 0;
@@ -392,11 +373,25 @@ export default function StagingCoursesSection({
                         </div>
                       )}
 
-                      {/* Idle / off state — headline + dropdown LIVE INSIDE the screen */}
+                      {/* Idle / off state — eyebrow + headline + dropdown LIVE INSIDE the screen */}
                       {powerPhase === "off" && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center px-8 demo-idle-content">
+                          {/* Faint radial glow behind text — "screen is on" feel */}
+                          <div
+                            className="absolute inset-0 pointer-events-none"
+                            style={{
+                              background:
+                                "radial-gradient(ellipse 55% 45% at 50% 45%, rgba(147,197,253,0.10) 0%, rgba(147,197,253,0.04) 40%, transparent 75%)",
+                            }}
+                          />
+                          <span
+                            className="relative text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] mb-3"
+                            style={{ color: "rgba(147,197,253,0.7)", fontFamily: "Inter, sans-serif" }}
+                          >
+                            Try a demo
+                          </span>
                           <h2
-                            className="text-center text-white leading-tight text-[22px] sm:text-[28px] md:text-[34px]"
+                            className="relative text-center text-white leading-tight text-[22px] sm:text-[28px] md:text-[34px]"
                             style={{
                               fontFamily: "'DM Serif Display', serif",
                               fontWeight: 400,
@@ -406,7 +401,7 @@ export default function StagingCoursesSection({
                             Which course are you studying?
                             <span className="demo-cursor" aria-hidden="true">_</span>
                           </h2>
-                          <div className="w-full max-w-[460px] mt-6 demo-dropdown-anim">
+                          <div className="relative w-full max-w-[460px] mt-4 demo-dropdown-anim">
                             <DropdownButton
                               selected={selected}
                               open={open}
