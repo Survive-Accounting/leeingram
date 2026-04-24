@@ -435,6 +435,99 @@ export default function StagingCoursesSection({
   );
 }
 
+// ── DropdownButton (used both inside the laptop screen and on mobile) ──
+interface DropdownButtonProps {
+  selected: Course | undefined;
+  open: boolean;
+  setOpen: (v: boolean | ((p: boolean) => boolean)) => void;
+  ordered: Course[];
+  setSelectedSlug: (slug: string) => void;
+}
+
+function DropdownButton({ selected, open, setOpen, ordered, setSelectedSlug }: DropdownButtonProps) {
+  return (
+    <div className="relative" style={{ zIndex: 100 }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full rounded-2xl px-5 py-4 flex items-center justify-between text-left transition-all hover:shadow-md"
+        style={{
+          background: "#fff",
+          borderLeft: `4px solid ${NAVY}`,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04)",
+          fontFamily: "Inter, sans-serif",
+        }}
+      >
+        <div className="flex flex-col">
+          {selected ? (
+            <>
+              <span className="text-[18px] sm:text-[20px] font-bold leading-tight" style={{ color: NAVY }}>
+                {selected.name}
+              </span>
+              {SUBTEXT_BY_SLUG[selected.slug] && (
+                <span className="text-[13px] mt-0.5" style={{ color: "#6B7280" }}>
+                  {SUBTEXT_BY_SLUG[selected.slug]}
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="text-[17px] sm:text-[19px] font-semibold leading-tight" style={{ color: "#9CA3AF" }}>
+              Select your course →
+            </span>
+          )}
+        </div>
+        <ChevronDown
+          className="w-5 h-5 flex-shrink-0 transition-transform"
+          style={{ color: NAVY, transform: open ? "rotate(180deg)" : "none" }}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="absolute left-0 right-0 mt-2 rounded-2xl overflow-hidden"
+          style={{
+            background: "#fff",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.06)",
+            zIndex: 110,
+          }}
+        >
+          {ordered.map((c) => {
+            const color = COLOR_BY_SLUG[c.slug];
+            return (
+              <button
+                key={c.slug}
+                onClick={() => {
+                  setSelectedSlug(c.slug);
+                  setOpen(false);
+                }}
+                onMouseEnter={(e) => {
+                  if (color) e.currentTarget.style.background = color.tint;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+                className="w-full px-5 py-3 text-left transition-colors"
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  borderLeft: `4px solid ${color?.border ?? "transparent"}`,
+                }}
+              >
+                <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
+                  {c.name}
+                </div>
+                {SUBTEXT_BY_SLUG[c.slug] && (
+                  <div className="text-[12px]" style={{ color: "#6B7280" }}>
+                    {SUBTEXT_BY_SLUG[c.slug]}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── DemoScreen (renders inside the laptop screen) ──
 interface DemoScreenProps {
   courseName: string;
