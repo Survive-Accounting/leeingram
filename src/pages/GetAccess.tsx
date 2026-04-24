@@ -271,32 +271,42 @@ export default function GetAccess() {
                 0%, 100% { opacity: 0; }
                 30%, 70% { opacity: 1; }
               }
-              @keyframes priceShimmer {
+              @keyframes priceShimmerOnce {
                 0% { background-position: 200% 0; }
                 100% { background-position: -200% 0; }
               }
               .price-shimmer {
-                background-image: linear-gradient(100deg, ${NAVY} 0%, ${NAVY} 40%, rgba(255,255,255,0.95) 50%, ${NAVY} 60%, ${NAVY} 100%);
+                background-image: linear-gradient(100deg, ${NAVY} 0%, ${NAVY} 42%, rgba(255,255,255,0.5) 50%, ${NAVY} 58%, ${NAVY} 100%);
                 background-size: 200% 100%;
                 background-position: 200% 0;
                 -webkit-background-clip: text;
                 background-clip: text;
                 -webkit-text-fill-color: transparent;
                 color: transparent;
-                animation: priceShimmer 1.6s ease-out 0.4s 1 both;
+                animation: priceShimmerOnce 1.4s ease-out 0.3s 1 forwards;
               }
               .price-shimmer-discount {
-                background-image: linear-gradient(100deg, #16A34A 0%, #16A34A 40%, rgba(255,255,255,0.95) 50%, #16A34A 60%, #16A34A 100%);
+                background-image: linear-gradient(100deg, #16A34A 0%, #16A34A 42%, rgba(255,255,255,0.5) 50%, #16A34A 58%, #16A34A 100%);
                 background-size: 200% 100%;
                 background-position: 200% 0;
                 -webkit-background-clip: text;
                 background-clip: text;
                 -webkit-text-fill-color: transparent;
                 color: transparent;
-                animation: priceShimmer 1.6s ease-out 0.4s 1 both;
+                animation: priceShimmerOnce 1.4s ease-out 0.3s 1 forwards;
+              }
+              .price-shimmer.shimmer-done, .price-shimmer-discount.shimmer-done {
+                animation: none;
+                -webkit-text-fill-color: currentColor;
+                color: ${NAVY};
+                background-image: none;
+              }
+              .price-shimmer-discount.shimmer-done {
+                color: #16A34A;
               }
               @media (prefers-reduced-motion: reduce) {
-                .price-shimmer, .price-shimmer-discount { animation: none; -webkit-text-fill-color: currentColor; }
+                .price-shimmer, .price-shimmer-discount { animation: none; -webkit-text-fill-color: currentColor; color: ${NAVY}; background-image: none; }
+                .price-shimmer-discount { color: #16A34A; }
               }
             `}</style>
 
@@ -331,18 +341,18 @@ export default function GetAccess() {
               <div className="flex flex-col items-end shrink-0">
                 <div
                   key={`pulse-${pulseKey}`}
-                  className="relative rounded-2xl px-5 py-3.5 flex flex-col items-center justify-center animate-[pricePulse_400ms_ease-out] motion-reduce:animate-none"
+                  className="relative rounded-2xl px-4 py-2.5 flex flex-col items-center justify-center animate-[pricePulse_400ms_ease-out] motion-reduce:animate-none"
                   style={{
                     background: "#F0F6FF",
                     border: `1px solid ${NAVY}`,
-                    boxShadow: "0 10px 24px rgba(20,33,61,0.14), 0 2px 6px rgba(20,33,61,0.06)",
-                    minWidth: 160,
-                    transform: "translateY(-5px)",
+                    boxShadow: "0 8px 20px rgba(20,33,61,0.12), 0 2px 6px rgba(20,33,61,0.05)",
+                    minWidth: 124,
+                    transform: "translateY(-3px)",
                   }}
                 >
                   {hasDiscount && (
                     <div
-                      className="text-[13px] line-through leading-none mb-1"
+                      className="text-[12px] line-through leading-none mb-0.5"
                       style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
                     >
                       ${subtotal}
@@ -350,20 +360,29 @@ export default function GetAccess() {
                   )}
                   <div
                     key={`shimmer-${totalPrice}`}
-                    className={`font-bold leading-none ${hasDiscount ? "price-shimmer-discount" : "price-shimmer"}`}
+                    className={`font-bold leading-none shimmer-done ${hasDiscount ? "price-shimmer-discount" : "price-shimmer"}`}
                     style={{
-                      fontSize: 68,
+                      fontSize: 44,
                       letterSpacing: "-0.03em",
                       fontFamily: "Inter, sans-serif",
+                    }}
+                    ref={(el) => {
+                      if (!el) return;
+                      // Remove shimmer-done so animation runs, then re-add after it completes
+                      el.classList.remove("shimmer-done");
+                      const t = setTimeout(() => el.classList.add("shimmer-done"), 1750);
+                      // store timeout on element for cleanup
+                      (el as any)._shimmerTimeout && clearTimeout((el as any)._shimmerTimeout);
+                      (el as any)._shimmerTimeout = t;
                     }}
                   >
                     ${totalPrice}
                   </div>
                   <div
-                    className="mt-2 text-[12px] font-medium"
+                    className="mt-1 text-[10px] font-semibold uppercase tracking-wider"
                     style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
                   >
-                    one-time
+                    one-time payment
                   </div>
 
                   {/* Floating positive delta toasts only */}
@@ -451,23 +470,23 @@ export default function GetAccess() {
             </div>
 
             {/* Product section */}
-            <div className="mt-7">
+            <div className="mt-4">
               <div
-                className="text-[16px] font-semibold"
-                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                className="text-[20px] sm:text-[22px] leading-tight"
+                style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
               >
                 Survive Study Pass
               </div>
               {email.trim() && (
                 <p
-                  className="mt-1 text-[12px]"
+                  className="mt-1.5 text-[12px]"
                   style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
                 >
                   Purchasing for: <span style={{ color: "#64748B" }}>{email.trim()}</span>
                 </p>
               )}
               <p
-                className="mt-0.5 text-[12px]"
+                className="mt-1 text-[12px]"
                 style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
               >
                 🔒 One account per student
@@ -475,47 +494,52 @@ export default function GetAccess() {
             </div>
 
             {/* Access Period */}
-            <div className="mt-6" style={{ fontFamily: "Inter, sans-serif" }}>
+            <div className="mt-7" style={{ fontFamily: "Inter, sans-serif" }}>
               <div
-                className="text-[12px] font-semibold uppercase tracking-wider"
-                style={{ color: "#64748B" }}
+                className="text-[20px] sm:text-[22px] leading-tight"
+                style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
               >
-                Access Period
+                Access Period:{" "}
+                <span style={{ color: NAVY }}>
+                  {selectedSemesters.map((s) => s.label).join(" · ")}
+                </span>
               </div>
 
-              <div
-                className="mt-2 flex flex-wrap items-center gap-1.5"
-                style={{ minHeight: 36 }}
-              >
-                {selectedSemesters.map(({ idx, label }) => {
-                  const isBase = idx === 0;
-                  const isLastAdded = idx === extraCount && extraCount > 0;
-                  return (
-                    <span
-                      key={label}
-                      className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold animate-fade-in"
-                      style={{
-                        background: isBase ? "rgba(20,33,61,0.06)" : "#fff",
-                        border: "1px solid #CBD5E1",
-                        color: NAVY,
-                      }}
-                    >
-                      {label}
-                      {isLastAdded && (
-                        <button
-                          type="button"
-                          aria-label={`Remove ${label}`}
-                          onClick={() => setExtraCount((c) => Math.max(0, c - 1))}
-                          className="rounded-full hover:bg-slate-100 transition-colors p-0.5"
-                          style={{ color: "#94A3B8" }}
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      )}
-                    </span>
-                  );
-                })}
-              </div>
+              {/* Pills row — only shown when more than 1 semester is in play */}
+              {extraCount > 0 && (
+                <div
+                  className="mt-2 flex flex-wrap items-center gap-1.5"
+                >
+                  {selectedSemesters.map(({ idx, label }) => {
+                    const isBase = idx === 0;
+                    const isLastAdded = idx === extraCount && extraCount > 0;
+                    return (
+                      <span
+                        key={label}
+                        className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold animate-fade-in"
+                        style={{
+                          background: isBase ? "rgba(20,33,61,0.06)" : "#fff",
+                          border: "1px solid #CBD5E1",
+                          color: NAVY,
+                        }}
+                      >
+                        {label}
+                        {isLastAdded && (
+                          <button
+                            type="button"
+                            aria-label={`Remove ${label}`}
+                            onClick={() => setExtraCount((c) => Math.max(0, c - 1))}
+                            className="rounded-full hover:bg-slate-100 transition-colors p-0.5"
+                            style={{ color: "#94A3B8" }}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Default state: simple auto-renew checkbox (only when no extras added) */}
               {extraCount === 0 && (
@@ -586,7 +610,7 @@ export default function GetAccess() {
                       className="mt-2 text-[12px] text-center font-medium animate-fade-in"
                       style={{ color: "#16A34A", fontFamily: "Inter, sans-serif" }}
                     >
-                      ✓ You're saving vs paying later
+                      ✓ You're saving 40% with prepayment
                     </div>
                   )}
 
@@ -614,6 +638,24 @@ export default function GetAccess() {
                         </div>
                       </div>
                     </label>
+                  )}
+
+                  {/* Reset link */}
+                  {(extraCount > 0 || lifetimeUpgrade) && (
+                    <div className="mt-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExtraCount(0);
+                          setLifetimeUpgrade(false);
+                          setPlanAheadOpen(false);
+                        }}
+                        className="text-[11px] underline hover:no-underline animate-fade-in"
+                        style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                      >
+                        Reset to single semester
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
