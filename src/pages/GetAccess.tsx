@@ -295,54 +295,7 @@ export default function GetAccess() {
               🔒 One account per student
             </p>
 
-            {/* Single compact product block — price-led */}
-            <div className="mb-5">
-              <div
-                className="rounded-lg px-5 py-4"
-                style={{
-                  background: "#F8FAFC",
-                  border: "1px solid #E2E8F0",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
-                      Semester Study Pass
-                    </div>
-                    <div className="mt-1 text-[12px]" style={{ color: "#94A3B8" }}>
-                      {accessPeriodLabel}
-                    </div>
-                  </div>
-
-                  <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                    <div
-                      className="font-bold leading-none"
-                      style={{ color: NAVY, fontSize: 36, letterSpacing: "-0.02em" }}
-                    >
-                      ${totalPrice}
-                      <span className="ml-1 text-[13px] font-medium" style={{ color: "#64748B", letterSpacing: 0 }}>
-                        total
-                      </span>
-                    </div>
-                    <div className="text-[11px]" style={{ color: "#94A3B8" }}>
-                      One-time payment • No subscription
-                    </div>
-                    {addedAmount > 0 && (
-                      <div
-                        key={`added-${addedAmount}`}
-                        className="text-[12px] font-semibold animate-fade-in"
-                        style={{ color: "#16A34A" }}
-                      >
-                        +${addedAmount} added
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Courses Included — flat pill list */}
+            {/* 1. Courses Included — top of card */}
             <div
               className="mb-4 rounded-lg p-4"
               style={{
@@ -413,10 +366,73 @@ export default function GetAccess() {
               </div>
             </div>
 
-            {/* Lifetime upgrade — only when all semesters selected */}
+            {/* 2. Semester Study Pass — lighter weight, info only */}
+            <div
+              className="mb-5 flex items-baseline justify-between gap-3"
+              style={{ fontFamily: "Inter, sans-serif" }}
+            >
+              <div className="text-[13px] font-medium" style={{ color: "#64748B" }}>
+                Semester Study Pass
+              </div>
+              <div className="text-[12px]" style={{ color: "#94A3B8" }}>
+                {accessPeriodLabel}
+              </div>
+            </div>
+
+            {/* 3. Pricing — directly above CTA */}
+            <div
+              className="mb-3 flex flex-col items-center text-center"
+              style={{ fontFamily: "Inter, sans-serif" }}
+            >
+              <div
+                className="font-bold leading-none"
+                style={{ color: NAVY, fontSize: 40, letterSpacing: "-0.02em" }}
+              >
+                ${totalPrice}
+                <span className="ml-1.5 text-[14px] font-medium" style={{ color: "#64748B", letterSpacing: 0 }}>
+                  total
+                </span>
+              </div>
+              <div className="mt-1.5 text-[12px]" style={{ color: "#94A3B8" }}>
+                One-time payment
+              </div>
+              {addedAmount > 0 && (
+                <div
+                  key={`added-${addedAmount}`}
+                  className="mt-1 text-[12px] font-semibold animate-fade-in"
+                  style={{ color: "#16A34A" }}
+                >
+                  +${addedAmount} added
+                </div>
+              )}
+            </div>
+
+            {/* 4. CTA — directly below pricing */}
+            <button
+              onClick={handleCheckout}
+              disabled={checkoutLoading}
+              className="w-full rounded-xl py-4 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              style={{
+                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+                fontFamily: "Inter, sans-serif",
+                boxShadow:
+                  "inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px rgba(206,17,38,0.35)",
+              }}
+            >
+              {checkoutLoading ? (
+                "Redirecting to secure checkout..."
+              ) : (
+                <>
+                  <ShoppingCart className="w-4 h-4" />
+                  Buy Access <span aria-hidden="true">→</span>
+                </>
+              )}
+            </button>
+
+            {/* 5. Lifetime upgrade — below button */}
             {showLifetime && (
               <label
-                className="flex items-start gap-3 mb-3 p-3 rounded-lg cursor-pointer transition-all duration-200 animate-fade-in"
+                className="flex items-start gap-3 mt-3 p-3 rounded-lg cursor-pointer transition-all duration-200 animate-fade-in"
                 style={{
                   border: lifetimeUpgrade ? `1px solid ${NAVY}` : "1px solid #E2E8F0",
                   background: lifetimeUpgrade ? "rgba(20,33,61,0.04)" : "#fff",
@@ -441,31 +457,6 @@ export default function GetAccess() {
                 </div>
               </label>
             )}
-
-            <div className="mb-3" />
-
-
-            {/* Section 4 — CTA */}
-            <button
-              onClick={handleCheckout}
-              disabled={checkoutLoading}
-              className="w-full rounded-xl py-4 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              style={{
-                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-                fontFamily: "Inter, sans-serif",
-                boxShadow:
-                  "inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px rgba(206,17,38,0.35)",
-              }}
-            >
-              {checkoutLoading ? (
-                "Redirecting to secure checkout..."
-              ) : (
-                <>
-                  <ShoppingCart className="w-4 h-4" />
-                  Buy Access <span aria-hidden="true">→</span>
-                </>
-              )}
-            </button>
 
             {checkoutError && (
               <div
