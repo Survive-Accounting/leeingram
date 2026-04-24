@@ -10,7 +10,6 @@ import { useEmailGate } from "@/contexts/EmailGateContext";
 import {
   getCampusProgression,
   resolveCourseSlug,
-  formatCourseLabel,
   type CourseSlug,
 } from "@/lib/campusProgressions";
 
@@ -90,7 +89,7 @@ export default function GetAccess() {
   const campusName = progression.campusName;
   const resolvedCourse = progression.courses.find((c) => c.slug === resolvedCourseSlug)!;
   const courseCode = resolvedCourse.code;
-  const courseLabel = formatCourseLabel(resolvedCourse);
+  
 
   // Index of the resolved course in the campus progression.
   const startIdx = progression.courses.findIndex((c) => c.slug === resolvedCourseSlug);
@@ -100,7 +99,7 @@ export default function GetAccess() {
   const maxAdditional = Math.max(0, progression.courses.length - 1 - startIdx);
   const [extraCount, setExtraCount] = useState(0);
   const [lifetimeUpgrade, setLifetimeUpgrade] = useState(false);
-  const [includesOpen, setIncludesOpen] = useState(false);
+  
 
   // The full list of selected courses (base + extras).
   const selectedCourses = useMemo(() => {
