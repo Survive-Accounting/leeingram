@@ -165,7 +165,18 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           </div>
 
           {/* RIGHT — Product visual */}
-          <div className="flex-1 w-full flex items-center justify-center" style={{ minHeight: 400 }}>
+          <div className="flex-1 w-full flex flex-col items-center justify-center" style={{ minHeight: 460 }}>
+            <div
+              className="hero-anim-cards-label w-full text-center md:text-left mb-4"
+              style={{ maxWidth: 460 }}
+            >
+              <span
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+              >
+                What you'll use →
+              </span>
+            </div>
             <div
               className="relative w-full"
               style={{ maxWidth: 460, height: 440 }}
@@ -181,141 +192,72 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 }}
               />
 
-              {/* Card 1 — Practice problem */}
+              {/* Card 1 — Journal Entries / Flashcards */}
               <div
                 className="product-card product-card-1 absolute"
                 style={{
                   top: 0,
                   left: 0,
-                  width: 280,
+                  width: 240,
                   background: "#FFFFFF",
-                  borderRadius: 12,
-                  padding: 16,
+                  borderRadius: 14,
+                  padding: "22px 20px",
                   border: "1px solid #E2E8F0",
                   boxShadow: "0 12px 32px rgba(15,23,42,0.12), 0 4px 8px rgba(15,23,42,0.06)",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "'DM Serif Display', serif",
                 }}
               >
-                <div className="flex items-center justify-between mb-2.5">
-                  <span
-                    className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded"
-                    style={{ color: RED, background: "rgba(206,17,38,0.08)" }}
-                  >
-                    Practice
-                  </span>
-                  <span className="text-[10px] font-medium" style={{ color: "#94A3B8" }}>
-                    BE13.4
-                  </span>
+                <div className="text-[22px] leading-tight" style={{ color: NAVY }}>
+                  Journal Entries
                 </div>
-                <p className="text-[12.5px] leading-snug" style={{ color: "#1E293B" }}>
-                  On Jan 1, Survive Co. issued <strong>$500,000</strong> of 6%, 10-year bonds at <strong>98</strong>. Record the entry.
-                </p>
-                <div
-                  className="mt-3 pt-3 border-t flex items-center justify-between"
-                  style={{ borderColor: "#F1F5F9" }}
-                >
-                  <span className="text-[10.5px] font-medium" style={{ color: "#64748B" }}>
-                    Try it →
-                  </span>
-                  <div className="flex gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#16A34A" }} />
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#E2E8F0" }} />
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#E2E8F0" }} />
-                  </div>
+                <div className="mt-2 text-[15px]" style={{ color: RED, fontFamily: "Inter, sans-serif", fontWeight: 600 }}>
+                  Flashcards
                 </div>
               </div>
 
-              {/* Card 2 — Explanation */}
+              {/* Card 2 — Practice Problems / Formulas */}
               <div
                 className="product-card product-card-2 absolute"
                 style={{
-                  top: 130,
+                  top: 140,
                   right: 0,
-                  width: 280,
+                  width: 250,
                   background: NAVY,
-                  borderRadius: 12,
-                  padding: 16,
+                  borderRadius: 14,
+                  padding: "22px 20px",
                   border: "1px solid rgba(255,255,255,0.08)",
                   boxShadow: "0 16px 40px rgba(20,33,61,0.35), 0 4px 8px rgba(20,33,61,0.2)",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "'DM Serif Display', serif",
                 }}
               >
-                <div className="flex items-center gap-2 mb-2.5">
-                  <span
-                    className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold"
-                    style={{ background: RED, color: "white" }}
-                  >
-                    ✓
-                  </span>
-                  <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.7)" }}>
-                    Explanation
-                  </span>
+                <div className="text-[22px] leading-tight" style={{ color: "#FFFFFF" }}>
+                  Practice Problems
                 </div>
-                <table className="w-full text-[11.5px]" style={{ color: "white" }}>
-                  <tbody>
-                    <tr>
-                      <td className="py-0.5">Cash</td>
-                      <td className="py-0.5 text-right" style={{ color: "#86EFAC" }}>490,000</td>
-                      <td className="py-0.5 text-right opacity-50">—</td>
-                    </tr>
-                    <tr>
-                      <td className="py-0.5 pl-3">Discount on B/P</td>
-                      <td className="py-0.5 text-right" style={{ color: "#86EFAC" }}>10,000</td>
-                      <td className="py-0.5 text-right opacity-50">—</td>
-                    </tr>
-                    <tr>
-                      <td className="py-0.5 pl-6 italic" style={{ color: "rgba(255,255,255,0.7)" }}>Bonds Payable</td>
-                      <td className="py-0.5 text-right opacity-50">—</td>
-                      <td className="py-0.5 text-right" style={{ color: "#FCA5A5" }}>500,000</td>
-                    </tr>
-                  </tbody>
-                </table>
-                <p
-                  className="mt-2.5 pt-2.5 text-[10.5px] leading-relaxed border-t"
-                  style={{ color: "rgba(255,255,255,0.65)", borderColor: "rgba(255,255,255,0.1)" }}
-                >
-                  Issued at 98 → discount of 2% × $500K = $10K
-                </p>
+                <div className="mt-2 text-[15px]" style={{ color: "#FCA5A5", fontFamily: "Inter, sans-serif", fontWeight: 600 }}>
+                  Formulas
+                </div>
               </div>
 
-              {/* Card 3 — Flashcard */}
+              {/* Card 3 — Cram Videos */}
               <div
                 className="product-card product-card-3 absolute"
                 style={{
                   bottom: 0,
                   left: 30,
-                  width: 240,
+                  width: 250,
                   background: "#FFFFFF",
-                  borderRadius: 12,
-                  padding: 18,
+                  borderRadius: 14,
+                  padding: "22px 20px",
                   border: "1px solid #E2E8F0",
                   boxShadow: "0 12px 32px rgba(15,23,42,0.12), 0 4px 8px rgba(15,23,42,0.06)",
-                  fontFamily: "Inter, sans-serif",
-                  textAlign: "center",
+                  fontFamily: "'DM Serif Display', serif",
                 }}
               >
-                <div
-                  className="text-[9.5px] font-bold uppercase tracking-[0.16em] mb-2"
-                  style={{ color: "#94A3B8" }}
-                >
-                  Flashcard
+                <div className="text-[22px] leading-tight" style={{ color: NAVY }}>
+                  Cram Videos
                 </div>
-                <div
-                  className="text-[15px] leading-tight"
-                  style={{ fontFamily: "'DM Serif Display', serif", color: NAVY }}
-                >
-                  Carrying Value of Bond
-                </div>
-                <div
-                  className="mt-2 text-[12px] font-mono"
-                  style={{ color: RED }}
-                >
-                  Face − Discount + Premium
-                </div>
-                <div className="mt-3 flex justify-center gap-1.5">
-                  <span className="w-6 h-1 rounded-full" style={{ background: RED }} />
-                  <span className="w-2 h-1 rounded-full" style={{ background: "#E2E8F0" }} />
-                  <span className="w-2 h-1 rounded-full" style={{ background: "#E2E8F0" }} />
+                <div className="mt-2 text-[13px]" style={{ color: "#64748B", fontFamily: "Inter, sans-serif", fontWeight: 500 }}>
+                  New content added weekly
                 </div>
               </div>
             </div>
