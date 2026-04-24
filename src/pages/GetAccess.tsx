@@ -302,6 +302,34 @@ export default function GetAccess() {
         onPricingClick={() => {}}
       />
 
+      {/* Founding-student celebration banner (top of checkout) */}
+      {studentNumber != null && campusName && campusParam !== "ole-miss" && (
+        <section className="px-4 sm:px-6 pt-8">
+          <div
+            className="max-w-[560px] mx-auto rounded-2xl px-5 py-4 text-center"
+            style={{
+              background: "linear-gradient(135deg, #FFF8E7 0%, #FFEFC4 100%)",
+              border: "1px solid #F4D58D",
+              boxShadow: "0 8px 24px rgba(206,17,38,0.08)",
+            }}
+          >
+            <div className="text-2xl mb-1" aria-hidden="true">🎉</div>
+            <div
+              className="text-[18px] sm:text-[20px] leading-tight"
+              style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+            >
+              You're student #{studentNumber} from {campusName}!
+            </div>
+            <div
+              className="mt-1 text-[13px] sm:text-[14px]"
+              style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}
+            >
+              {getFoundingTierCopy(studentNumber)}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Hero */}
       <section className="px-4 sm:px-6 pt-12 md:pt-20 pb-8 text-center relative">
         <h1
