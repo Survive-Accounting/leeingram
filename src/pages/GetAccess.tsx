@@ -13,7 +13,7 @@ const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
 const PRICE = 150;
-const AUTO_RENEW_DISCOUNT = 50;
+const AUTO_RENEW_DISCOUNT_PCT = 20; // 20% off when auto-renew is enabled
 const EXTEND_PRICE = 100;
 const LIFETIME_UPGRADE_PRICE = 150;
 const MAX_EXTRA_SEMESTERS = 3; // 4 total including base
