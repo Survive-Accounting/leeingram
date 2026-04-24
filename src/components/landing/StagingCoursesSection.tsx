@@ -256,6 +256,8 @@ export default function StagingCoursesSection({
           const innerContent = selected ? (
             <DemoScreen
               courseName={selected.name}
+              chapters={chapters}
+              loading={loading}
               onChange={() => {
                 setSelectedSlug("");
                 setOpen(true);
