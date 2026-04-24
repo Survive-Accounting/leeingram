@@ -45,7 +45,7 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="w-[calc(100%-2rem)] sm:max-w-[520px] max-h-[90vh] overflow-y-auto p-0 border-0"
+        className="w-[calc(100%-2rem)] sm:max-w-[600px] max-h-[90vh] overflow-y-auto p-0 border-0"
         style={{ borderRadius: 16, background: "#14213D" }}
       >
         <DialogHeader className="sr-only">
