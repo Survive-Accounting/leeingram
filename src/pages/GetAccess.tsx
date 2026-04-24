@@ -21,28 +21,29 @@ const PRICE = 99;
 const EXTEND_PRICE = 50;
 
 /**
- * Semester access windows: renew Jan 1 (→ Jun 30) and Jul 1 (→ Dec 31).
- * Returns short format like "Jun 30".
+ * Returns the access end date for the Nth semester from now.
+ * Semesters run Jan 1 → Jun 30 and Jul 1 → Dec 31.
+ * stepsAhead = 0 → current semester end, 1 → next semester end, etc.
+ * Format: "Jun 30, 2026"
  */
-function getAccessWindow(extend: boolean): string {
+function getAccessEndDate(stepsAhead: number): string {
   const now = new Date();
-  const month = now.getMonth(); // 0-11
+  let year = now.getFullYear();
+  let isFirstHalf = now.getMonth() < 6; // true → ends Jun 30 of `year`
 
-  let endMonth = month < 6 ? 5 : 11; // June (5) or December (11)
-  let endDay = month < 6 ? 30 : 31;
-
-  if (extend) {
-    if (endMonth === 5) {
-      endMonth = 11;
-      endDay = 31;
+  for (let i = 0; i < stepsAhead; i++) {
+    if (isFirstHalf) {
+      isFirstHalf = false; // now ends Dec 31 same year
     } else {
-      endMonth = 5;
-      endDay = 30;
+      isFirstHalf = true;
+      year += 1; // wraps to Jun 30 next year
     }
   }
 
+  const endMonth = isFirstHalf ? 5 : 11;
+  const endDay = isFirstHalf ? 30 : 31;
   const monthName = new Date(2000, endMonth, 1).toLocaleString("en-US", { month: "short" });
-  return `${monthName} ${endDay}`;
+  return `${monthName} ${endDay}, ${year}`;
 }
 
 const INCLUDES = [
