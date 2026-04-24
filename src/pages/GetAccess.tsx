@@ -645,8 +645,6 @@ export default function GetAccess() {
           <TestimonialsSection />
         </div>
       </section>
-        </div>
-      </section>
 
       <LandingFooter
         onScrollToCourses={() => navigate("/staging")}
