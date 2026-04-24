@@ -45,13 +45,13 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
       {/* Stripe-style angled color ribbons */}
       <div
         aria-hidden="true"
-        className="staging-hero-ribbons pointer-events-none absolute inset-0 overflow-hidden"
-        style={{ zIndex: 2 }}
+        className="staging-hero-ribbons"
       >
         <div className="ribbon ribbon-1" />
         <div className="ribbon ribbon-2" />
         <div className="ribbon ribbon-3" />
         <div className="ribbon ribbon-4" />
+        <div className="ribbon ribbon-5" />
       </div>
 
       <style>{`
