@@ -119,7 +119,7 @@ export default function QuickEmailGateModal({
             className="mt-2 text-center text-[13px]"
             style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
           >
-            Enter your school email — we'll find your campus pricing.
+            Enter your school email — we'll look up your campus.
           </p>
 
           <input
