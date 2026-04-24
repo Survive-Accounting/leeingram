@@ -115,26 +115,36 @@ export default function GetAccess() {
   // 0 = just the resolved course; 1 = + next course; up to maxAdditional.
   const maxAdditional = Math.max(0, progression.courses.length - 1 - startIdx);
   const [extraCount, setExtraCount] = useState(0);
+  const [lifetimeUpgrade, setLifetimeUpgrade] = useState(false);
 
   // The full list of selected courses (base + extras).
   const selectedCourses = useMemo(() => {
     const list = [];
     for (let i = 0; i <= extraCount; i++) {
       const course = progression.courses[startIdx + i];
-      if (course) {
-        list.push({
-          course,
-          accessEnd: getAccessEndDate(i),
-          previousAccessEnd: i === 0 ? null : getAccessEndDate(i - 1),
-          price: i === 0 ? PRICE : EXTEND_PRICE,
-        });
-      }
+      if (course) list.push({ course, idx: i });
     }
     return list;
   }, [progression.courses, startIdx, extraCount]);
 
-  const totalPrice = PRICE + extraCount * EXTEND_PRICE;
+  // All 4 semesters selected (base + 3 extras when starting at idx 0)?
+  const allSemestersAdded = extraCount >= maxAdditional && maxAdditional >= 3;
+  const showLifetime = allSemestersAdded;
+
+  const baseTotal = PRICE + extraCount * EXTEND_PRICE;
+  const totalPrice = baseTotal + (showLifetime && lifetimeUpgrade ? LIFETIME_UPGRADE_PRICE : 0);
+  const addedAmount = totalPrice - PRICE;
   const canAddAnother = extraCount < maxAdditional;
+
+  // Reset lifetime if user removes a semester and it's no longer offered.
+  useEffect(() => {
+    if (!showLifetime && lifetimeUpgrade) setLifetimeUpgrade(false);
+  }, [showLifetime, lifetimeUpgrade]);
+
+  // Access period label
+  const accessPeriodLabel = extraCount === 0
+    ? getSeasonLabel(0)
+    : `${getSeasonLabel(0)} → ${getSeasonLabel(extraCount)}`;
 
   // Resolve email: URL param → localStorage → sessionStorage.
   const initialEmail = useMemo(() => {
