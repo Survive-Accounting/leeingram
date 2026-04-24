@@ -195,7 +195,7 @@ export default function GetAccess() {
             selectedPlan: "study_pass",
             amount: totalPrice,
             includedSemesters: selectedSemesters.map((s) => s.label),
-            autoRenew: extraCount > 0,
+            autoRenew: autoRenewActive || extraCount > 0,
             extraSemesters: extraCount,
             lifetimeUpgrade: showLifetime && lifetimeUpgrade,
             promoCode: appliedPromo?.code || null,
