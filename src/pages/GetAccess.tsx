@@ -271,32 +271,42 @@ export default function GetAccess() {
                 0%, 100% { opacity: 0; }
                 30%, 70% { opacity: 1; }
               }
-              @keyframes priceShimmer {
+              @keyframes priceShimmerOnce {
                 0% { background-position: 200% 0; }
                 100% { background-position: -200% 0; }
               }
               .price-shimmer {
-                background-image: linear-gradient(100deg, ${NAVY} 0%, ${NAVY} 40%, rgba(255,255,255,0.95) 50%, ${NAVY} 60%, ${NAVY} 100%);
+                background-image: linear-gradient(100deg, ${NAVY} 0%, ${NAVY} 42%, rgba(255,255,255,0.5) 50%, ${NAVY} 58%, ${NAVY} 100%);
                 background-size: 200% 100%;
                 background-position: 200% 0;
                 -webkit-background-clip: text;
                 background-clip: text;
                 -webkit-text-fill-color: transparent;
                 color: transparent;
-                animation: priceShimmer 1.6s ease-out 0.4s 1 both;
+                animation: priceShimmerOnce 1.4s ease-out 0.3s 1 forwards;
               }
               .price-shimmer-discount {
-                background-image: linear-gradient(100deg, #16A34A 0%, #16A34A 40%, rgba(255,255,255,0.95) 50%, #16A34A 60%, #16A34A 100%);
+                background-image: linear-gradient(100deg, #16A34A 0%, #16A34A 42%, rgba(255,255,255,0.5) 50%, #16A34A 58%, #16A34A 100%);
                 background-size: 200% 100%;
                 background-position: 200% 0;
                 -webkit-background-clip: text;
                 background-clip: text;
                 -webkit-text-fill-color: transparent;
                 color: transparent;
-                animation: priceShimmer 1.6s ease-out 0.4s 1 both;
+                animation: priceShimmerOnce 1.4s ease-out 0.3s 1 forwards;
+              }
+              .price-shimmer.shimmer-done, .price-shimmer-discount.shimmer-done {
+                animation: none;
+                -webkit-text-fill-color: currentColor;
+                color: ${NAVY};
+                background-image: none;
+              }
+              .price-shimmer-discount.shimmer-done {
+                color: #16A34A;
               }
               @media (prefers-reduced-motion: reduce) {
-                .price-shimmer, .price-shimmer-discount { animation: none; -webkit-text-fill-color: currentColor; }
+                .price-shimmer, .price-shimmer-discount { animation: none; -webkit-text-fill-color: currentColor; color: ${NAVY}; background-image: none; }
+                .price-shimmer-discount { color: #16A34A; }
               }
             `}</style>
 
