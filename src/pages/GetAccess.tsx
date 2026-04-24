@@ -18,7 +18,36 @@ const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
 const PRICE = 99;
-const ACCESS_THROUGH = "August 1, 2026";
+
+/**
+ * Semester access windows: renew Jan 1 (→ Jun 30) and Jul 1 (→ Dec 31).
+ * Base pass covers the current semester; auto-renew extends through the
+ * next one.
+ */
+function getAccessWindow(extend: boolean): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0-11
+
+  // Current semester end
+  let endYear = year;
+  let endMonth = month < 6 ? 5 : 11; // June (5) or December (11)
+  let endDay = month < 6 ? 30 : 31;
+
+  if (extend) {
+    if (endMonth === 5) {
+      endMonth = 11;
+      endDay = 31;
+    } else {
+      endMonth = 5;
+      endDay = 30;
+      endYear += 1;
+    }
+  }
+
+  const monthName = new Date(endYear, endMonth, 1).toLocaleString("en-US", { month: "long" });
+  return `${monthName} ${endDay}, ${endYear}`;
+}
 
 const INCLUDES = [
   {
