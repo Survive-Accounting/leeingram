@@ -70,7 +70,7 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
               onLoad={() => setImgLoaded(true)}
               className="w-full h-full object-cover"
               style={{
-                objectPosition: "30% center",
+                objectPosition: "50% center",
                 opacity: imgLoaded ? 1 : 0,
                 filter: imgLoaded ? "blur(0)" : "blur(8px)",
                 transform: imgLoaded ? "scale(1)" : "scale(1.02)",
