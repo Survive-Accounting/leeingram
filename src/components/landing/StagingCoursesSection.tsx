@@ -1087,8 +1087,227 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
                 })}
               </div>
 
-              {/* Problem list area — populated in next prompt */}
-              <div style={{ flex: 1 }} />
+              {/* Problem list area */}
+              <div
+                style={{
+                  flex: selectedProblemId ? "0 0 auto" : 1,
+                  maxHeight: selectedProblemId ? 200 : undefined,
+                  overflowY: "auto",
+                  borderBottom: selectedProblemId ? "1px solid rgba(255,255,255,0.08)" : "none",
+                  paddingBottom: 8,
+                }}
+              >
+                {problemsLoading ? (
+                  <div style={{ paddingTop: 4 }}>
+                    <div className="demo-skeleton-row" style={{ marginLeft: 12, marginRight: 12 }} />
+                    <div className="demo-skeleton-row" style={{ marginLeft: 12, marginRight: 12 }} />
+                    <div className="demo-skeleton-row" style={{ marginLeft: 12, marginRight: 12 }} />
+                  </div>
+                ) : problems.length === 0 ? (
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "rgba(255,255,255,0.3)",
+                      textAlign: "center",
+                      padding: 24,
+                    }}
+                  >
+                    No {DEMO_TYPE_LABELS[activeType]} in this chapter yet.
+                  </div>
+                ) : (
+                  problems.map((p) => {
+                    const isSel = selectedProblemId === p.id;
+                    const ref = p.source_number || p.source_ref || "—";
+                    const title = p.problem_title || "Untitled problem";
+                    return (
+                      <div
+                        key={p.id}
+                        className={`demo-problem-row${isSel ? " is-selected" : ""}`}
+                        onClick={() => setSelectedProblemId(p.id)}
+                      >
+                        <span className="demo-problem-badge">{ref}</span>
+                        <span className="demo-problem-title" title={title}>
+                          {title}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Problem viewer (bottom half) */}
+              {selectedProblemId && (
+                <div
+                  key={selectedProblemId}
+                  style={{
+                    flex: 1,
+                    position: "relative",
+                    overflow: "hidden",
+                    animation: "demoViewerFadeUp 250ms ease-out forwards",
+                    opacity: 0,
+                  }}
+                >
+                  {detailLoading || !problemDetail ? (
+                    <div
+                      className="absolute inset-0 flex flex-col items-center justify-center"
+                      style={{ gap: 12 }}
+                    >
+                      <div className="demo-spinner" />
+                      <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", margin: 0 }}>
+                        Loading problem...
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col" style={{ overflowY: "auto" }}>
+                      {/* Problem text */}
+                      {problemDetail.survive_problem_text && (
+                        <div
+                          style={{
+                            background: "rgba(0,0,0,0.2)",
+                            borderRadius: 8,
+                            padding: 16,
+                            margin: 12,
+                            fontSize: 13,
+                            fontFamily: "Inter, sans-serif",
+                            color: "rgba(255,255,255,0.85)",
+                            lineHeight: 1.7,
+                            overflowY: "auto",
+                            maxHeight: 180,
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          {problemDetail.survive_problem_text}
+                        </div>
+                      )}
+
+                      {/* Instructions */}
+                      <div style={{ padding: "0 24px" }}>
+                        {[
+                          problemDetail.instruction_1,
+                          problemDetail.instruction_2,
+                          problemDetail.instruction_3,
+                          problemDetail.instruction_4,
+                          problemDetail.instruction_5,
+                        ]
+                          .map((txt, i) => ({ txt, letter: String.fromCharCode(97 + i) }))
+                          .filter((x) => x.txt && x.txt.trim().length > 0)
+                          .map((x) => (
+                            <div
+                              key={x.letter}
+                              style={{
+                                fontSize: 12,
+                                fontFamily: "Inter, sans-serif",
+                                color: "rgba(255,255,255,0.65)",
+                                lineHeight: 1.6,
+                                marginBottom: 4,
+                              }}
+                            >
+                              ({x.letter}) {x.txt}
+                            </div>
+                          ))}
+                      </div>
+
+                      {/* See Solution button */}
+                      <div style={{ padding: "12px 24px" }}>
+                        <button
+                          type="button"
+                          onClick={() => setSolutionOpen((v) => !v)}
+                          style={{
+                            padding: "8px 16px",
+                            background: RED,
+                            color: "#fff",
+                            borderRadius: 6,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            fontFamily: "Inter, sans-serif",
+                            cursor: "pointer",
+                            border: "none",
+                          }}
+                        >
+                          {solutionOpen ? "Hide Solution" : "See Solution"}
+                        </button>
+                      </div>
+
+                      {/* Solution */}
+                      {solutionOpen && (
+                        <div style={{ padding: "0 24px 16px" }}>
+                          {Array.isArray(problemDetail.survive_solution_json?.parts) &&
+                          problemDetail.survive_solution_json.parts.length > 0 ? (
+                            problemDetail.survive_solution_json.parts.map((part: any, i: number) => {
+                              const label =
+                                part?.label || part?.part_label || `(${String.fromCharCode(97 + i)})`;
+                              const answer =
+                                part?.answer ||
+                                part?.final_answer ||
+                                part?.text ||
+                                (typeof part === "string" ? part : "");
+                              return (
+                                <div
+                                  key={i}
+                                  style={{
+                                    fontSize: 12,
+                                    fontFamily: "Inter, sans-serif",
+                                    color: "rgba(255,255,255,0.8)",
+                                    lineHeight: 1.6,
+                                    marginBottom: 6,
+                                  }}
+                                >
+                                  <strong style={{ color: "rgba(255,255,255,0.95)" }}>{label}</strong>{" "}
+                                  {typeof answer === "string"
+                                    ? answer
+                                    : JSON.stringify(answer)}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div
+                              style={{
+                                fontSize: 12,
+                                fontFamily: "Inter, sans-serif",
+                                color: "rgba(255,255,255,0.8)",
+                                lineHeight: 1.6,
+                                whiteSpace: "pre-wrap",
+                              }}
+                            >
+                              {(problemDetail.survive_solution_text || "").slice(0, 400)}
+                              {(problemDetail.survive_solution_text || "").length > 400 ? "..." : ""}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Demo badge */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  padding: "10px 12px 14px",
+                  flexShrink: 0,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => onGetStartedClick?.()}
+                  style={{
+                    fontSize: 10,
+                    fontFamily: "Inter, sans-serif",
+                    fontWeight: 500,
+                    background: "rgba(212,175,55,0.15)",
+                    color: "#D4AF37",
+                    padding: "6px 12px",
+                    borderRadius: 999,
+                    border: "none",
+                    cursor: "pointer",
+                    textAlign: "center",
+                  }}
+                >
+                  🔒 Full access unlocked with Get Started →
+                </button>
+              </div>
             </div>
           ) : (
             <div
