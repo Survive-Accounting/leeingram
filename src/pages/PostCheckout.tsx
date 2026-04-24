@@ -45,6 +45,8 @@ export default function PostCheckout() {
           payment_status?: string;
           amount_total?: number | null;
           metadata?: Record<string, string> | null;
+          action_link?: string | null;
+          user_id?: string | null;
         } | null;
 
         if (result?.verified) {
@@ -75,10 +77,32 @@ export default function PostCheckout() {
             // storage may be full or disabled — non-fatal
           }
           setState({ phase: "verified", email });
-          // Brief success flash, then redirect
-          setTimeout(() => {
-            if (!cancelled) navigate("/dashboard", { replace: true });
-          }, 1200);
+
+          // Auto-login: hand the action_link to Supabase auth.
+          // The magic link contains the access token in the URL hash;
+          // navigating to it lets supabase-js pick up the session.
+          if (result.action_link) {
+            // Tiny delay so user sees the success flash, then redirect.
+            setTimeout(() => {
+              if (cancelled) return;
+              // Replace destination of magic link with /dashboard via redirect_to param.
+              try {
+                const u = new URL(result.action_link!);
+                u.searchParams.set(
+                  "redirect_to",
+                  `${window.location.origin}/auth/callback?next=/dashboard`,
+                );
+                window.location.replace(u.toString());
+              } catch {
+                window.location.replace(result.action_link!);
+              }
+            }, 900);
+          } else {
+            // Fallback: send them to login if action_link missing
+            setTimeout(() => {
+              if (!cancelled) navigate("/login", { replace: true });
+            }, 1200);
+          }
         } else {
           setState({
             phase: "failed",
