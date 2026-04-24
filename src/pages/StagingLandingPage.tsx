@@ -273,22 +273,22 @@ export default function StagingLandingPage() {
 
       <StagingNavbar
         transparentOnTop
-        onCtaClick={() => handleCardClick(defaultCourse)}
-        onPricingClick={() => handleCardClick(defaultCourse)}
+        onCtaClick={() => handleGetAccessClick(defaultCourse)}
+        onPricingClick={() => handleGetAccessClick(defaultCourse)}
         onCoursesClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
       />
 
       <StagingHero
         liveCourse={defaultCourse}
         futureCourses={[]}
-        onLiveCourseClick={() => handleCardClick(defaultCourse)}
+        onLiveCourseClick={() => handleGetAccessClick(defaultCourse)}
         onNotifyClick={() => handleCardClick(defaultCourse)}
-        onGetStartedClick={() => handleCardClick(defaultCourse)}
+        onGetStartedClick={() => handleGetAccessClick(defaultCourse)}
       />
 
       <SocialProofStrip />
 
-      <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />
+      <StagingTestimonialsSection onCtaClick={() => handleGetAccessClick(defaultCourse)} />
 
       <div ref={coursesRef} id="demo-section">
         <StagingCoursesSection
@@ -313,7 +313,7 @@ export default function StagingLandingPage() {
       />
 
       <StagingFinalCtaSection
-        onGetAccessClick={() => handleCardClick(defaultCourse)}
+        onGetAccessClick={() => handleGetAccessClick(defaultCourse)}
         onTryDemoClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
       />
 
