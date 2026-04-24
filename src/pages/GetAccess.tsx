@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, ShieldCheck, X, Sparkles, ShoppingCart, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
