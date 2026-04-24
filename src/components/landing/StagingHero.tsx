@@ -113,17 +113,17 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             </div>
           </div>
 
-          {/* Eyebrow */}
+          {/* Identity */}
           <div
-            className="hero-anim-eyebrow inline-block text-[11px] font-semibold uppercase tracking-[0.16em] px-3 py-1 rounded-full mb-7"
-            style={{
-              color: RED,
-              background: "rgba(206,17,38,0.08)",
-              border: `1px solid rgba(206,17,38,0.18)`,
-              fontFamily: "Inter, sans-serif",
-            }}
+            className="hero-anim-eyebrow mb-8 text-center"
+            style={{ fontFamily: "Inter, sans-serif" }}
           >
-            Built by a real tutor
+            <div className="text-[13px] font-semibold" style={{ color: NAVY }}>
+              Built by Lee Ingram
+            </div>
+            <div className="text-[12px] mt-1" style={{ color: "#64748B" }}>
+              Ole Miss alum &amp; accounting tutor since 2015
+            </div>
           </div>
 
           {/* Headline */}
@@ -133,10 +133,10 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               fontFamily: "'DM Serif Display', serif",
               fontWeight: 400,
               color: NAVY,
-              maxWidth: 680,
+              maxWidth: 720,
             }}
           >
-            Study tools that get you unstuck — fast.
+            Accounting study tools that get you unstuck — fast.
           </h1>
 
           {/* Subtext */}
@@ -150,11 +150,11 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               maxWidth: 560,
             }}
           >
-            AI-powered accounting study tools — built by Lee Ingram, Ole Miss alum &amp; tutor since 2015.
+            Get AI-powered study tools for your entire accounting course.
           </p>
 
-          {/* CTAs — stacked, centered */}
-          <div className="mt-10 flex flex-col items-center gap-4">
+          {/* CTA + secondary links */}
+          <div className="mt-10 flex flex-col items-center gap-5">
             <button
               onClick={onGetStartedClick}
               className="hero-anim-btn rounded-xl px-9 py-4 text-[16px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2"
@@ -169,22 +169,36 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               Start Studying <span aria-hidden="true">→</span>
             </button>
 
-            <button
-              onClick={handleSeeHowItWorks}
-              className="hero-anim-link text-[14px] font-semibold transition-opacity hover:opacity-70"
-              style={{
-                color: NAVY,
-                fontFamily: "Inter, sans-serif",
-                background: "none",
-                border: "none",
-                padding: "4px 4px",
-              }}
+            <div
+              className="hero-anim-link flex items-center gap-3 text-[13px] font-medium"
+              style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
             >
-              See how it works
-            </button>
+              <button
+                onClick={() => {
+                  const el = document.getElementById("about-lee");
+                  if (el) {
+                    const top = el.getBoundingClientRect().top + window.scrollY;
+                    window.scrollTo({ top, behavior: "smooth" });
+                  }
+                }}
+                className="transition-colors hover:underline"
+                style={{ color: NAVY, background: "none", border: "none", padding: 0 }}
+              >
+                About Lee
+              </button>
+              <span aria-hidden="true" style={{ color: "#CBD5E1" }}>·</span>
+              <button
+                onClick={handleSeeHowItWorks}
+                className="transition-colors hover:underline"
+                style={{ color: NAVY, background: "none", border: "none", padding: 0 }}
+              >
+                How it works
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </section>
   );
 }
+
