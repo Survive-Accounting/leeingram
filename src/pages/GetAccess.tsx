@@ -495,7 +495,7 @@ export default function GetAccess() {
               ) : (
                 <>
                   <ShoppingCart className="w-4 h-4" />
-                  {`Buy Access — $${totalPrice}`}
+                  Buy Access <span aria-hidden="true">→</span>
                 </>
               )}
             </button>
@@ -508,6 +508,37 @@ export default function GetAccess() {
                 {checkoutError}
               </div>
             )}
+
+            {/* Access period — moved BELOW the CTA */}
+            <div
+              key={`access-below-${extraCount}`}
+              className="mt-4 flex items-center justify-center gap-1.5 text-[13px] animate-fade-in"
+              style={{ color: "#334155", fontFamily: "Inter, sans-serif" }}
+            >
+              <span style={{ color: "#94A3B8" }}>Access:</span>
+              <span className="font-semibold">{accessPeriodLabel}</span>
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="inline-flex" aria-label="Access period info">
+                      <Info className="w-3 h-3" style={{ color: "#94A3B8" }} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[220px] text-[12px]">
+                    Always includes final exam week.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            {showLifetime && lifetimeUpgrade && (
+              <div
+                className="mt-1 text-center text-[12px] animate-fade-in"
+                style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+              >
+                Includes all future updates
+              </div>
+            )}
+
             <div
               className="mt-4 flex flex-col items-center gap-1.5 text-[12px]"
               style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
