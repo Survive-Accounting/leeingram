@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Mail } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import leeStadium from "@/assets/lee-stadium.jpg";
 
