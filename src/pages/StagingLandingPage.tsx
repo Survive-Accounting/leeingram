@@ -15,6 +15,7 @@ import StagingCoursesSection from "@/components/landing/StagingCoursesSection";
 import StagingEmailPromptModal, { type CelebrationData } from "@/components/landing/StagingEmailPromptModal";
 
 import StagingGetStartedModal from "@/components/landing/StagingGetStartedModal";
+import StagingFinalCtaSection from "@/components/landing/StagingFinalCtaSection";
 import type { CtaCourse } from "@/components/landing/StagingCtaModal";
 import { useEmailGate } from "@/contexts/EmailGateContext";
 
