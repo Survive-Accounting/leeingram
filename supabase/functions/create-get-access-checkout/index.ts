@@ -64,7 +64,6 @@ Deno.serve(async (req) => {
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      ui_mode: "hosted",
       customer_email: email,
       line_items: [
         {
