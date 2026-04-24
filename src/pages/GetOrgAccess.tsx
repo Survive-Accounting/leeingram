@@ -332,6 +332,8 @@ export default function GetOrgAccess() {
         is_promo: tier?.is_promo,
         auto_reup_enabled: autoReupEnabled,
         weekly_seat_limit: autoReupEnabled ? weeklySeatLimit : null,
+        payment_method: paymentMethod,
+        org_account_status: paymentMethod === "manual" ? "pending_manual_payment" : "pending_payment",
       });
     } catch (err) {
       console.error("[get-org-access checkout]", err);
