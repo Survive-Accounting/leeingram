@@ -52,7 +52,26 @@ export default function GetAccess() {
 
   const baseTotal = PRICE + extraCount * EXTEND_PRICE;
   const totalPrice = baseTotal + (showLifetime && lifetimeUpgrade ? LIFETIME_UPGRADE_PRICE : 0);
-  const addedAmount = totalPrice - PRICE;
+
+  // Floating toast state for price changes
+  const [priceToasts, setPriceToasts] = useState<Array<{ id: number; delta: number }>>([]);
+  const [pulseKey, setPulseKey] = useState(0);
+  const prevTotalRef = React.useRef(totalPrice);
+
+  useEffect(() => {
+    const prev = prevTotalRef.current;
+    if (prev !== totalPrice) {
+      const delta = totalPrice - prev;
+      const id = Date.now() + Math.random();
+      setPriceToasts((t) => [...t, { id, delta }]);
+      setPulseKey((k) => k + 1);
+      const timeout = setTimeout(() => {
+        setPriceToasts((t) => t.filter((x) => x.id !== id));
+      }, 1100);
+      prevTotalRef.current = totalPrice;
+      return () => clearTimeout(timeout);
+    }
+  }, [totalPrice]);
 
   // Reset lifetime if user removes a semester and it's no longer offered.
   useEffect(() => {
