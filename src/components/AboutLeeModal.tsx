@@ -79,13 +79,13 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             />
 
-            {/* ESPN-style scoreboard overlay */}
+            {/* ESPN-style scoreboard overlay (compact, black bg) */}
             <div
-              className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 flex items-stretch overflow-hidden select-none"
+              className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 flex items-stretch overflow-hidden select-none"
               style={{
-                background: "rgba(11,31,58,0.9)",
-                borderRadius: 5,
-                boxShadow: "0 4px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)",
+                background: "rgba(0,0,0,0.92)",
+                borderRadius: 4,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
                 fontFamily: "'Inter', sans-serif",
                 color: "#fff",
                 lineHeight: 1,
@@ -99,30 +99,29 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
                   50%      { opacity: 1; }
                 }
               `}</style>
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2">
-                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider" style={{ color: "#F4B6BD" }}>
+              <div className="flex items-center gap-1 px-1.5 py-1">
+                <span className="text-[7px] sm:text-[8px] font-bold uppercase tracking-wider" style={{ color: "#F4B6BD" }}>
                   Ole Miss
                 </span>
-                <span className="text-[13px] sm:text-[15px] font-extrabold tabular-nums">27</span>
+                <span className="text-[9px] sm:text-[10px] font-extrabold tabular-nums">27</span>
               </div>
-              <div className="w-px my-1 sm:my-1.5" style={{ background: "rgba(255,255,255,0.18)" }} />
+              <div className="w-px my-0.5" style={{ background: "rgba(255,255,255,0.18)" }} />
               <div
-                className="flex items-center px-2 sm:px-2.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.12em]"
+                className="flex items-center px-1 text-[6px] sm:text-[7px] font-bold uppercase tracking-[0.12em]"
                 style={{ color: "#94A3B8", animation: "scorePulse 2.4s ease-in-out infinite" }}
               >
                 Final
               </div>
-              <div className="w-px my-1 sm:my-1.5" style={{ background: "rgba(255,255,255,0.18)" }} />
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2">
-                <span className="text-[13px] sm:text-[15px] font-extrabold tabular-nums" style={{ color: "rgba(255,255,255,0.7)" }}>
+              <div className="w-px my-0.5" style={{ background: "rgba(255,255,255,0.18)" }} />
+              <div className="flex items-center gap-1 px-1.5 py-1">
+                <span className="text-[9px] sm:text-[10px] font-extrabold tabular-nums" style={{ color: "rgba(255,255,255,0.7)" }}>
                   20
                 </span>
-                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.55)" }}>
+                <span className="text-[7px] sm:text-[8px] font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.55)" }}>
                   Arkansas
                 </span>
               </div>
             </div>
-          </div>
           {/* Name + identity */}
           <h2
             className="mt-6 text-[26px] sm:text-[30px] text-white leading-tight"
