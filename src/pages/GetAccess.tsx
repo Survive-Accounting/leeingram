@@ -268,7 +268,7 @@ export default function GetAccess() {
           className="mt-4 max-w-[640px] mx-auto text-[16px] sm:text-[18px]"
           style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
         >
-          Get study tools that help you study smarter instead.
+          Get study tools for every chapter in your course — one payment, full semester access.
         </p>
       </section>
 
