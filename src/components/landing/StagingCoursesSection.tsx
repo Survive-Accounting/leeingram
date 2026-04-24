@@ -323,9 +323,11 @@ export default function StagingCoursesSection({
                     </div>
                     {/* Screen — 16:10 (always "powered on" with subtle glow) */}
                     <div
-                      className="relative w-full overflow-hidden"
+                      className="relative w-full"
                       style={{
                         aspectRatio: "16 / 10",
+                        minHeight: 440,
+                        overflow: "visible",
                         background:
                           "radial-gradient(ellipse at 50% 0%, #1a2845 0%, #0f1a30 60%, #0a1224 100%)",
                         borderRadius: 3,
