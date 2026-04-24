@@ -168,7 +168,8 @@ Deno.serve(async (req) => {
       mode: "payment",
       line_items: [{ price: stripePriceId, quantity: 1 }],
       customer_email: email,
-      payment_method_types: ["card", "link", "affirm"],
+      // Apple Pay & Google Pay are delivered automatically via "card" on eligible devices
+      payment_method_types: ["link", "card", "afterpay_clearpay"],
       success_url: `${baseUrl}/my-dashboard?checkout=success`,
       cancel_url: `${baseUrl}/checkout/cancelled`,
       metadata: sessionMetadata,
