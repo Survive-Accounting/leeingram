@@ -475,8 +475,8 @@ export default function GetAccess() {
                     <button
                       type="button"
                       onClick={() => setPromoOpen(true)}
-                      className="text-[11px] underline hover:no-underline"
-                      style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                      className="text-[10px] underline hover:no-underline"
+                      style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
                     >
                       Promo code?
                     </button>
