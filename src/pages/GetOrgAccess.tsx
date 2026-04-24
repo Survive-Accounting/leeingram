@@ -16,14 +16,16 @@ const RED = "#CE1126";
 const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
-// Volume tiers — keep in sync with greek-portal-architecture.md
-const TIERS = [
-  { seats: 10, total: 1500 },
-  { seats: 20, total: 2600, recommended: true },
-  { seats: 30, total: 3600 },
-  { seats: 40, total: 4400 },
-  { seats: 50, total: 5000 },
-];
+// Seat tiers come from public.org_seat_pricing (configurable in DB).
+type Tier = {
+  id: string;
+  seats: number;
+  total: number;
+  label: string | null;
+  badge: string | null;
+  is_promo: boolean;
+  recommended: boolean;
+};
 
 type Campus = {
   id: string;
