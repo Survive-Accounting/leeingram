@@ -104,6 +104,10 @@ export default function GetOrgAccess() {
   const [autoReupEnabled, setAutoReupEnabled] = useState(true);
   const [weeklySeatLimit, setWeeklySeatLimit] = useState<number>(20);
 
+  // --- Payment method preference ---
+  type PaymentMethod = "ach" | "card" | "manual";
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("ach");
+
   const [submitting, setSubmitting] = useState(false);
 
   // Load seat-pricing tiers from DB
