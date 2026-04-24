@@ -408,57 +408,6 @@ export default function GetAccess() {
                 </>
               )}
             </button>
-            <div
-              className="mt-7 mb-3 flex flex-col items-center text-center"
-              style={{ fontFamily: "Inter, sans-serif" }}
-            >
-              <div
-                className="font-bold leading-none"
-                style={{ color: NAVY, fontSize: 40, letterSpacing: "-0.02em" }}
-              >
-                ${totalPrice}
-                <span className="ml-1.5 text-[14px] font-medium" style={{ color: "#64748B", letterSpacing: 0 }}>
-                  total
-                </span>
-              </div>
-              <div className="mt-1.5 text-[12px]" style={{ color: "#94A3B8" }}>
-                One-time payment
-              </div>
-              {/* Reserve fixed space so CTA never shifts */}
-              <div style={{ minHeight: 18 }} className="mt-1">
-                {addedAmount > 0 && (
-                  <div
-                    key={`added-${addedAmount}`}
-                    className="text-[12px] font-semibold animate-fade-in"
-                    style={{ color: "#16A34A" }}
-                  >
-                    +${addedAmount} added
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 3. CTA */}
-            <button
-              onClick={handleCheckout}
-              disabled={checkoutLoading}
-              className="w-full rounded-xl py-4 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              style={{
-                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-                fontFamily: "Inter, sans-serif",
-                boxShadow:
-                  "inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px rgba(206,17,38,0.35)",
-              }}
-            >
-              {checkoutLoading ? (
-                "Redirecting to secure checkout..."
-              ) : (
-                <>
-                  <ShoppingCart className="w-4 h-4" />
-                  Get Full Access <span aria-hidden="true">→</span>
-                </>
-              )}
-            </button>
 
             {checkoutError && (
               <div
