@@ -57,7 +57,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         }
         @keyframes cardFloat {
           0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
-          50%      { transform: translateY(-8px) rotate(var(--rot, 0deg)); }
+          50%      { transform: translateY(-10px) rotate(var(--rot, 0deg)); }
         }
         @keyframes cardFadeIn {
           from { opacity: 0; transform: translateY(20px) rotate(var(--rot, 0deg)) scale(0.95); }
@@ -67,22 +67,24 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         .hero-anim-eyebrow { opacity: 0; animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s forwards; }
         .hero-anim-headline { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.25s forwards; }
         .hero-anim-sub      { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.45s forwards; }
-        .hero-anim-bullets  { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.6s forwards; }
-        .hero-anim-btn      { opacity: 0; animation: heroBtnIn  0.55s cubic-bezier(0.34,1.56,0.64,1) 0.8s forwards; }
+        .hero-anim-btn      { opacity: 0; animation: heroBtnIn  0.55s cubic-bezier(0.34,1.56,0.64,1) 0.65s forwards; }
+        .hero-anim-link     { opacity: 0; animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.85s forwards; }
+        .hero-anim-cards-label { opacity: 0; animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.4s forwards; }
 
         .product-card {
           opacity: 0;
           animation:
             cardFadeIn 0.7s cubic-bezier(0.16,1,0.3,1) forwards,
-            cardFloat 6s ease-in-out infinite;
+            cardFloat 7s ease-in-out infinite;
           will-change: transform;
         }
-        .product-card-1 { --rot: -3deg; animation-delay: 0.5s, 1.2s; }
-        .product-card-2 { --rot: 2deg;  animation-delay: 0.7s, 1.5s; }
-        .product-card-3 { --rot: -2deg; animation-delay: 0.9s, 1.8s; }
+        /* Staggered float timing for subtle, drifting motion */
+        .product-card-1 { --rot: -3deg; animation-delay: 0.5s, 1.2s;  animation-duration: 0.7s, 7s; }
+        .product-card-2 { --rot: 2deg;  animation-delay: 0.7s, 1.8s;  animation-duration: 0.7s, 8s; }
+        .product-card-3 { --rot: -2deg; animation-delay: 0.9s, 2.4s;  animation-duration: 0.7s, 7.5s; }
 
         @media (prefers-reduced-motion: reduce) {
-          .hero-anim-eyebrow, .hero-anim-headline, .hero-anim-sub, .hero-anim-bullets, .hero-anim-btn,
+          .hero-anim-eyebrow, .hero-anim-headline, .hero-anim-sub, .hero-anim-btn, .hero-anim-link, .hero-anim-cards-label,
           .product-card, .product-card-1, .product-card-2, .product-card-3 {
             opacity: 1 !important;
             animation: none !important;
@@ -128,30 +130,10 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 lineHeight: 1.6,
               }}
             >
-              AI-powered accounting study tools built by a real tutor — for students who want to do more than just survive their exam.
+              AI-powered accounting study tools — built by Lee Ingram, Ole Miss alum & tutor helping students nationwide.
             </p>
 
-            <ul
-              className="mt-6 space-y-2.5 hero-anim-bullets text-left inline-block md:block"
-              style={{ fontFamily: "Inter, sans-serif" }}
-            >
-              {[
-                "Practice real exam-style problems",
-                "Understand it — not just memorize it",
-                "Built for the night before your test",
-              ].map((b) => (
-                <li key={b} className="flex items-start gap-2.5" style={{ color: "#1E293B", fontSize: "14.5px" }}>
-                  <span
-                    className="shrink-0 mt-[7px] inline-block rounded-full"
-                    style={{ width: 6, height: 6, background: RED }}
-                    aria-hidden="true"
-                  />
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-8 hero-anim-btn flex flex-col sm:flex-row items-center md:items-start sm:items-center gap-3 sm:gap-5 justify-center md:justify-start">
+            <div className="mt-8 hero-anim-btn flex flex-col items-center md:items-start gap-3">
               <button
                 onClick={onGetStartedClick}
                 className="rounded-xl px-8 py-3.5 text-[16px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2"
@@ -163,27 +145,38 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                   letterSpacing: "0.01em",
                 }}
               >
-                Get Access <span aria-hidden="true">→</span>
+                Start Studying <span aria-hidden="true">→</span>
               </button>
 
               <button
                 onClick={handleSeeHowItWorks}
-                className="text-[14px] font-semibold transition-opacity hover:opacity-70"
+                className="hero-anim-link text-[14px] font-semibold transition-opacity hover:opacity-70"
                 style={{
                   color: NAVY,
                   fontFamily: "Inter, sans-serif",
                   background: "none",
                   border: "none",
-                  padding: "10px 4px",
+                  padding: "4px 4px",
                 }}
               >
-                See how it works ↓
+                See how it works
               </button>
             </div>
           </div>
 
           {/* RIGHT — Product visual */}
-          <div className="flex-1 w-full flex items-center justify-center" style={{ minHeight: 400 }}>
+          <div className="flex-1 w-full flex flex-col items-center justify-center" style={{ minHeight: 460 }}>
+            <div
+              className="hero-anim-cards-label w-full text-center md:text-left mb-4"
+              style={{ maxWidth: 460 }}
+            >
+              <span
+                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
+                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+              >
+                What you'll use →
+              </span>
+            </div>
             <div
               className="relative w-full"
               style={{ maxWidth: 460, height: 440 }}
@@ -199,141 +192,72 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 }}
               />
 
-              {/* Card 1 — Practice problem */}
+              {/* Card 1 — Journal Entries / Flashcards */}
               <div
                 className="product-card product-card-1 absolute"
                 style={{
                   top: 0,
                   left: 0,
-                  width: 280,
+                  width: 240,
                   background: "#FFFFFF",
-                  borderRadius: 12,
-                  padding: 16,
+                  borderRadius: 14,
+                  padding: "22px 20px",
                   border: "1px solid #E2E8F0",
                   boxShadow: "0 12px 32px rgba(15,23,42,0.12), 0 4px 8px rgba(15,23,42,0.06)",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "'DM Serif Display', serif",
                 }}
               >
-                <div className="flex items-center justify-between mb-2.5">
-                  <span
-                    className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded"
-                    style={{ color: RED, background: "rgba(206,17,38,0.08)" }}
-                  >
-                    Practice
-                  </span>
-                  <span className="text-[10px] font-medium" style={{ color: "#94A3B8" }}>
-                    BE13.4
-                  </span>
+                <div className="text-[22px] leading-tight" style={{ color: NAVY }}>
+                  Journal Entries
                 </div>
-                <p className="text-[12.5px] leading-snug" style={{ color: "#1E293B" }}>
-                  On Jan 1, Survive Co. issued <strong>$500,000</strong> of 6%, 10-year bonds at <strong>98</strong>. Record the entry.
-                </p>
-                <div
-                  className="mt-3 pt-3 border-t flex items-center justify-between"
-                  style={{ borderColor: "#F1F5F9" }}
-                >
-                  <span className="text-[10.5px] font-medium" style={{ color: "#64748B" }}>
-                    Try it →
-                  </span>
-                  <div className="flex gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#16A34A" }} />
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#E2E8F0" }} />
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#E2E8F0" }} />
-                  </div>
+                <div className="mt-2 text-[15px]" style={{ color: RED, fontFamily: "Inter, sans-serif", fontWeight: 600 }}>
+                  Flashcards
                 </div>
               </div>
 
-              {/* Card 2 — Explanation */}
+              {/* Card 2 — Practice Problems / Formulas */}
               <div
                 className="product-card product-card-2 absolute"
                 style={{
-                  top: 130,
+                  top: 140,
                   right: 0,
-                  width: 280,
+                  width: 250,
                   background: NAVY,
-                  borderRadius: 12,
-                  padding: 16,
+                  borderRadius: 14,
+                  padding: "22px 20px",
                   border: "1px solid rgba(255,255,255,0.08)",
                   boxShadow: "0 16px 40px rgba(20,33,61,0.35), 0 4px 8px rgba(20,33,61,0.2)",
-                  fontFamily: "Inter, sans-serif",
+                  fontFamily: "'DM Serif Display', serif",
                 }}
               >
-                <div className="flex items-center gap-2 mb-2.5">
-                  <span
-                    className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold"
-                    style={{ background: RED, color: "white" }}
-                  >
-                    ✓
-                  </span>
-                  <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.7)" }}>
-                    Explanation
-                  </span>
+                <div className="text-[22px] leading-tight" style={{ color: "#FFFFFF" }}>
+                  Practice Problems
                 </div>
-                <table className="w-full text-[11.5px]" style={{ color: "white" }}>
-                  <tbody>
-                    <tr>
-                      <td className="py-0.5">Cash</td>
-                      <td className="py-0.5 text-right" style={{ color: "#86EFAC" }}>490,000</td>
-                      <td className="py-0.5 text-right opacity-50">—</td>
-                    </tr>
-                    <tr>
-                      <td className="py-0.5 pl-3">Discount on B/P</td>
-                      <td className="py-0.5 text-right" style={{ color: "#86EFAC" }}>10,000</td>
-                      <td className="py-0.5 text-right opacity-50">—</td>
-                    </tr>
-                    <tr>
-                      <td className="py-0.5 pl-6 italic" style={{ color: "rgba(255,255,255,0.7)" }}>Bonds Payable</td>
-                      <td className="py-0.5 text-right opacity-50">—</td>
-                      <td className="py-0.5 text-right" style={{ color: "#FCA5A5" }}>500,000</td>
-                    </tr>
-                  </tbody>
-                </table>
-                <p
-                  className="mt-2.5 pt-2.5 text-[10.5px] leading-relaxed border-t"
-                  style={{ color: "rgba(255,255,255,0.65)", borderColor: "rgba(255,255,255,0.1)" }}
-                >
-                  Issued at 98 → discount of 2% × $500K = $10K
-                </p>
+                <div className="mt-2 text-[15px]" style={{ color: "#FCA5A5", fontFamily: "Inter, sans-serif", fontWeight: 600 }}>
+                  Formulas
+                </div>
               </div>
 
-              {/* Card 3 — Flashcard */}
+              {/* Card 3 — Cram Videos */}
               <div
                 className="product-card product-card-3 absolute"
                 style={{
                   bottom: 0,
                   left: 30,
-                  width: 240,
+                  width: 250,
                   background: "#FFFFFF",
-                  borderRadius: 12,
-                  padding: 18,
+                  borderRadius: 14,
+                  padding: "22px 20px",
                   border: "1px solid #E2E8F0",
                   boxShadow: "0 12px 32px rgba(15,23,42,0.12), 0 4px 8px rgba(15,23,42,0.06)",
-                  fontFamily: "Inter, sans-serif",
-                  textAlign: "center",
+                  fontFamily: "'DM Serif Display', serif",
                 }}
               >
-                <div
-                  className="text-[9.5px] font-bold uppercase tracking-[0.16em] mb-2"
-                  style={{ color: "#94A3B8" }}
-                >
-                  Flashcard
+                <div className="text-[22px] leading-tight" style={{ color: NAVY }}>
+                  Cram Videos
                 </div>
-                <div
-                  className="text-[15px] leading-tight"
-                  style={{ fontFamily: "'DM Serif Display', serif", color: NAVY }}
-                >
-                  Carrying Value of Bond
-                </div>
-                <div
-                  className="mt-2 text-[12px] font-mono"
-                  style={{ color: RED }}
-                >
-                  Face − Discount + Premium
-                </div>
-                <div className="mt-3 flex justify-center gap-1.5">
-                  <span className="w-6 h-1 rounded-full" style={{ background: RED }} />
-                  <span className="w-2 h-1 rounded-full" style={{ background: "#E2E8F0" }} />
-                  <span className="w-2 h-1 rounded-full" style={{ background: "#E2E8F0" }} />
+                <div className="mt-2 text-[13px]" style={{ color: "#64748B", fontFamily: "Inter, sans-serif", fontWeight: 500 }}>
+                  New content added weekly
                 </div>
               </div>
             </div>
