@@ -315,13 +315,18 @@ export default function GetAccess() {
 
             {email.trim() && (
               <p
-                className="mt-1 mb-6 text-[12px]"
+                className="mt-1 text-[12px]"
                 style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
               >
                 Purchasing for: <span style={{ color: "#64748B" }}>{email.trim()}</span>
               </p>
             )}
-            {!email.trim() && <div className="mb-6" />}
+            <p
+              className="mt-1 mb-6 text-[12px]"
+              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+            >
+              🔒 One account per student
+            </p>
 
             {/* Single compact product block */}
             <div className="mb-4">
@@ -518,12 +523,6 @@ export default function GetAccess() {
               </div>
             </div>
 
-            <p
-              className="mt-3 text-center text-[11px] leading-snug"
-              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-            >
-              🔒 One account per student
-            </p>
           </div>
 
           {/* RIGHT — What's included (secondary) */}
