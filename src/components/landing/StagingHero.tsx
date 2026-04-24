@@ -56,6 +56,9 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         <div className="ribbon ribbon-7" />
       </div>
 
+      {/* Bottom fade — softens hero → next section */}
+      <div className="staging-hero-overlay-bottom" aria-hidden="true" />
+
       <style>{`
         .staging-hero {
           min-height: 88vh;
@@ -64,6 +67,17 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         }
         @media (max-width: 768px) {
           .staging-hero { min-height: auto; padding-top: 48px; padding-bottom: 72px; display: block; }
+        }
+
+        .staging-hero-overlay-bottom {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 220px;
+          background: linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.4) 50%, #FFFFFF 100%);
+          z-index: 5;
+          pointer-events: none;
         }
 
         /* ── Stripe-style angled color ribbons ─────────────────── */

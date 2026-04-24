@@ -9,7 +9,7 @@ export default function StagingFinalCtaSection({
 }: StagingFinalCtaSectionProps) {
   return (
     <section
-      className="w-full px-4 sm:px-6 text-center"
+      className="w-full px-4 sm:px-6 text-center relative overflow-hidden"
       style={{ background: "#CC0000", paddingTop: 80, paddingBottom: 80 }}
     >
       <style>{`
@@ -19,7 +19,24 @@ export default function StagingFinalCtaSection({
         .final-cta-btn:hover .final-cta-arrow-char::before { content: "→"; }
       `}</style>
 
-      <div className="mx-auto max-w-[680px]">
+      {/* Ribbon echo — visual continuity with hero */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          bottom: -60,
+          right: -80,
+          width: 600,
+          height: 120,
+          background: "linear-gradient(90deg, transparent 0%, rgba(255,200,200,0.4) 50%, transparent 100%)",
+          transform: "rotate(-25deg)",
+          filter: "blur(60px)",
+          zIndex: 0,
+          pointerEvents: "none",
+        }}
+      />
+
+      <div className="mx-auto max-w-[680px] relative" style={{ zIndex: 1 }}>
         <h2
           className="text-white leading-tight tracking-tight text-[36px] sm:text-[52px]"
           style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}

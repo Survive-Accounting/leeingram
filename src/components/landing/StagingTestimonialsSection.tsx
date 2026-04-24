@@ -106,11 +106,22 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
   return (
     <section
       style={{
-        background: "#F8FAFC",
+        background: "#FFFFFF",
       }}
-      className="pt-16 sm:pt-20 pb-24 sm:pb-28 px-4 sm:px-6 relative"
+      className="pt-12 sm:pt-16 pb-24 sm:pb-28 px-4 sm:px-6 relative"
     >
-      <div className="mx-auto max-w-[800px]">
+      {/* Subtle separator */}
+      <div
+        aria-hidden="true"
+        className="mx-auto"
+        style={{
+          width: 120,
+          height: 4,
+          marginBottom: 32,
+          background: "linear-gradient(to right, transparent, #E5E7EB, transparent)",
+        }}
+      />
+      <div className="mx-auto max-w-[800px]" style={{ paddingTop: 16 }}>
         <TooltipProvider delayDuration={150}>
           <p
             className="text-center mb-8 text-[22px] sm:text-[28px] md:text-[34px] leading-tight"
