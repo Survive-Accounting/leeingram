@@ -256,16 +256,9 @@ export default function StagingCoursesSection({
           const innerContent = selected ? (
             <DemoScreen
               courseName={selected.name}
-              chapters={chapters}
-              loading={loading}
               onChange={() => {
                 setSelectedSlug("");
                 setOpen(true);
-              }}
-              onChapterClick={(ch, tag) => {
-                tagIntent(tag);
-                if (onChapterClick) onChapterClick(selected, ch.chapter_number, ch.chapter_name);
-                else onCardClick(selected);
               }}
             />
           ) : null;
