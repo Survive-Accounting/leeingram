@@ -552,69 +552,99 @@ export default function GetAccess() {
 
           </div>
 
-          {/* RIGHT — What's included (secondary) */}
-          <div
-            className="md:col-span-2 order-2 rounded-2xl p-6 sm:p-7 relative z-10"
-            style={{
-              background: "#fff",
-              boxShadow: "0 8px 24px rgba(20,33,61,0.06), 0 1px 3px rgba(20,33,61,0.04)",
-              border: "1px solid rgba(20,33,61,0.06)",
-            }}
-          >
-            <h3
-              className="text-[18px] sm:text-[20px] mb-4"
-              style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+          {/* RIGHT — What's included (minimal collapsible) */}
+          <div className="md:col-span-2 order-2 relative z-10 px-2 sm:px-4 pt-2">
+            <div
+              className="text-[14px]"
+              style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
             >
-              What's included
-            </h3>
-            <ul className="flex flex-col gap-4">
-              {INCLUDES.map(({ icon: Icon, label, body, isNew }) => (
-                <li key={label} className="flex gap-3">
-                  <div
-                    className="shrink-0 rounded-lg flex items-center justify-center"
-                    style={{ width: 36, height: 36, background: "#F1F5F9" }}
-                  >
-                    <Icon size={18} color={NAVY} strokeWidth={2} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className="text-[14px] font-semibold"
-                        style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-                      >
-                        {label}
-                      </span>
-                      {isNew && (
-                        <span
-                          className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
-                          style={{ background: RED, color: "#fff" }}
-                        >
-                          New
-                        </span>
-                      )}
-                    </div>
-                    <div
-                      className="text-[12.5px] mt-0.5 leading-snug"
-                      style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
-                    >
-                      {body}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+              Includes tools for every chapter in your course
+            </div>
+            <button
+              type="button"
+              onClick={() => setIncludesOpen((o) => !o)}
+              className="mt-2 text-[13px] inline-flex items-center gap-1 hover:underline"
+              style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+              aria-expanded={includesOpen}
+            >
+              See what's included
+              <span
+                className="inline-block transition-transform duration-200"
+                style={{ transform: includesOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+              >
+                ↓
+              </span>
+            </button>
 
             <div
-              className="mt-5 pt-4 border-t text-[11.5px] leading-relaxed"
+              className="grid transition-all duration-300 ease-out"
               style={{
-                borderColor: "rgba(20,33,61,0.08)",
-                color: "#64748B",
-                fontFamily: "Inter, sans-serif",
+                gridTemplateRows: includesOpen ? "1fr" : "0fr",
+                opacity: includesOpen ? 1 : 0,
               }}
+            >
+              <div className="overflow-hidden">
+                <ul className="mt-4 flex flex-col gap-3">
+                  {INCLUDES.map(({ icon: Icon, label, body, isNew }) => (
+                    <li key={label} className="flex gap-3">
+                      <div
+                        className="shrink-0 rounded-lg flex items-center justify-center"
+                        style={{ width: 32, height: 32, background: "#F1F5F9" }}
+                      >
+                        <Icon size={16} color={NAVY} strokeWidth={2} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className="text-[13px] font-semibold"
+                            style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                          >
+                            {label}
+                          </span>
+                          {isNew && (
+                            <span
+                              className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                              style={{ background: RED, color: "#fff" }}
+                            >
+                              New
+                            </span>
+                          )}
+                        </div>
+                        <div
+                          className="text-[12px] mt-0.5 leading-snug"
+                          style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                        >
+                          {body}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div
+              className="mt-5 text-[11.5px] leading-relaxed"
+              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
             >
               Built and maintained by Lee Ingram, Ole Miss accounting tutor since 2015.
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Testimonials below the checkout */}
+      <section className="px-4 sm:px-6 pb-16">
+        <div className="max-w-[900px] mx-auto text-center">
+          <h2
+            className="text-[24px] sm:text-[28px] mb-6"
+            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+          >
+            Join 1,200+ students who passed
+          </h2>
+          <TestimonialsSection />
+        </div>
+      </section>
         </div>
       </section>
 
