@@ -258,7 +258,7 @@ export default function GetAccess() {
           className="mt-4 max-w-[640px] mx-auto text-[16px] sm:text-[18px]"
           style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
         >
-          Get study tools for your entire course—one payment, full semester access.
+          Get study tools for your entire accounting course.
         </p>
       </section>
 
@@ -315,7 +315,7 @@ export default function GetAccess() {
                     </div>
                   </div>
 
-                  <div className="text-right shrink-0 flex flex-col items-end gap-0.5">
+                  <div className="text-right shrink-0 flex flex-col items-end gap-1">
                     <div
                       className="font-bold leading-none"
                       style={{ color: NAVY, fontSize: 36, letterSpacing: "-0.02em" }}
@@ -324,6 +324,9 @@ export default function GetAccess() {
                       <span className="ml-1 text-[13px] font-medium" style={{ color: "#64748B", letterSpacing: 0 }}>
                         total
                       </span>
+                    </div>
+                    <div className="text-[11px]" style={{ color: "#94A3B8" }}>
+                      One-time payment • No subscription
                     </div>
                     {addedAmount > 0 && (
                       <div
