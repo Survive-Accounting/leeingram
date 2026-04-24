@@ -2,6 +2,7 @@ import { useState } from "react";
 // (icon imports removed — no longer used)
 import leeHeadshot from "@/assets/lee-headshot-original.png";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
+import AnimatedArrow from "@/components/landing/AnimatedArrow";
 
 const RED = "#CE1126";
 const NAVY = "#14213D";
