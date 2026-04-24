@@ -529,7 +529,18 @@ export default function GetAccess() {
                   <input
                     type="checkbox"
                     checked={autoRenew}
-                    onChange={(e) => setAutoRenew(e.target.checked)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setAutoRenew(checked);
+                      if (checked && extraCount === 0) {
+                        const id = Date.now() + Math.random();
+                        setDiscountToasts((t) => [...t, { id }]);
+                        setPulseKey((k) => k + 1);
+                        setTimeout(() => {
+                          setDiscountToasts((t) => t.filter((x) => x.id !== id));
+                        }, 800);
+                      }
+                    }}
                     className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[#14213D]"
                   />
                   <span className="text-[13px] leading-none" style={{ color: NAVY }}>
