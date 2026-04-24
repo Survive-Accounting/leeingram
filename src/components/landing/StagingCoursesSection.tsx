@@ -1083,9 +1083,17 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
             fontWeight: 600,
             color: "rgba(255,255,255,0.7)",
             fontFamily: "Inter, sans-serif",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            paddingLeft: 8,
+            paddingRight: 8,
           }}
+          title={isNarrow && selectedChapter ? `Ch. ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}` : "Survive Accounting"}
         >
-          Survive Accounting
+          {isNarrow && selectedChapter
+            ? `Ch. ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}`
+            : "Survive Accounting"}
         </div>
         <div style={{ width: 28 }} />
       </div>
