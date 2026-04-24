@@ -144,6 +144,9 @@ export default function StagingCoursesSection({
     };
   }, [selected?.id]);
 
+  // Pending auto-selection (set by "Start Exploring" CTA)
+  const [pendingAutoSelect, setPendingAutoSelect] = useState(false);
+
   // Load items when chapter+section change
   useEffect(() => {
     if (!expandedChapterId || !activeSection || !selected) {
@@ -167,14 +170,12 @@ export default function StagingCoursesSection({
         .order("source_ref", { ascending: true })
         .limit(60);
       if (cancelled) return;
-      // De-dupe by source_ref (DB has variants with same ref)
       const seen = new Set<string>();
       const deduped = ((data ?? []) as ProblemItem[]).filter((p) => {
         if (seen.has(p.source_ref)) return false;
         seen.add(p.source_ref);
         return true;
       });
-      // Sort: numeric portion ascending
       deduped.sort((a, b) => {
         const na = parseFloat((a.source_ref || "").replace(/[^\d.]/g, "")) || 0;
         const nb = parseFloat((b.source_ref || "").replace(/[^\d.]/g, "")) || 0;
@@ -182,11 +183,27 @@ export default function StagingCoursesSection({
       });
       setItems(deduped);
       setItemsLoading(false);
+      // Auto-select first problem if requested by CTA
+      if (pendingAutoSelect && deduped.length > 0) {
+        setSelectedProblem(deduped[0]);
+        setPendingAutoSelect(false);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [expandedChapterId, activeSection, selected?.slug]);
+  }, [expandedChapterId, activeSection, selected?.slug, pendingAutoSelect]);
+
+  // When chapters load, if auto-select pending and nothing expanded yet, expand Ch1 + first section
+  useEffect(() => {
+    if (!pendingAutoSelect || !selected || chapters.length === 0) return;
+    if (expandedChapterId && activeSection) return;
+    const ch1 = chapters[0];
+    if (!ch1) return;
+    setExpandedChapterId(ch1.id);
+    const firstSection = sectionsFor(selected.slug)[0]?.key ?? null;
+    setActiveSection(firstSection);
+  }, [pendingAutoSelect, chapters, selected?.slug, expandedChapterId, activeSection]);
 
   // Load problem detail
   useEffect(() => {
