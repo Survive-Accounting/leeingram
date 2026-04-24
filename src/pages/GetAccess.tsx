@@ -172,13 +172,13 @@ export default function GetAccess() {
 
       {/* Single-column centered checkout */}
       <section className="px-4 sm:px-6 pb-16 relative">
-        <div className="max-w-[640px] mx-auto relative">
+        <div className="max-w-[560px] mx-auto relative">
           <div
             className="rounded-2xl p-6 sm:p-8 relative z-10"
             style={{
               background: "#fff",
-              boxShadow: "0 16px 48px rgba(20,33,61,0.12), 0 2px 6px rgba(20,33,61,0.06)",
-              border: "1px solid rgba(20,33,61,0.08)",
+              boxShadow: "0 24px 60px rgba(20,33,61,0.10), 0 2px 8px rgba(20,33,61,0.04)",
+              border: "1px solid #E0E7F0",
             }}
           >
             <h2
@@ -275,10 +275,10 @@ export default function GetAccess() {
                   </button>
                 ) : (
                   <label
-                    className="flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 animate-fade-in"
+                    className="flex items-start gap-3 p-3.5 rounded-lg cursor-pointer transition-all duration-200 animate-fade-in hover:brightness-[0.99]"
                     style={{
-                      border: lifetimeUpgrade ? `1px solid ${NAVY}` : "1px dashed #CBD5E1",
-                      background: lifetimeUpgrade ? "rgba(20,33,61,0.04)" : "#fff",
+                      border: lifetimeUpgrade ? `2px solid ${NAVY}` : "2px solid #BFDBFE",
+                      background: lifetimeUpgrade ? "#DBEAFE" : "#EFF6FF",
                     }}
                   >
                     <input
@@ -291,10 +291,10 @@ export default function GetAccess() {
                       <div className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: NAVY }}>
                         <Sparkles className="w-3.5 h-3.5" />
                         Upgrade to Lifetime Access
-                        <span style={{ color: "#64748B", fontWeight: 500 }}> (+${LIFETIME_UPGRADE_PRICE})</span>
+                        <span style={{ color: "#1E40AF", fontWeight: 600 }}> (+${LIFETIME_UPGRADE_PRICE})</span>
                       </div>
-                      <div className="text-[12px] mt-0.5" style={{ color: "#94A3B8" }}>
-                        Includes all future semesters
+                      <div className="text-[12px] mt-0.5" style={{ color: "#475569" }}>
+                        Never pay again. Includes all future semesters.
                       </div>
                     </div>
                   </label>
@@ -304,7 +304,7 @@ export default function GetAccess() {
 
             {/* 2. Pricing — directly above CTA */}
             <div
-              className="mb-3 flex flex-col items-center text-center"
+              className="mt-7 mb-3 flex flex-col items-center text-center"
               style={{ fontFamily: "Inter, sans-serif" }}
             >
               <div
@@ -350,7 +350,7 @@ export default function GetAccess() {
               ) : (
                 <>
                   <ShoppingCart className="w-4 h-4" />
-                  Buy Study Pass <span aria-hidden="true">→</span>
+                  Get Full Access <span aria-hidden="true">→</span>
                 </>
               )}
             </button>
@@ -363,6 +363,29 @@ export default function GetAccess() {
                 {checkoutError}
               </div>
             )}
+
+            {/* Human support line */}
+            <div
+              className="mt-3 flex items-center justify-center gap-2 text-[12px]"
+              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+            >
+              <img
+                src="https://i.ibb.co/9HhgJrS/Lee-Ingram-Headshot.jpg"
+                alt="Lee Ingram"
+                className="w-5 h-5 rounded-full object-cover"
+                style={{ border: "1px solid #E2E8F0" }}
+              />
+              <span>
+                Questions? Text me —{" "}
+                <a
+                  href="sms:+16012018759"
+                  className="hover:underline"
+                  style={{ color: "#64748B" }}
+                >
+                  601-201-8759
+                </a>
+              </span>
+            </div>
 
             {/* 5. Trust block — only two lines */}
             <div
