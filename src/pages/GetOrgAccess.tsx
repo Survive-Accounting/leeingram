@@ -317,27 +317,59 @@ export default function GetOrgAccess() {
     !submitting;
 
   const handleCheckout = async () => {
-    if (!canSubmit) return;
+    if (!canSubmit || !tier) return;
     setSubmitting(true);
     try {
-      // Stripe wiring lands in the next step. For now, capture intent locally.
-      toast.success("Got it — we'll be in touch shortly to finalize your chapter's passes.");
-      console.info("[get-org-access intent]", {
-        contact_email: email.trim().toLowerCase(),
-        campus_id: selectedCampusId,
-        greek_org_id: selectedOrg?.id,
-        tier_id: tier?.id,
-        seats: tier?.seats,
-        total: tier?.total,
-        is_promo: tier?.is_promo,
-        auto_reup_enabled: autoReupEnabled,
-        weekly_seat_limit: autoReupEnabled ? weeklySeatLimit : null,
-        payment_method: paymentMethod,
-        org_account_status: paymentMethod === "manual" ? "pending_manual_payment" : "pending_payment",
-      });
+      const orgName =
+        (selectedOrg as any)?.org_name?.trim?.() ||
+        (selectedOrg as any)?.org_name_manual?.trim?.() ||
+        "";
+
+      const pricePerSeatCents = Math.round((tier.total / tier.seats) * 100);
+      const totalCents = Math.round(tier.total * 100);
+
+      const { data, error } = await supabase.functions.invoke(
+        "create-org-access-checkout",
+        {
+          body: {
+            contact_email: email.trim().toLowerCase(),
+            campus_id: selectedCampusId,
+            greek_org_id: selectedOrg?.id ?? null,
+            org_name: orgName,
+            seats: tier.seats,
+            price_per_seat_cents: pricePerSeatCents,
+            total_cents: totalCents,
+            is_promo: tier.is_promo,
+            tier_id: tier.id,
+            payment_method: paymentMethod,
+            auto_reup_enabled: autoReupEnabled,
+            weekly_seat_limit: autoReupEnabled ? weeklySeatLimit : null,
+            origin: window.location.origin,
+          },
+        },
+      );
+
+      if (error) throw new Error(error.message || "Checkout failed");
+      if (!data) throw new Error("Empty checkout response");
+
+      if (data.outcome === "manual") {
+        toast.success(
+          "Got it — we'll email you an invoice. Your signup link will activate after payment clears.",
+        );
+        if (data.redirect_url) navigate(data.redirect_url);
+        return;
+      }
+
+      if (data.outcome === "checkout" && data.url) {
+        window.location.assign(data.url as string);
+        return;
+      }
+
+      throw new Error("Unexpected checkout response");
     } catch (err) {
       console.error("[get-org-access checkout]", err);
-      toast.error("Something went wrong. Please try again.");
+      const message = err instanceof Error ? err.message : "Something went wrong.";
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
