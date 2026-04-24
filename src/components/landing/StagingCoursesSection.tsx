@@ -855,6 +855,63 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
           flex: 1;
           transition: color 150ms ease, font-weight 150ms ease;
         }
+        @keyframes demoSpin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes demoViewerFadeUp {
+          0% { opacity: 0; transform: translateY(10px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .demo-spinner {
+          width: 40px;
+          height: 40px;
+          border: 3px solid rgba(206,17,38,0.3);
+          border-top-color: #CE1126;
+          border-radius: 50%;
+          animation: demoSpin 800ms linear infinite;
+        }
+        .demo-problem-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 16px;
+          margin: 2px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          border-left: 3px solid transparent;
+          transition: background 150ms ease, border-color 150ms ease;
+        }
+        .demo-problem-row:hover { background: rgba(255,255,255,0.06); }
+        .demo-problem-row.is-selected {
+          background: rgba(206,17,38,0.15);
+          border-left-color: #CE1126;
+        }
+        .demo-problem-row.is-selected .demo-problem-badge {
+          background: #CE1126;
+          color: #fff;
+        }
+        .demo-problem-badge {
+          font-size: 10px;
+          font-weight: 700;
+          font-family: Inter, sans-serif;
+          background: rgba(255,255,255,0.1);
+          color: rgba(255,255,255,0.7);
+          padding: 2px 7px;
+          border-radius: 4px;
+          flex-shrink: 0;
+          transition: background 150ms ease, color 150ms ease;
+        }
+        .demo-problem-title {
+          font-size: 13px;
+          font-weight: 400;
+          font-family: Inter, sans-serif;
+          color: rgba(255,255,255,0.75);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          min-width: 0;
+          flex: 1;
+        }
       `}</style>
 
       {/* Top bar */}
