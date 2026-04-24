@@ -988,6 +988,58 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
           min-width: 0;
           flex: 1;
         }
+        .demo-thin-scroll::-webkit-scrollbar { width: 4px; }
+        .demo-thin-scroll::-webkit-scrollbar-track { background: transparent; }
+        .demo-thin-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.15);
+          border-radius: 2px;
+        }
+        .demo-pill-count {
+          display: inline-block;
+          margin-left: 6px;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 1px 5px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.12);
+          color: inherit;
+          opacity: 0.55;
+        }
+        .demo-pill-active .demo-pill-count {
+          opacity: 1;
+          background: rgba(20,33,61,0.12);
+          color: #14213D;
+        }
+        .demo-solution-locked {
+          position: relative;
+          max-height: 56px;
+          overflow: hidden;
+        }
+        .demo-solution-fade {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 110%;
+          background: linear-gradient(to bottom, transparent 0%, #14213D 80%);
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          padding-bottom: 6px;
+          pointer-events: none;
+        }
+        .demo-solution-unlock {
+          pointer-events: auto;
+          font-size: 11px;
+          font-weight: 600;
+          font-family: Inter, sans-serif;
+          color: #D4AF37;
+          background: rgba(212,175,55,0.15);
+          border: none;
+          padding: 6px 14px;
+          border-radius: 999px;
+          cursor: pointer;
+        }
       `}</style>
 
       {/* Top bar */}
