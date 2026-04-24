@@ -486,23 +486,23 @@ export default function GetAccess() {
             </div>
 
             {/* Product section */}
-            <div className="mt-2" style={{ fontFamily: "Inter, sans-serif" }}>
+            <div className="mt-1.5" style={{ fontFamily: "Inter, sans-serif" }}>
               <div
-                className="text-[16px] font-semibold"
+                className="text-[16px] font-semibold leading-tight"
                 style={{ color: NAVY }}
               >
                 Survive Study Pass
               </div>
               {email.trim() && (
                 <p
-                  className="mt-0.5 text-[12px]"
+                  className="mt-0.5 text-[12px] leading-tight"
                   style={{ color: "#94A3B8" }}
                 >
                   Email: <span style={{ color: "#64748B" }}>{email.trim()}</span>
                 </p>
               )}
               <p
-                className="mt-0.5 text-[12px]"
+                className="mt-0.5 text-[12px] leading-tight"
                 style={{ color: "#94A3B8" }}
               >
                 🔒 One account per student
@@ -510,50 +510,50 @@ export default function GetAccess() {
             </div>
 
             {/* Access Period — compact inline upsell */}
-            <div className="mt-5" style={{ fontFamily: "Inter, sans-serif" }}>
+            <div className="mt-3" style={{ fontFamily: "Inter, sans-serif" }}>
               <div
                 className="text-[11px] font-semibold uppercase tracking-wider"
                 style={{ color: "#64748B" }}
               >
                 Access Period
               </div>
-              <div className="mt-0.5 flex flex-col sm:flex-row sm:items-center sm:gap-3 gap-1.5">
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1.5">
                 <div
-                  className="text-[16px] font-semibold"
+                  className="text-[16px] font-semibold leading-none"
                   style={{ color: NAVY }}
                 >
                   {selectedSemesters.map((s) => s.label).join(" · ")}
                 </div>
-                <label className="inline-flex items-start gap-2 cursor-pointer select-none">
+                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={autoRenew}
                     onChange={(e) => setAutoRenew(e.target.checked)}
-                    className="h-3.5 w-3.5 mt-[3px] shrink-0 cursor-pointer accent-[#14213D]"
+                    className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[#14213D]"
                   />
-                  <span className="flex flex-col">
-                    <span className="text-[13px]" style={{ color: NAVY }}>
-                      Auto-renew next semester —{" "}
-                      <span style={{ color: "#16A34A", fontWeight: 600 }}>
-                        save {AUTO_RENEW_DISCOUNT_PCT}%
-                      </span>
-                    </span>
-                    <span
-                      className="text-[11px] mt-0.5"
-                      style={{ color: "#94A3B8" }}
-                    >
-                      We'll remind you before billing. Cancel anytime.
+                  <span className="text-[13px] leading-none" style={{ color: NAVY }}>
+                    Auto-renew next semester —{" "}
+                    <span style={{ color: "#16A34A", fontWeight: 600 }}>
+                      save {AUTO_RENEW_DISCOUNT_PCT}%
                     </span>
                   </span>
                 </label>
               </div>
+              {autoRenew && (
+                <p
+                  className="mt-1 text-[11px]"
+                  style={{ color: "#94A3B8" }}
+                >
+                  We'll remind you before billing. Cancel anytime.
+                </p>
+              )}
             </div>
 
             {/* CTA */}
             <button
               onClick={handleCheckout}
               disabled={checkoutLoading}
-              className="mt-5 w-full rounded-xl py-3.5 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="mt-4 w-full rounded-xl py-3.5 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{
                 background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
                 fontFamily: "Inter, sans-serif",
