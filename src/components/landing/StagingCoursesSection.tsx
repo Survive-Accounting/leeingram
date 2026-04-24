@@ -262,6 +262,9 @@ export default function StagingCoursesSection({
                 setSelectedSlug("");
                 setOpen(true);
               }}
+              onGetStartedClick={() => {
+                if (onGetStartedClick) onGetStartedClick(selected.slug);
+              }}
             />
           ) : null;
 
