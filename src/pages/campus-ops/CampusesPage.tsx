@@ -14,7 +14,8 @@ interface CampusRow {
   domains: string[];
   is_active: boolean;
   created_at: string;
-  studentCount: number;
+  paidCount: number;
+  leadCount: number;
 }
 
 export default function CampusesPage() {
