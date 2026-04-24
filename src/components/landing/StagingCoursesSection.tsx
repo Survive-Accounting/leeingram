@@ -655,7 +655,18 @@ const DEMO_TYPE_LABELS: Record<DemoAssetType, string> = {
 };
 
 function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick }: DemoScreenProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Detect narrow laptop screen — collapse sidebar by default on mobile
+  const [isNarrow, setIsNarrow] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 600 : false
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onResize = () => setIsNarrow(window.innerWidth < 600);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const [sidebarOpen, setSidebarOpen] = useState(!isNarrow);
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<DemoAssetType>("BE");
   const [problems, setProblems] = useState<DemoProblem[]>([]);
@@ -664,8 +675,14 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
   const [problemDetail, setProblemDetail] = useState<DemoProblemDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [solutionOpen, setSolutionOpen] = useState(false);
+  const [chapterCounts, setChapterCounts] = useState<Record<DemoAssetType, number>>({ BE: 0, EX: 0, P: 0 });
 
   const selectedChapter = chapters.find((c) => c.id === selectedChapterId) ?? null;
+
+  // When narrow, force sidebar collapsed unless user explicitly toggles
+  useEffect(() => {
+    if (isNarrow) setSidebarOpen(false);
+  }, [isNarrow]);
 
   // Reset selection if chapters list changes (new course)
   useEffect(() => {
@@ -681,6 +698,65 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
     setProblemDetail(null);
     setSolutionOpen(false);
   }, [selectedChapterId, activeType]);
+
+  // Fetch counts per type when chapter changes
+  useEffect(() => {
+    if (!selectedChapter) {
+      setChapterCounts({ BE: 0, EX: 0, P: 0 });
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await (supabase as any)
+        .from("teaching_assets")
+        .select("source_ref")
+        .eq("chapter_id", selectedChapter.id)
+        .not("asset_approved_at", "is", null)
+        .limit(2000);
+      if (cancelled || error) return;
+      const counts: Record<DemoAssetType, number> = { BE: 0, EX: 0, P: 0 };
+      ((data ?? []) as { source_ref: string | null }[]).forEach((r) => {
+        const ref = (r.source_ref ?? "").toUpperCase();
+        if (ref.startsWith("BE") || ref.startsWith("QS")) counts.BE += 1;
+        else if (ref.startsWith("E")) counts.EX += 1;
+        else if (ref.startsWith("P")) counts.P += 1;
+      });
+      setChapterCounts(counts);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedChapter?.id]);
+
+  // Keyboard navigation: arrow up/down to move within problems, Enter to select, Escape to close solution
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && solutionOpen) {
+        setSolutionOpen(false);
+        return;
+      }
+      if (problems.length === 0) return;
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Enter") return;
+      // Don't hijack typing in inputs
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      const idx = problems.findIndex((p) => p.id === selectedProblemId);
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const next = idx < 0 ? 0 : Math.min(idx + 1, problems.length - 1);
+        setSelectedProblemId(problems[next].id);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const next = idx <= 0 ? 0 : idx - 1;
+        setSelectedProblemId(problems[next].id);
+      } else if (e.key === "Enter" && idx >= 0) {
+        e.preventDefault();
+        setSolutionOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [problems, selectedProblemId, solutionOpen]);
 
   // Fetch problems when chapter or type changes
   useEffect(() => {
