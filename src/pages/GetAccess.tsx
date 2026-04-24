@@ -517,10 +517,6 @@ export default function GetAccess() {
                 <ShieldCheck className="w-3.5 h-3.5" />
                 7-day refund guarantee
               </div>
-              <div className="flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5" />
-                Instant access after purchase
-              </div>
             </div>
 
           </div>
