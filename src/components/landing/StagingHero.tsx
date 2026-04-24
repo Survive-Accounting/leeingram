@@ -65,11 +65,20 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           to   { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes headshotIn {
-          from { opacity: 0; transform: scale(0.85); }
-          to   { opacity: 1; transform: scale(1); }
+          from { opacity: 0; transform: scale(0.92) translateY(0); filter: blur(6px); }
+          to   { opacity: 1; transform: scale(1) translateY(0);    filter: blur(0); }
         }
-
-        .hero-anim-headshot { opacity: 0; animation: headshotIn 0.7s cubic-bezier(0.16,1,0.3,1) 0s forwards; }
+        @keyframes headshotFloat {
+          0%, 100% { transform: translateY(0); }
+          50%      { transform: translateY(-4px); }
+        }
+        .hero-anim-headshot-img {
+          opacity: 0;
+          animation: headshotIn 1.2s cubic-bezier(0.16,1,0.3,1) 0.1s forwards;
+          transition: opacity 0.5s ease;
+        }
+        .hero-anim-headshot-img.is-loaded ~ .headshot-skeleton { opacity: 0; }
+        .hero-anim-headshot { animation: headshotFloat 6s ease-in-out 1.5s infinite; }
         .hero-anim-eyebrow  { opacity: 0; animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.18s forwards; }
         .hero-anim-headline { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.32s forwards; }
         .hero-anim-sub      { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.5s forwards; }
