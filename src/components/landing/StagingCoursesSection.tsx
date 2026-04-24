@@ -255,6 +255,30 @@ export default function StagingCoursesSection({
                     0% { opacity: 0; }
                     100% { opacity: 1; }
                   }
+                  @keyframes demoCursorBlink {
+                    0%, 50% { opacity: 1; }
+                    51%, 100% { opacity: 0; }
+                  }
+                  @keyframes demoIdleFadeUp {
+                    0% { opacity: 0; transform: translateY(8px); }
+                    100% { opacity: 1; transform: translateY(0); }
+                  }
+                  .demo-cursor {
+                    display: inline-block;
+                    margin-left: 4px;
+                    color: #93C5FD;
+                    font-weight: 300;
+                    animation: demoCursorBlink 1.1s steps(1, end) infinite;
+                    text-shadow: 0 0 8px rgba(147,197,253,0.6);
+                  }
+                  .demo-idle-content > h2 {
+                    opacity: 0;
+                    animation: demoIdleFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.15s forwards;
+                  }
+                  .demo-dropdown-anim {
+                    opacity: 0;
+                    animation: demoIdleFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.45s forwards;
+                  }
                 `}</style>
                 {/* Lid */}
                 <div
