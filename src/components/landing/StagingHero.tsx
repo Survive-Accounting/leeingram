@@ -130,7 +130,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 lineHeight: 1.6,
               }}
             >
-              AI-powered accounting study tools — built by Lee Ingram, Ole Miss alum & tutor helping students nationwide.
+              AI-powered accounting study tools built by Lee Ingram—Ole Miss alum & tutor that's stoked to help students nationwide.
             </p>
 
             <div className="mt-8 hero-anim-btn flex flex-col items-center md:items-start gap-3">
@@ -166,17 +166,6 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
 
           {/* RIGHT — Product visual */}
           <div className="flex-1 w-full flex flex-col items-center md:items-start justify-center md:-ml-4 lg:-ml-8" style={{ minHeight: 480 }}>
-            <div
-              className="hero-anim-cards-label w-full text-center md:text-left mb-4"
-              style={{ maxWidth: 480, paddingLeft: 8 }}
-            >
-              <span
-                className="text-[11px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-              >
-                What you'll use →
-              </span>
-            </div>
             <div
               className="relative w-full"
               style={{ maxWidth: 480, height: 420 }}
