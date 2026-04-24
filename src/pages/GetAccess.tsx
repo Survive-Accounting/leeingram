@@ -207,6 +207,7 @@ export default function GetAccess() {
             includedCourses,
             autoRenew: extraCount > 0,
             extraSemesters: extraCount,
+            lifetimeUpgrade: showLifetime && lifetimeUpgrade,
             origin: window.location.origin,
           },
         },
