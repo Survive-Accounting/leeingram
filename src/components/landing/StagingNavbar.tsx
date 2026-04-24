@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MagicLinkModal from "./MagicLinkModal";
+import AnimatedArrow from "./AnimatedArrow";
 
 const NAVY = "#14213D";
 
