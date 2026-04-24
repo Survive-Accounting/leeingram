@@ -302,36 +302,56 @@ export default function StagingCoursesSection({
         .demo-fade-up { animation: demoFadeUp 280ms ease-out forwards; }
       `}</style>
 
-      {/* Section heading */}
-      <div className="mx-auto text-center mb-8" style={{ maxWidth: 600 }}>
-        <span
-          className="inline-block text-[12px] font-bold uppercase rounded-full mb-4"
-          style={{
-            background: NAVY,
-            color: "#FFFFFF",
-            fontFamily: "Inter, sans-serif",
-            padding: "8px 20px",
-            letterSpacing: "0.08em",
-          }}
-        >
-          Try a demo
-        </span>
+      {/* Section heading + CTA */}
+      <div className="mx-auto text-center mb-10" style={{ maxWidth: 640 }}>
         <h2
-          className="text-[26px] sm:text-[32px] leading-tight"
+          className="text-[28px] sm:text-[36px] leading-tight"
           style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: NAVY }}
         >
-          See it in action
+          Explore what you'll get
         </h2>
         <p
-          className="mt-3 text-[15px]"
-          style={{ fontFamily: "Inter, sans-serif", color: "#6B7280" }}
+          className="mt-3 sm:mt-4 text-[15px] sm:text-[16px]"
+          style={{ fontFamily: "Inter, sans-serif", color: "#6B7280", lineHeight: 1.55 }}
         >
-          Pick a course, drill into a real practice problem, and explore.
+          Fast, efficient tools — built by a real tutor, not a textbook.
         </p>
+
+        <div style={{ marginTop: 22 }}>
+          <button
+            onClick={() => {
+              const introSlug = "intro-accounting-1";
+              if (ordered.find((c) => c.slug === introSlug)) {
+                setSelectedSlug(introSlug);
+              }
+              setPendingAutoSelect(true);
+              requestAnimationFrame(() => {
+                const el = document.getElementById("explore-demo");
+                if (el) {
+                  const top =
+                    el.getBoundingClientRect().top + window.scrollY - 24;
+                  window.scrollTo({ top, behavior: "smooth" });
+                }
+              });
+            }}
+            className="explore-cta inline-flex items-center gap-2 rounded-full text-[14px] font-semibold"
+            style={{
+              background: NAVY,
+              color: "#FFFFFF",
+              padding: "12px 24px",
+              fontFamily: "Inter, sans-serif",
+              boxShadow: "0 6px 16px -4px rgba(20,33,61,0.28)",
+              border: "1px solid rgba(20,33,61,0.9)",
+            }}
+          >
+            Start Exploring
+            <span aria-hidden className="explore-cta-arrow">→</span>
+          </button>
+        </div>
       </div>
 
       {/* Course tabs */}
-      <div className="mx-auto max-w-[1100px] mb-6">
+      <div id="explore-demo" className="mx-auto max-w-[1100px] mb-6 scroll-mt-20">
         <div className="flex flex-wrap justify-center gap-2">
           {ordered.map((c) => {
             const isActive = c.slug === selectedSlug;
