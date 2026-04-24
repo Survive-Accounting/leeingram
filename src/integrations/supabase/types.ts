@@ -4102,6 +4102,7 @@ export type Database = {
       }
       org_accounts: {
         Row: {
+          auto_reup_enabled: boolean
           campus_id: string
           contact_email: string
           created_at: string
@@ -4110,8 +4111,10 @@ export type Database = {
           org_name_manual: string | null
           status: string
           stripe_customer_id: string | null
+          weekly_seat_limit: number
         }
         Insert: {
+          auto_reup_enabled?: boolean
           campus_id: string
           contact_email: string
           created_at?: string
@@ -4120,8 +4123,10 @@ export type Database = {
           org_name_manual?: string | null
           status?: string
           stripe_customer_id?: string | null
+          weekly_seat_limit?: number
         }
         Update: {
+          auto_reup_enabled?: boolean
           campus_id?: string
           contact_email?: string
           created_at?: string
@@ -4130,6 +4135,7 @@ export type Database = {
           org_name_manual?: string | null
           status?: string
           stripe_customer_id?: string | null
+          weekly_seat_limit?: number
         }
         Relationships: [
           {
