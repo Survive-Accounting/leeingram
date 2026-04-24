@@ -172,13 +172,13 @@ export default function GetAccess() {
 
       {/* Single-column centered checkout */}
       <section className="px-4 sm:px-6 pb-16 relative">
-        <div className="max-w-[640px] mx-auto relative">
+        <div className="max-w-[560px] mx-auto relative">
           <div
             className="rounded-2xl p-6 sm:p-8 relative z-10"
             style={{
               background: "#fff",
-              boxShadow: "0 16px 48px rgba(20,33,61,0.12), 0 2px 6px rgba(20,33,61,0.06)",
-              border: "1px solid rgba(20,33,61,0.08)",
+              boxShadow: "0 24px 60px rgba(20,33,61,0.10), 0 2px 8px rgba(20,33,61,0.04)",
+              border: "1px solid #E0E7F0",
             }}
           >
             <h2
