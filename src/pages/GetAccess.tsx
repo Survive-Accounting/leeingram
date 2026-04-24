@@ -19,6 +19,27 @@ const BG_GRADIENT =
 
 const PRICE = 99;
 const EXTEND_PRICE = 50;
+const LIFETIME_UPGRADE_PRICE = 100;
+
+/**
+ * Returns a season+year label for the Nth semester from now.
+ * stepsAhead = 0 → current semester (e.g., "Spring 2026")
+ */
+function getSeasonLabel(stepsAhead: number): string {
+  const now = new Date();
+  let year = now.getFullYear();
+  let isFirstHalf = now.getMonth() < 6; // Spring if true, else Fall
+
+  for (let i = 0; i < stepsAhead; i++) {
+    if (isFirstHalf) {
+      isFirstHalf = false;
+    } else {
+      isFirstHalf = true;
+      year += 1;
+    }
+  }
+  return `${isFirstHalf ? "Spring" : "Fall"} ${year}`;
+}
 
 /**
  * Returns the access end date for the Nth semester from now.
