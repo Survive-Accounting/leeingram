@@ -68,13 +68,13 @@ interface ProblemItem {
   id: string;
   source_ref: string;
   problem_title: string | null;
-  asset_code?: string | null;
+  asset_name?: string | null;
 }
 
 interface ProblemDetail {
   survive_problem_text: string | null;
   problem_title: string | null;
-  asset_code: string | null;
+  asset_name: string | null;
   instruction_1: string | null;
   instruction_2: string | null;
   instruction_3: string | null;
@@ -220,7 +220,7 @@ export default function StagingCoursesSection({
         (supabase as any)
           .from("teaching_assets")
           .select(
-            "survive_problem_text, problem_title, asset_code, instruction_1, instruction_2, instruction_3, instruction_4, instruction_5, survive_solution_text",
+            "survive_problem_text, problem_title, asset_name, instruction_1, instruction_2, instruction_3, instruction_4, instruction_5, survive_solution_text",
           )
           .eq("id", selectedProblem.id)
           .maybeSingle(),
@@ -754,8 +754,8 @@ function ViewerContent({
     .slice(0, 2)
     .join("\n");
 
-  const fullSolutionUrl = detail.asset_code
-    ? `/solutions/${detail.asset_code}`
+  const fullSolutionUrl = detail.asset_name
+    ? `/solutions/${detail.asset_name}`
     : null;
 
   return (
