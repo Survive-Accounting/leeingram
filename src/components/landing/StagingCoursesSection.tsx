@@ -263,8 +263,8 @@ export default function StagingCoursesSection({
                     100% { opacity: 1; }
                   }
                   @keyframes demoCursorBlink {
-                    0%, 50% { opacity: 1; }
-                    51%, 100% { opacity: 0; }
+                    0%, 45% { opacity: 1; }
+                    55%, 100% { opacity: 0.05; }
                   }
                   @keyframes demoIdleFadeUp {
                     0% { opacity: 0; transform: translateY(8px); }
@@ -275,8 +275,8 @@ export default function StagingCoursesSection({
                     margin-left: 4px;
                     color: #93C5FD;
                     font-weight: 300;
-                    animation: demoCursorBlink 1.1s steps(1, end) infinite;
-                    text-shadow: 0 0 8px rgba(147,197,253,0.6);
+                    animation: demoCursorBlink 1.6s ease-in-out infinite;
+                    text-shadow: 0 0 8px rgba(147,197,253,0.5);
                   }
                   .demo-idle-content > h2 {
                     opacity: 0;
