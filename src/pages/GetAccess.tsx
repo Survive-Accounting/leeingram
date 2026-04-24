@@ -558,6 +558,9 @@ export default function GetAccess() {
                         setTimeout(() => {
                           setDiscountToasts((t) => t.filter((x) => x.id !== id));
                         }, 800);
+                      } else if (!checked && extraCount === 0) {
+                        // Suppress the +$ toast when restoring price after uncheck
+                        skipNextToastRef.current = true;
                       }
                     }}
                     className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[#14213D]"
