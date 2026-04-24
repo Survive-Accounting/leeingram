@@ -17,10 +17,10 @@ export default function StagingNavbar({ onCtaClick, onPricingClick }: StagingNav
       <nav
         className="w-full px-5 sm:px-8 h-16 flex items-center justify-between border-b"
         style={{
-          background: "rgba(255,255,255,0.98)",
-          borderColor: "rgba(0,0,0,0.06)",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-          backdropFilter: "blur(12px)",
+          background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,249,254,0.96) 100%)",
+          borderColor: "rgba(20,33,61,0.08)",
+          boxShadow: "0 4px 16px rgba(20,33,61,0.06), 0 1px 0 rgba(20,33,61,0.04)",
+          backdropFilter: "blur(14px)",
         }}
       >
         {/* Logo */}
