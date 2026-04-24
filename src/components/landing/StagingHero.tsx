@@ -78,10 +78,10 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             cardFloat 7s ease-in-out infinite;
           will-change: transform;
         }
-        /* Staggered float timing for subtle, drifting motion */
-        .product-card-1 { --rot: -3deg; animation-delay: 0.5s, 1.2s;  animation-duration: 0.7s, 7s; }
-        .product-card-2 { --rot: 2deg;  animation-delay: 0.7s, 1.8s;  animation-duration: 0.7s, 8s; }
-        .product-card-3 { --rot: -2deg; animation-delay: 0.9s, 2.4s;  animation-duration: 0.7s, 7.5s; }
+        /* Coordinated, slow float — same duration, slight delay stagger */
+        .product-card-1 { --rot: -3deg; animation-delay: 0.5s, 1.2s;  animation-duration: 0.7s, 9s; }
+        .product-card-2 { --rot: 2deg;  animation-delay: 0.7s, 1.6s;  animation-duration: 0.7s, 9s; }
+        .product-card-3 { --rot: -2deg; animation-delay: 0.9s, 2.0s;  animation-duration: 0.7s, 9s; }
 
         @media (prefers-reduced-motion: reduce) {
           .hero-anim-eyebrow, .hero-anim-headline, .hero-anim-sub, .hero-anim-btn, .hero-anim-link, .hero-anim-cards-label,
