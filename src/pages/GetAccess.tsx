@@ -17,14 +17,17 @@ const EXTEND_PRICE = 50;
 const LIFETIME_UPGRADE_PRICE = 100;
 const MAX_EXTRA_SEMESTERS = 3; // 4 total including base
 
-/**
- * Returns a short season+year label for the Nth semester from now.
- * stepsAhead = 0 → current semester (e.g., "Spring '26")
- */
+// Demo promo codes — replace with server-validated codes later.
+const VALID_PROMOS: Record<string, { type: "percent" | "flat"; value: number }> = {
+  STUDY10: { type: "percent", value: 10 },
+  WELCOME20: { type: "percent", value: 20 },
+  FRIEND25: { type: "flat", value: 25 },
+};
+
 function getShortSeasonLabel(stepsAhead: number): string {
   const now = new Date();
   let year = now.getFullYear();
-  let isFirstHalf = now.getMonth() < 6; // Spring if true, else Fall
+  let isFirstHalf = now.getMonth() < 6;
 
   for (let i = 0; i < stepsAhead; i++) {
     if (isFirstHalf) {
@@ -51,29 +54,75 @@ export default function GetAccess() {
   const showLifetime = allSemestersAdded;
 
   const baseTotal = PRICE + extraCount * EXTEND_PRICE;
-  const totalPrice = baseTotal + (showLifetime && lifetimeUpgrade ? LIFETIME_UPGRADE_PRICE : 0);
+  const subtotal = baseTotal + (showLifetime && lifetimeUpgrade ? LIFETIME_UPGRADE_PRICE : 0);
 
-  // Floating toast state for price changes
+  // Promo state
+  const [promoOpen, setPromoOpen] = useState(false);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null);
+
+  // Recompute discount whenever subtotal or applied promo changes
+  useEffect(() => {
+    if (!appliedPromo) return;
+    const def = VALID_PROMOS[appliedPromo.code];
+    if (!def) return;
+    const newDiscount = def.type === "percent"
+      ? Math.round((subtotal * def.value) / 100)
+      : Math.min(def.value, subtotal);
+    if (newDiscount !== appliedPromo.discount) {
+      setAppliedPromo({ code: appliedPromo.code, discount: newDiscount });
+    }
+  }, [subtotal, appliedPromo]);
+
+  const totalPrice = Math.max(0, subtotal - (appliedPromo?.discount || 0));
+
+  const handleApplyPromo = () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+    const def = VALID_PROMOS[code];
+    if (!def) {
+      setPromoError("Invalid code");
+      return;
+    }
+    const discount = def.type === "percent"
+      ? Math.round((subtotal * def.value) / 100)
+      : Math.min(def.value, subtotal);
+    setAppliedPromo({ code, discount });
+    setPromoError(null);
+    setPromoInput("");
+    setPromoOpen(false);
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+    setPromoError(null);
+  };
+
+  // Floating toast — only positive deltas (additions)
   const [priceToasts, setPriceToasts] = useState<Array<{ id: number; delta: number }>>([]);
   const [pulseKey, setPulseKey] = useState(0);
-  const prevTotalRef = React.useRef(totalPrice);
+  const prevSubtotalRef = React.useRef(subtotal);
 
   useEffect(() => {
-    const prev = prevTotalRef.current;
-    if (prev !== totalPrice) {
-      const delta = totalPrice - prev;
-      const id = Date.now() + Math.random();
-      setPriceToasts((t) => [...t, { id, delta }]);
+    const prev = prevSubtotalRef.current;
+    if (prev !== subtotal) {
+      const delta = subtotal - prev;
+      if (delta > 0) {
+        const id = Date.now() + Math.random();
+        setPriceToasts((t) => [...t, { id, delta }]);
+        const timeout = setTimeout(() => {
+          setPriceToasts((t) => t.filter((x) => x.id !== id));
+        }, 1100);
+        prevSubtotalRef.current = subtotal;
+        setPulseKey((k) => k + 1);
+        return () => clearTimeout(timeout);
+      }
+      prevSubtotalRef.current = subtotal;
       setPulseKey((k) => k + 1);
-      const timeout = setTimeout(() => {
-        setPriceToasts((t) => t.filter((x) => x.id !== id));
-      }, 1100);
-      prevTotalRef.current = totalPrice;
-      return () => clearTimeout(timeout);
     }
-  }, [totalPrice]);
+  }, [subtotal]);
 
-  // Reset lifetime if user removes a semester and it's no longer offered.
   useEffect(() => {
     if (!showLifetime && lifetimeUpgrade) setLifetimeUpgrade(false);
   }, [showLifetime, lifetimeUpgrade]);
@@ -86,7 +135,6 @@ export default function GetAccess() {
     [totalSemesters],
   );
 
-  // Resolve email: URL param → localStorage → sessionStorage.
   const initialEmail = useMemo(() => {
     if (typeof window === "undefined") return emailParam;
     if (emailParam) {
@@ -144,6 +192,7 @@ export default function GetAccess() {
             autoRenew: extraCount > 0,
             extraSemesters: extraCount,
             lifetimeUpgrade: showLifetime && lifetimeUpgrade,
+            promoCode: appliedPromo?.code || null,
             origin: window.location.origin,
           },
         },
@@ -161,10 +210,11 @@ export default function GetAccess() {
     }
   };
 
-  // Next semester to offer (the one immediately after the last selected).
   const nextSemesterLabel = !allSemestersAdded
     ? getShortSeasonLabel(totalSemesters)
     : null;
+
+  const hasDiscount = !!appliedPromo && appliedPromo.discount > 0;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: BG_GRADIENT }}>
@@ -200,114 +250,203 @@ export default function GetAccess() {
               border: "1px solid #E0E7F0",
             }}
           >
-            {/* Floating price badge — top right */}
-            <div className="absolute -top-5 right-4 sm:right-6 z-20 flex flex-col items-center motion-reduce:animate-none">
-              <div
-                key={`pulse-${pulseKey}`}
-                className="relative rounded-2xl px-5 py-3 flex flex-col items-center justify-center animate-[pricePulse_400ms_ease-out] motion-reduce:animate-none"
-                style={{
-                  background: "#fff",
-                  border: `1.5px solid ${NAVY}`,
-                  boxShadow: "0 8px 24px rgba(20,33,61,0.12), 0 2px 6px rgba(20,33,61,0.06)",
-                  minWidth: 96,
-                }}
-              >
-                <div
-                  className="font-bold leading-none"
-                  style={{ color: NAVY, fontSize: 28, letterSpacing: "-0.02em", fontFamily: "Inter, sans-serif" }}
-                >
-                  ${totalPrice}
-                </div>
-                <div
-                  className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider"
-                  style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                >
-                  total
-                </div>
-
-                {/* Floating delta toasts */}
-                {priceToasts.map((t) => {
-                  const isPositive = t.delta > 0;
-                  return (
-                    <span
-                      key={t.id}
-                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-1 text-[14px] font-bold animate-[priceToast_1100ms_ease-out_forwards] motion-reduce:animate-[priceToastFade_900ms_ease-out_forwards]"
-                      style={{
-                        color: isPositive ? "#16A34A" : "#B45563",
-                        fontFamily: "Inter, sans-serif",
-                        textShadow: "0 1px 2px rgba(255,255,255,0.8)",
-                      }}
-                    >
-                      {isPositive ? "+" : "−"}${Math.abs(t.delta)}
-                    </span>
-                  );
-                })}
-              </div>
-              <div
-                className="mt-1 text-[10px]"
-                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-              >
-                One-time payment
-              </div>
-            </div>
             <style>{`
               @keyframes pricePulse {
                 0% { transform: scale(1); }
-                50% { transform: scale(1.06); }
+                50% { transform: scale(1.05); }
                 100% { transform: scale(1); }
               }
               @keyframes priceToast {
                 0% { opacity: 0; transform: translate(-50%, 0); }
                 15% { opacity: 1; }
-                100% { opacity: 0; transform: translate(-50%, -28px); }
+                100% { opacity: 0; transform: translate(-50%, -36px); }
               }
               @keyframes priceToastFade {
                 0%, 100% { opacity: 0; }
                 30%, 70% { opacity: 1; }
               }
             `}</style>
-            <h2
-              className="text-[24px] sm:text-[28px]"
-              style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
-            >
-              Secure Checkout
-            </h2>
 
-            {email.trim() && (
+            {/* Prominent price badge — top right, partially overlapping card edge */}
+            <div className="absolute -top-6 right-4 sm:right-6 z-20 flex flex-col items-end">
+              <div
+                key={`pulse-${pulseKey}`}
+                className="relative rounded-2xl px-6 py-4 flex flex-col items-center justify-center animate-[pricePulse_400ms_ease-out] motion-reduce:animate-none"
+                style={{
+                  background: "#fff",
+                  border: `1.5px solid ${NAVY}`,
+                  boxShadow: "0 12px 32px rgba(20,33,61,0.18), 0 2px 8px rgba(20,33,61,0.08)",
+                  minWidth: 120,
+                }}
+              >
+                {hasDiscount && (
+                  <div
+                    className="text-[14px] line-through leading-none mb-1"
+                    style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                  >
+                    ${subtotal}
+                  </div>
+                )}
+                <div
+                  className="font-bold leading-none"
+                  style={{
+                    color: hasDiscount ? "#16A34A" : NAVY,
+                    fontSize: 40,
+                    letterSpacing: "-0.02em",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                >
+                  ${totalPrice}
+                </div>
+                <div
+                  className="mt-1.5 text-[11px] font-medium"
+                  style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                >
+                  one-time
+                </div>
+
+                {/* Floating positive delta toasts only */}
+                {priceToasts.map((t) => (
+                  <span
+                    key={t.id}
+                    className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-2 text-[15px] font-bold animate-[priceToast_1100ms_ease-out_forwards] motion-reduce:animate-[priceToastFade_900ms_ease-out_forwards]"
+                    style={{
+                      color: "#16A34A",
+                      fontFamily: "Inter, sans-serif",
+                      textShadow: "0 1px 3px rgba(255,255,255,0.9)",
+                    }}
+                  >
+                    +${t.delta}
+                  </span>
+                ))}
+              </div>
+
+              {/* Promo code area under badge */}
+              <div className="mt-2 w-full flex flex-col items-end" style={{ minWidth: 120 }}>
+                {hasDiscount ? (
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span
+                      className="text-[11px] font-semibold"
+                      style={{ color: "#16A34A", fontFamily: "Inter, sans-serif" }}
+                    >
+                      {appliedPromo!.code} applied
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleRemovePromo}
+                      className="text-[10px] underline hover:no-underline"
+                      style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : promoOpen ? (
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        value={promoInput}
+                        onChange={(e) => { setPromoInput(e.target.value); setPromoError(null); }}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleApplyPromo(); }}
+                        placeholder="Code"
+                        className="rounded-md px-2 py-1 text-[12px] outline-none focus:ring-2 focus:ring-[#14213D]/20"
+                        style={{
+                          border: "1px solid #CBD5E1",
+                          width: 90,
+                          fontFamily: "Inter, sans-serif",
+                          color: NAVY,
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyPromo}
+                        className="rounded-md px-2.5 py-1 text-[11px] font-semibold text-white hover:brightness-110"
+                        style={{ background: NAVY, fontFamily: "Inter, sans-serif" }}
+                      >
+                        Apply
+                      </button>
+                    </div>
+                    {promoError && (
+                      <span
+                        className="text-[10px]"
+                        style={{ color: RED, fontFamily: "Inter, sans-serif" }}
+                      >
+                        {promoError}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setPromoOpen(true)}
+                    className="text-[11px] underline hover:no-underline"
+                    style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                  >
+                    Promo code?
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Header — Secure Checkout */}
+            <div className="pr-[140px] sm:pr-[140px]">
+              <h2
+                className="text-[24px] sm:text-[28px] leading-tight"
+                style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+              >
+                Secure Checkout
+              </h2>
               <p
-                className="mt-1 text-[12px]"
+                className="mt-1 text-[12px] flex items-center gap-1"
                 style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
               >
-                Purchasing for: <span style={{ color: "#64748B" }}>{email.trim()}</span>
+                Powered by{" "}
+                <span
+                  className="font-semibold"
+                  style={{
+                    color: "#635BFF",
+                    fontFamily: "Inter, sans-serif",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Stripe
+                </span>
               </p>
-            )}
-            <p
-              className="mt-1 mb-6 text-[12px]"
-              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-            >
-              🔒 One account per student
-            </p>
+            </div>
 
-            {/* 1. Survive Study Pass — semester selection */}
-            <div
-              className="mb-5 rounded-lg p-4"
-              style={{
-                border: "1px solid #E2E8F0",
-                background: "#fff",
-                fontFamily: "Inter, sans-serif",
-              }}
-            >
-              <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
+            {/* Product section */}
+            <div className="mt-7">
+              <div
+                className="text-[16px] font-semibold"
+                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+              >
                 Survive Study Pass
               </div>
+              {email.trim() && (
+                <p
+                  className="mt-1 text-[12px]"
+                  style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                >
+                  Purchasing for: <span style={{ color: "#64748B" }}>{email.trim()}</span>
+                </p>
+              )}
+              <p
+                className="mt-0.5 text-[12px]"
+                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+              >
+                🔒 One account per student
+              </p>
+            </div>
+
+            {/* Access Period */}
+            <div className="mt-6" style={{ fontFamily: "Inter, sans-serif" }}>
               <div
-                className="mt-3 text-[12px] font-semibold uppercase tracking-wider"
+                className="text-[12px] font-semibold uppercase tracking-wider"
                 style={{ color: "#64748B" }}
               >
                 Access Period
               </div>
 
-              {/* Pills row — min-height keeps layout stable as pills wrap */}
               <div
                 className="mt-2 flex flex-wrap items-center gap-1.5"
                 style={{ minHeight: 36 }}
@@ -342,7 +481,6 @@ export default function GetAccess() {
                 })}
               </div>
 
-              {/* Add-semester slot — becomes Lifetime upsell once all 4 semesters are added */}
               <div className="mt-3" style={{ minHeight: 40 }}>
                 {nextSemesterLabel ? (
                   <button
@@ -355,8 +493,7 @@ export default function GetAccess() {
                       background: "#fff",
                     }}
                   >
-                    + Add {nextSemesterLabel}{" "}
-                    <span style={{ color: "#94A3B8", fontWeight: 500 }}>(+${EXTEND_PRICE})</span>
+                    + Add {nextSemesterLabel}
                   </button>
                 ) : (
                   <label
@@ -376,7 +513,6 @@ export default function GetAccess() {
                       <div className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: NAVY }}>
                         <Sparkles className="w-3.5 h-3.5" />
                         Upgrade to Lifetime Access
-                        <span style={{ color: "#1E40AF", fontWeight: 600 }}> (+${LIFETIME_UPGRADE_PRICE})</span>
                       </div>
                       <div className="text-[12px] mt-0.5" style={{ color: "#475569" }}>
                         Never pay again. Includes all future semesters.
@@ -417,7 +553,8 @@ export default function GetAccess() {
                 {checkoutError}
               </div>
             )}
-            {/* 5. Trust block — only two lines */}
+
+            {/* Trust block */}
             <div
               className="mt-4 flex flex-col items-center gap-1.5 text-[12px]"
               style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
@@ -435,7 +572,6 @@ export default function GetAccess() {
         </div>
       </section>
 
-      {/* Testimonials below the checkout — same widget as home page */}
       <StagingTestimonialsSection onCtaClick={() => navigate("/staging")} />
 
       <LandingFooter
