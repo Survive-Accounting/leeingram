@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Mail } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import leeStadium from "@/assets/lee-stadium.jpg";
 
@@ -45,7 +46,7 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="w-[calc(100%-2rem)] sm:max-w-[520px] max-h-[90vh] overflow-y-auto p-0 border-0"
+        className="w-[calc(100%-2rem)] sm:max-w-[600px] max-h-[90vh] overflow-y-auto p-0 border-0"
         style={{ borderRadius: 16, background: "#14213D" }}
       >
         <DialogHeader className="sr-only">
@@ -70,7 +71,7 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
               onLoad={() => setImgLoaded(true)}
               className="w-full h-full object-cover"
               style={{
-                objectPosition: "30% center",
+                objectPosition: "50% center",
                 opacity: imgLoaded ? 1 : 0,
                 filter: imgLoaded ? "blur(0)" : "blur(8px)",
                 transform: imgLoaded ? "scale(1)" : "scale(1.02)",
@@ -79,13 +80,13 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             />
 
-            {/* ESPN-style scoreboard overlay */}
+            {/* ESPN-style scoreboard overlay (compact, black bg) */}
             <div
-              className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 flex items-stretch overflow-hidden select-none"
+              className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 flex items-stretch overflow-hidden select-none"
               style={{
-                background: "rgba(11,31,58,0.9)",
-                borderRadius: 5,
-                boxShadow: "0 4px 12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)",
+                background: "rgba(0,0,0,0.92)",
+                borderRadius: 4,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)",
                 fontFamily: "'Inter', sans-serif",
                 color: "#fff",
                 lineHeight: 1,
@@ -99,25 +100,25 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
                   50%      { opacity: 1; }
                 }
               `}</style>
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2">
-                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider" style={{ color: "#F4B6BD" }}>
+              <div className="flex items-center gap-1 px-1.5 py-1">
+                <span className="text-[7px] sm:text-[8px] font-bold uppercase tracking-wider" style={{ color: "#F4B6BD" }}>
                   Ole Miss
                 </span>
-                <span className="text-[13px] sm:text-[15px] font-extrabold tabular-nums">27</span>
+                <span className="text-[9px] sm:text-[10px] font-extrabold tabular-nums">27</span>
               </div>
-              <div className="w-px my-1 sm:my-1.5" style={{ background: "rgba(255,255,255,0.18)" }} />
+              <div className="w-px my-0.5" style={{ background: "rgba(255,255,255,0.18)" }} />
               <div
-                className="flex items-center px-2 sm:px-2.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.12em]"
+                className="flex items-center px-1 text-[6px] sm:text-[7px] font-bold uppercase tracking-[0.12em]"
                 style={{ color: "#94A3B8", animation: "scorePulse 2.4s ease-in-out infinite" }}
               >
                 Final
               </div>
-              <div className="w-px my-1 sm:my-1.5" style={{ background: "rgba(255,255,255,0.18)" }} />
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2">
-                <span className="text-[13px] sm:text-[15px] font-extrabold tabular-nums" style={{ color: "rgba(255,255,255,0.7)" }}>
+              <div className="w-px my-0.5" style={{ background: "rgba(255,255,255,0.18)" }} />
+              <div className="flex items-center gap-1 px-1.5 py-1">
+                <span className="text-[9px] sm:text-[10px] font-extrabold tabular-nums" style={{ color: "rgba(255,255,255,0.7)" }}>
                   20
                 </span>
-                <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.55)" }}>
+                <span className="text-[7px] sm:text-[8px] font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.55)" }}>
                   Arkansas
                 </span>
               </div>
@@ -163,6 +164,16 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
             <p>You've got this!</p>
             <p className="font-medium text-white">— Lee</p>
           </div>
+
+          {/* Email contact */}
+          <a
+            href="mailto:lee@surviveaccounting.com"
+            className="mt-5 inline-flex items-center gap-2 text-[13px] sm:text-[14px] hover:text-white transition-colors"
+            style={{ color: "rgba(255,255,255,0.75)" }}
+          >
+            <Mail className="w-4 h-4" />
+            lee@surviveaccounting.com
+          </a>
 
           {/* PS */}
           <p
