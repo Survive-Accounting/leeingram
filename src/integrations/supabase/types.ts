@@ -4233,6 +4233,86 @@ export type Database = {
           },
         ]
       }
+      org_members: {
+        Row: {
+          email: string
+          id: string
+          joined_at: string
+          org_account_id: string
+          purchase_id: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          email: string
+          id?: string
+          joined_at?: string
+          org_account_id: string
+          purchase_id?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          email?: string
+          id?: string
+          joined_at?: string
+          org_account_id?: string
+          purchase_id?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_members_org_account_id_fkey"
+            columns: ["org_account_id"]
+            isOneToOne: false
+            referencedRelation: "org_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_members_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "org_license_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_pending_auto_reup: {
+        Row: {
+          email: string
+          fulfilled_at: string | null
+          id: string
+          org_account_id: string
+          queued_at: string
+          status: string
+        }
+        Insert: {
+          email: string
+          fulfilled_at?: string | null
+          id?: string
+          org_account_id: string
+          queued_at?: string
+          status?: string
+        }
+        Update: {
+          email?: string
+          fulfilled_at?: string | null
+          id?: string
+          org_account_id?: string
+          queued_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_pending_auto_reup_org_account_id_fkey"
+            columns: ["org_account_id"]
+            isOneToOne: false
+            referencedRelation: "org_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_seat_pricing: {
         Row: {
           badge: string | null
@@ -7274,6 +7354,10 @@ export type Database = {
     }
     Functions: {
       calculate_respond_by: { Args: { p_created_at: string }; Returns: string }
+      claim_org_seat: {
+        Args: { p_email: string; p_org_account_id: string }
+        Returns: Json
+      }
       count_student_devices: { Args: { p_student_id: string }; Returns: number }
       get_campus_price: {
         Args: { p_campus_slug: string; p_product_type: string }
