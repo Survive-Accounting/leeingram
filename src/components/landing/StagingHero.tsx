@@ -40,7 +40,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
   return (
     <section
       className="relative w-full overflow-hidden staging-hero isolate"
-      style={{ background: "#002147" }}
+      style={{ background: "#0A2A57" }}
     >
       {/* Stripe-style angled color ribbons */}
       <div
@@ -52,6 +52,8 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         <div className="ribbon ribbon-3" />
         <div className="ribbon ribbon-4" />
         <div className="ribbon ribbon-5" />
+        <div className="ribbon ribbon-6" />
+        <div className="ribbon ribbon-7" />
       </div>
 
       <style>{`
