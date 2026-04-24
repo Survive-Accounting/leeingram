@@ -69,24 +69,6 @@ function getAccessEndDate(stepsAhead: number): string {
   return `${monthName} ${endDay}, ${year}`;
 }
 
-const INCLUDES = [
-  {
-    icon: Sword,
-    label: "Study Tools",
-    body: "Flashcards, formulas, journal entries — built for late-night cramming.",
-  },
-  {
-    icon: PenLine,
-    label: "Practice Problems",
-    body: "Mock textbook problems with AI-assisted explanations.",
-  },
-  {
-    icon: MonitorPlay,
-    label: "On-Demand Videos",
-    body: "Send Lee a question — get a personalized video response.",
-    isNew: true,
-  },
-];
 
 export default function GetAccess() {
   const navigate = useNavigate();
