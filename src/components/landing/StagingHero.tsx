@@ -57,7 +57,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         }
         @keyframes cardFloat {
           0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
-          50%      { transform: translateY(-8px) rotate(var(--rot, 0deg)); }
+          50%      { transform: translateY(-10px) rotate(var(--rot, 0deg)); }
         }
         @keyframes cardFadeIn {
           from { opacity: 0; transform: translateY(20px) rotate(var(--rot, 0deg)) scale(0.95); }
@@ -67,19 +67,21 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         .hero-anim-eyebrow { opacity: 0; animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s forwards; }
         .hero-anim-headline { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.25s forwards; }
         .hero-anim-sub      { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.45s forwards; }
-        .hero-anim-bullets  { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.6s forwards; }
-        .hero-anim-btn      { opacity: 0; animation: heroBtnIn  0.55s cubic-bezier(0.34,1.56,0.64,1) 0.8s forwards; }
+        .hero-anim-btn      { opacity: 0; animation: heroBtnIn  0.55s cubic-bezier(0.34,1.56,0.64,1) 0.65s forwards; }
+        .hero-anim-link     { opacity: 0; animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.85s forwards; }
+        .hero-anim-cards-label { opacity: 0; animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.4s forwards; }
 
         .product-card {
           opacity: 0;
           animation:
             cardFadeIn 0.7s cubic-bezier(0.16,1,0.3,1) forwards,
-            cardFloat 6s ease-in-out infinite;
+            cardFloat 7s ease-in-out infinite;
           will-change: transform;
         }
-        .product-card-1 { --rot: -3deg; animation-delay: 0.5s, 1.2s; }
-        .product-card-2 { --rot: 2deg;  animation-delay: 0.7s, 1.5s; }
-        .product-card-3 { --rot: -2deg; animation-delay: 0.9s, 1.8s; }
+        /* Staggered float timing for subtle, drifting motion */
+        .product-card-1 { --rot: -3deg; animation-delay: 0.5s, 1.2s;  animation-duration: 0.7s, 7s; }
+        .product-card-2 { --rot: 2deg;  animation-delay: 0.7s, 1.8s;  animation-duration: 0.7s, 8s; }
+        .product-card-3 { --rot: -2deg; animation-delay: 0.9s, 2.4s;  animation-duration: 0.7s, 7.5s; }
 
         @media (prefers-reduced-motion: reduce) {
           .hero-anim-eyebrow, .hero-anim-headline, .hero-anim-sub, .hero-anim-bullets, .hero-anim-btn,
