@@ -18,7 +18,36 @@ const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
 const PRICE = 99;
-const ACCESS_THROUGH = "August 1, 2026";
+
+/**
+ * Semester access windows: renew Jan 1 (→ Jun 30) and Jul 1 (→ Dec 31).
+ * Base pass covers the current semester; auto-renew extends through the
+ * next one.
+ */
+function getAccessWindow(extend: boolean): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth(); // 0-11
+
+  // Current semester end
+  let endYear = year;
+  let endMonth = month < 6 ? 5 : 11; // June (5) or December (11)
+  let endDay = month < 6 ? 30 : 31;
+
+  if (extend) {
+    if (endMonth === 5) {
+      endMonth = 11;
+      endDay = 31;
+    } else {
+      endMonth = 5;
+      endDay = 30;
+      endYear += 1;
+    }
+  }
+
+  const monthName = new Date(endYear, endMonth, 1).toLocaleString("en-US", { month: "long" });
+  return `${monthName} ${endDay}, ${endYear}`;
+}
 
 const INCLUDES = [
   {
@@ -61,7 +90,14 @@ export default function GetAccess() {
   const courseCode = resolvedCourse.code;
   const courseLabel = formatCourseLabel(resolvedCourse);
 
+  // Next course in the campus progression (used for auto-renew label)
+  const currentIdx = progression.courses.findIndex((c) => c.slug === resolvedCourseSlug);
+  const nextCourse = currentIdx >= 0 ? progression.courses[currentIdx + 1] : undefined;
+  const nextCourseLabel = nextCourse?.code ?? nextCourse?.name ?? null;
+
   const [autoRenew, setAutoRenew] = useState(false);
+  const totalPrice = autoRenew ? PRICE * 2 : PRICE;
+  const accessThrough = getAccessWindow(autoRenew);
 
   // Resolve email: URL param → localStorage → sessionStorage.
   const initialEmail = useMemo(() => {
@@ -117,7 +153,7 @@ export default function GetAccess() {
             campus: progression.campusSlug,
             selectedCourse: resolvedCourseSlug,
             selectedPlan: "study_pass",
-            amount: PRICE,
+            amount: totalPrice,
             includedCourses: [resolvedCourse.code ?? resolvedCourse.name],
             autoRenew,
             origin: window.location.origin,
@@ -233,31 +269,58 @@ export default function GetAccess() {
                 Product
               </div>
               <div
-                className="rounded-lg px-4 py-3"
+                className="rounded-lg px-4 py-3 transition-all duration-300"
                 style={{
-                  background: "#F0F9FF",
-                  border: "1px solid #BAE6FD",
+                  background: autoRenew ? "#ECFDF5" : "#F0F9FF",
+                  border: `1px solid ${autoRenew ? "#A7F3D0" : "#BAE6FD"}`,
                   fontFamily: "Inter, sans-serif",
+                  boxShadow: autoRenew ? "0 0 0 3px rgba(16,185,129,0.10)" : "none",
                 }}
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
                     Survive Study Pass
                   </div>
-                  <div className="text-[18px] font-bold" style={{ color: NAVY }}>
-                    ${PRICE}
+                  <div className="text-[18px] font-bold transition-all duration-300" style={{ color: NAVY }}>
+                    ${totalPrice}
                   </div>
                 </div>
-                <div className="text-[12px] mt-0.5" style={{ color: "#475569" }}>
-                  Access through {ACCESS_THROUGH}
+                <div
+                  key={accessThrough}
+                  className="mt-1 animate-fade-in"
+                >
+                  <span
+                    className="text-[13px] font-medium"
+                    style={{
+                      color: autoRenew ? "#047857" : "#1E293B",
+                      background: autoRenew ? "rgba(16,185,129,0.12)" : "transparent",
+                      padding: autoRenew ? "1px 6px" : "0",
+                      borderRadius: 4,
+                      transition: "all 200ms ease-out",
+                    }}
+                  >
+                    Access through {accessThrough}
+                  </span>
                 </div>
+                {autoRenew && nextCourseLabel && (
+                  <div
+                    className="text-[12px] mt-1 animate-fade-in"
+                    style={{ color: "#047857", fontWeight: 500 }}
+                  >
+                    Includes next course ({nextCourseLabel})
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Section 3 — Auto-renew checkbox */}
             <label
-              className="flex items-start gap-3 mb-6 p-3 rounded-lg cursor-pointer transition-colors hover:bg-slate-50"
-              style={{ border: "1px solid #E2E8F0", fontFamily: "Inter, sans-serif" }}
+              className="flex items-start gap-3 mb-6 p-3 rounded-lg cursor-pointer transition-all duration-200"
+              style={{
+                border: `1px solid ${autoRenew ? "#A7F3D0" : "#E2E8F0"}`,
+                background: autoRenew ? "#F0FDF4" : "#fff",
+                fontFamily: "Inter, sans-serif",
+              }}
             >
               <input
                 type="checkbox"
@@ -267,10 +330,12 @@ export default function GetAccess() {
               />
               <div className="min-w-0">
                 <div className="text-[13px] font-semibold" style={{ color: NAVY }}>
-                  Auto-renew next semester
+                  Stay covered next semester (+${PRICE})
                 </div>
                 <div className="text-[12px] mt-0.5" style={{ color: "#64748B" }}>
-                  Stay covered for your next accounting course. Cancel anytime.
+                  {nextCourseLabel
+                    ? `Extends your access and includes ${nextCourseLabel}. Cancel anytime.`
+                    : "Extends your access through the next semester. Cancel anytime."}
                 </div>
               </div>
             </label>
@@ -299,7 +364,7 @@ export default function GetAccess() {
             >
               {checkoutLoading
                 ? "Redirecting to secure checkout..."
-                : `Get Access — $${PRICE}`}
+                : `Get Access — $${totalPrice}`}
             </button>
 
             {checkoutError && (
