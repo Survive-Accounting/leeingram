@@ -528,14 +528,6 @@ export default function GetAccess() {
                 {checkoutError}
               </div>
             )}
-
-            <div
-              className="mt-3 text-center text-[12px]"
-              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-            >
-              ⭐⭐⭐⭐⭐ Trusted by 1,200+ students since 2015
-            </div>
-
             <div
               className="mt-4 flex flex-col items-center gap-1.5 text-[12px]"
               style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
@@ -633,18 +625,8 @@ export default function GetAccess() {
         </div>
       </section>
 
-      {/* Testimonials below the checkout */}
-      <section className="px-4 sm:px-6 pb-16">
-        <div className="max-w-[900px] mx-auto text-center">
-          <h2
-            className="text-[24px] sm:text-[28px] mb-6"
-            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
-          >
-            Join 1,200+ students who passed
-          </h2>
-          <TestimonialsSection />
-        </div>
-      </section>
+      {/* Testimonials below the checkout — same widget as home page */}
+      <TestimonialsSection />
 
       <LandingFooter
         onScrollToCourses={() => navigate("/staging")}
