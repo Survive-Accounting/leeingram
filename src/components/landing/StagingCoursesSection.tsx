@@ -342,7 +342,7 @@ export default function StagingCoursesSection({
               <button
                 key={c.slug}
                 onClick={() => setSelectedSlug(c.slug)}
-                className="rounded-full px-4 py-2 text-[13px] font-semibold transition-all"
+                className="rounded-full px-4 py-2 text-[13px] font-semibold transition-all inline-flex items-center gap-1.5"
                 style={{
                   fontFamily: "Inter, sans-serif",
                   background: isActive ? NAVY : "#FFFFFF",
@@ -353,6 +353,7 @@ export default function StagingCoursesSection({
                     : "0 1px 2px rgba(0,0,0,0.04)",
                 }}
               >
+                {isActive && <span aria-hidden>📚</span>}
                 {SHORT_NAME[c.slug] ?? c.name}
               </button>
             );
