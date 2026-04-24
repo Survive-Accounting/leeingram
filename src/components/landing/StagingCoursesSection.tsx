@@ -1303,13 +1303,18 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
                 ) : problems.length === 0 ? (
                   <div
                     style={{
-                      fontSize: 13,
+                      fontSize: 12,
                       color: "rgba(255,255,255,0.3)",
                       textAlign: "center",
-                      padding: 24,
+                      padding: 28,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 8,
                     }}
                   >
-                    No {DEMO_TYPE_LABELS[activeType]} in this chapter yet.
+                    <span style={{ fontSize: 24, lineHeight: 1 }}>📝</span>
+                    <span>No {DEMO_TYPE_LABELS[activeType]} in this chapter yet.</span>
                   </div>
                 ) : (
                   problems.map((p) => {
