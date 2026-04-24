@@ -502,8 +502,8 @@ export default function GetAccess() {
                 </p>
               )}
               <p
-                className="mt-0.5 text-[12px] leading-tight"
-                style={{ color: "#94A3B8" }}
+                className="mt-0.5 text-[11px] leading-tight"
+                style={{ color: "#B4BFCC" }}
               >
                 🔒 One account per student
               </p>
