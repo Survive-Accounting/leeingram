@@ -79,12 +79,12 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           pointer-events: none;
           will-change: transform;
           transform-origin: bottom right;
-          mix-blend-mode: normal;
+          mix-blend-mode: screen;
         }
         .ribbon-1 {
           width: 1400px;
           height: 280px;
-          background: linear-gradient(90deg, transparent 0%, rgba(206,17,38,0.0) 10%, rgba(206,17,38,0.7) 50%, rgba(220,60,40,0.5) 80%, transparent 100%);
+          background: linear-gradient(90deg, transparent 0%, rgba(255,40,70,0) 10%, rgba(255,50,80,0.95) 50%, rgba(255,90,70,0.75) 80%, transparent 100%);
           bottom: -80px;
           right: -200px;
           transform: rotate(-42deg);
@@ -94,7 +94,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         .ribbon-2 {
           width: 1200px;
           height: 220px;
-          background: linear-gradient(90deg, transparent 0%, rgba(160,20,50,0.0) 15%, rgba(160,20,50,0.65) 55%, rgba(180,40,80,0.45) 80%, transparent 100%);
+          background: linear-gradient(90deg, transparent 0%, rgba(220,40,90,0) 15%, rgba(230,50,110,0.85) 55%, rgba(255,80,140,0.6) 80%, transparent 100%);
           bottom: -40px;
           right: -180px;
           transform: rotate(-32deg);
@@ -104,7 +104,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         .ribbon-3 {
           width: 1100px;
           height: 200px;
-          background: linear-gradient(90deg, transparent 0%, rgba(140,40,160,0.0) 15%, rgba(140,40,160,0.55) 50%, rgba(160,60,200,0.4) 80%, transparent 100%);
+          background: linear-gradient(90deg, transparent 0%, rgba(180,80,220,0) 15%, rgba(190,90,240,0.75) 50%, rgba(220,120,255,0.55) 80%, transparent 100%);
           bottom: 60px;
           right: -160px;
           transform: rotate(-22deg);
@@ -114,7 +114,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         .ribbon-4 {
           width: 1000px;
           height: 180px;
-          background: linear-gradient(90deg, transparent 0%, rgba(200,100,30,0.0) 20%, rgba(200,100,30,0.5) 55%, rgba(220,120,40,0.35) 80%, transparent 100%);
+          background: linear-gradient(90deg, transparent 0%, rgba(255,150,60,0) 20%, rgba(255,160,70,0.7) 55%, rgba(255,190,90,0.5) 80%, transparent 100%);
           bottom: 160px;
           right: -140px;
           transform: rotate(-12deg);
@@ -124,37 +124,70 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         .ribbon-5 {
           width: 900px;
           height: 160px;
-          background: linear-gradient(90deg, transparent 0%, rgba(40,80,200,0.0) 20%, rgba(40,80,200,0.45) 55%, rgba(60,100,220,0.3) 80%, transparent 100%);
+          background: linear-gradient(90deg, transparent 0%, rgba(80,160,255,0) 20%, rgba(100,180,255,0.7) 55%, rgba(140,210,255,0.5) 80%, transparent 100%);
           top: 40px;
           right: -120px;
           transform: rotate(8deg);
           filter: blur(70px);
           animation: ribbonSweep5 30s ease-in-out infinite alternate;
         }
+        /* Powder blue sweeps from the LEFT — modern, fresh accent */
+        .ribbon-6 {
+          width: 1300px;
+          height: 240px;
+          background: linear-gradient(90deg, transparent 0%, rgba(170,220,255,0) 15%, rgba(170,220,255,0.75) 55%, rgba(120,200,255,0.55) 80%, transparent 100%);
+          top: 20%;
+          left: -300px;
+          transform-origin: bottom left;
+          transform: rotate(18deg);
+          filter: blur(60px);
+          animation: ribbonSweep6 24s ease-in-out infinite alternate;
+        }
+        .ribbon-7 {
+          width: 1100px;
+          height: 200px;
+          background: linear-gradient(90deg, transparent 0%, rgba(140,200,255,0) 15%, rgba(150,210,255,0.65) 55%, rgba(180,230,255,0.45) 80%, transparent 100%);
+          bottom: 10%;
+          left: -250px;
+          transform-origin: bottom left;
+          transform: rotate(-8deg);
+          filter: blur(70px);
+          animation: ribbonSweep7 28s ease-in-out infinite alternate;
+        }
         @keyframes ribbonSweep1 {
-          0%   { transform: rotate(-42deg) translate(0px, 0px); opacity: 0.9; }
+          0%   { transform: rotate(-42deg) translate(0px, 0px); opacity: 0.95; }
           50%  { transform: rotate(-38deg) translate(-60px, -30px); opacity: 1; }
-          100% { transform: rotate(-44deg) translate(-20px, -50px); opacity: 0.85; }
+          100% { transform: rotate(-44deg) translate(-20px, -50px); opacity: 0.9; }
         }
         @keyframes ribbonSweep2 {
-          0%   { transform: rotate(-32deg) translate(0px, 0px); opacity: 0.85; }
-          50%  { transform: rotate(-28deg) translate(-80px, -20px); opacity: 0.95; }
-          100% { transform: rotate(-35deg) translate(-40px, -60px); opacity: 0.75; }
+          0%   { transform: rotate(-32deg) translate(0px, 0px); opacity: 0.9; }
+          50%  { transform: rotate(-28deg) translate(-80px, -20px); opacity: 1; }
+          100% { transform: rotate(-35deg) translate(-40px, -60px); opacity: 0.8; }
         }
         @keyframes ribbonSweep3 {
-          0%   { transform: rotate(-22deg) translate(0px, 0px); opacity: 0.8; }
-          50%  { transform: rotate(-18deg) translate(-100px, -10px); opacity: 0.9; }
-          100% { transform: rotate(-25deg) translate(-50px, -80px); opacity: 0.7; }
+          0%   { transform: rotate(-22deg) translate(0px, 0px); opacity: 0.85; }
+          50%  { transform: rotate(-18deg) translate(-100px, -10px); opacity: 0.95; }
+          100% { transform: rotate(-25deg) translate(-50px, -80px); opacity: 0.75; }
         }
         @keyframes ribbonSweep4 {
-          0%   { transform: rotate(-12deg) translate(0px, 0px); opacity: 0.75; }
-          50%  { transform: rotate(-8deg) translate(-120px, 10px); opacity: 0.85; }
-          100% { transform: rotate(-15deg) translate(-60px, -40px); opacity: 0.65; }
+          0%   { transform: rotate(-12deg) translate(0px, 0px); opacity: 0.8; }
+          50%  { transform: rotate(-8deg) translate(-120px, 10px); opacity: 0.9; }
+          100% { transform: rotate(-15deg) translate(-60px, -40px); opacity: 0.7; }
         }
         @keyframes ribbonSweep5 {
-          0%   { transform: rotate(8deg) translate(0px, 0px); opacity: 0.6; }
-          50%  { transform: rotate(12deg) translate(-80px, 20px); opacity: 0.75; }
-          100% { transform: rotate(5deg) translate(-40px, -20px); opacity: 0.5; }
+          0%   { transform: rotate(8deg) translate(0px, 0px); opacity: 0.75; }
+          50%  { transform: rotate(12deg) translate(-80px, 20px); opacity: 0.9; }
+          100% { transform: rotate(5deg) translate(-40px, -20px); opacity: 0.65; }
+        }
+        @keyframes ribbonSweep6 {
+          0%   { transform: rotate(18deg) translate(0px, 0px); opacity: 0.85; }
+          50%  { transform: rotate(22deg) translate(60px, 20px); opacity: 0.95; }
+          100% { transform: rotate(15deg) translate(30px, 50px); opacity: 0.75; }
+        }
+        @keyframes ribbonSweep7 {
+          0%   { transform: rotate(-8deg) translate(0px, 0px); opacity: 0.75; }
+          50%  { transform: rotate(-4deg) translate(80px, -20px); opacity: 0.9; }
+          100% { transform: rotate(-12deg) translate(40px, 30px); opacity: 0.65; }
         }
         @media (max-width: 768px) {
           .ribbon-1 { width: 700px; height: 140px; }
@@ -162,9 +195,11 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           .ribbon-3 { width: 550px; height: 100px; }
           .ribbon-4 { width: 500px; height: 90px; }
           .ribbon-5 { width: 450px; height: 80px; }
+          .ribbon-6 { width: 650px; height: 130px; }
+          .ribbon-7 { width: 550px; height: 110px; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .ribbon { animation: none !important; transform-origin: bottom right; }
+          .ribbon { animation: none !important; }
         }
 
         @keyframes heroFadeUp {
