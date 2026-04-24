@@ -56,6 +56,9 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         <div className="ribbon ribbon-7" />
       </div>
 
+      {/* Bottom fade — softens hero → next section */}
+      <div className="staging-hero-overlay-bottom" aria-hidden="true" />
+
       <style>{`
         .staging-hero {
           min-height: 88vh;
