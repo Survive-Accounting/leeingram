@@ -112,12 +112,15 @@ export default function GetAccess() {
   const [discountToasts, setDiscountToasts] = useState<Array<{ id: number; amount: number }>>([]);
   const [pulseKey, setPulseKey] = useState(0);
   const prevSubtotalRef = React.useRef(subtotal);
+  const skipNextToastRef = React.useRef(false);
 
   useEffect(() => {
     const prev = prevSubtotalRef.current;
     if (prev !== subtotal) {
       const delta = subtotal - prev;
-      if (delta > 0) {
+      const skip = skipNextToastRef.current;
+      skipNextToastRef.current = false;
+      if (delta > 0 && !skip) {
         const id = Date.now() + Math.random();
         setPriceToasts((t) => [...t, { id, delta }]);
         const timeout = setTimeout(() => {
@@ -555,6 +558,9 @@ export default function GetAccess() {
                         setTimeout(() => {
                           setDiscountToasts((t) => t.filter((x) => x.id !== id));
                         }, 800);
+                      } else if (!checked && extraCount === 0) {
+                        // Suppress the +$ toast when restoring price after uncheck
+                        skipNextToastRef.current = true;
                       }
                     }}
                     className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[#14213D]"
