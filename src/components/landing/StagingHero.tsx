@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles } from "lucide-react";
+// (icon imports removed — no longer used)
 import leeHeadshot from "@/assets/lee-headshot-original.png";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
 
