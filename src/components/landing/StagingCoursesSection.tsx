@@ -1102,6 +1102,7 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
       <div className="flex flex-1 min-h-0">
         {/* Left sidebar */}
         <aside
+          className="demo-thin-scroll"
           style={{
             width: sidebarOpen ? 220 : 0,
             minWidth: sidebarOpen ? 220 : 0,
@@ -1203,7 +1204,7 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
 
         {/* Right panel */}
         <main
-          className="flex-1 relative"
+          className="flex-1 relative demo-thin-scroll"
           style={{
             background: "#14213D",
             overflowY: "auto",
