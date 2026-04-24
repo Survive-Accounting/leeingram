@@ -1,6 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-
-const LEE_PHOTO = "https://i.ibb.co/nNmPgMws/Lee-About-Me-Image.jpg";
+import leeStadium from "@/assets/lee-stadium.jpg";
 
 interface AboutLeeModalProps {
   open: boolean;
@@ -26,6 +25,17 @@ function getSemesterCount(): number {
 export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
   const semesters = getSemesterCount();
 
+  const handleReachOut = () => {
+    onOpenChange(false);
+    // Allow modal close animation a moment before scrolling.
+    setTimeout(() => {
+      const el = document.getElementById("contact-form");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 150);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -40,9 +50,9 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
         <div className="p-6 sm:p-8 flex flex-col items-center text-center" style={{ fontFamily: "Inter, sans-serif" }}>
           {/* Hero image */}
           <img
-            src={LEE_PHOTO}
-            alt="Lee Ingram at the stadium"
-            className="w-full max-w-[380px] aspect-[4/3] object-cover rounded-xl"
+            src={leeStadium}
+            alt="Lee Ingram at an Ole Miss football game"
+            className="w-full max-w-[420px] aspect-square object-cover rounded-xl"
             style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
@@ -66,14 +76,25 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
             className="mt-6 space-y-4 text-[14px] sm:text-[15px] max-w-[440px]"
             style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
           >
-            <p>I loved accounting so much in college, I turned it into a full-time tutoring career.</p>
             <p>
-              Since then, I've helped 1,200+ students understand the material — not just memorize it.
+              I loved learning accounting so much in college, I decided to make tutoring it my career. Since then, I've helped 1,200+ students truly understand the material — not just memorize it.
             </p>
             <p>
-              During the pandemic, I built SurviveAccounting.com to reach students beyond Ole Miss. Now, I'm rebuilding it with AI-powered tools so anyone can walk into their exam confident.
+              During the pandemic, I built SurviveAccounting.com to reach students beyond Ole Miss. Now, I'm rebuilding it with AI-powered tools that help you study more efficiently than ever before.
             </p>
-            <p>You've got this.</p>
+            <p>
+              I'm always here to help, so please{" "}
+              <button
+                type="button"
+                onClick={handleReachOut}
+                className="underline decoration-[1px] underline-offset-[3px] decoration-white/40 hover:decoration-white transition-colors"
+                style={{ color: "#fff", background: "none", border: "none", padding: 0, font: "inherit", cursor: "pointer" }}
+              >
+                reach out
+              </button>{" "}
+              if you need anything.
+            </p>
+            <p>You've got this!</p>
             <p className="font-medium text-white">— Lee</p>
           </div>
 
