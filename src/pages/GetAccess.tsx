@@ -392,6 +392,14 @@ export default function GetAccess() {
                   >
                     one-time payment
                   </div>
+                  {autoRenewActive && (
+                    <div
+                      className="mt-0.5 text-[10px] font-medium animate-fade-in"
+                      style={{ color: "#86EFAC", fontFamily: "Inter, sans-serif" }}
+                    >
+                      {AUTO_RENEW_DISCOUNT_PCT}% applied
+                    </div>
+                  )}
 
                   {/* Floating positive delta toasts only */}
                   {priceToasts.map((t) => (
