@@ -95,9 +95,9 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
       `}</style>
 
       <div className="relative z-[3] mx-auto max-w-[1180px] px-4 sm:px-6 py-8 md:py-20 w-full">
-        <div className="flex flex-col md:flex-row items-center gap-10 md:gap-12">
+        <div className="flex flex-col md:flex-row items-center gap-8 md:gap-6">
           {/* LEFT — Copy */}
-          <div className="flex-1 w-full text-center md:text-left" style={{ maxWidth: 560 }}>
+          <div className="flex-1 w-full text-center md:text-left" style={{ maxWidth: 540 }}>
             <div
               className="hero-anim-eyebrow inline-block text-[11px] font-semibold uppercase tracking-[0.14em] px-3 py-1 rounded-full mb-5"
               style={{
