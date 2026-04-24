@@ -268,7 +268,7 @@ export default function GetAccess() {
           className="mt-4 max-w-[640px] mx-auto text-[16px] sm:text-[18px]"
           style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
         >
-          Get study tools for every chapter in your course — one payment, full semester access.
+          Get study tools for your entire course—one payment, full semester access.
         </p>
       </section>
 
@@ -310,7 +310,7 @@ export default function GetAccess() {
               className="text-[24px] sm:text-[28px]"
               style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
             >
-              Get Survive Accounting
+              Secure Checkout
             </h2>
 
             {email.trim() && (
