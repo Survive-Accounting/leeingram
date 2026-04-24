@@ -65,74 +65,104 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         }
 
         /* ── Stripe-style angled color ribbons ─────────────────── */
+        .staging-hero-ribbons {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          pointer-events: none;
+          overflow: hidden;
+        }
         .ribbon {
           position: absolute;
-          border-radius: 50%;
-          filter: blur(90px);
+          pointer-events: none;
           will-change: transform;
-          mix-blend-mode: screen;
-          opacity: 0.85;
+          transform-origin: bottom right;
+          mix-blend-mode: normal;
         }
         .ribbon-1 {
-          width: 900px;
-          height: 700px;
-          top: -150px;
-          left: -200px;
-          background: radial-gradient(ellipse at center, #FF1A2E 0%, rgba(255,26,46,0) 65%);
-          transform: rotate(-35deg);
-          animation: ribbonDrift1 18s ease-in-out infinite alternate;
+          width: 1400px;
+          height: 280px;
+          background: linear-gradient(90deg, transparent 0%, rgba(206,17,38,0.0) 10%, rgba(206,17,38,0.7) 50%, rgba(220,60,40,0.5) 80%, transparent 100%);
+          bottom: -80px;
+          right: -200px;
+          transform: rotate(-42deg);
+          filter: blur(45px);
+          animation: ribbonSweep1 14s ease-in-out infinite alternate;
         }
         .ribbon-2 {
-          width: 800px;
-          height: 600px;
-          top: 10%;
-          right: -150px;
-          background: radial-gradient(ellipse at center, #2E5BAA 0%, rgba(46,91,170,0) 65%);
-          transform: rotate(-20deg);
-          animation: ribbonDrift2 22s ease-in-out infinite alternate;
+          width: 1200px;
+          height: 220px;
+          background: linear-gradient(90deg, transparent 0%, rgba(160,20,50,0.0) 15%, rgba(160,20,50,0.65) 55%, rgba(180,40,80,0.45) 80%, transparent 100%);
+          bottom: -40px;
+          right: -180px;
+          transform: rotate(-32deg);
+          filter: blur(55px);
+          animation: ribbonSweep2 18s ease-in-out infinite alternate;
         }
         .ribbon-3 {
-          width: 700px;
-          height: 500px;
-          bottom: -100px;
-          left: 20%;
-          background: radial-gradient(ellipse at center, #C41E3A 0%, rgba(196,30,58,0) 65%);
-          transform: rotate(-50deg);
-          animation: ribbonDrift3 16s ease-in-out infinite alternate;
+          width: 1100px;
+          height: 200px;
+          background: linear-gradient(90deg, transparent 0%, rgba(140,40,160,0.0) 15%, rgba(140,40,160,0.55) 50%, rgba(160,60,200,0.4) 80%, transparent 100%);
+          bottom: 60px;
+          right: -160px;
+          transform: rotate(-22deg);
+          filter: blur(60px);
+          animation: ribbonSweep3 22s ease-in-out infinite alternate;
         }
         .ribbon-4 {
-          width: 600px;
-          height: 800px;
-          bottom: 5%;
-          right: 10%;
-          background: radial-gradient(ellipse at center, rgba(255,240,200,0.5) 0%, rgba(255,240,200,0) 65%);
-          opacity: 0.9;
-          animation: ribbonDrift4 20s ease-in-out infinite alternate;
+          width: 1000px;
+          height: 180px;
+          background: linear-gradient(90deg, transparent 0%, rgba(200,100,30,0.0) 20%, rgba(200,100,30,0.5) 55%, rgba(220,120,40,0.35) 80%, transparent 100%);
+          bottom: 160px;
+          right: -140px;
+          transform: rotate(-12deg);
+          filter: blur(65px);
+          animation: ribbonSweep4 26s ease-in-out infinite alternate;
         }
-        @keyframes ribbonDrift1 {
-          0%   { transform: rotate(-35deg) translate(0px, 0px); }
-          100% { transform: rotate(-30deg) translate(-30px, -20px); }
+        .ribbon-5 {
+          width: 900px;
+          height: 160px;
+          background: linear-gradient(90deg, transparent 0%, rgba(40,80,200,0.0) 20%, rgba(40,80,200,0.45) 55%, rgba(60,100,220,0.3) 80%, transparent 100%);
+          top: 40px;
+          right: -120px;
+          transform: rotate(8deg);
+          filter: blur(70px);
+          animation: ribbonSweep5 30s ease-in-out infinite alternate;
         }
-        @keyframes ribbonDrift2 {
-          0%   { transform: rotate(-20deg) translate(0px, 0px); }
-          100% { transform: rotate(-25deg) translate(-20px, -40px); }
+        @keyframes ribbonSweep1 {
+          0%   { transform: rotate(-42deg) translate(0px, 0px); opacity: 0.9; }
+          50%  { transform: rotate(-38deg) translate(-60px, -30px); opacity: 1; }
+          100% { transform: rotate(-44deg) translate(-20px, -50px); opacity: 0.85; }
         }
-        @keyframes ribbonDrift3 {
-          0%   { transform: rotate(-50deg) translate(0px, 0px); }
-          100% { transform: rotate(-45deg) translate(-40px, -10px); }
+        @keyframes ribbonSweep2 {
+          0%   { transform: rotate(-32deg) translate(0px, 0px); opacity: 0.85; }
+          50%  { transform: rotate(-28deg) translate(-80px, -20px); opacity: 0.95; }
+          100% { transform: rotate(-35deg) translate(-40px, -60px); opacity: 0.75; }
         }
-        @keyframes ribbonDrift4 {
-          0%   { transform: translate(0px, 0px); }
-          100% { transform: translate(-20px, 30px); }
+        @keyframes ribbonSweep3 {
+          0%   { transform: rotate(-22deg) translate(0px, 0px); opacity: 0.8; }
+          50%  { transform: rotate(-18deg) translate(-100px, -10px); opacity: 0.9; }
+          100% { transform: rotate(-25deg) translate(-50px, -80px); opacity: 0.7; }
         }
-        @media (prefers-reduced-motion: reduce) {
-          .ribbon { animation: none !important; }
+        @keyframes ribbonSweep4 {
+          0%   { transform: rotate(-12deg) translate(0px, 0px); opacity: 0.75; }
+          50%  { transform: rotate(-8deg) translate(-120px, 10px); opacity: 0.85; }
+          100% { transform: rotate(-15deg) translate(-60px, -40px); opacity: 0.65; }
+        }
+        @keyframes ribbonSweep5 {
+          0%   { transform: rotate(8deg) translate(0px, 0px); opacity: 0.6; }
+          50%  { transform: rotate(12deg) translate(-80px, 20px); opacity: 0.75; }
+          100% { transform: rotate(5deg) translate(-40px, -20px); opacity: 0.5; }
         }
         @media (max-width: 768px) {
-          .ribbon-1 { width: 500px; height: 400px; }
-          .ribbon-2 { width: 450px; height: 350px; }
-          .ribbon-3 { width: 400px; height: 300px; }
-          .ribbon-4 { width: 350px; height: 450px; }
+          .ribbon-1 { width: 700px; height: 140px; }
+          .ribbon-2 { width: 600px; height: 110px; }
+          .ribbon-3 { width: 550px; height: 100px; }
+          .ribbon-4 { width: 500px; height: 90px; }
+          .ribbon-5 { width: 450px; height: 80px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ribbon { animation: none !important; transform-origin: bottom right; }
         }
 
         @keyframes heroFadeUp {
