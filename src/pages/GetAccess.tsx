@@ -57,9 +57,11 @@ export default function GetAccess() {
   const showLifetime = extraCount >= 3;
   const showSavingsHint = extraCount >= 2;
 
-  // Auto-renew gives a $50 discount on the base price (only when no extra semesters added)
+  // Auto-renew gives 20% off the base price (only when no extra semesters added)
   const autoRenewActive = autoRenew && extraCount === 0;
-  const baseTotal = PRICE + extraCount * EXTEND_PRICE - (autoRenewActive ? AUTO_RENEW_DISCOUNT : 0);
+  const baseBeforeDiscount = PRICE + extraCount * EXTEND_PRICE;
+  const autoRenewSavings = autoRenewActive ? Math.round((baseBeforeDiscount * AUTO_RENEW_DISCOUNT_PCT) / 100) : 0;
+  const baseTotal = baseBeforeDiscount - autoRenewSavings;
   const subtotal = baseTotal + (showLifetime && lifetimeUpgrade ? LIFETIME_UPGRADE_PRICE : 0);
 
   // Promo state
