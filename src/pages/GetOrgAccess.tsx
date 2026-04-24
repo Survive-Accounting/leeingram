@@ -89,12 +89,57 @@ export default function GetOrgAccess() {
   const [manualOrgError, setManualOrgError] = useState<string | null>(null);
   const [creatingManual, setCreatingManual] = useState(false);
 
-  // --- Tier ---
-  const [selectedTierIdx, setSelectedTierIdx] = useState(1);
-  const tier = TIERS[selectedTierIdx];
-  const perSeat = Math.round(tier.total / tier.seats);
+  // --- Tier (loaded from DB) ---
+  const [tiers, setTiers] = useState<Tier[]>([]);
+  const [tiersLoading, setTiersLoading] = useState(true);
+  const [selectedTierId, setSelectedTierId] = useState<string | null>(null);
+  const tier = useMemo(
+    () => tiers.find((t) => t.id === selectedTierId) || tiers[0] || null,
+    [tiers, selectedTierId],
+  );
+  const perSeat = tier ? Math.round(tier.total / tier.seats) : 0;
 
   const [submitting, setSubmitting] = useState(false);
+
+  // Load seat-pricing tiers from DB
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("org_seat_pricing")
+        .select("id, seats, total_cents, label, badge, is_promo, is_recommended, valid_until")
+        .eq("is_active", true)
+        .order("sort_order");
+      if (cancelled) return;
+      if (error) {
+        console.error("[get-org-access] org_seat_pricing", error);
+        setTiersLoading(false);
+        return;
+      }
+      const now = Date.now();
+      const mapped: Tier[] = (data || [])
+        .filter((r) => !r.valid_until || new Date(r.valid_until).getTime() > now)
+        .map((r) => ({
+          id: r.id,
+          seats: r.seats,
+          total: Math.round(r.total_cents / 100),
+          label: r.label,
+          badge: r.badge,
+          is_promo: r.is_promo,
+          recommended: r.is_recommended,
+        }));
+      setTiers(mapped);
+      const defaultTier =
+        mapped.find((t) => t.recommended) ||
+        mapped.find((t) => !t.is_promo) ||
+        mapped[0];
+      if (defaultTier) setSelectedTierId(defaultTier.id);
+      setTiersLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Load campuses once
   useEffect(() => {
