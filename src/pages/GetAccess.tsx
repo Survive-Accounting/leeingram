@@ -90,7 +90,14 @@ export default function GetAccess() {
   const courseCode = resolvedCourse.code;
   const courseLabel = formatCourseLabel(resolvedCourse);
 
+  // Next course in the campus progression (used for auto-renew label)
+  const currentIdx = progression.courses.findIndex((c) => c.slug === resolvedCourseSlug);
+  const nextCourse = currentIdx >= 0 ? progression.courses[currentIdx + 1] : undefined;
+  const nextCourseLabel = nextCourse?.code ?? nextCourse?.name ?? null;
+
   const [autoRenew, setAutoRenew] = useState(false);
+  const totalPrice = autoRenew ? PRICE * 2 : PRICE;
+  const accessThrough = getAccessWindow(autoRenew);
 
   // Resolve email: URL param → localStorage → sessionStorage.
   const initialEmail = useMemo(() => {
