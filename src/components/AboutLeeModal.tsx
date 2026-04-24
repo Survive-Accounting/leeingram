@@ -103,7 +103,7 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
                 className="mt-1.5 text-[12px] leading-relaxed"
                 style={{ color: "rgba(255,255,255,0.6)" }}
               >
-                Bachelor's &amp; Master's — Ole Miss (3.75 GPA)
+                M.Acc. · University of Mississippi
                 <br />
                 Accounting tutor since 2015
               </p>
