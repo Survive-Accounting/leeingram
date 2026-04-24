@@ -78,10 +78,10 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             cardFloat 7s ease-in-out infinite;
           will-change: transform;
         }
-        /* Staggered float timing for subtle, drifting motion */
-        .product-card-1 { --rot: -3deg; animation-delay: 0.5s, 1.2s;  animation-duration: 0.7s, 7s; }
-        .product-card-2 { --rot: 2deg;  animation-delay: 0.7s, 1.8s;  animation-duration: 0.7s, 8s; }
-        .product-card-3 { --rot: -2deg; animation-delay: 0.9s, 2.4s;  animation-duration: 0.7s, 7.5s; }
+        /* Coordinated, slow float — same duration, slight delay stagger */
+        .product-card-1 { --rot: -3deg; animation-delay: 0.5s, 1.2s;  animation-duration: 0.7s, 9s; }
+        .product-card-2 { --rot: 2deg;  animation-delay: 0.7s, 1.6s;  animation-duration: 0.7s, 9s; }
+        .product-card-3 { --rot: -2deg; animation-delay: 0.9s, 2.0s;  animation-duration: 0.7s, 9s; }
 
         @media (prefers-reduced-motion: reduce) {
           .hero-anim-eyebrow, .hero-anim-headline, .hero-anim-sub, .hero-anim-btn, .hero-anim-link, .hero-anim-cards-label,
@@ -95,9 +95,9 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
       `}</style>
 
       <div className="relative z-[3] mx-auto max-w-[1180px] px-4 sm:px-6 py-8 md:py-20 w-full">
-        <div className="flex flex-col md:flex-row items-center gap-10 md:gap-12">
+        <div className="flex flex-col md:flex-row items-center gap-8 md:gap-6">
           {/* LEFT — Copy */}
-          <div className="flex-1 w-full text-center md:text-left" style={{ maxWidth: 560 }}>
+          <div className="flex-1 w-full text-center md:text-left" style={{ maxWidth: 540 }}>
             <div
               className="hero-anim-eyebrow inline-block text-[11px] font-semibold uppercase tracking-[0.14em] px-3 py-1 rounded-full mb-5"
               style={{
@@ -165,10 +165,10 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           </div>
 
           {/* RIGHT — Product visual */}
-          <div className="flex-1 w-full flex flex-col items-center justify-center" style={{ minHeight: 460 }}>
+          <div className="flex-1 w-full flex flex-col items-center md:items-start justify-center md:-ml-4 lg:-ml-8" style={{ minHeight: 480 }}>
             <div
               className="hero-anim-cards-label w-full text-center md:text-left mb-4"
-              style={{ maxWidth: 460 }}
+              style={{ maxWidth: 480, paddingLeft: 8 }}
             >
               <span
                 className="text-[11px] font-semibold uppercase tracking-[0.16em]"
@@ -179,7 +179,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             </div>
             <div
               className="relative w-full"
-              style={{ maxWidth: 460, height: 440 }}
+              style={{ maxWidth: 480, height: 420 }}
             >
               {/* Soft glow backdrop */}
               <div
@@ -187,7 +187,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 className="absolute inset-0 pointer-events-none"
                 style={{
                   background:
-                    "radial-gradient(circle at 50% 50%, rgba(206,17,38,0.08) 0%, rgba(20,33,61,0) 65%)",
+                    "radial-gradient(circle at 45% 50%, rgba(206,17,38,0.10) 0%, rgba(20,33,61,0) 65%)",
                   filter: "blur(20px)",
                 }}
               />
@@ -198,65 +198,68 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 style={{
                   top: 0,
                   left: 0,
-                  width: 240,
+                  width: 270,
                   background: "#FFFFFF",
-                  borderRadius: 14,
-                  padding: "22px 20px",
+                  borderRadius: 16,
+                  padding: "26px 24px",
                   border: "1px solid #E2E8F0",
-                  boxShadow: "0 12px 32px rgba(15,23,42,0.12), 0 4px 8px rgba(15,23,42,0.06)",
+                  boxShadow: "0 14px 36px rgba(15,23,42,0.14), 0 4px 8px rgba(15,23,42,0.06)",
                   fontFamily: "'DM Serif Display', serif",
+                  zIndex: 2,
                 }}
               >
-                <div className="text-[22px] leading-tight" style={{ color: NAVY }}>
+                <div className="text-[26px] leading-tight" style={{ color: NAVY }}>
                   Journal Entries
                 </div>
-                <div className="mt-2 text-[15px]" style={{ color: RED, fontFamily: "Inter, sans-serif", fontWeight: 600 }}>
+                <div className="mt-2 text-[16px]" style={{ color: RED, fontFamily: "Inter, sans-serif", fontWeight: 600 }}>
                   Flashcards
                 </div>
               </div>
 
-              {/* Card 2 — Practice Problems / Formulas */}
+              {/* Card 2 — Practice Problems / Formulas (overlaps card 1) */}
               <div
                 className="product-card product-card-2 absolute"
                 style={{
-                  top: 140,
+                  top: 110,
                   right: 0,
-                  width: 250,
+                  width: 280,
                   background: NAVY,
-                  borderRadius: 14,
-                  padding: "22px 20px",
+                  borderRadius: 16,
+                  padding: "26px 24px",
                   border: "1px solid rgba(255,255,255,0.08)",
-                  boxShadow: "0 16px 40px rgba(20,33,61,0.35), 0 4px 8px rgba(20,33,61,0.2)",
+                  boxShadow: "0 18px 44px rgba(20,33,61,0.38), 0 4px 8px rgba(20,33,61,0.2)",
                   fontFamily: "'DM Serif Display', serif",
+                  zIndex: 3,
                 }}
               >
-                <div className="text-[22px] leading-tight" style={{ color: "#FFFFFF" }}>
+                <div className="text-[26px] leading-tight" style={{ color: "#FFFFFF" }}>
                   Practice Problems
                 </div>
-                <div className="mt-2 text-[15px]" style={{ color: "#FCA5A5", fontFamily: "Inter, sans-serif", fontWeight: 600 }}>
+                <div className="mt-2 text-[16px]" style={{ color: "#FCA5A5", fontFamily: "Inter, sans-serif", fontWeight: 600 }}>
                   Formulas
                 </div>
               </div>
 
-              {/* Card 3 — Cram Videos */}
+              {/* Card 3 — Cram Videos (overlaps card 2) */}
               <div
                 className="product-card product-card-3 absolute"
                 style={{
                   bottom: 0,
-                  left: 30,
-                  width: 250,
+                  left: 40,
+                  width: 280,
                   background: "#FFFFFF",
-                  borderRadius: 14,
-                  padding: "22px 20px",
+                  borderRadius: 16,
+                  padding: "26px 24px",
                   border: "1px solid #E2E8F0",
-                  boxShadow: "0 12px 32px rgba(15,23,42,0.12), 0 4px 8px rgba(15,23,42,0.06)",
+                  boxShadow: "0 14px 36px rgba(15,23,42,0.14), 0 4px 8px rgba(15,23,42,0.06)",
                   fontFamily: "'DM Serif Display', serif",
+                  zIndex: 2,
                 }}
               >
-                <div className="text-[22px] leading-tight" style={{ color: NAVY }}>
+                <div className="text-[26px] leading-tight" style={{ color: NAVY }}>
                   Cram Videos
                 </div>
-                <div className="mt-2 text-[13px]" style={{ color: "#64748B", fontFamily: "Inter, sans-serif", fontWeight: 500 }}>
+                <div className="mt-2 text-[14px]" style={{ color: "#64748B", fontFamily: "Inter, sans-serif", fontWeight: 500 }}>
                   New content added weekly
                 </div>
               </div>
