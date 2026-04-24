@@ -331,37 +331,6 @@ export default function StagingCoursesSection({
           Fast, efficient tools — built by a real tutor, not a textbook.
         </p>
 
-        <div style={{ marginTop: 22 }}>
-          <button
-            onClick={() => {
-              const introSlug = "intro-accounting-1";
-              if (ordered.find((c) => c.slug === introSlug)) {
-                setSelectedSlug(introSlug);
-              }
-              setPendingAutoSelect(true);
-              requestAnimationFrame(() => {
-                const el = document.getElementById("explore-demo");
-                if (el) {
-                  const top =
-                    el.getBoundingClientRect().top + window.scrollY - 24;
-                  window.scrollTo({ top, behavior: "smooth" });
-                }
-              });
-            }}
-            className="explore-cta inline-flex items-center gap-2 rounded-full text-[14px] font-semibold"
-            style={{
-              background: NAVY,
-              color: "#FFFFFF",
-              padding: "12px 24px",
-              fontFamily: "Inter, sans-serif",
-              boxShadow: "0 6px 16px -4px rgba(20,33,61,0.28)",
-              border: "1px solid rgba(20,33,61,0.9)",
-            }}
-          >
-            Start Exploring
-            <span aria-hidden className="explore-cta-arrow">→</span>
-          </button>
-        </div>
       </div>
 
       {/* Course tabs */}
@@ -373,7 +342,7 @@ export default function StagingCoursesSection({
               <button
                 key={c.slug}
                 onClick={() => setSelectedSlug(c.slug)}
-                className="rounded-full px-4 py-2 text-[13px] font-semibold transition-all"
+                className="rounded-full px-4 py-2 text-[13px] font-semibold transition-all inline-flex items-center gap-1.5"
                 style={{
                   fontFamily: "Inter, sans-serif",
                   background: isActive ? NAVY : "#FFFFFF",
@@ -384,6 +353,7 @@ export default function StagingCoursesSection({
                     : "0 1px 2px rgba(0,0,0,0.04)",
                 }}
               >
+                {isActive && <span aria-hidden>📚</span>}
                 {SHORT_NAME[c.slug] ?? c.name}
               </button>
             );
