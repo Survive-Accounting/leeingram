@@ -18,19 +18,16 @@ const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
 const PRICE = 99;
+const EXTEND_PRICE = 50;
 
 /**
  * Semester access windows: renew Jan 1 (→ Jun 30) and Jul 1 (→ Dec 31).
- * Base pass covers the current semester; auto-renew extends through the
- * next one.
+ * Returns short format like "Jun 30".
  */
 function getAccessWindow(extend: boolean): string {
   const now = new Date();
-  const year = now.getFullYear();
   const month = now.getMonth(); // 0-11
 
-  // Current semester end
-  let endYear = year;
   let endMonth = month < 6 ? 5 : 11; // June (5) or December (11)
   let endDay = month < 6 ? 30 : 31;
 
@@ -41,12 +38,11 @@ function getAccessWindow(extend: boolean): string {
     } else {
       endMonth = 5;
       endDay = 30;
-      endYear += 1;
     }
   }
 
-  const monthName = new Date(endYear, endMonth, 1).toLocaleString("en-US", { month: "long" });
-  return `${monthName} ${endDay}, ${endYear}`;
+  const monthName = new Date(2000, endMonth, 1).toLocaleString("en-US", { month: "short" });
+  return `${monthName} ${endDay}`;
 }
 
 const INCLUDES = [
@@ -96,8 +92,9 @@ export default function GetAccess() {
   const nextCourseLabel = nextCourse?.code ?? nextCourse?.name ?? null;
 
   const [autoRenew, setAutoRenew] = useState(false);
-  const totalPrice = autoRenew ? PRICE * 2 : PRICE;
-  const accessThrough = getAccessWindow(autoRenew);
+  const totalPrice = autoRenew ? PRICE + EXTEND_PRICE : PRICE;
+  const baseAccess = getAccessWindow(false);
+  const extendedAccess = getAccessWindow(true);
 
   // Resolve email: URL param → localStorage → sessionStorage.
   const initialEmail = useMemo(() => {
@@ -236,32 +233,11 @@ export default function GetAccess() {
               className="text-[24px] sm:text-[28px] mb-6"
               style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
             >
-              Get Full Access
+              Get Survive Accounting
             </h2>
 
-            {/* Section 1 — Course Selected */}
-            <div className="mb-5">
-              <div
-                className="text-[11px] font-semibold uppercase tracking-wider mb-1.5"
-                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-              >
-                Course Selected
-              </div>
-              <div
-                className="rounded-lg px-4 py-3 text-[14px] font-semibold"
-                style={{
-                  background: "#F8FAFC",
-                  border: "1px solid #E2E8F0",
-                  color: NAVY,
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
-                {courseLabel}
-              </div>
-            </div>
-
-            {/* Section 2 — Product */}
-            <div className="mb-5">
+            {/* Product (course + product merged) */}
+            <div className="mb-4">
               <div
                 className="text-[11px] font-semibold uppercase tracking-wider mb-1.5"
                 style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
@@ -269,56 +245,71 @@ export default function GetAccess() {
                 Product
               </div>
               <div
-                className="rounded-lg px-4 py-3 transition-all duration-300"
+                className="rounded-lg px-4 py-3"
                 style={{
-                  background: autoRenew ? "#ECFDF5" : "#F0F9FF",
-                  border: `1px solid ${autoRenew ? "#A7F3D0" : "#BAE6FD"}`,
+                  background: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
                   fontFamily: "Inter, sans-serif",
-                  boxShadow: autoRenew ? "0 0 0 3px rgba(16,185,129,0.10)" : "none",
                 }}
               >
-                <div className="flex items-baseline justify-between gap-3">
-                  <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
-                    Survive Study Pass
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
+                      Semester Study Pass{courseCode ? ` for ${courseCode}` : ""}
+                    </div>
+                    <div className="text-[12.5px] mt-0.5" style={{ color: "#64748B" }}>
+                      {resolvedCourse.name}
+                    </div>
+                    <div className="mt-2 flex items-baseline gap-2 flex-wrap">
+                      {autoRenew && (
+                        <span
+                          key={`old-${baseAccess}`}
+                          className="text-[12px] italic line-through animate-fade-in"
+                          style={{ color: "#94A3B8", opacity: 0.7 }}
+                        >
+                          Access through {baseAccess}
+                        </span>
+                      )}
+                      <span
+                        key={autoRenew ? `new-${extendedAccess}` : `base-${baseAccess}`}
+                        className={`italic animate-fade-in transition-all duration-300 ${
+                          autoRenew ? "text-[13.5px] font-semibold" : "text-[12px]"
+                        }`}
+                        style={{ color: autoRenew ? NAVY : "#64748B" }}
+                      >
+                        Access through {autoRenew ? extendedAccess : baseAccess}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-[18px] font-bold transition-all duration-300" style={{ color: NAVY }}>
-                    ${totalPrice}
+                  <div className="text-right shrink-0">
+                    <div className="text-[18px] font-bold" style={{ color: NAVY }}>
+                      ${PRICE}
+                    </div>
+                    {autoRenew && (
+                      <div className="mt-1 animate-fade-in" style={{ fontFamily: "Inter, sans-serif" }}>
+                        <div className="text-[13px] font-medium" style={{ color: "#475569" }}>
+                          + ${EXTEND_PRICE}
+                        </div>
+                        <div
+                          className="my-1 ml-auto"
+                          style={{ width: 48, borderTop: "1px solid #CBD5E1" }}
+                        />
+                        <div className="text-[15px] font-bold" style={{ color: NAVY }}>
+                          ${totalPrice} total
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div
-                  key={accessThrough}
-                  className="mt-1 animate-fade-in"
-                >
-                  <span
-                    className="text-[13px] font-medium"
-                    style={{
-                      color: autoRenew ? "#047857" : "#1E293B",
-                      background: autoRenew ? "rgba(16,185,129,0.12)" : "transparent",
-                      padding: autoRenew ? "1px 6px" : "0",
-                      borderRadius: 4,
-                      transition: "all 200ms ease-out",
-                    }}
-                  >
-                    Access through {accessThrough}
-                  </span>
-                </div>
-                {autoRenew && nextCourseLabel && (
-                  <div
-                    className="text-[12px] mt-1 animate-fade-in"
-                    style={{ color: "#047857", fontWeight: 500 }}
-                  >
-                    Includes next course ({nextCourseLabel})
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Section 3 — Auto-renew checkbox */}
+            {/* Extend +1 semester checkbox */}
             <label
               className="flex items-start gap-3 mb-6 p-3 rounded-lg cursor-pointer transition-all duration-200"
               style={{
-                border: `1px solid ${autoRenew ? "#A7F3D0" : "#E2E8F0"}`,
-                background: autoRenew ? "#F0FDF4" : "#fff",
+                border: "1px solid #E2E8F0",
+                background: "#fff",
                 fontFamily: "Inter, sans-serif",
               }}
             >
@@ -330,13 +321,13 @@ export default function GetAccess() {
               />
               <div className="min-w-0">
                 <div className="text-[13px] font-semibold" style={{ color: NAVY }}>
-                  Stay covered next semester (+${PRICE})
+                  Extend +1 semester (+${EXTEND_PRICE})
                 </div>
-                <div className="text-[12px] mt-0.5" style={{ color: "#64748B" }}>
-                  {nextCourseLabel
-                    ? `Extends your access and includes ${nextCourseLabel}. Cancel anytime.`
-                    : "Extends your access through the next semester. Cancel anytime."}
-                </div>
+                {nextCourseLabel && (
+                  <div className="text-[12px] mt-0.5 italic" style={{ color: "#94A3B8" }}>
+                    For {nextCourseLabel}
+                  </div>
+                )}
               </div>
             </label>
 
