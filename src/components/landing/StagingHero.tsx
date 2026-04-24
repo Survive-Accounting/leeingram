@@ -168,34 +168,8 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 letterSpacing: "0.01em",
               }}
             >
-              Start Studying <span aria-hidden="true">→</span>
+              Start Studying
             </button>
-
-            {/* Four course pills — each opens email gate modal */}
-            <div className="hero-anim-link flex flex-wrap items-center justify-center gap-2 max-w-[520px]">
-              {[
-                "Financial Accounting",
-                "Managerial Accounting",
-                "Intermediate Accounting 1",
-                "Intermediate Accounting 2",
-              ].map((label) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={onGetStartedClick}
-                  className="rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition-all hover:-translate-y-0.5 hover:shadow-sm"
-                  style={{
-                    color: NAVY,
-                    background: "rgba(255,255,255,0.7)",
-                    border: "1px solid rgba(20,33,61,0.15)",
-                    fontFamily: "Inter, sans-serif",
-                    backdropFilter: "blur(4px)",
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
 
             <button
               onClick={handleSeeHowItWorks}
@@ -209,7 +183,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 cursor: "pointer",
               }}
             >
-              See how it works →
+              See how it works ↓
             </button>
           </div>
         </div>
