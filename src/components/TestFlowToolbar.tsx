@@ -48,11 +48,13 @@ export default function TestFlowToolbar() {
 
   return (
     <div
-      className="w-full border-b"
+      className="fixed bottom-0 left-0 right-0 z-[100] w-full border-t"
       style={{
         background: "#FFF8E1",
         borderColor: "#F4D58D",
         fontFamily: "Inter, sans-serif",
+        boxShadow: "0 -2px 12px rgba(0,0,0,0.08)",
+        paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-2">
