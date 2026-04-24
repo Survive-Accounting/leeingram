@@ -115,12 +115,7 @@ export default function ContactForm() {
         >
           Have a question? I've got you.
         </h2>
-        <p
-          className="text-center text-[14px] mb-10"
-          style={{ color: "rgba(255,255,255,0.65)", fontFamily: "Inter, sans-serif" }}
-        >
-          Send a note — I'll personally reply.
-        </p>
+        <div className="mb-10" />
 
         <div
           className="rounded-xl p-6 sm:p-8"
