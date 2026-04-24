@@ -163,7 +163,7 @@ export default function StagingCoursesSection({
         .join(",");
       const { data } = await (supabase as any)
         .from("teaching_assets")
-        .select("id, source_ref, problem_title, asset_code")
+        .select("id, source_ref, problem_title, asset_name")
         .eq("chapter_id", expandedChapterId)
         
         .or(orFilter)
