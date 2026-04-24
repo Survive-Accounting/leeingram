@@ -330,7 +330,7 @@ export default function GetAccess() {
                     background: "#F0F6FF",
                     border: `1px solid ${NAVY}`,
                     boxShadow: "0 10px 24px rgba(20,33,61,0.14), 0 2px 6px rgba(20,33,61,0.06)",
-                    minWidth: 120,
+                    minWidth: 160,
                     transform: "translateY(-5px)",
                   }}
                 >
