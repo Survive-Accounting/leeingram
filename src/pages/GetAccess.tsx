@@ -343,18 +343,18 @@ export default function GetAccess() {
                     </div>
                   )}
                   <div
-                    className="font-bold leading-none"
+                    key={`shimmer-${totalPrice}`}
+                    className={`font-bold leading-none ${hasDiscount ? "price-shimmer-discount" : "price-shimmer"}`}
                     style={{
-                      color: hasDiscount ? "#16A34A" : NAVY,
-                      fontSize: 36,
-                      letterSpacing: "-0.02em",
+                      fontSize: 68,
+                      letterSpacing: "-0.03em",
                       fontFamily: "Inter, sans-serif",
                     }}
                   >
                     ${totalPrice}
                   </div>
                   <div
-                    className="mt-1 text-[12px] font-medium"
+                    className="mt-2 text-[12px] font-medium"
                     style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
                   >
                     one-time
