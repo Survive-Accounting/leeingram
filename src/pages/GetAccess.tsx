@@ -364,7 +364,7 @@ export default function GetAccess() {
             >
               {checkoutLoading
                 ? "Redirecting to secure checkout..."
-                : `Get Access — $${PRICE}`}
+                : `Get Access — $${totalPrice}`}
             </button>
 
             {checkoutError && (
