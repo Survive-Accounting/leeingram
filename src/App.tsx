@@ -20,6 +20,7 @@ const AboutSolutions = lazy(() => import("./pages/AboutSolutions"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const StagingLandingPage = lazy(() => import("./pages/StagingLandingPage"));
 const GetAccess = lazy(() => import("./pages/GetAccess"));
+const GetOrgAccess = lazy(() => import("./pages/GetOrgAccess"));
 const PostCheckout = lazy(() => import("./pages/PostCheckout"));
 const GreekLandingPage = lazy(() => import("./pages/GreekLandingPage"));
 const SurviveHome = lazy(() => import("./pages/SurviveHome"));
@@ -183,6 +184,7 @@ const AppRoutes = () => {
         <Route path="/staging" element={<StagingLandingPage />} />
         <Route path="/old-home" element={<LandingPage />} />
         <Route path="/get-access" element={<GetAccess />} />
+        <Route path="/get-org-access" element={<GetOrgAccess />} />
         <Route path="/post-checkout" element={<PostCheckout />} />
         <Route path="/greek-landing" element={<GreekLandingPage />} />
         <Route path="/survive" element={<Navigate to="/content" replace />} />
