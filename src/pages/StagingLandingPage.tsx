@@ -304,49 +304,78 @@ export default function StagingLandingPage() {
   );
 }
 
-// Single-line social proof strip — bridges hero → testimonials
+// Floating glass-pill social proof strip — bridges hero → testimonials
 function SocialProofStrip() {
   const NAVY = "#14213D";
   const MUTED = "#6B7280";
-  const stats: Array<{ label: React.ReactNode; bold: string }> = [
+  const stats: Array<{ label: string; bold: string }> = [
     { bold: "2,500+", label: "practice problems" },
     { bold: "4", label: "courses covered" },
     { bold: "10+", label: "years tutoring" },
   ];
   return (
     <div
+      className="relative px-4"
       style={{
-        background: "#FDFAF4",
-        borderTop: "1px solid #F0EBE0",
-        borderBottom: "1px solid #F0EBE0",
-        padding: "18px 16px",
+        // Floats between hero and next section
+        marginTop: -28,
+        marginBottom: -28,
+        zIndex: 5,
       }}
     >
+      <style>{`
+        @keyframes proofFloatIn {
+          0%   { opacity: 0; transform: translateY(14px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .proof-pill {
+          animation: proofFloatIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+          transition: transform 0.35s ease, box-shadow 0.35s ease;
+        }
+        .proof-pill:hover {
+          transform: translateY(-2px);
+          box-shadow:
+            0 14px 36px -10px rgba(20, 33, 61, 0.18),
+            0 4px 10px -2px rgba(20, 33, 61, 0.08);
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .proof-pill { animation: none; transition: none; }
+        }
+      `}</style>
+
       <div
-        className="mx-auto flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center"
-        style={{ maxWidth: 920, fontFamily: "Inter, sans-serif" }}
+        className="proof-pill mx-auto flex flex-wrap items-center justify-center"
+        style={{
+          maxWidth: 720,
+          padding: "16px 28px",
+          borderRadius: 999,
+          background: "rgba(255, 255, 255, 0.72)",
+          backdropFilter: "blur(14px) saturate(140%)",
+          WebkitBackdropFilter: "blur(14px) saturate(140%)",
+          border: "1px solid rgba(20, 33, 61, 0.06)",
+          boxShadow:
+            "0 10px 30px -8px rgba(20, 33, 61, 0.14), 0 2px 6px -1px rgba(20, 33, 61, 0.06)",
+          fontFamily: "Inter, sans-serif",
+          rowGap: 8,
+        }}
       >
         {stats.map((s, i) => (
-          <div key={i} className="flex items-center gap-2">
-            {i > 0 && <span style={{ color: "#D1C9B8" }}>·</span>}
-            <span
-              style={{
-                fontSize: 13,
-                fontWeight: 500,
-                color: MUTED,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {typeof s.bold === "string" && /^[★\d]/.test(s.bold) ? (
-                <>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>{s.bold}</span>{" "}
-                  {s.label}
-                </>
-              ) : (
-                <>
-                  {s.label} <span style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>{s.bold}</span>
-                </>
-              )}
+          <div key={i} className="flex items-center" style={{ whiteSpace: "nowrap" }}>
+            {i > 0 && (
+              <span
+                aria-hidden
+                style={{
+                  display: "inline-block",
+                  width: 1,
+                  height: 16,
+                  background: "rgba(20, 33, 61, 0.12)",
+                  margin: "0 28px",
+                }}
+              />
+            )}
+            <span style={{ fontSize: 13, fontWeight: 500, color: MUTED }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>{s.bold}</span>{" "}
+              {s.label}
             </span>
           </div>
         ))}
