@@ -15,6 +15,7 @@ import StagingCoursesSection from "@/components/landing/StagingCoursesSection";
 import StagingEmailPromptModal, { type CelebrationData } from "@/components/landing/StagingEmailPromptModal";
 
 import StagingGetStartedModal from "@/components/landing/StagingGetStartedModal";
+import StagingFinalCtaSection from "@/components/landing/StagingFinalCtaSection";
 import type { CtaCourse } from "@/components/landing/StagingCtaModal";
 import { useEmailGate } from "@/contexts/EmailGateContext";
 
@@ -239,6 +240,11 @@ export default function StagingLandingPage() {
           }}
         />
       </div>
+
+      <StagingFinalCtaSection
+        onGetAccessClick={() => requestAccess({ course: defaultCourse.slug })}
+        onTryDemoClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+      />
 
       <div ref={contactRef} id="contact-form">
         <ContactForm />
