@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Check, Sword, PenLine, MonitorPlay, ShieldCheck, X, Sparkles } from "lucide-react";
+import { Check, Sword, PenLine, MonitorPlay, ShieldCheck, X, Sparkles, ShoppingCart, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { supabase } from "@/integrations/supabase/client";
