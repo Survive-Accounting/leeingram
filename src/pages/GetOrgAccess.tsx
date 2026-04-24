@@ -16,14 +16,16 @@ const RED = "#CE1126";
 const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
-// Volume tiers — keep in sync with greek-portal-architecture.md
-const TIERS = [
-  { seats: 10, total: 1500 },
-  { seats: 20, total: 2600, recommended: true },
-  { seats: 30, total: 3600 },
-  { seats: 40, total: 4400 },
-  { seats: 50, total: 5000 },
-];
+// Seat tiers come from public.org_seat_pricing (configurable in DB).
+type Tier = {
+  id: string;
+  seats: number;
+  total: number;
+  label: string | null;
+  badge: string | null;
+  is_promo: boolean;
+  recommended: boolean;
+};
 
 type Campus = {
   id: string;
@@ -87,12 +89,57 @@ export default function GetOrgAccess() {
   const [manualOrgError, setManualOrgError] = useState<string | null>(null);
   const [creatingManual, setCreatingManual] = useState(false);
 
-  // --- Tier ---
-  const [selectedTierIdx, setSelectedTierIdx] = useState(1);
-  const tier = TIERS[selectedTierIdx];
-  const perSeat = Math.round(tier.total / tier.seats);
+  // --- Tier (loaded from DB) ---
+  const [tiers, setTiers] = useState<Tier[]>([]);
+  const [tiersLoading, setTiersLoading] = useState(true);
+  const [selectedTierId, setSelectedTierId] = useState<string | null>(null);
+  const tier = useMemo(
+    () => tiers.find((t) => t.id === selectedTierId) || tiers[0] || null,
+    [tiers, selectedTierId],
+  );
+  const perSeat = tier ? Math.round(tier.total / tier.seats) : 0;
 
   const [submitting, setSubmitting] = useState(false);
+
+  // Load seat-pricing tiers from DB
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("org_seat_pricing")
+        .select("id, seats, total_cents, label, badge, is_promo, is_recommended, valid_until")
+        .eq("is_active", true)
+        .order("sort_order");
+      if (cancelled) return;
+      if (error) {
+        console.error("[get-org-access] org_seat_pricing", error);
+        setTiersLoading(false);
+        return;
+      }
+      const now = Date.now();
+      const mapped: Tier[] = (data || [])
+        .filter((r) => !r.valid_until || new Date(r.valid_until).getTime() > now)
+        .map((r) => ({
+          id: r.id,
+          seats: r.seats,
+          total: Math.round(r.total_cents / 100),
+          label: r.label,
+          badge: r.badge,
+          is_promo: r.is_promo,
+          recommended: r.is_recommended,
+        }));
+      setTiers(mapped);
+      const defaultTier =
+        mapped.find((t) => t.recommended) ||
+        mapped.find((t) => !t.is_promo) ||
+        mapped[0];
+      if (defaultTier) setSelectedTierId(defaultTier.id);
+      setTiersLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Load campuses once
   useEffect(() => {
@@ -257,6 +304,7 @@ export default function GetOrgAccess() {
     emailSchema.safeParse(email.trim()).success &&
     !!selectedCampusId &&
     !!selectedOrg &&
+    !!tier &&
     !submitting;
 
   const handleCheckout = async () => {
@@ -269,8 +317,10 @@ export default function GetOrgAccess() {
         contact_email: email.trim().toLowerCase(),
         campus_id: selectedCampusId,
         greek_org_id: selectedOrg?.id,
-        seats: tier.seats,
-        total: tier.total,
+        tier_id: tier?.id,
+        seats: tier?.seats,
+        total: tier?.total,
+        is_promo: tier?.is_promo,
       });
     } catch (err) {
       console.error("[get-org-access checkout]", err);
@@ -371,7 +421,7 @@ export default function GetOrgAccess() {
                     fontFamily: "Inter, sans-serif",
                   }}
                 >
-                  ${tier.total.toLocaleString()}
+                  ${(tier?.total ?? 0).toLocaleString()}
                 </div>
                 <div
                   className="mt-1.5 text-[10px] font-medium uppercase tracking-wider"
@@ -639,65 +689,105 @@ export default function GetOrgAccess() {
                 4. Choose your pack
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                {TIERS.map((t, i) => {
-                  const selected = i === selectedTierIdx;
-                  return (
-                    <button
-                      key={t.seats}
-                      type="button"
-                      onClick={() => setSelectedTierIdx(i)}
-                      className="relative rounded-xl p-3 text-left transition-all"
-                      style={{
-                        background: selected ? "#F0F6FF" : "#fff",
-                        border: `1.5px solid ${selected ? NAVY : "#E0E7F0"}`,
-                        boxShadow: selected ? "0 4px 12px rgba(20,33,61,0.08)" : "none",
-                      }}
-                    >
-                      {t.recommended && (
-                        <span
-                          className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
-                          style={{
-                            background: RED,
-                            color: "#fff",
-                            fontFamily: "Inter, sans-serif",
-                          }}
-                        >
-                          Popular
-                        </span>
-                      )}
-                      <div
-                        className="text-[20px] font-bold leading-none"
+              {tiersLoading ? (
+                <div
+                  className="rounded-lg px-3 py-4 text-[13px]"
+                  style={{
+                    border: "1px dashed #E0E7F0",
+                    background: "#FAFBFC",
+                    color: "#94A3B8",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                >
+                  Loading pricing…
+                </div>
+              ) : tiers.length === 0 ? (
+                <div
+                  className="rounded-lg px-3 py-4 text-[13px]"
+                  style={{
+                    border: "1px dashed #E0E7F0",
+                    background: "#FAFBFC",
+                    color: "#64748B",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                >
+                  No active pricing tiers. Reach out to lee@surviveaccounting.com.
+                </div>
+              ) : (
+                <div
+                  className={`grid gap-2 grid-cols-2 ${
+                    tiers.length >= 5 ? "sm:grid-cols-5" : `sm:grid-cols-${Math.min(tiers.length, 4)}`
+                  }`}
+                >
+                  {tiers.map((t) => {
+                    const selected = t.id === selectedTierId;
+                    const badge = t.badge || (t.recommended ? "Popular" : null);
+                    const badgeColor = t.is_promo ? "#15803D" : RED;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setSelectedTierId(t.id)}
+                        className="relative rounded-xl p-3 text-left transition-all"
                         style={{
-                          color: NAVY,
-                          fontFamily: "Inter, sans-serif",
-                          letterSpacing: "-0.02em",
+                          background: selected ? "#F0F6FF" : "#fff",
+                          border: `1.5px solid ${selected ? NAVY : "#E0E7F0"}`,
+                          boxShadow: selected ? "0 4px 12px rgba(20,33,61,0.08)" : "none",
                         }}
                       >
-                        {t.seats}
-                      </div>
-                      <div
-                        className="text-[11px] mt-0.5"
-                        style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
-                      >
-                        passes
-                      </div>
-                      <div
-                        className="text-[13px] font-semibold mt-2"
-                        style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-                      >
-                        ${t.total.toLocaleString()}
-                      </div>
-                      <div
-                        className="text-[10px]"
-                        style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                      >
-                        ${Math.round(t.total / t.seats)}/seat
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+                        {badge && (
+                          <span
+                            className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
+                            style={{
+                              background: badgeColor,
+                              color: "#fff",
+                              fontFamily: "Inter, sans-serif",
+                            }}
+                          >
+                            {badge}
+                          </span>
+                        )}
+                        <div
+                          className="text-[20px] font-bold leading-none"
+                          style={{
+                            color: NAVY,
+                            fontFamily: "Inter, sans-serif",
+                            letterSpacing: "-0.02em",
+                          }}
+                        >
+                          {t.seats}
+                        </div>
+                        <div
+                          className="text-[11px] mt-0.5"
+                          style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                        >
+                          passes
+                        </div>
+                        <div
+                          className="text-[13px] font-semibold mt-2"
+                          style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                        >
+                          ${t.total.toLocaleString()}
+                        </div>
+                        <div
+                          className="text-[10px]"
+                          style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                        >
+                          ${Math.round(t.total / t.seats)}/seat
+                        </div>
+                        {t.label && (
+                          <div
+                            className="text-[10px] mt-1 font-medium leading-tight"
+                            style={{ color: "#15803D", fontFamily: "Inter, sans-serif" }}
+                          >
+                            {t.label}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Submit */}
@@ -714,7 +804,9 @@ export default function GetOrgAccess() {
             >
               {submitting
                 ? "Working…"
-                : `Continue → ${tier.seats} passes · $${tier.total.toLocaleString()}`}
+                : tier
+                  ? `Continue → ${tier.seats} passes · $${tier.total.toLocaleString()}`
+                  : "Continue"}
             </button>
 
             <div

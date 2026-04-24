@@ -4224,6 +4224,54 @@ export type Database = {
           },
         ]
       }
+      org_seat_pricing: {
+        Row: {
+          badge: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          is_promo: boolean
+          is_recommended: boolean
+          label: string | null
+          per_seat_cents: number | null
+          seats: number
+          sort_order: number
+          total_cents: number
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          badge?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_promo?: boolean
+          is_recommended?: boolean
+          label?: string | null
+          per_seat_cents?: number | null
+          seats: number
+          sort_order?: number
+          total_cents: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          badge?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_promo?: boolean
+          is_recommended?: boolean
+          label?: string | null
+          per_seat_cents?: number | null
+          seats?: number
+          sort_order?: number
+          total_cents?: number
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       parsed_solution_blocks: {
         Row: {
           chapter_id: string
