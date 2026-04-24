@@ -107,3 +107,5 @@ verify_jwt = false
 
 [functions.resend-login-link]
 verify_jwt = false
+[functions.enrich-new-campus]
+verify_jwt = false

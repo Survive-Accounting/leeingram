@@ -282,6 +282,18 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Fire-and-forget AI enrichment + Slack notification for newly created campuses.
+    if (isNew && campusId) {
+      fetch(`${supabaseUrl}/functions/v1/enrich-new-campus`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email_domain: domain, campus_id: campusId }),
+      }).catch((e) => console.error("enrich-new-campus dispatch failed:", e));
+    }
+
     // If we landed on the general fallback, hydrate campusId from the real row.
     if (!campusId && campusSlug === "general") {
       const { data: generalCampus } = await sb
