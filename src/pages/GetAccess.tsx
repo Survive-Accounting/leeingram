@@ -269,31 +269,58 @@ export default function GetAccess() {
                 Product
               </div>
               <div
-                className="rounded-lg px-4 py-3"
+                className="rounded-lg px-4 py-3 transition-all duration-300"
                 style={{
-                  background: "#F0F9FF",
-                  border: "1px solid #BAE6FD",
+                  background: autoRenew ? "#ECFDF5" : "#F0F9FF",
+                  border: `1px solid ${autoRenew ? "#A7F3D0" : "#BAE6FD"}`,
                   fontFamily: "Inter, sans-serif",
+                  boxShadow: autoRenew ? "0 0 0 3px rgba(16,185,129,0.10)" : "none",
                 }}
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
                     Survive Study Pass
                   </div>
-                  <div className="text-[18px] font-bold" style={{ color: NAVY }}>
-                    ${PRICE}
+                  <div className="text-[18px] font-bold transition-all duration-300" style={{ color: NAVY }}>
+                    ${totalPrice}
                   </div>
                 </div>
-                <div className="text-[12px] mt-0.5" style={{ color: "#475569" }}>
-                  Access through {ACCESS_THROUGH}
+                <div
+                  key={accessThrough}
+                  className="mt-1 animate-fade-in"
+                >
+                  <span
+                    className="text-[13px] font-medium"
+                    style={{
+                      color: autoRenew ? "#047857" : "#1E293B",
+                      background: autoRenew ? "rgba(16,185,129,0.12)" : "transparent",
+                      padding: autoRenew ? "1px 6px" : "0",
+                      borderRadius: 4,
+                      transition: "all 200ms ease-out",
+                    }}
+                  >
+                    Access through {accessThrough}
+                  </span>
                 </div>
+                {autoRenew && nextCourseLabel && (
+                  <div
+                    className="text-[12px] mt-1 animate-fade-in"
+                    style={{ color: "#047857", fontWeight: 500 }}
+                  >
+                    Includes next course ({nextCourseLabel})
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Section 3 — Auto-renew checkbox */}
             <label
-              className="flex items-start gap-3 mb-6 p-3 rounded-lg cursor-pointer transition-colors hover:bg-slate-50"
-              style={{ border: "1px solid #E2E8F0", fontFamily: "Inter, sans-serif" }}
+              className="flex items-start gap-3 mb-6 p-3 rounded-lg cursor-pointer transition-all duration-200"
+              style={{
+                border: `1px solid ${autoRenew ? "#A7F3D0" : "#E2E8F0"}`,
+                background: autoRenew ? "#F0FDF4" : "#fff",
+                fontFamily: "Inter, sans-serif",
+              }}
             >
               <input
                 type="checkbox"
@@ -303,10 +330,12 @@ export default function GetAccess() {
               />
               <div className="min-w-0">
                 <div className="text-[13px] font-semibold" style={{ color: NAVY }}>
-                  Auto-renew next semester
+                  Stay covered next semester (+${PRICE})
                 </div>
                 <div className="text-[12px] mt-0.5" style={{ color: "#64748B" }}>
-                  Stay covered for your next accounting course. Cancel anytime.
+                  {nextCourseLabel
+                    ? `Extends your access and includes ${nextCourseLabel}. Cancel anytime.`
+                    : "Extends your access through the next semester. Cancel anytime."}
                 </div>
               </div>
             </label>
