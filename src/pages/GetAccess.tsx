@@ -528,6 +528,47 @@ export default function GetAccess() {
         onScrollToCourses={() => navigate("/staging")}
         onScrollToContact={() => navigate("/staging")}
       />
+
+      {/* Reset sequence — choose starting course */}
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent className="max-w-[380px]">
+          <DialogHeader>
+            <DialogTitle style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}>
+              Choose your starting course
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 mt-2" style={{ fontFamily: "Inter, sans-serif" }}>
+            {progression.courses.map((course, idx) => {
+              const isCurrent = idx === startIdx && extraCount === 0;
+              return (
+                <button
+                  key={course.slug}
+                  type="button"
+                  onClick={() => {
+                    setStartIdxOverride(idx);
+                    setExtraCount(0);
+                    setLifetimeUpgrade(false);
+                    setResetOpen(false);
+                  }}
+                  className="text-left rounded-lg px-4 py-3 text-[14px] font-semibold transition-all hover:bg-slate-50"
+                  style={{
+                    border: isCurrent ? `1.5px solid ${NAVY}` : "1px solid #E2E8F0",
+                    background: isCurrent ? "rgba(20,33,61,0.04)" : "#fff",
+                    color: NAVY,
+                  }}
+                >
+                  {course.code ?? course.name}
+                  {course.code && (
+                    <span className="ml-2 text-[12px] font-normal" style={{ color: "#64748B" }}>
+                      {course.name}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
