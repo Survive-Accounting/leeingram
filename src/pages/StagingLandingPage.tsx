@@ -267,7 +267,7 @@ export default function StagingLandingPage() {
       <LandingFooter
         onScrollToCourses={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })}
         onScrollToContact={() => contactRef.current?.scrollIntoView({ behavior: "smooth" })}
-        onPricingClick={() => requestAccess({ course: defaultCourse.slug })}
+        onPricingClick={() => handleCardClick(defaultCourse)}
       />
 
       <StagingEmailPromptModal
