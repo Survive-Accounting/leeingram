@@ -302,3 +302,55 @@ export default function StagingLandingPage() {
     </div>
   );
 }
+
+// Single-line social proof strip — bridges hero → testimonials
+function SocialProofStrip() {
+  const NAVY = "#14213D";
+  const MUTED = "#6B7280";
+  const AMBER = "#D4AF37";
+  const stats: Array<{ label: React.ReactNode; bold: string }> = [
+    { label: <span style={{ color: AMBER, fontWeight: 700 }}>★ 4.9</span>, bold: "rating" },
+    { bold: "1,200+", label: "students helped" },
+    { bold: "4", label: "courses covered" },
+    { bold: "10+", label: "years tutoring" },
+  ];
+  return (
+    <div
+      style={{
+        background: "#FFFFFF",
+        borderBottom: "1px solid #F0F0F0",
+        padding: "20px 16px",
+      }}
+    >
+      <div
+        className="mx-auto flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-center"
+        style={{ maxWidth: 920, fontFamily: "Inter, sans-serif" }}
+      >
+        {stats.map((s, i) => (
+          <div key={i} className="flex items-center gap-2">
+            {i > 0 && <span style={{ color: "#D1D5DB" }}>·</span>}
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: MUTED,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {typeof s.bold === "string" && /^[★\d]/.test(s.bold) ? (
+                <>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>{s.bold}</span>{" "}
+                  {s.label}
+                </>
+              ) : (
+                <>
+                  {s.label} <span style={{ fontSize: 14, fontWeight: 700, color: NAVY }}>{s.bold}</span>
+                </>
+              )}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
