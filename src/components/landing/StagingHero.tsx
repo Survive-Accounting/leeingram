@@ -26,6 +26,7 @@ interface StagingHeroProps {
 
 export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   const handleSeeHowItWorks = () => {
     const el = document.getElementById("exam-coming-up");
@@ -65,11 +66,20 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           to   { opacity: 1; transform: translateY(0) scale(1); }
         }
         @keyframes headshotIn {
-          from { opacity: 0; transform: scale(0.85); }
-          to   { opacity: 1; transform: scale(1); }
+          from { opacity: 0; transform: scale(0.92) translateY(0); filter: blur(6px); }
+          to   { opacity: 1; transform: scale(1) translateY(0);    filter: blur(0); }
         }
-
-        .hero-anim-headshot { opacity: 0; animation: headshotIn 0.7s cubic-bezier(0.16,1,0.3,1) 0s forwards; }
+        @keyframes headshotFloat {
+          0%, 100% { transform: translateY(0); }
+          50%      { transform: translateY(-4px); }
+        }
+        .hero-anim-headshot-img {
+          opacity: 0;
+          animation: headshotIn 1.2s cubic-bezier(0.16,1,0.3,1) 0.1s forwards;
+          transition: opacity 0.5s ease;
+        }
+        .hero-anim-headshot-img.is-loaded ~ .headshot-skeleton { opacity: 0; }
+        .hero-anim-headshot { animation: headshotFloat 6s ease-in-out 1.5s infinite; }
         .hero-anim-eyebrow  { opacity: 0; animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.18s forwards; }
         .hero-anim-headline { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.32s forwards; }
         .hero-anim-sub      { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.5s forwards; }
@@ -97,21 +107,27 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
           >
             <div
-              className="rounded-full overflow-hidden"
+              className="rounded-full overflow-hidden relative"
               style={{
                 width: 120,
                 height: 120,
                 border: "3px solid #FFFFFF",
                 boxShadow:
                   "0 8px 24px rgba(20,33,61,0.18), 0 0 0 1px rgba(20,33,61,0.06)",
-                background: "#fff",
+                background: "linear-gradient(135deg, #DDE7F5 0%, #C8D6EC 100%)",
               }}
             >
               <img
                 src={leeHeadshot}
                 alt="Lee Ingram"
-                className="w-full h-full object-cover"
-                style={{ objectPosition: "center 15%" }}
+                loading="eager"
+                decoding="async"
+                onLoad={() => setImgLoaded(true)}
+                className="w-full h-full object-cover hero-anim-headshot-img"
+                style={{
+                  objectPosition: "center 15%",
+                  opacity: imgLoaded ? undefined : 0,
+                }}
               />
             </div>
           </button>
