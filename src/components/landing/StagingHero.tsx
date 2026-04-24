@@ -354,7 +354,6 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             </div>
         </div>
       </div>
-      </div>
 
       <div className="staging-hero-overlay-bottom" />
     </section>
