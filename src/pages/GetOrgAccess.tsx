@@ -99,6 +99,11 @@ export default function GetOrgAccess() {
   );
   const perSeat = tier ? Math.round(tier.total / tier.seats) : 0;
 
+  // --- Auto re-up settings (prototype: stored only, no auto billing) ---
+  const WEEKLY_LIMIT_OPTIONS = [10, 20, 30, 50] as const;
+  const [autoReupEnabled, setAutoReupEnabled] = useState(true);
+  const [weeklySeatLimit, setWeeklySeatLimit] = useState<number>(20);
+
   const [submitting, setSubmitting] = useState(false);
 
   // Load seat-pricing tiers from DB
@@ -321,6 +326,8 @@ export default function GetOrgAccess() {
         seats: tier?.seats,
         total: tier?.total,
         is_promo: tier?.is_promo,
+        auto_reup_enabled: autoReupEnabled,
+        weekly_seat_limit: autoReupEnabled ? weeklySeatLimit : null,
       });
     } catch (err) {
       console.error("[get-org-access checkout]", err);
@@ -788,6 +795,84 @@ export default function GetOrgAccess() {
                   })}
                 </div>
               )}
+            </div>
+
+            {/* Step 5 — Auto re-up */}
+            <div className="mt-7">
+              <div
+                className="text-[13px] font-semibold uppercase tracking-wider mb-2"
+                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+              >
+                5. Auto re-up <span style={{ color: "#94A3B8", fontWeight: 500 }}>(optional)</span>
+              </div>
+
+              <div
+                className="rounded-xl p-4"
+                style={{ background: "#FAFBFC", border: "1px solid #E0E7F0" }}
+              >
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoReupEnabled}
+                    onChange={(e) => setAutoReupEnabled(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 cursor-pointer"
+                    style={{ accentColor: NAVY }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className="text-[14px] font-semibold"
+                      style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                    >
+                      Auto-add seats when members join
+                    </div>
+                    <div
+                      className="text-[12px] mt-0.5"
+                      style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                    >
+                      We'll summarize new seats weekly before billing.
+                    </div>
+                  </div>
+                </label>
+
+                <div
+                  className={`mt-4 transition-opacity ${autoReupEnabled ? "opacity-100" : "opacity-50 pointer-events-none"}`}
+                >
+                  <div
+                    className="text-[12px] font-medium mb-1.5"
+                    style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                  >
+                    Weekly seat limit
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {WEEKLY_LIMIT_OPTIONS.map((n) => {
+                      const selected = n === weeklySeatLimit;
+                      return (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setWeeklySeatLimit(n)}
+                          disabled={!autoReupEnabled}
+                          className="rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-all"
+                          style={{
+                            background: selected ? NAVY : "#fff",
+                            color: selected ? "#fff" : NAVY,
+                            border: `1.5px solid ${selected ? NAVY : "#E0E7F0"}`,
+                            fontFamily: "Inter, sans-serif",
+                          }}
+                        >
+                          {n} seats / wk
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div
+                    className="text-[11px] mt-2"
+                    style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                  >
+                    Caps weekly auto-additions so a sudden rush never surprises your treasurer.
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Submit */}
