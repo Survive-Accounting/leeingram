@@ -277,8 +277,14 @@ export default function StagingCoursesSection({
                 {/* Eyebrow above the laptop — pill badge */}
                 <div className="text-center mb-4">
                   <span
-                    className="inline-block text-[11px] font-semibold uppercase tracking-[0.2em] rounded-full px-3 py-1.5"
-                    style={{ background: NAVY, color: "#FFFFFF", fontFamily: "Inter, sans-serif" }}
+                    className="inline-block text-[12px] font-bold uppercase rounded-full"
+                    style={{
+                      background: NAVY,
+                      color: "#FFFFFF",
+                      fontFamily: "Inter, sans-serif",
+                      padding: "8px 20px",
+                      letterSpacing: "0.08em",
+                    }}
                   >
                     Try a demo
                   </span>
