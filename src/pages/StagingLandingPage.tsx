@@ -266,19 +266,17 @@ export default function StagingLandingPage() {
           }}
         />
 
-        {coursesRevealed && (
-          <div ref={coursesRef}>
-            <StagingCoursesSection
-              courses={COURSES}
-              onCardClick={handleCardClick}
-              onChapterClick={handleChapterClick}
-              onGetStartedClick={(slug) => {
-                setGetStartedPreselectedSlug(slug);
-                setGetStartedOpen(true);
-              }}
-            />
-          </div>
-        )}
+        <div ref={coursesRef}>
+          <StagingCoursesSection
+            courses={COURSES}
+            onCardClick={handleCardClick}
+            onChapterClick={handleChapterClick}
+            onGetStartedClick={(slug) => {
+              setGetStartedPreselectedSlug(slug);
+              setGetStartedOpen(true);
+            }}
+          />
+        </div>
 
         <div ref={contactRef}>
           <ContactForm />
