@@ -990,6 +990,7 @@ export type Database = {
         Row: {
           created_at: string
           domains: string[]
+          email_domain: string | null
           id: string
           is_active: boolean
           mascot_cheer: string | null
@@ -997,6 +998,7 @@ export type Database = {
           semester_end: string | null
           semester_start: string | null
           slug: string
+          status: string
           stripe_coupon_id: string | null
           timezone: string
           updated_at: string
@@ -1004,6 +1006,7 @@ export type Database = {
         Insert: {
           created_at?: string
           domains?: string[]
+          email_domain?: string | null
           id?: string
           is_active?: boolean
           mascot_cheer?: string | null
@@ -1011,6 +1014,7 @@ export type Database = {
           semester_end?: string | null
           semester_start?: string | null
           slug: string
+          status?: string
           stripe_coupon_id?: string | null
           timezone?: string
           updated_at?: string
@@ -1018,6 +1022,7 @@ export type Database = {
         Update: {
           created_at?: string
           domains?: string[]
+          email_domain?: string | null
           id?: string
           is_active?: boolean
           mascot_cheer?: string | null
@@ -1025,6 +1030,7 @@ export type Database = {
           semester_end?: string | null
           semester_start?: string | null
           slug?: string
+          status?: string
           stripe_coupon_id?: string | null
           timezone?: string
           updated_at?: string
@@ -3612,6 +3618,50 @@ export type Database = {
           },
         ]
       }
+      greek_orgs: {
+        Row: {
+          aliases: string[]
+          campus_id: string
+          council: string | null
+          created_at: string
+          id: string
+          org_name: string
+          org_slug: string
+          org_type: string | null
+          status: string
+        }
+        Insert: {
+          aliases?: string[]
+          campus_id: string
+          council?: string | null
+          created_at?: string
+          id?: string
+          org_name: string
+          org_slug: string
+          org_type?: string | null
+          status?: string
+        }
+        Update: {
+          aliases?: string[]
+          campus_id?: string
+          council?: string | null
+          created_at?: string
+          id?: string
+          org_name?: string
+          org_slug?: string
+          org_type?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "greek_orgs_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_page_leads: {
         Row: {
           campus_signup_number: number | null
@@ -4049,6 +4099,130 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      org_accounts: {
+        Row: {
+          campus_id: string
+          contact_email: string
+          created_at: string
+          greek_org_id: string | null
+          id: string
+          org_name_manual: string | null
+          status: string
+          stripe_customer_id: string | null
+        }
+        Insert: {
+          campus_id: string
+          contact_email: string
+          created_at?: string
+          greek_org_id?: string | null
+          id?: string
+          org_name_manual?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+        }
+        Update: {
+          campus_id?: string
+          contact_email?: string
+          created_at?: string
+          greek_org_id?: string | null
+          id?: string
+          org_name_manual?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_accounts_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_accounts_greek_org_id_fkey"
+            columns: ["greek_org_id"]
+            isOneToOne: false
+            referencedRelation: "greek_orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_admins: {
+        Row: {
+          created_at: string
+          id: string
+          org_account_id: string
+          role: string
+          user_email: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_account_id: string
+          role?: string
+          user_email: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_account_id?: string
+          role?: string
+          user_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_admins_org_account_id_fkey"
+            columns: ["org_account_id"]
+            isOneToOne: false
+            referencedRelation: "org_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_license_purchases: {
+        Row: {
+          created_at: string
+          id: string
+          org_account_id: string
+          payment_status: string
+          price_per_seat: number
+          seats_purchased: number
+          seats_used: number
+          stripe_session_id: string | null
+          total_paid: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_account_id: string
+          payment_status?: string
+          price_per_seat: number
+          seats_purchased: number
+          seats_used?: number
+          stripe_session_id?: string | null
+          total_paid?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_account_id?: string
+          payment_status?: string
+          price_per_seat?: number
+          seats_purchased?: number
+          seats_used?: number
+          stripe_session_id?: string | null
+          total_paid?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_license_purchases_org_account_id_fkey"
+            columns: ["org_account_id"]
+            isOneToOne: false
+            referencedRelation: "org_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       parsed_solution_blocks: {
         Row: {
