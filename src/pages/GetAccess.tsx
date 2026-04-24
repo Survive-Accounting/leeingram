@@ -12,9 +12,10 @@ const RED = "#CE1126";
 const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
-const PRICE = 99;
-const EXTEND_PRICE = 50;
-const LIFETIME_UPGRADE_PRICE = 100;
+const PRICE = 150;
+const AUTO_RENEW_DISCOUNT = 50;
+const EXTEND_PRICE = 100;
+const LIFETIME_UPGRADE_PRICE = 150;
 const MAX_EXTRA_SEMESTERS = 3; // 4 total including base
 
 // Demo promo codes — replace with server-validated codes later.
