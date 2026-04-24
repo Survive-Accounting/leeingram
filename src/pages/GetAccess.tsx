@@ -304,7 +304,7 @@ export default function GetAccess() {
 
             {/* 2. Pricing — directly above CTA */}
             <div
-              className="mb-3 flex flex-col items-center text-center"
+              className="mt-7 mb-3 flex flex-col items-center text-center"
               style={{ fontFamily: "Inter, sans-serif" }}
             >
               <div
@@ -350,7 +350,7 @@ export default function GetAccess() {
               ) : (
                 <>
                   <ShoppingCart className="w-4 h-4" />
-                  Buy Study Pass <span aria-hidden="true">→</span>
+                  Get Full Access <span aria-hidden="true">→</span>
                 </>
               )}
             </button>
@@ -363,6 +363,29 @@ export default function GetAccess() {
                 {checkoutError}
               </div>
             )}
+
+            {/* Human support line */}
+            <div
+              className="mt-3 flex items-center justify-center gap-2 text-[12px]"
+              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+            >
+              <img
+                src="https://i.ibb.co/9HhgJrS/Lee-Ingram-Headshot.jpg"
+                alt="Lee Ingram"
+                className="w-5 h-5 rounded-full object-cover"
+                style={{ border: "1px solid #E2E8F0" }}
+              />
+              <span>
+                Questions? Text me —{" "}
+                <a
+                  href="sms:+16012018759"
+                  className="hover:underline"
+                  style={{ color: "#64748B" }}
+                >
+                  601-201-8759
+                </a>
+              </span>
+            </div>
 
             {/* 5. Trust block — only two lines */}
             <div
