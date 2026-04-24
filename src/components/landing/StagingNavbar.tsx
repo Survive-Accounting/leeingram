@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import MagicLinkModal from "./MagicLinkModal";
 
 const NAVY = "#14213D";
-const RED = "#CE1126";
 
 interface StagingNavbarProps {
   onCtaClick: () => void;
@@ -11,6 +11,7 @@ interface StagingNavbarProps {
 
 export default function StagingNavbar({ onCtaClick, onPricingClick }: StagingNavbarProps) {
   const navigate = useNavigate();
+  const [loginOpen, setLoginOpen] = useState(false);
 
   return (
     <div className="sticky top-6 z-50 w-full">
@@ -45,7 +46,7 @@ export default function StagingNavbar({ onCtaClick, onPricingClick }: StagingNav
             Pricing
           </button>
           <button
-            onClick={() => navigate("/login")}
+            onClick={() => setLoginOpen(true)}
             className="text-[13px] font-semibold transition-all hover:brightness-110 active:scale-[0.98]"
             style={{
               background: NAVY,
@@ -61,6 +62,8 @@ export default function StagingNavbar({ onCtaClick, onPricingClick }: StagingNav
           </button>
         </div>
       </nav>
+
+      <MagicLinkModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>
   );
 }
