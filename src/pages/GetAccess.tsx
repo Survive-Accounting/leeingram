@@ -331,10 +331,10 @@ export default function GetAccess() {
               🔒 One account per student
             </p>
 
-            {/* Single compact product block */}
+            {/* Single compact product block — price-led, minimal labels */}
             <div className="mb-4">
               <div
-                className="rounded-lg px-4 py-3.5"
+                className="rounded-lg px-5 py-4"
                 style={{
                   background: "#F8FAFC",
                   border: "1px solid #E2E8F0",
@@ -346,76 +346,23 @@ export default function GetAccess() {
                     <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
                       Semester Study Pass
                     </div>
-
                     <div
-                      className="text-[11px] font-semibold uppercase tracking-wider mt-3"
-                      style={{ color: "#94A3B8" }}
+                      className="mt-1.5 text-[13px] truncate"
+                      style={{ color: "#64748B" }}
                     >
-                      Courses included
-                    </div>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      {selectedCourses.map(({ course, idx }, arrIdx) => {
-                        const isLast = arrIdx === selectedCourses.length - 1;
-                        const isRemovable = isLast && idx > 0;
-                        return (
-                          <span key={course.slug} className="flex items-center gap-1.5 animate-fade-in">
-                            {arrIdx > 0 && <span style={{ color: "#CBD5E1" }}>→</span>}
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold"
-                              style={{
-                                background: "#fff",
-                                border: "1px solid #CBD5E1",
-                                color: NAVY,
-                              }}
-                            >
-                              {course.code ?? course.name}
-                              {isRemovable && (
-                                <button
-                                  type="button"
-                                  aria-label={`Remove ${course.code ?? course.name}`}
-                                  onClick={() => setExtraCount((c) => Math.max(0, c - 1))}
-                                  className="ml-0.5 rounded-full hover:bg-slate-100 transition-colors p-0.5"
-                                  style={{ color: "#94A3B8" }}
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              )}
-                            </span>
-                          </span>
-                        );
-                      })}
-                    </div>
-
-                    <div
-                      className="text-[11px] font-semibold uppercase tracking-wider mt-3 flex items-center gap-1"
-                      style={{ color: "#94A3B8" }}
-                    >
-                      Access period
-                      <TooltipProvider delayDuration={100}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button type="button" className="inline-flex" aria-label="Access period info">
-                              <Info className="w-3 h-3" style={{ color: "#94A3B8" }} />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[220px] text-[12px]">
-                            Always includes final exam week.
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                    <div
-                      key={`access-${extraCount}`}
-                      className="text-[13px] mt-0.5 animate-fade-in"
-                      style={{ color: "#334155" }}
-                    >
-                      {accessPeriodLabel}
+                      {selectedCourses.map(({ course }) => course.code ?? course.name).join(" → ")}
                     </div>
                   </div>
 
                   <div className="text-right shrink-0 flex flex-col items-end gap-0.5">
-                    <div className="text-[18px] font-bold" style={{ color: NAVY }}>
-                      ${totalPrice} total
+                    <div
+                      className="font-bold leading-none"
+                      style={{ color: NAVY, fontSize: 36, letterSpacing: "-0.02em" }}
+                    >
+                      ${totalPrice}
+                      <span className="ml-1 text-[13px] font-medium" style={{ color: "#64748B", letterSpacing: 0 }}>
+                        total
+                      </span>
                     </div>
                     {addedAmount > 0 && (
                       <div
@@ -428,6 +375,39 @@ export default function GetAccess() {
                     )}
                   </div>
                 </div>
+
+                {/* Removable extras (chips) — only shown when there's something removable */}
+                {selectedCourses.some(({ idx }, arrIdx) => arrIdx === selectedCourses.length - 1 && idx > 0) && (
+                  <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                    {selectedCourses.map(({ course, idx }, arrIdx) => {
+                      const isLast = arrIdx === selectedCourses.length - 1;
+                      const isRemovable = isLast && idx > 0;
+                      if (!isRemovable) return null;
+                      return (
+                        <span
+                          key={course.slug}
+                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold animate-fade-in"
+                          style={{
+                            background: "#fff",
+                            border: "1px solid #CBD5E1",
+                            color: NAVY,
+                          }}
+                        >
+                          {course.code ?? course.name}
+                          <button
+                            type="button"
+                            aria-label={`Remove ${course.code ?? course.name}`}
+                            onClick={() => setExtraCount((c) => Math.max(0, c - 1))}
+                            className="rounded-full hover:bg-slate-100 transition-colors p-0.5"
+                            style={{ color: "#94A3B8" }}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -515,7 +495,7 @@ export default function GetAccess() {
               ) : (
                 <>
                   <ShoppingCart className="w-4 h-4" />
-                  {`Buy Access — $${totalPrice}`}
+                  Buy Access <span aria-hidden="true">→</span>
                 </>
               )}
             </button>
@@ -528,6 +508,37 @@ export default function GetAccess() {
                 {checkoutError}
               </div>
             )}
+
+            {/* Access period — moved BELOW the CTA */}
+            <div
+              key={`access-below-${extraCount}`}
+              className="mt-4 flex items-center justify-center gap-1.5 text-[13px] animate-fade-in"
+              style={{ color: "#334155", fontFamily: "Inter, sans-serif" }}
+            >
+              <span style={{ color: "#94A3B8" }}>Access:</span>
+              <span className="font-semibold">{accessPeriodLabel}</span>
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="inline-flex" aria-label="Access period info">
+                      <Info className="w-3 h-3" style={{ color: "#94A3B8" }} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[220px] text-[12px]">
+                    Always includes final exam week.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            {showLifetime && lifetimeUpgrade && (
+              <div
+                className="mt-1 text-center text-[12px] animate-fade-in"
+                style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+              >
+                Includes all future updates
+              </div>
+            )}
+
             <div
               className="mt-4 flex flex-col items-center gap-1.5 text-[12px]"
               style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
@@ -615,11 +626,69 @@ export default function GetAccess() {
               </div>
             </div>
 
-            <div
-              className="mt-5 text-[11.5px] leading-relaxed"
-              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-            >
-              Built and maintained by Lee Ingram, Ole Miss accounting tutor since 2015.
+            {/* Subtle product mock — laptop with sample content */}
+            <div className="mt-7 hidden md:block" aria-hidden="true">
+              <div
+                className="relative mx-auto"
+                style={{ maxWidth: 320, fontFamily: "Inter, sans-serif" }}
+              >
+                <div
+                  className="rounded-t-lg p-2"
+                  style={{
+                    background: "linear-gradient(180deg, #1f2d4f 0%, #14213D 100%)",
+                    boxShadow: "0 16px 32px rgba(20,33,61,0.18)",
+                  }}
+                >
+                  <div className="flex items-center gap-1 mb-2 px-1">
+                    <span style={{ width: 6, height: 6, borderRadius: 99, background: "rgba(255,255,255,0.25)" }} />
+                    <span style={{ width: 6, height: 6, borderRadius: 99, background: "rgba(255,255,255,0.25)" }} />
+                    <span style={{ width: 6, height: 6, borderRadius: 99, background: "rgba(255,255,255,0.25)" }} />
+                  </div>
+                  <div
+                    className="rounded"
+                    style={{ background: "#fff", padding: "16px 18px", minHeight: 130 }}
+                  >
+                    <div
+                      className="text-[10px] font-semibold uppercase tracking-wider mb-2.5"
+                      style={{ color: "#94A3B8" }}
+                    >
+                      Your study tools
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <div className="text-[14px] leading-tight" style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}>
+                        Journal Entries
+                      </div>
+                      <div className="text-[14px] leading-tight" style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}>
+                        Flashcards
+                      </div>
+                      <div className="text-[14px] leading-tight" style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}>
+                        Practice Problems
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className="mx-auto rounded-b-xl"
+                  style={{
+                    height: 8,
+                    width: "108%",
+                    marginLeft: "-4%",
+                    background: "linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%)",
+                    boxShadow: "0 6px 16px rgba(20,33,61,0.12)",
+                  }}
+                />
+                <div
+                  className="mx-auto"
+                  style={{
+                    height: 3,
+                    width: "30%",
+                    marginTop: 1,
+                    background: "#94a3b8",
+                    borderBottomLeftRadius: 4,
+                    borderBottomRightRadius: 4,
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
