@@ -4109,6 +4109,7 @@ export type Database = {
           greek_org_id: string | null
           id: string
           org_name_manual: string | null
+          payment_method: string
           status: string
           stripe_customer_id: string | null
           weekly_seat_limit: number
@@ -4121,6 +4122,7 @@ export type Database = {
           greek_org_id?: string | null
           id?: string
           org_name_manual?: string | null
+          payment_method?: string
           status?: string
           stripe_customer_id?: string | null
           weekly_seat_limit?: number
@@ -4133,6 +4135,7 @@ export type Database = {
           greek_org_id?: string | null
           id?: string
           org_name_manual?: string | null
+          payment_method?: string
           status?: string
           stripe_customer_id?: string | null
           weekly_seat_limit?: number
