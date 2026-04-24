@@ -87,15 +87,33 @@ export default function GetAccess() {
   const courseCode = resolvedCourse.code;
   const courseLabel = formatCourseLabel(resolvedCourse);
 
-  // Next course in the campus progression (used for auto-renew label)
-  const currentIdx = progression.courses.findIndex((c) => c.slug === resolvedCourseSlug);
-  const nextCourse = currentIdx >= 0 ? progression.courses[currentIdx + 1] : undefined;
-  const nextCourseLabel = nextCourse?.code ?? nextCourse?.name ?? null;
+  // Index of the resolved course in the campus progression.
+  const startIdx = progression.courses.findIndex((c) => c.slug === resolvedCourseSlug);
 
-  const [autoRenew, setAutoRenew] = useState(false);
-  const totalPrice = autoRenew ? PRICE + EXTEND_PRICE : PRICE;
-  const baseAccess = getAccessWindow(false);
-  const extendedAccess = getAccessWindow(true);
+  // How many ADDITIONAL courses are stacked on top of the base course.
+  // 0 = just the resolved course; 1 = + next course; up to maxAdditional.
+  const maxAdditional = Math.max(0, progression.courses.length - 1 - startIdx);
+  const [extraCount, setExtraCount] = useState(0);
+
+  // The full list of selected courses (base + extras).
+  const selectedCourses = useMemo(() => {
+    const list = [];
+    for (let i = 0; i <= extraCount; i++) {
+      const course = progression.courses[startIdx + i];
+      if (course) {
+        list.push({
+          course,
+          accessEnd: getAccessEndDate(i),
+          previousAccessEnd: i === 0 ? null : getAccessEndDate(i - 1),
+          price: i === 0 ? PRICE : EXTEND_PRICE,
+        });
+      }
+    }
+    return list;
+  }, [progression.courses, startIdx, extraCount]);
+
+  const totalPrice = PRICE + extraCount * EXTEND_PRICE;
+  const canAddAnother = extraCount < maxAdditional;
 
   // Resolve email: URL param → localStorage → sessionStorage.
   const initialEmail = useMemo(() => {
@@ -143,6 +161,9 @@ export default function GetAccess() {
     setCheckoutError(null);
     setCheckoutLoading(true);
     try {
+      const includedCourses = selectedCourses.map(
+        ({ course }) => course.code ?? course.name,
+      );
       const { data, error } = await supabase.functions.invoke(
         "create-get-access-checkout",
         {
@@ -152,8 +173,9 @@ export default function GetAccess() {
             selectedCourse: resolvedCourseSlug,
             selectedPlan: "study_pass",
             amount: totalPrice,
-            includedCourses: [resolvedCourse.code ?? resolvedCourse.name],
-            autoRenew,
+            includedCourses,
+            autoRenew: extraCount > 0,
+            extraSemesters: extraCount,
             origin: window.location.origin,
           },
         },
