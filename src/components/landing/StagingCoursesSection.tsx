@@ -382,23 +382,17 @@ export default function StagingCoursesSection({
                         </div>
                       )}
 
-                      {/* Idle / off state — eyebrow + headline + dropdown LIVE INSIDE the screen */}
+                      {/* Idle / off state — headline + dropdown LIVE INSIDE the screen */}
                       {powerPhase === "off" && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center px-8 demo-idle-content">
+                        <div className="absolute inset-0 flex flex-col items-center px-8 pt-[14%] demo-idle-content">
                           {/* Faint radial glow behind text — "screen is on" feel */}
                           <div
                             className="absolute inset-0 pointer-events-none"
                             style={{
                               background:
-                                "radial-gradient(ellipse 55% 45% at 50% 45%, rgba(147,197,253,0.10) 0%, rgba(147,197,253,0.04) 40%, transparent 75%)",
+                                "radial-gradient(ellipse 55% 45% at 50% 35%, rgba(147,197,253,0.10) 0%, rgba(147,197,253,0.04) 40%, transparent 75%)",
                             }}
                           />
-                          <span
-                            className="relative text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] mb-3"
-                            style={{ color: "rgba(147,197,253,0.7)", fontFamily: "Inter, sans-serif" }}
-                          >
-                            Try a demo
-                          </span>
                           <h2
                             className="relative text-center text-white leading-tight text-[22px] sm:text-[28px] md:text-[34px]"
                             style={{
