@@ -30,7 +30,7 @@ export default function StagingFinalCtaSection({
           className="mt-4 text-[16px]"
           style={{ color: "rgba(255,255,255,0.9)", opacity: 0.9, fontFamily: "Inter, sans-serif" }}
         >
-          1,200+ students survived. Now it's your turn.
+          1,200+ students have passed accounting with my help. Now it’s your turn.
         </p>
 
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
