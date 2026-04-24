@@ -203,7 +203,7 @@ export default function GetAccess() {
             border: isOleMiss ? "1px solid rgba(20,33,61,0.18)" : "1px dashed rgba(20,33,61,0.25)",
           }}
         >
-          For {campusName} {courseCode ?? "ACCY 201"} students
+          For {campusName}{courseCode ? ` ${courseCode}` : ""} students
         </div>
 
         <h1
@@ -216,7 +216,7 @@ export default function GetAccess() {
           className="mt-4 max-w-[640px] mx-auto text-[16px] sm:text-[18px]"
           style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
         >
-          Get exactly what you need to study smarter.
+          Get study tools that help you study smarter instead.
         </p>
       </section>
 
