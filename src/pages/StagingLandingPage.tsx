@@ -229,6 +229,8 @@ export default function StagingLandingPage() {
         onGetStartedClick={() => requestAccess({ course: defaultCourse.slug })}
       />
 
+      <SocialProofStrip />
+
       <StagingTestimonialsSection onCtaClick={() => handleCardClick(defaultCourse)} />
 
       <div ref={coursesRef}>
@@ -242,6 +244,15 @@ export default function StagingLandingPage() {
           }}
         />
       </div>
+
+      {/* Gradient bridge: demo (gray) → final CTA (red) */}
+      <div
+        aria-hidden="true"
+        style={{
+          height: 80,
+          background: "linear-gradient(to bottom, #F3F4F6, #CC0000)",
+        }}
+      />
 
       <StagingFinalCtaSection
         onGetAccessClick={() => requestAccess({ course: defaultCourse.slug })}
