@@ -522,7 +522,7 @@ export default function GetAccess() {
               className="mt-3 text-center text-[11px] leading-snug"
               style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
             >
-              Individual access only. Account activity is monitored.
+              🔒 One account per student
             </p>
           </div>
 
