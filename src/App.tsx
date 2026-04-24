@@ -20,6 +20,7 @@ const AboutSolutions = lazy(() => import("./pages/AboutSolutions"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const StagingLandingPage = lazy(() => import("./pages/StagingLandingPage"));
 const GetAccess = lazy(() => import("./pages/GetAccess"));
+const GetOrgAccess = lazy(() => import("./pages/GetOrgAccess"));
 const PostCheckout = lazy(() => import("./pages/PostCheckout"));
 const GreekLandingPage = lazy(() => import("./pages/GreekLandingPage"));
 const SurviveHome = lazy(() => import("./pages/SurviveHome"));
