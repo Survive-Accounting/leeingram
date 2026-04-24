@@ -95,7 +95,7 @@ export default function StagingFeatureCardsSection({
             icon={Sword}
             iconColor="#5C8B6F"
             tint="#FFFFFF"
-            title="Survival Tools"
+            title="Study Tools"
             body="Built for late night cramming. Flashcards, journal entries, formulas — optimized for speed."
             buttonLabel="Browse Tools →"
             onClick={onBrowseTools}

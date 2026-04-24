@@ -158,7 +158,7 @@ export default function CampusLandingPage() {
               icon={Sword}
               iconColor="#16a34a"
               tint="#f0fdf4"
-              title="Survival Tools"
+              title="Study Tools"
               body="Built for late night cramming. Flashcards, journal entries, formulas — optimized for speed."
               buttonLabel="Browse Tools →"
               onClick={() => {

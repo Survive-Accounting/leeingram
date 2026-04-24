@@ -72,7 +72,7 @@ function getAccessEndDate(stepsAhead: number): string {
 const INCLUDES = [
   {
     icon: Sword,
-    label: "Survival Tools",
+    label: "Study Tools",
     body: "Flashcards, formulas, journal entries — built for late-night cramming.",
   },
   {

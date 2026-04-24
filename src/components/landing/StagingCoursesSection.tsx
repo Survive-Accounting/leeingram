@@ -604,7 +604,7 @@ function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }:
         style={{ background: "#EEF0F3", border: "1px solid #E5E7EB" }}
       >
         {[
-          { key: "survival" as const, label: "Survival Tools" },
+          { key: "survival" as const, label: "Study Tools" },
           { key: "practice" as const, label: "Practice Problems" },
         ].map((t) => {
           const active = tab === t.key;
@@ -889,7 +889,7 @@ function ChapterView({ courseName, chapter, tab, onTabChange, onBack, onChange }
       {/* Tab bar */}
       <div className="flex gap-1 p-1 rounded-lg mb-3" style={{ background: "#EEF0F3", border: "1px solid #E5E7EB" }}>
         {[
-          { key: "survival" as const, label: "Survival Tools" },
+          { key: "survival" as const, label: "Study Tools" },
           { key: "practice" as const, label: "Practice Problems" },
         ].map((t) => {
           const active = tab === t.key;
