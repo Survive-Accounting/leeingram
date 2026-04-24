@@ -265,7 +265,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               onClick={handleSeeHowItWorks}
               className="hero-anim-link text-[13px] font-medium transition-colors hover:underline underline-offset-4"
               style={{
-                color: "rgba(20,33,61,0.72)",
+                color: "rgba(255,255,255,0.7)",
                 background: "none",
                 border: "none",
                 padding: 0,
