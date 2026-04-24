@@ -988,11 +988,20 @@ export type Database = {
       }
       campuses: {
         Row: {
+          auto_name: string | null
+          cheer: string | null
+          color_primary: string | null
+          color_secondary: string | null
+          color_tertiary: string | null
+          confidence_score: number | null
+          course_codes_json: Json | null
           created_at: string
           domains: string[]
           email_domain: string | null
+          enriched_at: string | null
           id: string
           is_active: boolean
+          mascot: string | null
           mascot_cheer: string | null
           name: string
           semester_end: string | null
@@ -1004,11 +1013,20 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_name?: string | null
+          cheer?: string | null
+          color_primary?: string | null
+          color_secondary?: string | null
+          color_tertiary?: string | null
+          confidence_score?: number | null
+          course_codes_json?: Json | null
           created_at?: string
           domains?: string[]
           email_domain?: string | null
+          enriched_at?: string | null
           id?: string
           is_active?: boolean
+          mascot?: string | null
           mascot_cheer?: string | null
           name: string
           semester_end?: string | null
@@ -1020,11 +1038,20 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_name?: string | null
+          cheer?: string | null
+          color_primary?: string | null
+          color_secondary?: string | null
+          color_tertiary?: string | null
+          confidence_score?: number | null
+          course_codes_json?: Json | null
           created_at?: string
           domains?: string[]
           email_domain?: string | null
+          enriched_at?: string | null
           id?: string
           is_active?: boolean
+          mascot?: string | null
           mascot_cheer?: string | null
           name?: string
           semester_end?: string | null
