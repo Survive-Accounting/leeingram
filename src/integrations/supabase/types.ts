@@ -4449,6 +4449,42 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          last_login_at: string | null
+          last_login_ip: string | null
+          last_user_agent: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          last_login_at?: string | null
+          last_login_ip?: string | null
+          last_user_agent?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          last_login_at?: string | null
+          last_login_ip?: string | null
+          last_user_agent?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
           balance_cents: number | null
@@ -5247,6 +5283,7 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_session_id: string | null
           student_id: string | null
+          user_id: string | null
         }
         Insert: {
           campus_id?: string | null
@@ -5264,6 +5301,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_session_id?: string | null
           student_id?: string | null
+          user_id?: string | null
         }
         Update: {
           campus_id?: string | null
@@ -5281,6 +5319,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_session_id?: string | null
           student_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {

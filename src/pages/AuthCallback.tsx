@@ -78,6 +78,10 @@ export default function AuthCallback() {
           return;
         }
 
+        // Honor explicit "next" param from magic link (post-checkout flow)
+        const url = new URL(window.location.href);
+        const nextParam = url.searchParams.get("next");
+
         // Check for an active purchase
         const { data: purchases } = await supabase
           .from("student_purchases")
@@ -96,8 +100,21 @@ export default function AuthCallback() {
           registerDevice(student.id, email.toLowerCase());
         }
 
+        // Update profile last_login fields (non-blocking)
+        try {
+          await supabase.from("profiles").upsert(
+            {
+              user_id: session.user.id,
+              email: email.toLowerCase(),
+              last_login_at: new Date().toISOString(),
+              last_user_agent: navigator.userAgent,
+            },
+            { onConflict: "user_id" },
+          );
+        } catch { /* non-fatal */ }
+
         if (purchases && purchases.length > 0) {
-          navigate("/my-dashboard", { replace: true });
+          navigate(nextParam || "/dashboard", { replace: true });
         } else {
           navigate("/login?message=no_purchase", { replace: true });
         }

@@ -123,6 +123,8 @@ const CheckoutCancelled = lazy(() => import("./pages/CheckoutCancelled"));
 const Login = lazy(() => import("./pages/Login"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const ProtectedDashboardRoute = lazy(() => import("./components/ProtectedDashboardRoute"));
 const CourseLanding = lazy(() => import("./pages/CourseLanding"));
 const CampusOperations = lazy(() => import("./pages/CampusOperations"));
 const CampusLandingPage = lazy(() => import("./pages/CampusLandingPage"));
@@ -210,6 +212,14 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/my-dashboard" element={<StudentDashboard />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedDashboardRoute>
+              <Dashboard />
+            </ProtectedDashboardRoute>
+          }
+        />
         <Route path="/tools/flashcards" element={<FlashcardTool />} />
         <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
         <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />
