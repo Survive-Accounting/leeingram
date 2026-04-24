@@ -130,7 +130,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 lineHeight: 1.6,
               }}
             >
-              AI-powered accounting study tools — built by Lee Ingram, Ole Miss alum & tutor helping students nationwide.
+              AI-powered accounting study tools built by Lee Ingram—Ole Miss alum & tutor that's stoked to help students nationwide.
             </p>
 
             <div className="mt-8 hero-anim-btn flex flex-col items-center md:items-start gap-3">
