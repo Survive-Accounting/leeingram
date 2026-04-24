@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, ShieldCheck, X, Sparkles, ShoppingCart, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
@@ -92,13 +93,18 @@ export default function GetAccess() {
   
 
   // Index of the resolved course in the campus progression.
-  const startIdx = progression.courses.findIndex((c) => c.slug === resolvedCourseSlug);
+  const urlStartIdx = progression.courses.findIndex((c) => c.slug === resolvedCourseSlug);
+  const [startIdxOverride, setStartIdxOverride] = useState<number | null>(null);
+  const startIdx = startIdxOverride ?? urlStartIdx;
 
   // How many ADDITIONAL courses are stacked on top of the base course.
   // 0 = just the resolved course; 1 = + next course; up to maxAdditional.
   const maxAdditional = Math.max(0, progression.courses.length - 1 - startIdx);
   const [extraCount, setExtraCount] = useState(0);
   const [lifetimeUpgrade, setLifetimeUpgrade] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const effectiveCourseSlug = progression.courses[startIdx]?.slug ?? resolvedCourseSlug;
+  const effectiveCourseCode = progression.courses[startIdx]?.code ?? courseCode;
   
 
   // The full list of selected courses (base + extras).
@@ -165,7 +171,7 @@ export default function GetAccess() {
   const handleCheckout = async () => {
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) {
-      requestAccess({ course: resolvedCourseSlug });
+      requestAccess({ course: effectiveCourseSlug });
       return;
     }
     try {
@@ -185,7 +191,7 @@ export default function GetAccess() {
           body: {
             email: cleanEmail,
             campus: progression.campusSlug,
-            selectedCourse: resolvedCourseSlug,
+            selectedCourse: effectiveCourseSlug,
             selectedPlan: "study_pass",
             amount: totalPrice,
             includedCourses,
@@ -239,7 +245,7 @@ export default function GetAccess() {
             border: isOleMiss ? "1px solid rgba(20,33,61,0.18)" : "1px dashed rgba(20,33,61,0.25)",
           }}
         >
-          For {campusName}{courseCode ? ` ${courseCode}` : ""} students
+          For {campusName}{effectiveCourseCode ? ` ${effectiveCourseCode}` : ""} students
         </div>
 
         <h1
@@ -333,7 +339,7 @@ export default function GetAccess() {
               </div>
             </div>
 
-            {/* Courses Included — grouped by sequence with pills */}
+            {/* Courses Included — flat pill list */}
             <div
               className="mb-4 rounded-lg p-4"
               style={{
@@ -342,79 +348,40 @@ export default function GetAccess() {
                 fontFamily: "Inter, sans-serif",
               }}
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-[13px] font-semibold" style={{ color: NAVY }}>
-                  Courses Included
-                </div>
-                {extraCount > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setExtraCount(0)}
-                    className="text-[12px] hover:underline"
-                    style={{ color: "#64748B" }}
-                  >
-                    Reset sequence
-                  </button>
-                )}
+              <div className="text-[13px] font-semibold mb-3" style={{ color: NAVY }}>
+                Courses Included
               </div>
 
-              {(() => {
-                const introSlugs = new Set(["intro-accounting-1", "intro-accounting-2"]);
-                const intermediateSlugs = new Set(["intermediate-accounting-1", "intermediate-accounting-2"]);
-                const introSelected = selectedCourses.filter(({ course }) => introSlugs.has(course.slug));
-                const intermediateSelected = selectedCourses.filter(({ course }) => intermediateSlugs.has(course.slug));
-
-                const renderRow = (
-                  title: string,
-                  rowItems: typeof selectedCourses,
-                ) => {
-                  if (rowItems.length === 0) return null;
+              <div className="flex flex-wrap items-center gap-1.5">
+                {selectedCourses.map(({ course, idx }) => {
+                  const isBase = idx === 0;
+                  const isLastAdded = idx === extraCount && extraCount > 0;
                   return (
-                    <div className="mb-2 last:mb-0">
-                      <div className="text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "#94A3B8" }}>
-                        {title}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {rowItems.map(({ course, idx }) => {
-                          const isBase = idx === 0;
-                          const isLastAdded = idx === extraCount && extraCount > 0;
-                          return (
-                            <span
-                              key={course.slug}
-                              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold animate-fade-in"
-                              style={{
-                                background: isBase ? "rgba(20,33,61,0.06)" : "#fff",
-                                border: "1px solid #CBD5E1",
-                                color: NAVY,
-                              }}
-                            >
-                              {course.code ?? course.name}
-                              {isLastAdded && (
-                                <button
-                                  type="button"
-                                  aria-label={`Remove ${course.code ?? course.name}`}
-                                  onClick={() => setExtraCount((c) => Math.max(0, c - 1))}
-                                  className="rounded-full hover:bg-slate-100 transition-colors p-0.5"
-                                  style={{ color: "#94A3B8" }}
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              )}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <span
+                      key={course.slug}
+                      className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold animate-fade-in"
+                      style={{
+                        background: isBase ? "rgba(20,33,61,0.06)" : "#fff",
+                        border: "1px solid #CBD5E1",
+                        color: NAVY,
+                      }}
+                    >
+                      {course.code ?? course.name}
+                      {isLastAdded && (
+                        <button
+                          type="button"
+                          aria-label={`Remove ${course.code ?? course.name}`}
+                          onClick={() => setExtraCount((c) => Math.max(0, c - 1))}
+                          className="rounded-full hover:bg-slate-100 transition-colors p-0.5"
+                          style={{ color: "#94A3B8" }}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </span>
                   );
-                };
-
-                return (
-                  <>
-                    {renderRow("Intro Sequence", introSelected)}
-                    {renderRow("Intermediate Sequence", intermediateSelected)}
-                  </>
-                );
-              })()}
+                })}
+              </div>
 
               {canAddAnother && (
                 <button
@@ -430,6 +397,17 @@ export default function GetAccess() {
                   + Add next course <span style={{ color: "#94A3B8", fontWeight: 500 }}>(+${EXTEND_PRICE})</span>
                 </button>
               )}
+
+              <div className="mt-3 text-center">
+                <button
+                  type="button"
+                  onClick={() => setResetOpen(true)}
+                  className="text-[12px] hover:underline"
+                  style={{ color: "#94A3B8" }}
+                >
+                  Reset sequence
+                </button>
+              </div>
             </div>
 
             {/* Lifetime upgrade — only when all semesters selected */}
@@ -550,6 +528,47 @@ export default function GetAccess() {
         onScrollToCourses={() => navigate("/staging")}
         onScrollToContact={() => navigate("/staging")}
       />
+
+      {/* Reset sequence — choose starting course */}
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent className="max-w-[380px]">
+          <DialogHeader>
+            <DialogTitle style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}>
+              Choose your starting course
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 mt-2" style={{ fontFamily: "Inter, sans-serif" }}>
+            {progression.courses.map((course, idx) => {
+              const isCurrent = idx === startIdx && extraCount === 0;
+              return (
+                <button
+                  key={course.slug}
+                  type="button"
+                  onClick={() => {
+                    setStartIdxOverride(idx);
+                    setExtraCount(0);
+                    setLifetimeUpgrade(false);
+                    setResetOpen(false);
+                  }}
+                  className="text-left rounded-lg px-4 py-3 text-[14px] font-semibold transition-all hover:bg-slate-50"
+                  style={{
+                    border: isCurrent ? `1.5px solid ${NAVY}` : "1px solid #E2E8F0",
+                    background: isCurrent ? "rgba(20,33,61,0.04)" : "#fff",
+                    color: NAVY,
+                  }}
+                >
+                  {course.code ?? course.name}
+                  {course.code && (
+                    <span className="ml-2 text-[12px] font-normal" style={{ color: "#64748B" }}>
+                      {course.name}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
