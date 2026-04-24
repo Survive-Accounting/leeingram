@@ -64,25 +64,6 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
                   "linear-gradient(180deg, rgba(20,33,61,0.05) 0%, rgba(20,33,61,0.18) 100%)",
               }}
             />
-            {/* "That's me" label */}
-            <div
-              className="absolute"
-              style={{
-                top: 16,
-                right: 16,
-                background: "rgba(20,20,20,0.85)",
-                color: "#fff",
-                padding: "6px 12px",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 600,
-                fontFamily: "Inter, sans-serif",
-                backdropFilter: "blur(4px)",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
-              }}
-            >
-              ← That's me
-            </div>
           </div>
 
           {/* MOBILE-BOTTOM / DESKTOP-LEFT: Text */}
