@@ -502,7 +502,7 @@ export default function GetAccess() {
             </div>
 
             {/* Product section */}
-            <div className="mt-1.5" style={{ fontFamily: "Inter, sans-serif" }}>
+            <div className="mt-2" style={{ fontFamily: "Inter, sans-serif" }}>
               <div
                 className="text-[16px] font-semibold leading-tight"
                 style={{ color: NAVY }}
@@ -518,7 +518,7 @@ export default function GetAccess() {
                 </p>
               )}
               <p
-                className="mt-0.5 text-[11px] leading-tight"
+                className="mt-1 text-[11px] leading-tight"
                 style={{ color: "#B4BFCC" }}
               >
                 🔒 One account per student
@@ -526,16 +526,16 @@ export default function GetAccess() {
             </div>
 
             {/* Access Period — compact inline upsell */}
-            <div className="mt-3" style={{ fontFamily: "Inter, sans-serif" }}>
+            <div className="mt-3.5" style={{ fontFamily: "Inter, sans-serif" }}>
               <div
-                className="text-[11px] font-semibold uppercase tracking-wider"
-                style={{ color: "#64748B" }}
+                className="text-[10px] font-semibold uppercase tracking-[0.08em]"
+                style={{ color: "#94A3B8" }}
               >
                 Access Period
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1.5">
                 <div
-                  className="text-[16px] font-semibold leading-none"
+                  className="text-[15px] font-semibold leading-none"
                   style={{ color: NAVY }}
                 >
                   {selectedSemesters.map((s) => s.label).join(" · ")}
@@ -558,7 +558,7 @@ export default function GetAccess() {
                     }}
                     className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[#14213D]"
                   />
-                  <span className="text-[13px] leading-none" style={{ color: NAVY }}>
+                  <span className="text-[13px] leading-none" style={{ color: "#475569" }}>
                     Auto-renew next semester —{" "}
                     <span style={{ color: "#16A34A", fontWeight: 600 }}>
                       save {AUTO_RENEW_DISCOUNT_PCT}%
@@ -568,8 +568,8 @@ export default function GetAccess() {
               </div>
               {autoRenew && (
                 <p
-                  className="mt-1 text-[11px]"
-                  style={{ color: "#94A3B8" }}
+                  className="mt-1 text-[11px] leading-tight"
+                  style={{ color: "#B4BFCC" }}
                 >
                   We'll remind you before billing. Cancel anytime.
                 </p>
