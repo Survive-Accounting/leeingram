@@ -349,12 +349,12 @@ export default function GetAccess() {
               <div className="flex flex-col items-end shrink-0">
                 <div
                   key={`pulse-${pulseKey}`}
-                  className="relative rounded-2xl px-4 py-2.5 flex flex-col items-center justify-center animate-[pricePulse_400ms_ease-out] motion-reduce:animate-none"
+                  className="relative rounded-2xl px-5 py-3.5 flex flex-col items-center justify-center animate-[pricePulse_400ms_ease-out] motion-reduce:animate-none"
                   style={{
                     background: "#F0F6FF",
                     border: `1px solid ${NAVY}`,
-                    boxShadow: "0 8px 20px rgba(20,33,61,0.12), 0 2px 6px rgba(20,33,61,0.05)",
-                    minWidth: 124,
+                    boxShadow: "0 12px 28px rgba(20,33,61,0.16), 0 4px 10px rgba(20,33,61,0.08), inset 0 1px 0 rgba(255,255,255,0.6)",
+                    minWidth: 132,
                     transform: "translateY(-3px)",
                   }}
                 >
@@ -387,8 +387,8 @@ export default function GetAccess() {
                     ${totalPrice}
                   </div>
                   <div
-                    className="mt-1 text-[10px] font-semibold uppercase tracking-wider"
-                    style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
+                    className="mt-1.5 text-[10px] font-medium uppercase tracking-wider"
+                    style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
                   >
                     one-time payment
                   </div>
