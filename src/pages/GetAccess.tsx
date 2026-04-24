@@ -303,6 +303,13 @@ export default function GetAccess() {
         onPricingClick={() => {}}
       />
 
+      {/* Alias-mode debug banner (lee+xxx@survivestudios.com only) */}
+      {email && (
+        <div className="px-4 sm:px-6 pt-3 flex justify-center">
+          <AliasTestingBanner email={email} />
+        </div>
+      )}
+
       {/* Founding-student celebration banner (top of checkout) */}
       {studentNumber != null && campusName && campusParam !== "ole-miss" && (
         <section className="px-4 sm:px-6 pt-8">
