@@ -622,184 +622,178 @@ interface DemoScreenProps {
   onChapterClick: (ch: Chapter, tag: string) => void;
 }
 
-function DemoScreen({ courseName, chapters, loading, onChange, onChapterClick }: DemoScreenProps) {
-  const [tab, setTab] = useState<"survival" | "practice" | "videos">("survival");
-  const [showSkeleton, setShowSkeleton] = useState(true);
-  const [contentKey, setContentKey] = useState(0);
-  const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
-  const [scalingId, setScalingId] = useState<string | null>(null);
-
-  // Skeleton min-duration 400ms
-  useEffect(() => {
-    setShowSkeleton(true);
-    const t = setTimeout(() => setShowSkeleton(false), 400);
-    return () => clearTimeout(t);
-  }, [tab, loading]);
-
-  // Bump key when tab/chapter changes for fade transition
-  useEffect(() => {
-    setContentKey((k) => k + 1);
-  }, [tab, activeChapter?.id]);
-
-  const tagFor = (ch: Chapter) => {
-    const slug = tab === "survival" ? "cram_tools" : tab === "practice" ? "practice_problems" : "cram_videos";
-    return `intent_${slug}_ch${ch.chapter_number}`;
-  };
-
-  const handleChapterPick = (ch: Chapter) => {
-    onChapterClick(ch, tagFor(ch)); // fire intent tag
-    setScalingId(ch.id);
-    setTimeout(() => {
-      setActiveChapter(ch);
-      setScalingId(null);
-    }, 150);
-  };
-
-  // If a chapter is active, render the ChapterView
-  if (activeChapter) {
-    return (
-      <ChapterView
-        courseName={courseName}
-        chapter={activeChapter}
-        tab={tab}
-        onTabChange={setTab}
-        onBack={() => setActiveChapter(null)}
-        onChange={onChange}
-      />
-    );
-  }
+function DemoScreen({ courseName, onChange }: DemoScreenProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="flex flex-col h-full" style={{ fontFamily: "Inter, sans-serif" }}>
+    <div
+      className="absolute inset-0 flex flex-col"
+      style={{
+        fontFamily: "Inter, sans-serif",
+        background: "#14213D",
+        animation: "demoPlayerFadeIn 250ms ease-out forwards",
+        opacity: 0,
+      }}
+    >
       <style>{`
-        @keyframes demoCardIn {
-          0% { opacity: 0; transform: translateY(10px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes demoShimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        @keyframes demoFadeIn {
+        @keyframes demoPlayerFadeIn {
           0% { opacity: 0; }
           100% { opacity: 1; }
         }
+        @keyframes demoSidebarSlideIn {
+          0% { opacity: 0; transform: translateX(-20px); }
+          100% { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes demoRightPanelFadeUp {
+          0% { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
 
-      {/* Course label + change link */}
-      <div className="flex items-center justify-between mb-2 px-1">
-        <p className="text-[12px]" style={{ color: "#6B7280" }}>
-          {courseName}
-        </p>
+      {/* Top bar */}
+      <div
+        className="flex items-center"
+        style={{
+          height: 36,
+          background: "#0A1628",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          padding: "0 12px",
+          gap: 8,
+          flexShrink: 0,
+        }}
+      >
         <button
           type="button"
-          onClick={onChange}
-          className="text-[12px] font-semibold hover:opacity-70 transition-opacity"
-          style={{ color: NAVY, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          onClick={() => setSidebarOpen((v) => !v)}
+          aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+          style={{
+            width: 28,
+            height: 28,
+            background: "rgba(255,255,255,0.08)",
+            borderRadius: 6,
+            border: "none",
+            cursor: "pointer",
+            color: "#fff",
+            fontSize: 14,
+            lineHeight: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 0,
+          }}
         >
-          Change →
+          {sidebarOpen ? "«" : "»"}
         </button>
+        <div
+          className="flex-1 text-center"
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: "rgba(255,255,255,0.7)",
+            fontFamily: "Inter, sans-serif",
+          }}
+        >
+          Survive Accounting
+        </div>
+        <div style={{ width: 28 }} />
       </div>
 
-      {/* Tab bar */}
-      <div
-        className="flex gap-1 p-1 rounded-lg mb-4"
-        style={{ background: "#EEF0F3", border: "1px solid #E5E7EB" }}
-      >
-        {[
-          { key: "survival" as const, label: "Study Tools" },
-          { key: "practice" as const, label: "Practice Problems" },
-          { key: "videos" as const, label: "Cram Videos" },
-        ].map((t) => {
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setTab(t.key)}
-              className="flex-1 py-2 text-[13px] font-semibold rounded-md transition-all"
+      {/* Body: sidebar + right panel */}
+      <div className="flex flex-1 min-h-0">
+        {/* Left sidebar */}
+        <aside
+          style={{
+            width: sidebarOpen ? 220 : 0,
+            minWidth: sidebarOpen ? 220 : 0,
+            height: "100%",
+            background: "#0D1B2E",
+            borderRight: sidebarOpen ? "1px solid rgba(255,255,255,0.08)" : "none",
+            overflowY: "auto",
+            overflowX: "hidden",
+            flexShrink: 0,
+            transition: "width 200ms ease, min-width 200ms ease",
+            opacity: 0,
+            animation: "demoSidebarSlideIn 300ms ease-out 100ms forwards",
+          }}
+        >
+          {/* Sidebar header */}
+          <div
+            style={{
+              padding: "14px 16px",
+              borderBottom: "1px solid rgba(255,255,255,0.08)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+            }}
+          >
+            <span
+              title={courseName}
               style={{
-                background: active ? NAVY : "transparent",
-                color: active ? "#fff" : "#6B7280",
-                border: "none",
-                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 600,
+                color: "rgba(255,255,255,0.5)",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                minWidth: 0,
               }}
             >
-              {t.label}
+              {courseName}
+            </span>
+            <button
+              type="button"
+              onClick={onChange}
+              style={{
+                fontSize: 11,
+                fontWeight: 400,
+                color: RED,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+                whiteSpace: "nowrap",
+              }}
+            >
+              Change →
             </button>
-          );
-        })}
-      </div>
-
-      {/* Choose a chapter label */}
-      <p
-        className="text-[11px] font-semibold uppercase mb-3 px-1"
-        style={{ color: "#9CA3AF", letterSpacing: "0.08em" }}
-      >
-        Choose a chapter
-      </p>
-
-      {/* Grid */}
-      <div key={contentKey} style={{ animation: "demoFadeIn 150ms ease-out" }}>
-        {showSkeleton || loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
-            {Array.from({ length: 9 }).map((_, i) => (
-              <div
-                key={i}
-                className="rounded-lg"
-                style={{
-                  height: 64,
-                  background:
-                    "linear-gradient(90deg, #EEF0F3 0%, #F8F9FB 50%, #EEF0F3 100%)",
-                  backgroundSize: "200% 100%",
-                  animation: "demoShimmer 1.4s linear infinite",
-                  border: "1px solid #E5E7EB",
-                }}
-              />
-            ))}
           </div>
-        ) : chapters.length === 0 ? (
-          <p className="text-[13px] text-center py-6" style={{ color: "#9CA3AF" }}>
-            No chapters available yet.
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
-            {chapters.map((ch, i) => (
-              <button
-                key={ch.id}
-                type="button"
-                onClick={() => handleChapterPick(ch)}
-                className="relative rounded-lg p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-md"
-                style={{
-                  background: "#fff",
-                  border: "1px solid #E5E7EB",
-                  cursor: "pointer",
-                  opacity: 0,
-                  animation: `demoCardIn 320ms ease-out forwards`,
-                  animationDelay: `${i * 80}ms`,
-                  transform: scalingId === ch.id ? "scale(1.05)" : undefined,
-                  transition: scalingId === ch.id ? "transform 150ms ease-out" : undefined,
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = NAVY;
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "#E5E7EB";
-                }}
-              >
-                <p
-                  className="text-[10px] font-semibold uppercase mb-1"
-                  style={{ color: "#9CA3AF", letterSpacing: "0.06em" }}
-                >
-                  Ch. {ch.chapter_number}
-                </p>
-                <p className="text-[13px] font-bold leading-tight text-center" style={{ color: NAVY }}>
-                  {ch.chapter_name}
-                </p>
-              </button>
-            ))}
+
+          {/* Sidebar body — placeholder */}
+          <div
+            style={{
+              fontSize: 13,
+              color: "rgba(255,255,255,0.3)",
+              textAlign: "center",
+              padding: 20,
+            }}
+          >
+            Loading chapters...
           </div>
-        )}
+        </aside>
+
+        {/* Right panel */}
+        <main
+          className="flex-1 relative"
+          style={{
+            background: "#14213D",
+            overflowY: "auto",
+            opacity: 0,
+            animation: "demoRightPanelFadeUp 300ms ease-out 150ms forwards",
+          }}
+        >
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center text-center"
+            style={{ padding: 24 }}
+          >
+            <div style={{ fontSize: 32, lineHeight: 1, marginBottom: 12 }}>📚</div>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", margin: 0 }}>
+              Select a chapter to begin
+            </p>
+          </div>
+        </main>
       </div>
     </div>
   );
