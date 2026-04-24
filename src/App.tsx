@@ -184,6 +184,7 @@ const AppRoutes = () => {
         <Route path="/staging" element={<StagingLandingPage />} />
         <Route path="/old-home" element={<LandingPage />} />
         <Route path="/get-access" element={<GetAccess />} />
+        <Route path="/get-org-access" element={<GetOrgAccess />} />
         <Route path="/post-checkout" element={<PostCheckout />} />
         <Route path="/greek-landing" element={<GreekLandingPage />} />
         <Route path="/survive" element={<Navigate to="/content" replace />} />
