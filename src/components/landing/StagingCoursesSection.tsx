@@ -402,13 +402,14 @@ export default function StagingCoursesSection({
                         <div className="absolute inset-0 bg-white" />
                       )}
 
-                      {/* Content fade-in (course selected) */}
+                      {/* Content fade-in (course selected) — player fills full screen */}
                       {powerPhase === "on" && innerContent && (
                         <div
-                          className="absolute inset-0 overflow-y-auto p-4"
+                          className="absolute inset-0"
                           style={{
-                            background: "#F8F8FA",
                             animation: "mbContentFade 400ms ease-out forwards",
+                            borderRadius: 3,
+                            overflow: "hidden",
                           }}
                         >
                           {innerContent}
