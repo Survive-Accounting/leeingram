@@ -183,7 +183,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           <div className="mt-8 flex flex-col items-center gap-5">
             <button
               onClick={onGetStartedClick}
-              className="hero-anim-btn rounded-xl px-9 py-4 text-[16px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2"
+              className="group hero-anim-btn rounded-xl px-9 py-4 text-[16px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center"
               style={{
                 background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
                 fontFamily: "Inter, sans-serif",
@@ -192,7 +192,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 letterSpacing: "0.01em",
               }}
             >
-              Start Studying
+              Get Started <AnimatedArrow />
             </button>
 
             <button
