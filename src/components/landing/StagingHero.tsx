@@ -42,16 +42,16 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
       className="relative w-full overflow-hidden staging-hero isolate"
       style={{ background: "#002147" }}
     >
-      {/* Animated ribbon layer — atmospheric glows behind content */}
+      {/* Stripe-style angled color ribbons */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-        style={{ zIndex: 0 }}
+        className="staging-hero-ribbons pointer-events-none absolute inset-0 overflow-hidden"
+        style={{ zIndex: 2 }}
       >
-        <div className="hero-ribbon hero-ribbon--red" />
-        <div className="hero-ribbon hero-ribbon--navy" />
-        <div className="hero-ribbon hero-ribbon--crimson" />
-        <div className="hero-ribbon hero-ribbon--cream" />
+        <div className="ribbon ribbon-1" />
+        <div className="ribbon ribbon-2" />
+        <div className="ribbon ribbon-3" />
+        <div className="ribbon ribbon-4" />
       </div>
 
       <style>{`
