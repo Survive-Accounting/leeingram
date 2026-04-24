@@ -102,6 +102,8 @@ export default function GetAccess() {
   const [extraCount, setExtraCount] = useState(0);
   const [lifetimeUpgrade, setLifetimeUpgrade] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
+  const effectiveCourseSlug = progression.courses[startIdx]?.slug ?? resolvedCourseSlug;
+  const effectiveCourseCode = progression.courses[startIdx]?.code ?? courseCode;
   
 
   // The full list of selected courses (base + extras).
