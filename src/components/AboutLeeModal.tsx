@@ -1,5 +1,5 @@
-import { Mail } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { X, ArrowRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import leeStadium from "@/assets/lee-stadium.png";
 
 interface AboutLeeModalProps {
@@ -7,19 +7,7 @@ interface AboutLeeModalProps {
   onOpenChange: (v: boolean) => void;
 }
 
-/** Counts completed semesters since Survive Accounting launched (Spring 2020). */
-function getSemesterCount(): number {
-  const START_YEAR = 2020;
-  const now = new Date();
-  const year = now.getFullYear();
-  const isSpring = now.getMonth() < 6;
-  const currentIndex = (year - START_YEAR) * 2 + (isSpring ? 0 : 1);
-  return Math.max(1, currentIndex + 1);
-}
-
 export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
-  const semesters = getSemesterCount();
-
   const handleReachOut = () => {
     onOpenChange(false);
     setTimeout(() => {
@@ -28,46 +16,84 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
     }, 150);
   };
 
+  const handleGetAccess = () => {
+    onOpenChange(false);
+    setTimeout(() => {
+      const el =
+        document.getElementById("explore-demo") ||
+        document.getElementById("courses");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="w-[calc(100%-2rem)] sm:max-w-[760px] max-h-[92vh] overflow-y-auto p-0 border-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-300"
-        style={{ borderRadius: 16, background: "#14213D" }}
+        className="w-[calc(100%-2rem)] sm:max-w-[960px] max-h-[92vh] overflow-y-auto p-0 border-0 [&>button]:hidden data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-300"
+        style={{ borderRadius: 20, background: "#14213D", overflow: "hidden" }}
       >
         <DialogHeader className="sr-only">
           <DialogTitle>About Lee Ingram</DialogTitle>
           <DialogDescription>Bio and background</DialogDescription>
         </DialogHeader>
 
+        {/* Custom close button — large, circular, high contrast */}
+        <DialogClose
+          aria-label="Close"
+          className="absolute z-20 flex items-center justify-center rounded-full transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          style={{
+            top: 14,
+            right: 14,
+            width: 36,
+            height: 36,
+            background: "rgba(20,33,61,0.85)",
+            color: "#fff",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(255,255,255,0.18)",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+          }}
+        >
+          <X className="w-[18px] h-[18px]" strokeWidth={2.25} />
+        </DialogClose>
+
         <div
-          className="grid grid-cols-1 md:grid-cols-[1fr_40%]"
+          className="grid grid-cols-1 md:grid-cols-[55%_45%]"
           style={{ fontFamily: "Inter, sans-serif" }}
         >
-          {/* MOBILE-TOP / DESKTOP-RIGHT: Image */}
+          {/* MOBILE-TOP / DESKTOP-RIGHT: Image (inset, padded) */}
           <div
-            className="order-1 md:order-2 relative overflow-hidden"
-            style={{
-              minHeight: 220,
-            }}
+            className="order-1 md:order-2 relative"
+            style={{ padding: 18 }}
           >
-            <img
-              src={leeStadium}
-              alt="Lee Ingram at an Ole Miss football game"
-              className="absolute inset-0 w-full h-full object-cover"
-              style={{ objectPosition: "50% 30%" }}
-            />
-            {/* Subtle dark overlay for balance */}
             <div
-              className="absolute inset-0 pointer-events-none"
+              className="relative overflow-hidden w-full"
               style={{
-                background:
-                  "linear-gradient(180deg, rgba(20,33,61,0.05) 0%, rgba(20,33,61,0.18) 100%)",
+                borderRadius: 16,
+                aspectRatio: "4 / 5",
+                minHeight: 240,
+                background: "rgba(255,255,255,0.04)",
+                boxShadow:
+                  "0 10px 30px -10px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.06)",
               }}
-            />
+            >
+              <img
+                src={leeStadium}
+                alt="Lee Ingram at an Ole Miss football game"
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ objectPosition: "50% 35%" }}
+              />
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgba(20,33,61,0) 55%, rgba(20,33,61,0.22) 100%)",
+                }}
+              />
+            </div>
           </div>
 
           {/* MOBILE-BOTTOM / DESKTOP-LEFT: Text */}
-          <div className="order-2 md:order-1 p-6 sm:p-7">
+          <div className="order-2 md:order-1 p-6 sm:p-8 md:pr-2 md:py-8">
             {/* Header */}
             <div>
               <h2
@@ -75,7 +101,7 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
                 style={{
                   fontFamily: "'DM Serif Display', serif",
                   fontWeight: 400,
-                  fontSize: 26,
+                  fontSize: 30,
                 }}
               >
                 Lee Ingram
@@ -98,7 +124,7 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
 
             {/* Body */}
             <div
-              className="space-y-4 text-[14px]"
+              className="space-y-4 text-[14px] sm:text-[15px]"
               style={{ color: "rgba(255,255,255,0.9)", lineHeight: 1.65 }}
             >
               <p>
@@ -128,25 +154,67 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
               </p>
               <p className="font-medium text-white">— Lee</p>
             </div>
-
-            {/* Email */}
-            <a
-              href="mailto:lee@surviveaccounting.com"
-              className="mt-5 inline-flex items-center gap-2 text-[13px] hover:text-white transition-colors"
-              style={{ color: "rgba(255,255,255,0.75)" }}
-            >
-              <Mail className="w-4 h-4" />
-              lee@surviveaccounting.com
-            </a>
-
-            {/* PS */}
-            <p
-              className="mt-4 text-[11px] italic"
-              style={{ color: "rgba(255,255,255,0.4)", lineHeight: 1.55 }}
-            >
-              PS: Thank you to the students who've supported Survive Accounting for {semesters} semesters now — it means a lot.
-            </p>
           </div>
+        </div>
+
+        {/* Bottom CTA bar — full width, red gradient */}
+        <div
+          className="relative px-6 sm:px-8 py-5 sm:py-6 flex flex-col sm:flex-row items-center sm:items-center justify-between gap-4"
+          style={{
+            background:
+              "linear-gradient(135deg, #CE1126 0%, #A50E1F 100%)",
+            color: "#fff",
+            borderTop: "1px solid rgba(255,255,255,0.12)",
+          }}
+        >
+          {/* Subtle inner highlight for premium feel */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 35%)",
+            }}
+          />
+
+          <div className="relative text-center sm:text-left">
+            <div
+              className="text-white"
+              style={{
+                fontFamily: "'DM Serif Display', serif",
+                fontWeight: 400,
+                fontSize: 20,
+                lineHeight: 1.2,
+              }}
+            >
+              Ready to Survive Accounting?
+            </div>
+            <div
+              className="mt-1 text-[12px]"
+              style={{ color: "rgba(255,255,255,0.85)" }}
+            >
+              7-day risk-free refund · Full semester access
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGetAccess}
+            className="relative inline-flex items-center gap-2 rounded-full font-semibold transition-all hover:scale-[1.03] active:scale-[0.99]"
+            style={{
+              background: "#FFFFFF",
+              color: "#A50E1F",
+              padding: "12px 22px",
+              fontSize: 14,
+              fontFamily: "Inter, sans-serif",
+              boxShadow:
+                "0 6px 18px -6px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(165,14,31,0.15)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Get Full Access
+            <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
+          </button>
         </div>
       </DialogContent>
     </Dialog>
