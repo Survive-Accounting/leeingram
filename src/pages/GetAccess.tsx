@@ -200,6 +200,72 @@ export default function GetAccess() {
               border: "1px solid #E0E7F0",
             }}
           >
+            {/* Floating price badge — top right */}
+            <div className="absolute -top-5 right-4 sm:right-6 z-20 flex flex-col items-center motion-reduce:animate-none">
+              <div
+                key={`pulse-${pulseKey}`}
+                className="relative rounded-2xl px-5 py-3 flex flex-col items-center justify-center animate-[pricePulse_400ms_ease-out] motion-reduce:animate-none"
+                style={{
+                  background: "#fff",
+                  border: `1.5px solid ${NAVY}`,
+                  boxShadow: "0 8px 24px rgba(20,33,61,0.12), 0 2px 6px rgba(20,33,61,0.06)",
+                  minWidth: 96,
+                }}
+              >
+                <div
+                  className="font-bold leading-none"
+                  style={{ color: NAVY, fontSize: 28, letterSpacing: "-0.02em", fontFamily: "Inter, sans-serif" }}
+                >
+                  ${totalPrice}
+                </div>
+                <div
+                  className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider"
+                  style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                >
+                  total
+                </div>
+
+                {/* Floating delta toasts */}
+                {priceToasts.map((t) => {
+                  const isPositive = t.delta > 0;
+                  return (
+                    <span
+                      key={t.id}
+                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-1 text-[14px] font-bold animate-[priceToast_1100ms_ease-out_forwards] motion-reduce:animate-[priceToastFade_900ms_ease-out_forwards]"
+                      style={{
+                        color: isPositive ? "#16A34A" : "#B45563",
+                        fontFamily: "Inter, sans-serif",
+                        textShadow: "0 1px 2px rgba(255,255,255,0.8)",
+                      }}
+                    >
+                      {isPositive ? "+" : "−"}${Math.abs(t.delta)}
+                    </span>
+                  );
+                })}
+              </div>
+              <div
+                className="mt-1 text-[10px]"
+                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+              >
+                One-time payment
+              </div>
+            </div>
+            <style>{`
+              @keyframes pricePulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.06); }
+                100% { transform: scale(1); }
+              }
+              @keyframes priceToast {
+                0% { opacity: 0; transform: translate(-50%, 0); }
+                15% { opacity: 1; }
+                100% { opacity: 0; transform: translate(-50%, -28px); }
+              }
+              @keyframes priceToastFade {
+                0%, 100% { opacity: 0; }
+                30%, 70% { opacity: 1; }
+              }
+            `}</style>
             <h2
               className="text-[24px] sm:text-[28px]"
               style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
