@@ -166,7 +166,7 @@ export default function GetAccess() {
           className="mt-4 max-w-[640px] mx-auto text-[16px] sm:text-[18px]"
           style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
         >
-          Get study tools for your entire accounting course.
+          Get ahead of the curve.
         </p>
       </section>
 
@@ -363,30 +363,6 @@ export default function GetAccess() {
                 {checkoutError}
               </div>
             )}
-
-            {/* Human support line */}
-            <div
-              className="mt-3 flex items-center justify-center gap-2 text-[12px]"
-              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-            >
-              <img
-                src="https://i.ibb.co/9HhgJrS/Lee-Ingram-Headshot.jpg"
-                alt="Lee Ingram"
-                className="w-5 h-5 rounded-full object-cover"
-                style={{ border: "1px solid #E2E8F0" }}
-              />
-              <span>
-                Questions? Text me —{" "}
-                <a
-                  href="sms:+16012018759"
-                  className="hover:underline"
-                  style={{ color: "#64748B" }}
-                >
-                  601-201-8759
-                </a>
-              </span>
-            </div>
-
             {/* 5. Trust block — only two lines */}
             <div
               className="mt-4 flex flex-col items-center gap-1.5 text-[12px]"
