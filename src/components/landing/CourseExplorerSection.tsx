@@ -584,7 +584,8 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                           {/* Chapter Study Tools */}
                           <button
                             onClick={() => handleSidebarClick(ch.id, ch.number, ch.name, "cram")}
-...
+                            className="w-full text-left flex items-center gap-2 px-2.5 py-2 rounded-md transition-colors text-[12px] hover:bg-gray-50"
+                            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
                           >
                             <Brain className="w-3.5 h-3.5 shrink-0" />
                             <span>Chapter Study Tools</span>
