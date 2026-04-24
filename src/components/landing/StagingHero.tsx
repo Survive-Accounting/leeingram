@@ -118,7 +118,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         .ribbon-3 {
           width: 1100px;
           height: 200px;
-          background: linear-gradient(90deg, transparent 0%, rgba(180,80,220,0) 15%, rgba(190,90,240,0.75) 50%, rgba(220,120,255,0.55) 80%, transparent 100%);
+          background: linear-gradient(90deg, transparent 0%, rgba(180,10,30,0) 15%, rgba(180,10,30,0.55) 50%, rgba(150,10,25,0.35) 80%, transparent 100%);
           bottom: 60px;
           right: -160px;
           transform: rotate(-22deg);
@@ -128,7 +128,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         .ribbon-4 {
           width: 1000px;
           height: 180px;
-          background: linear-gradient(90deg, transparent 0%, rgba(255,150,60,0) 20%, rgba(255,160,70,0.7) 55%, rgba(255,190,90,0.5) 80%, transparent 100%);
+          background: linear-gradient(90deg, transparent 0%, rgba(206,17,38,0) 20%, rgba(206,17,38,0.5) 55%, rgba(180,10,30,0.3) 80%, transparent 100%);
           bottom: 160px;
           right: -140px;
           transform: rotate(-12deg);
