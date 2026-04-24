@@ -580,19 +580,19 @@ export default function GetAccess() {
             <button
               onClick={handleCheckout}
               disabled={checkoutLoading}
-              className="mt-4 w-full rounded-xl py-3.5 text-[16px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="mt-5 w-full rounded-xl py-4 text-[17px] font-bold tracking-tight text-white transition-all hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.99] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{
                 background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
                 fontFamily: "Inter, sans-serif",
                 boxShadow:
-                  "inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px rgba(206,17,38,0.35)",
+                  "inset 0 1px 0 rgba(255,255,255,0.25), 0 12px 32px rgba(206,17,38,0.42), 0 4px 10px rgba(206,17,38,0.25)",
               }}
             >
               {checkoutLoading ? (
                 "Redirecting to secure checkout..."
               ) : (
                 <>
-                  <ShoppingCart className="w-4 h-4" />
+                  <ShoppingCart className="w-[18px] h-[18px]" />
                   Get Access <span aria-hidden="true">→</span>
                 </>
               )}
