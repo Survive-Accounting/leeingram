@@ -24,14 +24,31 @@ export default function StagingNavbar({
   const [loginOpen, setLoginOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const hoverTimer = useRef<number | null>(null);
 
   useEffect(() => {
     if (!transparentOnTop) return;
-    const onScroll = () => setScrolled(window.scrollY > 60);
+    // Use a hysteresis range so the bar doesn't flicker right at the threshold.
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled((prev) => (prev ? y > 40 : y > 80));
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [transparentOnTop]);
+
+  const handleMouseEnter = () => {
+    if (!transparentOnTop) return;
+    if (hoverTimer.current) window.clearTimeout(hoverTimer.current);
+    // Small delay so a passing cursor doesn't trigger the flip
+    hoverTimer.current = window.setTimeout(() => setHovered(true), 120);
+  };
+  const handleMouseLeave = () => {
+    if (!transparentOnTop) return;
+    if (hoverTimer.current) window.clearTimeout(hoverTimer.current);
+    hoverTimer.current = window.setTimeout(() => setHovered(false), 180);
+  };
 
   // "Solid" = white background, navy text. "Transparent" = clear bg, white text.
   const isSolid = !transparentOnTop || scrolled || hovered;
