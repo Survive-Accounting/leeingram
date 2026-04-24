@@ -9,6 +9,7 @@ import { useEventTracking, setStoredEmail } from "@/hooks/useEventTracking";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import StagingHero from "@/components/landing/StagingHero";
+import TestFlowToolbar from "@/components/TestFlowToolbar";
 
 import StagingCoursesSection from "@/components/landing/StagingCoursesSection";
 
@@ -270,6 +271,7 @@ export default function StagingLandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8FAFC" }}>
+      <TestFlowToolbar />
 
       <StagingNavbar
         transparentOnTop
