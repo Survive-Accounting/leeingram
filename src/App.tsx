@@ -243,7 +243,8 @@ const AppRoutes = () => {
         {/* Legacy redirect */}
         <Route path="/auth" element={<Navigate to="/admin" replace />} />
         <Route path="/domains" element={<ProtectedRoute><DomainSelect /></ProtectedRoute>} />
-        <Route path="/admin/mitigate-sharing" element={<ProtectedRoute><MitigateAccountSharing /></ProtectedRoute>} />
+        <Route path="/admin/mitigate-sharing" element={<MitigateAccountSharing />} />
+        <Route path="/mitigate-sharing" element={<MitigateAccountSharing />} />
         <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
         <Route path="/content-roadmap" element={<ProtectedRoute><ContentRoadmap /></ProtectedRoute>} />
         <Route path="/chapter/:chapterId" element={<ProtectedRoute><ChapterPage /></ProtectedRoute>} />
