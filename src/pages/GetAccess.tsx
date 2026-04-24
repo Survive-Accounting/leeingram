@@ -341,18 +341,18 @@ export default function GetAccess() {
               <div className="flex flex-col items-end shrink-0">
                 <div
                   key={`pulse-${pulseKey}`}
-                  className="relative rounded-2xl px-5 py-3.5 flex flex-col items-center justify-center animate-[pricePulse_400ms_ease-out] motion-reduce:animate-none"
+                  className="relative rounded-2xl px-4 py-2.5 flex flex-col items-center justify-center animate-[pricePulse_400ms_ease-out] motion-reduce:animate-none"
                   style={{
                     background: "#F0F6FF",
                     border: `1px solid ${NAVY}`,
-                    boxShadow: "0 10px 24px rgba(20,33,61,0.14), 0 2px 6px rgba(20,33,61,0.06)",
-                    minWidth: 160,
-                    transform: "translateY(-5px)",
+                    boxShadow: "0 8px 20px rgba(20,33,61,0.12), 0 2px 6px rgba(20,33,61,0.05)",
+                    minWidth: 124,
+                    transform: "translateY(-3px)",
                   }}
                 >
                   {hasDiscount && (
                     <div
-                      className="text-[13px] line-through leading-none mb-1"
+                      className="text-[12px] line-through leading-none mb-0.5"
                       style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
                     >
                       ${subtotal}
@@ -360,20 +360,29 @@ export default function GetAccess() {
                   )}
                   <div
                     key={`shimmer-${totalPrice}`}
-                    className={`font-bold leading-none ${hasDiscount ? "price-shimmer-discount" : "price-shimmer"}`}
+                    className={`font-bold leading-none shimmer-done ${hasDiscount ? "price-shimmer-discount" : "price-shimmer"}`}
                     style={{
-                      fontSize: 68,
+                      fontSize: 44,
                       letterSpacing: "-0.03em",
                       fontFamily: "Inter, sans-serif",
+                    }}
+                    ref={(el) => {
+                      if (!el) return;
+                      // Remove shimmer-done so animation runs, then re-add after it completes
+                      el.classList.remove("shimmer-done");
+                      const t = setTimeout(() => el.classList.add("shimmer-done"), 1750);
+                      // store timeout on element for cleanup
+                      (el as any)._shimmerTimeout && clearTimeout((el as any)._shimmerTimeout);
+                      (el as any)._shimmerTimeout = t;
                     }}
                   >
                     ${totalPrice}
                   </div>
                   <div
-                    className="mt-2 text-[12px] font-medium"
+                    className="mt-1 text-[10px] font-semibold uppercase tracking-wider"
                     style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
                   >
-                    one-time
+                    one-time payment
                   </div>
 
                   {/* Floating positive delta toasts only */}
