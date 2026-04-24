@@ -610,10 +610,7 @@ function DropdownButton({ selected, open, setOpen, ordered, setSelectedSlug }: D
 // ── DemoScreen (renders inside the laptop screen) ──
 interface DemoScreenProps {
   courseName: string;
-  chapters: Chapter[];
-  loading: boolean;
   onChange: () => void;
-  onChapterClick: (ch: Chapter, tag: string) => void;
 }
 
 function DemoScreen({ courseName, onChange }: DemoScreenProps) {
