@@ -1409,74 +1409,57 @@ function DemoScreen({ courseName, chapters, loading, onChange, onGetStartedClick
                           ))}
                       </div>
 
-                      {/* See Solution button */}
-                      <div style={{ padding: "12px 24px" }}>
-                        <button
-                          type="button"
-                          onClick={() => setSolutionOpen((v) => !v)}
+                      {/* Locked solution preview — first 2 lines, gradient fade, unlock CTA */}
+                      <div style={{ padding: "12px 24px 20px" }}>
+                        <div
                           style={{
-                            padding: "8px 16px",
-                            background: RED,
-                            color: "#fff",
-                            borderRadius: 6,
-                            fontSize: 12,
-                            fontWeight: 600,
-                            fontFamily: "Inter, sans-serif",
-                            cursor: "pointer",
-                            border: "none",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "rgba(255,255,255,0.5)",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.06em",
+                            marginBottom: 6,
                           }}
                         >
-                          {solutionOpen ? "Hide Solution" : "See Solution"}
-                        </button>
-                      </div>
-
-                      {/* Solution */}
-                      {solutionOpen && (
-                        <div style={{ padding: "0 24px 16px" }}>
-                          {Array.isArray(problemDetail.survive_solution_json?.parts) &&
-                          problemDetail.survive_solution_json.parts.length > 0 ? (
-                            problemDetail.survive_solution_json.parts.map((part: any, i: number) => {
-                              const label =
-                                part?.label || part?.part_label || `(${String.fromCharCode(97 + i)})`;
-                              const answer =
-                                part?.answer ||
-                                part?.final_answer ||
-                                part?.text ||
-                                (typeof part === "string" ? part : "");
-                              return (
-                                <div
-                                  key={i}
-                                  style={{
-                                    fontSize: 12,
-                                    fontFamily: "Inter, sans-serif",
-                                    color: "rgba(255,255,255,0.8)",
-                                    lineHeight: 1.6,
-                                    marginBottom: 6,
-                                  }}
-                                >
-                                  <strong style={{ color: "rgba(255,255,255,0.95)" }}>{label}</strong>{" "}
-                                  {typeof answer === "string"
-                                    ? answer
-                                    : JSON.stringify(answer)}
-                                </div>
-                              );
-                            })
-                          ) : (
-                            <div
-                              style={{
-                                fontSize: 12,
-                                fontFamily: "Inter, sans-serif",
-                                color: "rgba(255,255,255,0.8)",
-                                lineHeight: 1.6,
-                                whiteSpace: "pre-wrap",
-                              }}
-                            >
-                              {(problemDetail.survive_solution_text || "").slice(0, 400)}
-                              {(problemDetail.survive_solution_text || "").length > 400 ? "..." : ""}
-                            </div>
-                          )}
+                          Solution
                         </div>
-                      )}
+                        <div className="demo-solution-locked">
+                          <div
+                            style={{
+                              fontSize: 12,
+                              fontFamily: "Inter, sans-serif",
+                              color: "rgba(255,255,255,0.78)",
+                              lineHeight: 1.6,
+                              whiteSpace: "pre-wrap",
+                            }}
+                          >
+                            {(() => {
+                              const parts = problemDetail.survive_solution_json?.parts;
+                              if (Array.isArray(parts) && parts.length > 0) {
+                                const first = parts[0];
+                                const label = first?.label || first?.part_label || "(a)";
+                                const answer =
+                                  first?.answer ||
+                                  first?.final_answer ||
+                                  first?.text ||
+                                  (typeof first === "string" ? first : "");
+                                const txt = typeof answer === "string" ? answer : JSON.stringify(answer);
+                                return `${label} ${txt}`;
+                              }
+                              return (problemDetail.survive_solution_text || "").slice(0, 240);
+                            })()}
+                          </div>
+                          <div className="demo-solution-fade">
+                            <button
+                              type="button"
+                              className="demo-solution-unlock"
+                              onClick={() => onGetStartedClick?.()}
+                            >
+                              🔒 Unlock full solutions
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
