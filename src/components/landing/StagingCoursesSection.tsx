@@ -165,7 +165,7 @@ export default function StagingCoursesSection({
         .from("teaching_assets")
         .select("id, source_ref, problem_title, asset_code")
         .eq("chapter_id", expandedChapterId)
-        .not("asset_approved_at", "is", null)
+        
         .or(orFilter)
         .order("source_ref", { ascending: true })
         .limit(60);
