@@ -281,76 +281,62 @@ export default function GetAccess() {
               Get Survive Accounting
             </h2>
 
-            {/* Stackable course blocks */}
+            {/* Single compact product block */}
             <div className="mb-4">
               <div
-                className="text-[11px] font-semibold uppercase tracking-wider mb-1.5"
-                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                className="rounded-lg px-4 py-3.5"
+                style={{
+                  background: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                  fontFamily: "Inter, sans-serif",
+                }}
               >
-                {selectedCourses.length > 1 ? "Courses" : "Course"}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                {selectedCourses.map(({ course, accessEnd, previousAccessEnd, price }, idx) => (
-                  <div
-                    key={course.slug}
-                    className="rounded-lg px-4 py-3 animate-fade-in"
-                    style={{
-                      background: "#F8FAFC",
-                      border: "1px solid #E2E8F0",
-                      fontFamily: "Inter, sans-serif",
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
-                          Semester Study Pass{course.code ? ` — ${course.code}` : ""}
-                        </div>
-                        <div className="text-[12.5px] mt-0.5" style={{ color: "#64748B" }}>
-                          {course.name}
-                        </div>
-                        <div className="mt-2 flex flex-col gap-0.5">
-                          {previousAccessEnd && (
-                            <span
-                              className="text-[12px] italic line-through"
-                              style={{ color: "#94A3B8", opacity: 0.7 }}
-                            >
-                              Access ends {previousAccessEnd}
-                            </span>
-                          )}
-                          <span
-                            className="text-[12px] italic transition-all duration-300"
-                            style={{ color: "#64748B" }}
-                          >
-                            Access ends {accessEnd}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div
-                          className={idx === 0 ? "text-[18px] font-bold" : "text-[15px] font-semibold"}
-                          style={{ color: NAVY }}
-                        >
-                          {idx === 0 ? `$${price}` : `+ $${price}`}
-                        </div>
-                      </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
+                      Semester Study Pass
+                    </div>
+                    <div
+                      className="text-[11px] font-semibold uppercase tracking-wider mt-2"
+                      style={{ color: "#94A3B8" }}
+                    >
+                      Courses included
+                    </div>
+                    <div
+                      className="text-[13px] mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 transition-all duration-300"
+                      style={{ color: "#334155" }}
+                    >
+                      {selectedCourses.map(({ course }, idx) => (
+                        <span key={course.slug} className="flex items-center gap-1.5 animate-fade-in">
+                          {idx > 0 && <span style={{ color: "#94A3B8" }}>→</span>}
+                          <span className="font-medium">{course.code ?? course.name}</span>
+                        </span>
+                      ))}
+                    </div>
+                    <div
+                      key={`access-${extraCount}`}
+                      className="text-[12px] italic mt-2 animate-fade-in"
+                      style={{ color: "#64748B" }}
+                    >
+                      Access ends {getAccessEndDate(extraCount)}
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {/* Total line — only when stacked */}
-              {selectedCourses.length > 1 && (
-                <div
-                  className="mt-3 flex items-center justify-end gap-2 animate-fade-in"
-                  style={{ fontFamily: "Inter, sans-serif" }}
-                >
-                  <div style={{ width: 80, borderTop: "1px solid #CBD5E1" }} />
-                  <div className="text-[15px] font-bold" style={{ color: NAVY }}>
-                    ${totalPrice} total
+                  <div className="text-right shrink-0 flex flex-col items-end gap-0.5">
+                    {extraCount > 0 && (
+                      <div
+                        key={`added-${extraCount}`}
+                        className="text-[12px] font-semibold animate-fade-in"
+                        style={{ color: "#16A34A" }}
+                      >
+                        +${extraCount * EXTEND_PRICE} added
+                      </div>
+                    )}
+                    <div className="text-[18px] font-bold" style={{ color: NAVY }}>
+                      ${totalPrice} total
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Add another semester checkbox */}
