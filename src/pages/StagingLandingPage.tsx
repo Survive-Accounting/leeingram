@@ -215,6 +215,7 @@ export default function StagingLandingPage() {
     <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8FAFC" }}>
 
       <StagingNavbar
+        transparentOnTop
         onCtaClick={() => requestAccess({ course: defaultCourse.slug })}
         onPricingClick={() => requestAccess({ course: defaultCourse.slug })}
       />
