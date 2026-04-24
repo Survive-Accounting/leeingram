@@ -201,8 +201,8 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
       `}</style>
 
 
-      <div className="relative z-[3] mx-auto max-w-[950px] px-4 sm:px-6 py-4 md:py-20 w-full">
-        <div className="staging-hero-card flex flex-col md:flex-row items-center md:items-stretch gap-6 md:gap-0">
+      <div className="relative z-[3] mx-auto max-w-[1140px] px-4 sm:px-6 py-4 md:py-20 w-full">
+        <div className="staging-hero-card flex flex-col">
           {/* LEFT — Photo (fixed ~300px) */}
           <div className="flex flex-col items-center justify-center shrink-0 md:pr-6" style={{ width: "100%", maxWidth: 300 }}>
             <div className="relative w-full max-w-[240px] md:max-w-[300px]">
