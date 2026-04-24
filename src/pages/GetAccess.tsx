@@ -476,25 +476,19 @@ export default function GetAccess() {
             </div>
 
             {/* Product section */}
-            <div className="mt-3" style={{ fontFamily: "Inter, sans-serif" }}>
+            <div className="mt-2" style={{ fontFamily: "Inter, sans-serif" }}>
               <div
-                className="text-[11px] font-semibold uppercase tracking-wider"
-                style={{ color: "#64748B" }}
-              >
-                Product
-              </div>
-              <div
-                className="mt-0.5 text-[16px] font-semibold"
+                className="text-[16px] font-semibold"
                 style={{ color: NAVY }}
               >
                 Survive Study Pass
               </div>
               {email.trim() && (
                 <p
-                  className="mt-1 text-[12px]"
+                  className="mt-0.5 text-[12px]"
                   style={{ color: "#94A3B8" }}
                 >
-                  Purchasing for: <span style={{ color: "#64748B" }}>{email.trim()}</span>
+                  Email: <span style={{ color: "#64748B" }}>{email.trim()}</span>
                 </p>
               )}
               <p
@@ -506,7 +500,7 @@ export default function GetAccess() {
             </div>
 
             {/* Access Period — compact inline upsell */}
-            <div className="mt-3" style={{ fontFamily: "Inter, sans-serif" }}>
+            <div className="mt-5" style={{ fontFamily: "Inter, sans-serif" }}>
               <div
                 className="text-[11px] font-semibold uppercase tracking-wider"
                 style={{ color: "#64748B" }}
