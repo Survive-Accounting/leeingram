@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ShieldCheck, Users, Link2, Sparkles, Search } from "lucide-react";
+import { Check, ShieldCheck, Users, Link2, Sparkles, Search, Plus } from "lucide-react";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { z } from "zod";
 
 const StagingTestimonialsSection = lazy(
   () => import("@/components/landing/StagingTestimonialsSection"),
@@ -24,43 +25,140 @@ const TIERS = [
   { seats: 50, total: 5000 },
 ];
 
+type Campus = {
+  id: string;
+  slug: string;
+  name: string;
+  email_domain: string | null;
+};
+
 type GreekOrg = {
   id: string;
+  campus_id: string;
   org_name: string;
   council: string | null;
   org_type: string | null;
   aliases: string[] | null;
+  status: string;
 };
+
+const emailSchema = z
+  .string()
+  .trim()
+  .email({ message: "Enter a valid email address" })
+  .max(255, { message: "Email is too long" });
+
+const manualOrgSchema = z
+  .string()
+  .trim()
+  .min(2, { message: "Org name is too short" })
+  .max(120, { message: "Org name is too long" });
+
+function slugify(s: string) {
+  return s
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
 
 export default function GetOrgAccess() {
   const navigate = useNavigate();
 
-  // --- Org picker state ---
-  const [orgs, setOrgs] = useState<GreekOrg[]>([]);
-  const [orgsLoading, setOrgsLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
-  const [manualOrgName, setManualOrgName] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
+  // --- Email + campus detection ---
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
 
-  // --- Tier selection ---
-  const [selectedTierIdx, setSelectedTierIdx] = useState(1); // 20-seat default
+  const [campuses, setCampuses] = useState<Campus[]>([]);
+  const [campusesLoading, setCampusesLoading] = useState(true);
+  const [selectedCampusId, setSelectedCampusId] = useState<string | null>(null);
+  const [campusAutoMatched, setCampusAutoMatched] = useState(false);
+
+  // --- Org search ---
+  const [orgs, setOrgs] = useState<GreekOrg[]>([]);
+  const [orgsLoading, setOrgsLoading] = useState(false);
+  const [orgSearch, setOrgSearch] = useState("");
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+
+  // --- Manual add ---
+  const [showManual, setShowManual] = useState(false);
+  const [manualOrgName, setManualOrgName] = useState("");
+  const [manualOrgError, setManualOrgError] = useState<string | null>(null);
+  const [creatingManual, setCreatingManual] = useState(false);
+
+  // --- Tier ---
+  const [selectedTierIdx, setSelectedTierIdx] = useState(1);
   const tier = TIERS[selectedTierIdx];
   const perSeat = Math.round(tier.total / tier.seats);
 
-  // --- Submit state ---
   const [submitting, setSubmitting] = useState(false);
 
+  // Load campuses once
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
+        .from("campuses")
+        .select("id, slug, name, email_domain")
+        .eq("is_active", true)
+        .order("name");
+      if (cancelled) return;
+      if (error) {
+        console.error("[get-org-access] campuses", error);
+      } else {
+        setCampuses((data as Campus[]) || []);
+      }
+      setCampusesLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Email → campus auto-detect (debounced via effect on validated email only)
+  useEffect(() => {
+    const trimmed = email.trim().toLowerCase();
+    const parsed = emailSchema.safeParse(trimmed);
+    if (!parsed.success) {
+      setCampusAutoMatched(false);
+      return;
+    }
+    const domain = trimmed.split("@")[1] || "";
+    if (!domain || campuses.length === 0) return;
+    const match = campuses.find(
+      (c) =>
+        !!c.email_domain &&
+        (domain === c.email_domain.toLowerCase() ||
+          domain.endsWith(`.${c.email_domain.toLowerCase()}`)),
+    );
+    if (match) {
+      setSelectedCampusId(match.id);
+      setCampusAutoMatched(true);
+    } else {
+      setCampusAutoMatched(false);
+    }
+  }, [email, campuses]);
+
+  // Load orgs when campus changes
+  useEffect(() => {
+    if (!selectedCampusId) {
+      setOrgs([]);
+      return;
+    }
+    let cancelled = false;
+    setOrgsLoading(true);
+    setSelectedOrgId(null);
+    (async () => {
+      const { data, error } = await supabase
         .from("greek_orgs")
-        .select("id, org_name, council, org_type, aliases")
-        .order("org_name", { ascending: true });
+        .select("id, campus_id, org_name, council, org_type, aliases, status")
+        .eq("campus_id", selectedCampusId)
+        .order("org_name");
       if (cancelled) return;
       if (error) {
         console.error("[get-org-access] greek_orgs", error);
+        setOrgs([]);
       } else {
         setOrgs((data as GreekOrg[]) || []);
       }
@@ -69,41 +167,108 @@ export default function GetOrgAccess() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [selectedCampusId]);
 
   const filteredOrgs = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = orgSearch.trim().toLowerCase();
     if (!q) return orgs;
     return orgs.filter((o) => {
       if (o.org_name.toLowerCase().includes(q)) return true;
       if ((o.aliases || []).some((a) => a.toLowerCase().includes(q))) return true;
       return false;
     });
-  }, [orgs, search]);
+  }, [orgs, orgSearch]);
 
   const selectedOrg = useMemo(
     () => orgs.find((o) => o.id === selectedOrgId) || null,
     [orgs, selectedOrgId],
   );
 
+  const handleEmailBlur = () => {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setEmailError(null);
+      return;
+    }
+    const parsed = emailSchema.safeParse(trimmed);
+    setEmailError(parsed.success ? null : parsed.error.issues[0].message);
+  };
+
+  const handleAddManualOrg = async () => {
+    if (!selectedCampusId) {
+      toast.error("Pick a campus first.");
+      return;
+    }
+    const parsed = manualOrgSchema.safeParse(manualOrgName);
+    if (!parsed.success) {
+      setManualOrgError(parsed.error.issues[0].message);
+      return;
+    }
+    setManualOrgError(null);
+    setCreatingManual(true);
+    try {
+      const baseSlug = slugify(parsed.data) || `org-${Date.now()}`;
+      // Try insert; if slug collides, append a short suffix.
+      let attempt = 0;
+      let inserted: GreekOrg | null = null;
+      while (attempt < 3 && !inserted) {
+        const trySlug =
+          attempt === 0 ? baseSlug : `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
+        const { data, error } = await supabase
+          .from("greek_orgs")
+          .insert({
+            campus_id: selectedCampusId,
+            org_name: parsed.data,
+            org_slug: trySlug,
+            status: "user_added",
+            aliases: [],
+          })
+          .select("id, campus_id, org_name, council, org_type, aliases, status")
+          .single();
+        if (!error && data) {
+          inserted = data as GreekOrg;
+          break;
+        }
+        // Unique violation → retry with new slug; otherwise bail.
+        if (error && !/duplicate key|unique/i.test(error.message)) {
+          throw error;
+        }
+        attempt += 1;
+      }
+      if (!inserted) throw new Error("Could not create org. Try a different name.");
+      setOrgs((prev) =>
+        [...prev, inserted!].sort((a, b) => a.org_name.localeCompare(b.org_name)),
+      );
+      setSelectedOrgId(inserted.id);
+      setShowManual(false);
+      setManualOrgName("");
+      setOrgSearch("");
+      toast.success(`Added "${inserted.org_name}" to your campus.`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Could not add org.";
+      setManualOrgError(msg);
+    } finally {
+      setCreatingManual(false);
+    }
+  };
+
   const canSubmit =
-    !!contactEmail.trim() &&
-    (!!selectedOrg || !!manualOrgName.trim()) &&
+    !emailError &&
+    emailSchema.safeParse(email.trim()).success &&
+    !!selectedCampusId &&
+    !!selectedOrg &&
     !submitting;
 
   const handleCheckout = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      // Placeholder: Stripe checkout for org licensing not wired yet.
-      // For now, just store the intent so admin can follow up.
-      toast.success(
-        "Got it — we'll be in touch shortly to finalize your chapter's passes.",
-      );
+      // Stripe wiring lands in the next step. For now, capture intent locally.
+      toast.success("Got it — we'll be in touch shortly to finalize your chapter's passes.");
       console.info("[get-org-access intent]", {
-        org_id: selectedOrg?.id || null,
-        org_name_manual: selectedOrg ? null : manualOrgName.trim(),
-        contact_email: contactEmail.trim().toLowerCase(),
+        contact_email: email.trim().toLowerCase(),
+        campus_id: selectedCampusId,
+        greek_org_id: selectedOrg?.id,
         seats: tier.seats,
         total: tier.total,
       });
@@ -113,6 +278,14 @@ export default function GetOrgAccess() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const inputBase =
+    "w-full rounded-lg px-3 py-2.5 text-[14px] outline-none transition-colors";
+  const inputStyle: React.CSSProperties = {
+    border: "1px solid #E0E7F0",
+    fontFamily: "Inter, sans-serif",
+    color: NAVY,
   };
 
   return (
@@ -135,10 +308,9 @@ export default function GetOrgAccess() {
         </p>
       </section>
 
-      {/* Main + secondary cards */}
       <section className="px-4 sm:px-6 pb-16">
         <div className="max-w-[1100px] mx-auto grid gap-6 md:grid-cols-[minmax(0,1fr)_360px]">
-          {/* MAIN CARD — Org setup + seat checkout */}
+          {/* MAIN CARD */}
           <div
             className="rounded-2xl p-5 sm:p-7"
             style={{
@@ -179,7 +351,6 @@ export default function GetOrgAccess() {
                 </p>
               </div>
 
-              {/* Price badge */}
               <div
                 className="rounded-2xl px-5 py-3.5 flex flex-col items-center justify-center shrink-0"
                 style={{
@@ -211,127 +382,261 @@ export default function GetOrgAccess() {
               </div>
             </div>
 
-            {/* Step 1 — Pick your org */}
+            {/* Step 1 — Email */}
             <div className="mt-6">
               <div
                 className="text-[13px] font-semibold uppercase tracking-wider mb-2"
                 style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
               >
-                1. Find your chapter
+                1. Your email
               </div>
-
-              <div className="relative">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2"
-                  style={{ color: "#94A3B8" }}
-                />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setSelectedOrgId(null);
-                  }}
-                  placeholder="Search by name or letters (e.g. KD, Pike, AOPi)…"
-                  className="w-full rounded-lg pl-9 pr-3 py-2.5 text-[14px] outline-none transition-colors"
-                  style={{
-                    border: "1px solid #E0E7F0",
-                    fontFamily: "Inter, sans-serif",
-                    color: NAVY,
-                  }}
-                />
-              </div>
-
-              {/* Results */}
-              <div
-                className="mt-2 rounded-lg max-h-[220px] overflow-y-auto"
-                style={{ border: "1px solid #E0E7F0", background: "#FAFBFC" }}
-              >
-                {orgsLoading ? (
-                  <div
-                    className="px-3 py-4 text-[13px]"
-                    style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                  >
-                    Loading chapters…
-                  </div>
-                ) : filteredOrgs.length === 0 ? (
-                  <div
-                    className="px-3 py-4 text-[13px]"
-                    style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
-                  >
-                    No matches. Add it manually below.
-                  </div>
-                ) : (
-                  filteredOrgs.slice(0, 60).map((o) => {
-                    const selected = o.id === selectedOrgId;
-                    return (
-                      <button
-                        key={o.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedOrgId(o.id);
-                          setManualOrgName("");
-                        }}
-                        className="w-full text-left px-3 py-2 flex items-center justify-between gap-2 transition-colors"
-                        style={{
-                          background: selected ? "#EFF6FF" : "transparent",
-                          borderBottom: "1px solid #F1F5F9",
-                          color: NAVY,
-                          fontFamily: "Inter, sans-serif",
-                        }}
-                      >
-                        <div className="min-w-0">
-                          <div className="text-[14px] font-medium truncate">
-                            {o.org_name}
-                          </div>
-                          <div
-                            className="text-[11px] truncate"
-                            style={{ color: "#94A3B8" }}
-                          >
-                            {o.council || "Greek"}{o.org_type ? ` · ${o.org_type}` : ""}
-                          </div>
-                        </div>
-                        {selected && <Check size={16} style={{ color: NAVY }} />}
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Manual fallback */}
-              <div className="mt-3">
-                <label
-                  className="block text-[12px] mb-1"
-                  style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+              <input
+                type="email"
+                value={email}
+                maxLength={255}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) setEmailError(null);
+                }}
+                onBlur={handleEmailBlur}
+                placeholder="you@chapter.org"
+                className={inputBase}
+                style={inputStyle}
+                autoComplete="email"
+              />
+              {emailError && (
+                <p
+                  className="mt-1.5 text-[12px]"
+                  style={{ color: RED, fontFamily: "Inter, sans-serif" }}
                 >
-                  Don't see your chapter? Type the name:
-                </label>
-                <input
-                  type="text"
-                  value={manualOrgName}
-                  onChange={(e) => {
-                    setManualOrgName(e.target.value);
-                    if (e.target.value) setSelectedOrgId(null);
-                  }}
-                  placeholder="e.g. Theta Chi"
-                  className="w-full rounded-lg px-3 py-2.5 text-[14px] outline-none"
-                  style={{
-                    border: "1px solid #E0E7F0",
-                    fontFamily: "Inter, sans-serif",
-                    color: NAVY,
-                  }}
-                />
-              </div>
+                  {emailError}
+                </p>
+              )}
             </div>
 
-            {/* Step 2 — Seat tier */}
+            {/* Step 2 — Campus */}
+            <div className="mt-6">
+              <div
+                className="text-[13px] font-semibold uppercase tracking-wider mb-2 flex items-center justify-between gap-2"
+                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+              >
+                <span>2. Your campus</span>
+                {campusAutoMatched && selectedCampusId && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                    style={{ background: "#DCFCE7", color: "#15803D" }}
+                  >
+                    <Check size={10} /> Auto-detected
+                  </span>
+                )}
+              </div>
+              <select
+                value={selectedCampusId || ""}
+                onChange={(e) => {
+                  setSelectedCampusId(e.target.value || null);
+                  setCampusAutoMatched(false);
+                }}
+                disabled={campusesLoading}
+                className={inputBase}
+                style={{ ...inputStyle, appearance: "auto" }}
+              >
+                <option value="">
+                  {campusesLoading ? "Loading…" : "Select your campus"}
+                </option>
+                {campuses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Step 3 — Greek org */}
+            <div className="mt-6">
+              <div
+                className="text-[13px] font-semibold uppercase tracking-wider mb-2"
+                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+              >
+                3. Your chapter
+              </div>
+
+              {!selectedCampusId ? (
+                <div
+                  className="rounded-lg px-3 py-4 text-[13px]"
+                  style={{
+                    border: "1px dashed #E0E7F0",
+                    background: "#FAFBFC",
+                    color: "#94A3B8",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                >
+                  Pick a campus above to see chapters.
+                </div>
+              ) : (
+                <>
+                  <div className="relative">
+                    <Search
+                      size={16}
+                      className="absolute left-3 top-1/2 -translate-y-1/2"
+                      style={{ color: "#94A3B8" }}
+                    />
+                    <input
+                      type="text"
+                      value={orgSearch}
+                      onChange={(e) => {
+                        setOrgSearch(e.target.value);
+                        setSelectedOrgId(null);
+                      }}
+                      placeholder="Search by name or letters (e.g. KD, Pike, AOPi)…"
+                      className={`${inputBase} pl-9`}
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  <div
+                    className="mt-2 rounded-lg max-h-[240px] overflow-y-auto"
+                    style={{ border: "1px solid #E0E7F0", background: "#FAFBFC" }}
+                  >
+                    {orgsLoading ? (
+                      <div
+                        className="px-3 py-4 text-[13px]"
+                        style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                      >
+                        Loading chapters…
+                      </div>
+                    ) : filteredOrgs.length === 0 ? (
+                      <div
+                        className="px-3 py-4 text-[13px]"
+                        style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                      >
+                        No matches. Add it manually below.
+                      </div>
+                    ) : (
+                      filteredOrgs.slice(0, 80).map((o) => {
+                        const selected = o.id === selectedOrgId;
+                        return (
+                          <button
+                            key={o.id}
+                            type="button"
+                            onClick={() => setSelectedOrgId(o.id)}
+                            className="w-full text-left px-3 py-2 flex items-center justify-between gap-2 transition-colors"
+                            style={{
+                              background: selected ? "#EFF6FF" : "transparent",
+                              borderBottom: "1px solid #F1F5F9",
+                              color: NAVY,
+                              fontFamily: "Inter, sans-serif",
+                            }}
+                          >
+                            <div className="min-w-0">
+                              <div className="text-[14px] font-medium truncate">
+                                {o.org_name}
+                                {o.status === "user_added" && (
+                                  <span
+                                    className="ml-2 text-[10px] font-bold uppercase tracking-wider"
+                                    style={{ color: "#94A3B8" }}
+                                  >
+                                    new
+                                  </span>
+                                )}
+                              </div>
+                              <div
+                                className="text-[11px] truncate"
+                                style={{ color: "#94A3B8" }}
+                              >
+                                {o.council || "Greek"}
+                                {o.org_type ? ` · ${o.org_type}` : ""}
+                              </div>
+                            </div>
+                            {selected && <Check size={16} style={{ color: NAVY }} />}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Manual add toggle / form */}
+                  {!showManual ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowManual(true);
+                        setManualOrgName(orgSearch);
+                      }}
+                      className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium hover:underline"
+                      style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                    >
+                      <Plus size={14} />
+                      Can't find your org? Add it manually
+                    </button>
+                  ) : (
+                    <div
+                      className="mt-3 rounded-lg p-3"
+                      style={{ background: "#F8FAFC", border: "1px solid #E0E7F0" }}
+                    >
+                      <label
+                        className="block text-[12px] mb-1"
+                        style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                      >
+                        Type your chapter's full name
+                      </label>
+                      <input
+                        type="text"
+                        value={manualOrgName}
+                        maxLength={120}
+                        onChange={(e) => {
+                          setManualOrgName(e.target.value);
+                          if (manualOrgError) setManualOrgError(null);
+                        }}
+                        placeholder="e.g. Theta Chi"
+                        className={inputBase}
+                        style={inputStyle}
+                      />
+                      {manualOrgError && (
+                        <p
+                          className="mt-1.5 text-[12px]"
+                          style={{ color: RED, fontFamily: "Inter, sans-serif" }}
+                        >
+                          {manualOrgError}
+                        </p>
+                      )}
+                      <div className="mt-2 flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={creatingManual}
+                          onClick={handleAddManualOrg}
+                          className="rounded-lg px-3 py-2 text-[13px] font-bold text-white disabled:opacity-50"
+                          style={{
+                            background: NAVY,
+                            fontFamily: "Inter, sans-serif",
+                          }}
+                        >
+                          {creatingManual ? "Adding…" : "Add chapter"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowManual(false);
+                            setManualOrgError(null);
+                          }}
+                          className="text-[13px] font-medium hover:underline"
+                          style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Step 4 — Tier */}
             <div className="mt-7">
               <div
                 className="text-[13px] font-semibold uppercase tracking-wider mb-2"
                 style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
               >
-                2. Choose your pack
+                4. Choose your pack
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -346,9 +651,7 @@ export default function GetOrgAccess() {
                       style={{
                         background: selected ? "#F0F6FF" : "#fff",
                         border: `1.5px solid ${selected ? NAVY : "#E0E7F0"}`,
-                        boxShadow: selected
-                          ? "0 4px 12px rgba(20,33,61,0.08)"
-                          : "none",
+                        boxShadow: selected ? "0 4px 12px rgba(20,33,61,0.08)" : "none",
                       }}
                     >
                       {t.recommended && (
@@ -397,40 +700,12 @@ export default function GetOrgAccess() {
               </div>
             </div>
 
-            {/* Step 3 — Contact */}
-            <div className="mt-7">
-              <div
-                className="text-[13px] font-semibold uppercase tracking-wider mb-2"
-                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-              >
-                3. Your email
-              </div>
-              <input
-                type="email"
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-                placeholder="you@chapter.org"
-                className="w-full rounded-lg px-3 py-2.5 text-[14px] outline-none"
-                style={{
-                  border: "1px solid #E0E7F0",
-                  fontFamily: "Inter, sans-serif",
-                  color: NAVY,
-                }}
-              />
-              <p
-                className="mt-1.5 text-[12px]"
-                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-              >
-                We'll send the receipt and your shareable signup link here.
-              </p>
-            </div>
-
             {/* Submit */}
             <button
               type="button"
               disabled={!canSubmit}
               onClick={handleCheckout}
-              className="mt-6 w-full rounded-xl px-5 py-3.5 text-[15px] font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:scale-[1.01] active:enabled:scale-[0.99]"
+              className="mt-7 w-full rounded-xl px-5 py-3.5 text-[15px] font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:scale-[1.01] active:enabled:scale-[0.99]"
               style={{
                 background: RED,
                 fontFamily: "Inter, sans-serif",
@@ -451,7 +726,7 @@ export default function GetOrgAccess() {
             </div>
           </div>
 
-          {/* SECONDARY CARD — What's included */}
+          {/* SECONDARY CARD */}
           <aside
             className="rounded-2xl p-5 sm:p-6 h-fit"
             style={{
