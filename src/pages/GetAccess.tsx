@@ -5,6 +5,7 @@ import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmailGate } from "@/contexts/EmailGateContext";
+import AliasTestingBanner from "@/components/AliasTestingBanner";
 
 // Below-the-fold — lazy load to shrink initial bundle
 const StagingTestimonialsSection = lazy(() => import("@/components/landing/StagingTestimonialsSection"));
