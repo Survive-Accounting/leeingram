@@ -4,6 +4,7 @@ import { Check, Sword, PenLine, MonitorPlay, ShieldCheck, X, Sparkles, ShoppingC
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
+import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmailGate } from "@/contexts/EmailGateContext";
 import {
@@ -526,6 +527,13 @@ export default function GetAccess() {
                 {checkoutError}
               </div>
             )}
+
+            <div
+              className="mt-3 text-center text-[12px]"
+              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+            >
+              ⭐⭐⭐⭐⭐ Trusted by 1,200+ students since 2015
+            </div>
 
             <div
               className="mt-4 flex flex-col items-center gap-1.5 text-[12px]"
