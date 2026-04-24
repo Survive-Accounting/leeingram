@@ -566,7 +566,7 @@ export default function GetAccess() {
               ) : (
                 <>
                   <ShoppingCart className="w-4 h-4" />
-                  Buy Access <span aria-hidden="true">→</span>
+                  Get Access <span aria-hidden="true">→</span>
                 </>
               )}
             </button>
