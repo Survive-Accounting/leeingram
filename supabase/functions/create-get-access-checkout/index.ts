@@ -37,12 +37,16 @@ Deno.serve(async (req) => {
     return bad("Invalid JSON body");
   }
 
-  const { email, campus, selectedCourse, selectedPlan, amount, includedCourses } = body;
+  const { email, selectedPlan, amount } = body as any;
+  const includedCourses: string[] = Array.isArray((body as any).includedCourses)
+    ? (body as any).includedCourses
+    : Array.isArray((body as any).includedSemesters)
+      ? (body as any).includedSemesters
+      : [];
 
   if (!email || typeof email !== "string" || !email.includes("@")) return bad("Valid email required");
   if (!selectedPlan) return bad("selectedPlan required");
   if (!Number.isFinite(amount) || amount <= 0) return bad("amount must be a positive number");
-  if (!Array.isArray(includedCourses)) return bad("includedCourses must be an array");
 
   // Prefer LIVE; fall back to TEST so the function works in both environments.
   const stripeKey =
