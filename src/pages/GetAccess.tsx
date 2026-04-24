@@ -212,12 +212,37 @@ export default function GetAccess() {
       if (error) throw error;
       const url = (data as { url?: string } | null)?.url;
       if (!url) throw new Error("Checkout URL missing from response");
-      // Break out of any parent iframe (e.g., Lovable preview) so Stripe Checkout
-      // can render — Stripe sets X-Frame-Options: DENY and will appear stuck inside an iframe.
-      if (window.top && window.top !== window.self) {
-        window.top.location.href = url;
+
+      // Stripe Checkout sets X-Frame-Options: DENY, so we must navigate the
+      // top-level window. Inside cross-origin iframes (Lovable preview, embeds)
+      // assigning window.top.location throws SecurityError — in that case open
+      // checkout in a new tab as a guaranteed fallback. On the live site the
+      // top-level assignment succeeds and the user is redirected normally.
+      const inIframe = window.top && window.top !== window.self;
+      let navigated = false;
+
+      if (inIframe) {
+        try {
+          // Try same-tab top-level navigation (works for same-origin embeds).
+          (window.top as Window).location.href = url;
+          navigated = true;
+        } catch {
+          // Cross-origin parent — fall through to new tab.
+        }
       } else {
         window.location.href = url;
+        navigated = true;
+      }
+
+      if (!navigated) {
+        const win = window.open(url, "_blank", "noopener,noreferrer");
+        if (!win) {
+          // Popup blocked — last resort, try same-tab in current frame.
+          window.location.href = url;
+        }
+        // Reset the button so the user isn't stuck on "Redirecting…" in the
+        // original tab while completing checkout in the new one.
+        setCheckoutLoading(false);
       }
     } catch (err) {
       console.error("[get-access checkout]", err);
