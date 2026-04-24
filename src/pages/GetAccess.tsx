@@ -306,11 +306,21 @@ export default function GetAccess() {
             }}
           >
             <h2
-              className="text-[24px] sm:text-[28px] mb-6"
+              className="text-[24px] sm:text-[28px]"
               style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
             >
               Get Survive Accounting
             </h2>
+
+            {email.trim() && (
+              <p
+                className="mt-1 mb-6 text-[12px]"
+                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+              >
+                Purchasing for: <span style={{ color: "#64748B" }}>{email.trim()}</span>
+              </p>
+            )}
+            {!email.trim() && <div className="mb-6" />}
 
             {/* Single compact product block */}
             <div className="mb-4">
@@ -323,60 +333,93 @@ export default function GetAccess() {
                 }}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
                       Semester Study Pass
                     </div>
+
                     <div
-                      className="text-[11px] font-semibold uppercase tracking-wider mt-2"
+                      className="text-[11px] font-semibold uppercase tracking-wider mt-3"
                       style={{ color: "#94A3B8" }}
                     >
                       Courses included
                     </div>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      {selectedCourses.map(({ course, idx }, arrIdx) => {
+                        const isLast = arrIdx === selectedCourses.length - 1;
+                        const isRemovable = isLast && idx > 0;
+                        return (
+                          <span key={course.slug} className="flex items-center gap-1.5 animate-fade-in">
+                            {arrIdx > 0 && <span style={{ color: "#CBD5E1" }}>→</span>}
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold"
+                              style={{
+                                background: "#fff",
+                                border: "1px solid #CBD5E1",
+                                color: NAVY,
+                              }}
+                            >
+                              {course.code ?? course.name}
+                              {isRemovable && (
+                                <button
+                                  type="button"
+                                  aria-label={`Remove ${course.code ?? course.name}`}
+                                  onClick={() => setExtraCount((c) => Math.max(0, c - 1))}
+                                  className="ml-0.5 rounded-full hover:bg-slate-100 transition-colors p-0.5"
+                                  style={{ color: "#94A3B8" }}
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
+                            </span>
+                          </span>
+                        );
+                      })}
+                    </div>
+
                     <div
-                      className="text-[13px] mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 transition-all duration-300"
-                      style={{ color: "#334155" }}
+                      className="text-[11px] font-semibold uppercase tracking-wider mt-3"
+                      style={{ color: "#94A3B8" }}
                     >
-                      {selectedCourses.map(({ course }, idx) => (
-                        <span key={course.slug} className="flex items-center gap-1.5 animate-fade-in">
-                          {idx > 0 && <span style={{ color: "#94A3B8" }}>→</span>}
-                          <span className="font-medium">{course.code ?? course.name}</span>
-                        </span>
-                      ))}
+                      Access period
                     </div>
                     <div
                       key={`access-${extraCount}`}
-                      className="text-[12px] italic mt-2 animate-fade-in"
-                      style={{ color: "#64748B" }}
+                      className="text-[13px] mt-0.5 animate-fade-in"
+                      style={{ color: "#334155" }}
                     >
-                      Access ends {getAccessEndDate(extraCount)}
+                      {accessPeriodLabel}
                     </div>
                   </div>
+
                   <div className="text-right shrink-0 flex flex-col items-end gap-0.5">
-                    {extraCount > 0 && (
-                      <div
-                        key={`added-${extraCount}`}
-                        className="text-[12px] font-semibold animate-fade-in"
-                        style={{ color: "#16A34A" }}
-                      >
-                        +${extraCount * EXTEND_PRICE} added
-                      </div>
-                    )}
                     <div className="text-[18px] font-bold" style={{ color: NAVY }}>
                       ${totalPrice} total
                     </div>
+                    {addedAmount > 0 && (
+                      <div
+                        key={`added-${addedAmount}`}
+                        className="text-[12px] font-semibold animate-fade-in"
+                        style={{ color: "#16A34A" }}
+                      >
+                        +${addedAmount} added
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Add another semester checkbox */}
+            {/* Add semester checkbox(es) */}
             {canAddAnother && (() => {
-              const nextCourse = progression.courses[startIdx + extraCount + 1];
-              const nextLabel = nextCourse?.code ?? nextCourse?.name ?? null;
+              const isFirstAdd = extraCount === 0;
+              const label = isFirstAdd ? "Add next semester" : "Add another semester";
+              const subtext = isFirstAdd
+                ? "Continue your sequence"
+                : "Keep your access going";
               return (
                 <label
-                  className="flex items-start gap-3 mb-3 p-3 rounded-lg cursor-pointer transition-all duration-200"
+                  className="flex items-start gap-3 mb-3 p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-slate-50"
                   style={{
                     border: "1px solid #E2E8F0",
                     background: "#fff",
@@ -391,40 +434,48 @@ export default function GetAccess() {
                   />
                   <div className="min-w-0">
                     <div className="text-[13px] font-semibold" style={{ color: NAVY }}>
-                      Add another semester (+${EXTEND_PRICE})
+                      {label}
+                      <span style={{ color: "#64748B", fontWeight: 500 }}> (+${EXTEND_PRICE})</span>
                     </div>
-                    {nextLabel && (
-                      <div className="text-[12px] mt-0.5 italic" style={{ color: "#94A3B8" }}>
-                        For {nextLabel}
-                      </div>
-                    )}
+                    <div className="text-[12px] mt-0.5" style={{ color: "#94A3B8" }}>
+                      {subtext}
+                    </div>
                   </div>
                 </label>
               );
             })()}
 
-            {/* Remove last added semester */}
-            {extraCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setExtraCount((c) => Math.max(0, c - 1))}
-                className="mb-6 text-[12px] underline transition-opacity hover:opacity-70"
-                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+            {/* Lifetime upgrade — only when all semesters selected */}
+            {showLifetime && (
+              <label
+                className="flex items-start gap-3 mb-3 p-3 rounded-lg cursor-pointer transition-all duration-200 animate-fade-in"
+                style={{
+                  border: lifetimeUpgrade ? `1px solid ${NAVY}` : "1px solid #E2E8F0",
+                  background: lifetimeUpgrade ? "rgba(20,33,61,0.04)" : "#fff",
+                  fontFamily: "Inter, sans-serif",
+                }}
               >
-                Remove last semester
-              </button>
+                <input
+                  type="checkbox"
+                  checked={lifetimeUpgrade}
+                  onChange={(e) => setLifetimeUpgrade(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#14213D]"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: NAVY }}>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Upgrade to Lifetime Access
+                    <span style={{ color: "#64748B", fontWeight: 500 }}> (+${LIFETIME_UPGRADE_PRICE})</span>
+                  </div>
+                  <div className="text-[12px] mt-0.5" style={{ color: "#94A3B8" }}>
+                    Includes all future updates
+                  </div>
+                </div>
+              </label>
             )}
-            {extraCount === 0 && <div className="mb-3" />}
 
-            {/* Captured email — non-editable */}
-            {email.trim() && (
-              <p
-                className="mb-3 text-[12px]"
-                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-              >
-                Purchasing for: <span style={{ color: "#64748B" }}>{email.trim()}</span>
-              </p>
-            )}
+            <div className="mb-3" />
+
 
             {/* Section 4 — CTA */}
             <button
