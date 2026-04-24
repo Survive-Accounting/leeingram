@@ -207,35 +207,16 @@ export default function StagingCoursesSection({
 
       <div className="relative mx-auto max-w-[920px]" style={{ zIndex: 2 }}>
 
-        {/* Section header — was previously in StagingFeatureCardsSection */}
-        <div className="text-center mb-10 md:mb-14">
-          <h2
-            className="text-[28px] sm:text-[40px] md:text-[48px] font-bold leading-tight text-white"
-            style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
-          >
-            {getFinalsCountdownText() ?? "Your next exam is coming up."}
-          </h2>
-          <p
-            className="mt-3 text-[15px] sm:text-[17px]"
-            style={{ color: "rgba(255,255,255,0.72)", fontFamily: "Inter, sans-serif" }}
-          >
-            Get exactly what you need to study smarter.
-          </p>
-        </div>
-
-        {/* "Try it yourself" eyebrow above laptop */}
-        <div className="text-center mb-3 md:mb-4">
-          <span
-            className="inline-block text-[11px] sm:text-[12px] font-semibold uppercase tracking-[0.18em]"
-            style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
-          >
-            Try it yourself
-          </span>
-        </div>
-
-        {/* Dropdown — rendered as a portal-like overlay above the laptop screen ONLY on mobile.
-            On desktop the dropdown lives INSIDE the laptop screen (rendered below in the off-state). */}
+        {/* Mobile-only dropdown (desktop dropdown lives inside the laptop screen) */}
         <div className="md:hidden relative" style={{ zIndex: 100 }}>
+          <div className="text-center mb-3">
+            <span
+              className="inline-block text-[11px] font-semibold uppercase tracking-[0.18em]"
+              style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
+            >
+              Try a demo
+            </span>
+          </div>
           <DropdownButton
             selected={selected}
             open={open}
