@@ -14,7 +14,8 @@ interface CampusRow {
   domains: string[];
   is_active: boolean;
   created_at: string;
-  studentCount: number;
+  paidCount: number;
+  leadCount: number;
 }
 
 export default function CampusesPage() {
@@ -32,17 +33,34 @@ export default function CampusesPage() {
 
       if (!rows) { setLoading(false); return; }
 
-      const { data: counts } = await supabase
-        .from("students")
-        .select("campus_id")
-        .in("campus_id", rows.map(r => r.id));
+      const ids = rows.map(r => r.id);
+      const [{ data: students }, { data: purchases }] = await Promise.all([
+        supabase.from("students").select("id, campus_id, email").in("campus_id", ids),
+        (supabase as any).from("student_purchases").select("email, campus_id").in("campus_id", ids),
+      ]);
 
-      const countMap: Record<string, number> = {};
-      (counts ?? []).forEach((s: any) => {
-        countMap[s.campus_id] = (countMap[s.campus_id] || 0) + 1;
+      // paid emails per campus
+      const paidByCampus: Record<string, Set<string>> = {};
+      (purchases ?? []).forEach((p: any) => {
+        if (!p.campus_id || !p.email) return;
+        (paidByCampus[p.campus_id] ||= new Set()).add(p.email.toLowerCase());
       });
 
-      setCampuses(rows.map(r => ({ ...r, studentCount: countMap[r.id] || 0 })));
+      // students per campus, split into paid vs lead
+      const paidCount: Record<string, number> = {};
+      const leadCount: Record<string, number> = {};
+      (students ?? []).forEach((s: any) => {
+        if (!s.campus_id) return;
+        const isPaid = paidByCampus[s.campus_id]?.has((s.email || "").toLowerCase());
+        if (isPaid) paidCount[s.campus_id] = (paidCount[s.campus_id] || 0) + 1;
+        else leadCount[s.campus_id] = (leadCount[s.campus_id] || 0) + 1;
+      });
+
+      setCampuses(rows.map(r => ({
+        ...r,
+        paidCount: paidCount[r.id] || 0,
+        leadCount: leadCount[r.id] || 0,
+      })));
       setLoading(false);
     })();
   }, []);
@@ -70,7 +88,8 @@ export default function CampusesPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Slug</TableHead>
                 <TableHead>Domains</TableHead>
-                <TableHead className="text-center">Students</TableHead>
+                <TableHead className="text-center">Paid</TableHead>
+                <TableHead className="text-center">Leads</TableHead>
                 <TableHead className="text-center">Status</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="text-center">Landing</TableHead>
@@ -86,7 +105,8 @@ export default function CampusesPage() {
                   <TableCell className="font-medium">{c.name}</TableCell>
                   <TableCell className="text-muted-foreground text-xs font-mono">{c.slug}</TableCell>
                   <TableCell className="text-xs max-w-[200px] truncate">{c.domains?.join(", ") || "—"}</TableCell>
-                  <TableCell className="text-center">{c.studentCount}</TableCell>
+                  <TableCell className="text-center font-semibold text-green-700">{c.paidCount}</TableCell>
+                  <TableCell className="text-center text-muted-foreground">{c.leadCount}</TableCell>
                   <TableCell className="text-center">
                     <Badge variant={c.is_active ? "default" : "secondary"} className={c.is_active ? "bg-green-600" : ""}>
                       {c.is_active ? "Active" : "Inactive"}
