@@ -33,17 +33,34 @@ export default function CampusesPage() {
 
       if (!rows) { setLoading(false); return; }
 
-      const { data: counts } = await supabase
-        .from("students")
-        .select("campus_id")
-        .in("campus_id", rows.map(r => r.id));
+      const ids = rows.map(r => r.id);
+      const [{ data: students }, { data: purchases }] = await Promise.all([
+        supabase.from("students").select("id, campus_id, email").in("campus_id", ids),
+        (supabase as any).from("student_purchases").select("email, campus_id").in("campus_id", ids),
+      ]);
 
-      const countMap: Record<string, number> = {};
-      (counts ?? []).forEach((s: any) => {
-        countMap[s.campus_id] = (countMap[s.campus_id] || 0) + 1;
+      // paid emails per campus
+      const paidByCampus: Record<string, Set<string>> = {};
+      (purchases ?? []).forEach((p: any) => {
+        if (!p.campus_id || !p.email) return;
+        (paidByCampus[p.campus_id] ||= new Set()).add(p.email.toLowerCase());
       });
 
-      setCampuses(rows.map(r => ({ ...r, studentCount: countMap[r.id] || 0 })));
+      // students per campus, split into paid vs lead
+      const paidCount: Record<string, number> = {};
+      const leadCount: Record<string, number> = {};
+      (students ?? []).forEach((s: any) => {
+        if (!s.campus_id) return;
+        const isPaid = paidByCampus[s.campus_id]?.has((s.email || "").toLowerCase());
+        if (isPaid) paidCount[s.campus_id] = (paidCount[s.campus_id] || 0) + 1;
+        else leadCount[s.campus_id] = (leadCount[s.campus_id] || 0) + 1;
+      });
+
+      setCampuses(rows.map(r => ({
+        ...r,
+        paidCount: paidCount[r.id] || 0,
+        leadCount: leadCount[r.id] || 0,
+      })));
       setLoading(false);
     })();
   }, []);
