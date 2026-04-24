@@ -244,7 +244,7 @@ export default function GetAccess() {
           />
           {/* LEFT — Checkout (visually dominant) */}
           <div
-            className="md:col-span-3 order-1 rounded-2xl p-6 sm:p-8"
+            className="md:col-span-3 order-1 rounded-2xl p-6 sm:p-8 relative z-10"
             style={{
               background: "#fff",
               boxShadow: "0 16px 48px rgba(20,33,61,0.12), 0 2px 6px rgba(20,33,61,0.06)",
@@ -413,7 +413,7 @@ export default function GetAccess() {
 
           {/* RIGHT — What's included (secondary) */}
           <div
-            className="md:col-span-2 order-2 rounded-2xl p-6 sm:p-7"
+            className="md:col-span-2 order-2 rounded-2xl p-6 sm:p-7 relative z-10"
             style={{
               background: "#fff",
               boxShadow: "0 8px 24px rgba(20,33,61,0.06), 0 1px 3px rgba(20,33,61,0.04)",
