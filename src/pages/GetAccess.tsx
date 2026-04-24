@@ -416,6 +416,21 @@ export default function GetAccess() {
                       +${t.delta}
                     </span>
                   ))}
+
+                  {/* Discount applied floating toast (positive feedback only) */}
+                  {discountToasts.map((t) => (
+                    <span
+                      key={t.id}
+                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-3 text-[13px] font-semibold whitespace-nowrap animate-[priceToast_800ms_ease-out_forwards] motion-reduce:animate-[priceToastFade_700ms_ease-out_forwards]"
+                      style={{
+                        color: "#16A34A",
+                        fontFamily: "Inter, sans-serif",
+                        textShadow: "0 1px 3px rgba(255,255,255,0.9)",
+                      }}
+                    >
+                      –{AUTO_RENEW_DISCOUNT_PCT}% applied
+                    </span>
+                  ))}
                 </div>
 
                 {/* Promo code area under badge */}
