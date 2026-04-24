@@ -58,7 +58,7 @@ const COURSES: CtaCourse[] = [
 
 export default function StagingLandingPage() {
   const navigate = useNavigate();
-  const { requestAccess } = useEmailGate();
+  // Founding-student / non-edu flow handled by StagingEmailPromptModal directly.
   const contactRef = useRef<HTMLDivElement>(null);
   const coursesRef = useRef<HTMLDivElement>(null);
   const { trackPageView, trackEvent } = useEventTracking();
