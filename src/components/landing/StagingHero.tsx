@@ -130,30 +130,10 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 lineHeight: 1.6,
               }}
             >
-              AI-powered accounting study tools built by a real tutor — for students who want to do more than just survive their exam.
+              AI-powered accounting study tools — built by Lee Ingram, Ole Miss alum & tutor helping students nationwide.
             </p>
 
-            <ul
-              className="mt-6 space-y-2.5 hero-anim-bullets text-left inline-block md:block"
-              style={{ fontFamily: "Inter, sans-serif" }}
-            >
-              {[
-                "Practice real exam-style problems",
-                "Understand it — not just memorize it",
-                "Built for the night before your test",
-              ].map((b) => (
-                <li key={b} className="flex items-start gap-2.5" style={{ color: "#1E293B", fontSize: "14.5px" }}>
-                  <span
-                    className="shrink-0 mt-[7px] inline-block rounded-full"
-                    style={{ width: 6, height: 6, background: RED }}
-                    aria-hidden="true"
-                  />
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-8 hero-anim-btn flex flex-col sm:flex-row items-center md:items-start sm:items-center gap-3 sm:gap-5 justify-center md:justify-start">
+            <div className="mt-8 hero-anim-btn flex flex-col items-center md:items-start gap-3">
               <button
                 onClick={onGetStartedClick}
                 className="rounded-xl px-8 py-3.5 text-[16px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2"
@@ -165,21 +145,21 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                   letterSpacing: "0.01em",
                 }}
               >
-                Get Access <span aria-hidden="true">→</span>
+                Start Studying <span aria-hidden="true">→</span>
               </button>
 
               <button
                 onClick={handleSeeHowItWorks}
-                className="text-[14px] font-semibold transition-opacity hover:opacity-70"
+                className="hero-anim-link text-[14px] font-semibold transition-opacity hover:opacity-70"
                 style={{
                   color: NAVY,
                   fontFamily: "Inter, sans-serif",
                   background: "none",
                   border: "none",
-                  padding: "10px 4px",
+                  padding: "4px 4px",
                 }}
               >
-                See how it works ↓
+                See how it works
               </button>
             </div>
           </div>
