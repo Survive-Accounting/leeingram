@@ -145,10 +145,10 @@ Deno.serve(async (req) => {
         errMsg = err instanceof Error ? err.message : String(err);
       }
 
-      // Retry on 429 (rate limit) up to MAX_RETRIES by re-queuing the job
-      const is429 = !!errMsg && /\b429\b|rate[_ ]limit/i.test(errMsg);
+      // Retry on 429 (rate limit) and transient 5xx (502/503/504) up to MAX_RETRIES by re-queuing the job
+      const isRetryable = !!errMsg && /\b429\b|rate[_ ]limit|\b50[234]\b|timeout|ETIMEDOUT|ECONNRESET|fetch failed/i.test(errMsg);
       const retryCount = Number(item.payload?._retry_count ?? 0);
-      if (!ok && is429 && retryCount < MAX_RETRIES) {
+      if (!ok && isRetryable && retryCount < MAX_RETRIES) {
         const newPayload = { ...item.payload, _retry_count: retryCount + 1 };
         await sb.from("background_jobs")
           .update({
