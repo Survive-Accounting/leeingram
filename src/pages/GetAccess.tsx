@@ -517,46 +517,106 @@ export default function GetAccess() {
                 })}
               </div>
 
-              <div className="mt-3" style={{ minHeight: 40 }}>
-                {nextSemesterLabel ? (
-                  <button
-                    type="button"
-                    onClick={() => setExtraCount((c) => Math.min(c + 1, MAX_EXTRA_SEMESTERS))}
-                    className="w-full rounded-lg py-2 text-[13px] font-semibold transition-colors hover:bg-slate-50 animate-fade-in"
-                    style={{
-                      border: "1px dashed #CBD5E1",
-                      color: NAVY,
-                      background: "#fff",
-                    }}
-                  >
-                    + Add {nextSemesterLabel}
-                  </button>
-                ) : (
-                  <label
-                    className="flex items-start gap-3 p-3.5 rounded-lg cursor-pointer transition-all duration-200 animate-fade-in hover:brightness-[0.99]"
-                    style={{
-                      border: lifetimeUpgrade ? `2px solid ${NAVY}` : "2px solid #BFDBFE",
-                      background: lifetimeUpgrade ? "#DBEAFE" : "#EFF6FF",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={lifetimeUpgrade}
-                      onChange={(e) => setLifetimeUpgrade(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#14213D]"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: NAVY }}>
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Upgrade to Lifetime Access
-                      </div>
-                      <div className="text-[12px] mt-0.5" style={{ color: "#475569" }}>
-                        Never pay again. Includes all future semesters.
-                      </div>
+              {/* Default state: simple auto-renew checkbox (only when no extras added) */}
+              {extraCount === 0 && (
+                <label
+                  className="mt-3 flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 animate-fade-in hover:brightness-[0.99]"
+                  style={{
+                    border: autoRenew ? `2px solid ${NAVY}` : "1px solid #CBD5E1",
+                    background: autoRenew ? "#F0F6FF" : "#fff",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={autoRenew}
+                    onChange={(e) => setAutoRenew(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#14213D]"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-semibold" style={{ color: NAVY }}>
+                      Continue next semester — save ${AUTO_RENEW_DISCOUNT}
                     </div>
-                  </label>
-                )}
-              </div>
+                    <div className="text-[12px] mt-0.5" style={{ color: "#64748B" }}>
+                      We'll remind you before billing
+                    </div>
+                  </div>
+                </label>
+              )}
+
+              {/* Plan ahead toggle link */}
+              {!planAheadOpen && extraCount === 0 && (
+                <button
+                  type="button"
+                  onClick={() => setPlanAheadOpen(true)}
+                  className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium hover:underline animate-fade-in"
+                  style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                >
+                  <ChevronDown className="w-3.5 h-3.5" />
+                  Plan ahead &amp; save more
+                </button>
+              )}
+
+              {/* Plan ahead expansion: semester builder */}
+              {(planAheadOpen || extraCount > 0) && (
+                <div className="mt-3 animate-fade-in" style={{ minHeight: 40 }}>
+                  {nextSemesterLabel ? (
+                    <button
+                      type="button"
+                      onClick={() => setExtraCount((c) => Math.min(c + 1, MAX_EXTRA_SEMESTERS))}
+                      className="w-full rounded-lg py-2 text-[13px] font-semibold transition-colors hover:bg-slate-50"
+                      style={{
+                        border: "1px dashed #CBD5E1",
+                        color: NAVY,
+                        background: "#fff",
+                      }}
+                    >
+                      + Add {nextSemesterLabel} (+${EXTEND_PRICE})
+                    </button>
+                  ) : (
+                    <div
+                      className="text-[12px] text-center py-2"
+                      style={{ color: "#64748B" }}
+                    >
+                      Maximum semesters added
+                    </div>
+                  )}
+
+                  {showSavingsHint && (
+                    <div
+                      className="mt-2 text-[12px] text-center font-medium animate-fade-in"
+                      style={{ color: "#16A34A", fontFamily: "Inter, sans-serif" }}
+                    >
+                      ✓ You're saving vs paying later
+                    </div>
+                  )}
+
+                  {showLifetime && (
+                    <label
+                      className="mt-3 flex items-start gap-3 p-3.5 rounded-lg cursor-pointer transition-all duration-200 animate-fade-in hover:brightness-[0.99]"
+                      style={{
+                        border: lifetimeUpgrade ? `2px solid ${NAVY}` : "2px solid #BFDBFE",
+                        background: lifetimeUpgrade ? "#DBEAFE" : "#EFF6FF",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={lifetimeUpgrade}
+                        onChange={(e) => setLifetimeUpgrade(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#14213D]"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: NAVY }}>
+                          <Sparkles className="w-3.5 h-3.5" />
+                          Upgrade to Lifetime Access (+${LIFETIME_UPGRADE_PRICE})
+                        </div>
+                        <div className="text-[12px] mt-0.5" style={{ color: "#475569" }}>
+                          Includes all future courses &amp; updates
+                        </div>
+                      </div>
+                    </label>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* CTA */}
