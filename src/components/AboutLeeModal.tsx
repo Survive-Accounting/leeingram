@@ -122,6 +122,7 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
                 </span>
               </div>
             </div>
+          </div>
           {/* Name + identity */}
           <h2
             className="mt-6 text-[26px] sm:text-[30px] text-white leading-tight"
