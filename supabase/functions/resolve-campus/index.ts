@@ -210,19 +210,9 @@ Deno.serve(async (req) => {
         // HIPOLABS unavailable — fall through to domain-based fallback
       }
 
-      // If HIPOLABS failed/returned nothing but domain is .edu, derive a name
-      if (!hipoResult && domain.endsWith(".edu")) {
-        const baseName = domain.replace(/\.edu$/, "").split(".").pop() || "";
-        if (baseName.length >= 2) {
-          // Capitalize: "lsu" → "LSU" (if ≤4 chars, treat as acronym), else title-case
-          const displayName = baseName.length <= 4
-            ? baseName.toUpperCase()
-            : baseName.charAt(0).toUpperCase() + baseName.slice(1);
-          hipoResult = { name: displayName };
-          console.log(`HIPOLABS unavailable — derived campus name "${displayName}" from domain ${domain}`);
-        }
-      }
-
+      // NOTE: Domain-derived fallback removed.
+      // We only auto-create campuses when HIPOLABS returns a real university match.
+      // Otherwise we fall through to the 'general' fallback below.
       if (hipoResult) {
         // Create new campus
         const newSlug = slugify(hipoResult.name);
