@@ -153,11 +153,32 @@ export default function StagingLandingPage() {
         /* non-blocking */
       }
 
-      // Ole Miss skips the founding-student modal entirely — straight to preview.
+      // Build destination URL based on pendingDestination
+      const buildPath = (campusSlug: string, n?: number) => {
+        if (pendingDestination === "checkout") {
+          const params = new URLSearchParams({
+            campus: campusSlug,
+            course: course.slug,
+            email: trimmed,
+          });
+          if (n != null) params.set("n", String(n));
+          return `/get-access?${params.toString()}`;
+        }
+        const chapterSuffix = pendingChapterNumber != null ? `/${pendingChapterNumber}` : "";
+        return `/campus/${campusSlug}/${course.slug}${chapterSuffix}`;
+      };
+
+      // Ole Miss skips the founding-student modal entirely.
       if (data?.campus_slug === "ole-miss") {
         setEmailPromptOpen(false);
-        const chapterSuffix = pendingChapterNumber != null ? `/${pendingChapterNumber}` : "";
-        navigate(`/campus/${data.campus_slug}/${course.slug}${chapterSuffix}`);
+        navigate(buildPath("ole-miss", data?.student_number));
+        return null;
+      }
+
+      // Checkout intent: skip in-modal celebration; show it on /get-access instead.
+      if (pendingDestination === "checkout" && data?.campus_slug) {
+        setEmailPromptOpen(false);
+        navigate(buildPath(data.campus_slug, (data as CelebrationData)?.student_number));
         return null;
       }
 
@@ -170,11 +191,12 @@ export default function StagingLandingPage() {
     }
   };
 
-  /** Card / CTA click handler. */
+  /** Card / CTA click handler — preview destination. */
   const handleCardClick = async (course: CtaCourse) => {
     setPendingCourse(course);
     setPendingChapterNumber(null);
     setPendingChapterName(null);
+    setPendingDestination("preview");
     if (capturedEmail) {
       const data = await resolveEmail(capturedEmail, course);
       if (data) navigate(`/campus/${data.campus_slug}/${course.slug}`);
@@ -184,11 +206,35 @@ export default function StagingLandingPage() {
     }
   };
 
-  /** Chapter row click — same flow but routes to specific chapter. */
+  /** Get-access / Get-started CTA — checkout destination. */
+  const handleGetAccessClick = async (course: CtaCourse) => {
+    setPendingCourse(course);
+    setPendingChapterNumber(null);
+    setPendingChapterName(null);
+    setPendingDestination("checkout");
+    if (capturedEmail) {
+      const data = await resolveEmail(capturedEmail, course);
+      if (data) {
+        const params = new URLSearchParams({
+          campus: data.campus_slug,
+          course: course.slug,
+          email: capturedEmail,
+        });
+        if (data.student_number != null) params.set("n", String(data.student_number));
+        navigate(`/get-access?${params.toString()}`);
+      }
+    } else {
+      setEmailPromptIntent("pricing");
+      setEmailPromptOpen(true);
+    }
+  };
+
+  /** Chapter row click — preview destination. */
   const handleChapterClick = async (course: CtaCourse, chapterNumber: number, chapterName?: string) => {
     setPendingCourse(course);
     setPendingChapterNumber(chapterNumber);
     setPendingChapterName(chapterName ?? null);
+    setPendingDestination("preview");
     if (capturedEmail) {
       const data = await resolveEmail(capturedEmail, course);
       if (data) navigate(`/campus/${data.campus_slug}/${course.slug}/${chapterNumber}`);
@@ -201,6 +247,16 @@ export default function StagingLandingPage() {
   const handleContinue = (data: CelebrationData) => {
     if (!pendingCourse) return;
     setEmailPromptOpen(false);
+    if (pendingDestination === "checkout") {
+      const params = new URLSearchParams({
+        campus: data.campus_slug,
+        course: pendingCourse.slug,
+        email: capturedEmail,
+      });
+      if (data.student_number != null) params.set("n", String(data.student_number));
+      navigate(`/get-access?${params.toString()}`);
+      return;
+    }
     if (pendingChapterNumber != null) {
       navigate(`/campus/${data.campus_slug}/${pendingCourse.slug}/${pendingChapterNumber}`);
     } else {
