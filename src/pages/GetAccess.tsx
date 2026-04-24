@@ -109,6 +109,7 @@ export default function GetAccess() {
 
   // Floating toast — only positive deltas (additions)
   const [priceToasts, setPriceToasts] = useState<Array<{ id: number; delta: number }>>([]);
+  const [discountToasts, setDiscountToasts] = useState<Array<{ id: number }>>([]);
   const [pulseKey, setPulseKey] = useState(0);
   const prevSubtotalRef = React.useRef(subtotal);
 
@@ -415,6 +416,21 @@ export default function GetAccess() {
                       +${t.delta}
                     </span>
                   ))}
+
+                  {/* Discount applied floating toast (positive feedback only) */}
+                  {discountToasts.map((t) => (
+                    <span
+                      key={t.id}
+                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-3 text-[13px] font-semibold whitespace-nowrap animate-[priceToast_800ms_ease-out_forwards] motion-reduce:animate-[priceToastFade_700ms_ease-out_forwards]"
+                      style={{
+                        color: "#16A34A",
+                        fontFamily: "Inter, sans-serif",
+                        textShadow: "0 1px 3px rgba(255,255,255,0.9)",
+                      }}
+                    >
+                      –{AUTO_RENEW_DISCOUNT_PCT}% applied
+                    </span>
+                  ))}
                 </div>
 
                 {/* Promo code area under badge */}
@@ -528,7 +544,18 @@ export default function GetAccess() {
                   <input
                     type="checkbox"
                     checked={autoRenew}
-                    onChange={(e) => setAutoRenew(e.target.checked)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setAutoRenew(checked);
+                      if (checked && extraCount === 0) {
+                        const id = Date.now() + Math.random();
+                        setDiscountToasts((t) => [...t, { id }]);
+                        setPulseKey((k) => k + 1);
+                        setTimeout(() => {
+                          setDiscountToasts((t) => t.filter((x) => x.id !== id));
+                        }, 800);
+                      }
+                    }}
                     className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[#14213D]"
                   />
                   <span className="text-[13px] leading-none" style={{ color: NAVY }}>
