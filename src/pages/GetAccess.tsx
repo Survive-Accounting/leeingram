@@ -549,7 +549,8 @@ export default function GetAccess() {
                       setAutoRenew(checked);
                       if (checked && extraCount === 0) {
                         const id = Date.now() + Math.random();
-                        setDiscountToasts((t) => [...t, { id }]);
+                        const amount = Math.round((PRICE * AUTO_RENEW_DISCOUNT_PCT) / 100);
+                        setDiscountToasts((t) => [...t, { id, amount }]);
                         setPulseKey((k) => k + 1);
                         setTimeout(() => {
                           setDiscountToasts((t) => t.filter((x) => x.id !== id));
