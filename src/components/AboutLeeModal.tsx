@@ -55,14 +55,30 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
 
         <div className="p-6 sm:p-8 flex flex-col items-center text-center" style={{ fontFamily: "Inter, sans-serif" }}>
           {/* Hero image */}
-          <img
-            src={leeStadium}
-            alt="Lee Ingram at an Ole Miss football game"
-            className="w-full max-w-[420px] aspect-square object-cover rounded-xl"
-            style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-          />
-
+          <div
+            className="w-full max-w-[420px] aspect-square rounded-xl overflow-hidden relative"
+            style={{
+              boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+              background: "linear-gradient(135deg, #1f3160 0%, #14213D 100%)",
+            }}
+          >
+            <img
+              src={leeStadium}
+              alt="Lee Ingram at an Ole Miss football game"
+              loading="eager"
+              decoding="async"
+              onLoad={() => setImgLoaded(true)}
+              className="w-full h-full object-cover"
+              style={{
+                objectPosition: "30% center",
+                opacity: imgLoaded ? 1 : 0,
+                filter: imgLoaded ? "blur(0)" : "blur(8px)",
+                transform: imgLoaded ? "scale(1)" : "scale(1.02)",
+                transition: "opacity 0.7s ease, filter 0.7s ease, transform 0.9s ease",
+              }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+          </div>
           {/* Name + identity */}
           <h2
             className="mt-6 text-[26px] sm:text-[30px] text-white leading-tight"
