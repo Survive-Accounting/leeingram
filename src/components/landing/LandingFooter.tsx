@@ -3,7 +3,7 @@ import { AboutLeeModal } from "@/components/AboutLeeModal";
 import StudentLoginModal from "@/components/landing/StudentLoginModal";
 
 const NAVY = "#14213D";
-const FOOTER_BG = "#0B1120";
+const FOOTER_BG = "#0f172a";
 
 interface LandingFooterProps {
   onScrollToCourses?: () => void;
