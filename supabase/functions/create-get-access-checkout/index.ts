@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     return bad("Invalid JSON body");
   }
 
-  const { email, selectedPlan, amount } = body as any;
+  const { email, selectedPlan, amount, campus, selectedCourse } = body as any;
   const includedCourses: string[] = Array.isArray((body as any).includedCourses)
     ? (body as any).includedCourses
     : Array.isArray((body as any).includedSemesters)
