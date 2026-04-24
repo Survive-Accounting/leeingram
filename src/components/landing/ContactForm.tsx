@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-const LEE_STADIUM_URL = "https://i.ibb.co/nNmPgMws/Lee-About-Me-Image.jpg";
+import leeHeadshot from "@/assets/lee-headshot-original.png";
 
 const SUBJECTS = [
   "I'm stuck on something",
@@ -129,10 +128,10 @@ export default function ContactForm() {
                 style={{ border: "3px solid rgba(255,255,255,0.12)", boxShadow: "0 4px 20px rgba(0,0,0,0.25)" }}
               >
                 <img
-                  src={LEE_STADIUM_URL}
+                  src={leeHeadshot}
                   alt="Lee Ingram"
                   className="w-full h-full object-cover"
-                  style={{ objectPosition: "center 20%", transform: "scale(1.3)" }}
+                  style={{ objectPosition: "center 15%" }}
                 />
               </div>
               <p className="text-[12px] text-white/70 mt-3 leading-relaxed" style={{ fontFamily: "Inter, sans-serif" }}>

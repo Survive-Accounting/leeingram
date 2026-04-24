@@ -88,13 +88,19 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
 
       <div className="relative z-10 mx-auto max-w-[760px] px-4 sm:px-6 py-10 md:py-24 w-full">
         <div className="flex flex-col items-center text-center">
-          {/* Headshot */}
-          <div className="hero-anim-headshot mb-6">
+          {/* Headshot — opens About modal */}
+          <button
+            type="button"
+            onClick={() => setAboutOpen(true)}
+            aria-label="About Lee Ingram"
+            className="hero-anim-headshot mb-5 rounded-full transition-transform hover:-translate-y-0.5 hover:scale-[1.03]"
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+          >
             <div
               className="rounded-full overflow-hidden"
               style={{
-                width: 72,
-                height: 72,
+                width: 120,
+                height: 120,
                 border: "3px solid #FFFFFF",
                 boxShadow:
                   "0 8px 24px rgba(20,33,61,0.18), 0 0 0 1px rgba(20,33,61,0.06)",
@@ -108,25 +114,27 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 style={{ objectPosition: "center 15%" }}
               />
             </div>
-          </div>
+          </button>
 
-          {/* Identity */}
-          <div
-            className="hero-anim-eyebrow mb-8 text-center"
-            style={{ fontFamily: "Inter, sans-serif" }}
+          {/* Identity — entire line is the About link */}
+          <button
+            type="button"
+            onClick={() => setAboutOpen(true)}
+            className="hero-anim-eyebrow mb-8 text-[13px] font-semibold transition-colors"
+            style={{
+              color: NAVY,
+              background: "none",
+              border: "none",
+              padding: 0,
+              fontFamily: "Inter, sans-serif",
+              cursor: "pointer",
+            }}
           >
-            <div className="text-[13px] font-semibold" style={{ color: NAVY }}>
-              Built by{" "}
-              <button
-                type="button"
-                onClick={() => setAboutOpen(true)}
-                className="underline decoration-[1px] underline-offset-[3px] decoration-[rgba(20,33,61,0.25)] hover:decoration-[rgba(20,33,61,0.7)] transition-colors"
-                style={{ color: NAVY, background: "none", border: "none", padding: 0, font: "inherit", cursor: "pointer" }}
-              >
-                Lee Ingram
-              </button>
-            </div>
-          </div>
+            Built by{" "}
+            <span className="underline decoration-[1px] underline-offset-[3px] decoration-[rgba(20,33,61,0.25)] group-hover:decoration-[rgba(20,33,61,0.7)]">
+              Lee Ingram
+            </span>
+          </button>
 
           {/* Headline */}
           <h1
