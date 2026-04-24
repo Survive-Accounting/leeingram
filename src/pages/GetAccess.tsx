@@ -170,7 +170,7 @@ export default function GetAccess() {
   const handleCheckout = async () => {
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) {
-      requestAccess({ course: resolvedCourseSlug });
+      requestAccess({ course: effectiveCourseSlug });
       return;
     }
     try {
@@ -190,7 +190,7 @@ export default function GetAccess() {
           body: {
             email: cleanEmail,
             campus: progression.campusSlug,
-            selectedCourse: resolvedCourseSlug,
+            selectedCourse: effectiveCourseSlug,
             selectedPlan: "study_pass",
             amount: totalPrice,
             includedCourses,
@@ -244,7 +244,7 @@ export default function GetAccess() {
             border: isOleMiss ? "1px solid rgba(20,33,61,0.18)" : "1px dashed rgba(20,33,61,0.25)",
           }}
         >
-          For {campusName}{courseCode ? ` ${courseCode}` : ""} students
+          For {campusName}{effectiveCourseCode ? ` ${effectiveCourseCode}` : ""} students
         </div>
 
         <h1
