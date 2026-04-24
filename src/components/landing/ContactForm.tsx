@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import leeHeadshot from "@/assets/lee-headshot-original.png";
+import AnimatedArrow from "@/components/landing/AnimatedArrow";
 
 const SUBJECTS = [
   "I'm stuck on something",
@@ -118,7 +119,7 @@ export default function ContactForm() {
 
         <div
           className="rounded-xl p-6 sm:p-8"
-          style={{ background: "rgba(11,15,26,0.35)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}
+          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.18)", boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}
         >
           <div className="grid grid-cols-1 sm:grid-cols-[150px_1fr] gap-5 sm:gap-7">
             {/* Left: Photo + text */}
@@ -183,7 +184,7 @@ export default function ContactForm() {
               <button
                 type="submit"
                 disabled={sending}
-                className="w-full rounded-lg py-2.5 text-[13px] font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99]"
+                className="group w-full rounded-lg py-2.5 text-[13px] font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99] inline-flex items-center justify-center"
                 style={{
                   background: "#CE1126",
                   boxShadow: "0 2px 12px rgba(206,17,38,0.25)",
@@ -191,7 +192,7 @@ export default function ContactForm() {
                   fontFamily: "Inter, sans-serif",
                 }}
               >
-                {sending ? "Sending…" : "Send to Lee →"}
+                {sending ? "Sending…" : <>Send to Lee <AnimatedArrow /></>}
               </button>
             </form>
           </div>

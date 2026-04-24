@@ -195,7 +195,7 @@ export default function StagingCoursesSection({
       id="courses-section"
       className="relative px-4 sm:px-6 scroll-mt-0 overflow-hidden pt-12 md:pt-20 pb-[320px] md:pb-[120px]"
       style={{
-        background: `linear-gradient(180deg, #0F1A2E 0%, ${NAVY} 50%, #0B1426 100%)`,
+        background: "#f8fafc",
       }}
     >
       <style>{`
@@ -211,8 +211,8 @@ export default function StagingCoursesSection({
         <div className="md:hidden relative" style={{ zIndex: 100 }}>
           <div className="text-center mb-3">
             <span
-              className="inline-block text-[11px] font-semibold uppercase tracking-[0.18em]"
-              style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
+              className="inline-block text-[11px] font-semibold uppercase tracking-[0.2em] rounded-full px-3 py-1.5"
+              style={{ background: NAVY, color: "#FFFFFF", fontFamily: "Inter, sans-serif" }}
             >
               Try a demo
             </span>
@@ -249,13 +249,13 @@ export default function StagingCoursesSection({
             <>
               {/* DESKTOP — MacBook frame */}
               <div ref={laptopRef} className="hidden md:block mt-6 mx-auto" style={{ maxWidth: 694 }}>
-                {/* Eyebrow above the laptop */}
+                {/* Eyebrow above the laptop — pill badge */}
                 <div className="text-center mb-4">
                   <span
-                    className="inline-block text-[11px] font-semibold uppercase tracking-[0.2em]"
-                    style={{ color: "rgba(255,255,255,0.6)", fontFamily: "Inter, sans-serif" }}
+                    className="inline-block text-[11px] font-semibold uppercase tracking-[0.2em] rounded-full px-3 py-1.5"
+                    style={{ background: NAVY, color: "#FFFFFF", fontFamily: "Inter, sans-serif" }}
                   >
-                    Try a demo 👇
+                    Try a demo
                   </span>
                 </div>
                 <style>{`

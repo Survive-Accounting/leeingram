@@ -3,7 +3,7 @@ import { AboutLeeModal } from "@/components/AboutLeeModal";
 import StudentLoginModal from "@/components/landing/StudentLoginModal";
 
 const NAVY = "#14213D";
-const FOOTER_BG = "#0B1120";
+const FOOTER_BG = "#0f172a";
 
 interface LandingFooterProps {
   onScrollToCourses?: () => void;
@@ -76,7 +76,10 @@ export default function LandingFooter({ onScrollToCourses, onScrollToContact }: 
             <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.3)", fontFamily: "Inter, sans-serif" }}>
               © 2026 Earned Wisdom, LLC · Created by Lee Ingram
             </p>
-            <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.25)", fontFamily: "Inter, sans-serif" }}>
+            <p
+              className="text-[12px] sm:text-right"
+              style={{ color: "rgba(255,255,255,0.5)", opacity: 0.5, fontFamily: "Inter, sans-serif", fontWeight: 400 }}
+            >
               In memory of my twin Ben Ingram (1993–2017)
             </p>
           </div>
