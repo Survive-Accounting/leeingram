@@ -1,9 +1,5 @@
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import leeStadiumPhoto from "@/assets/hero-lee-stadium.jpg";
-
 const RED = "#CE1126";
 const NAVY = "#14213D";
-const GOLD = "#D4AF37";
 
 interface Course {
   id: string;
@@ -24,15 +20,20 @@ interface StagingHeroProps {
 }
 
 export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
-  const headlineShadow = "2px 2px 8px rgba(0,0,0,0.8)";
-  const subtextShadow = "1px 1px 4px rgba(0,0,0,0.6)";
+  const handleSeeHowItWorks = () => {
+    const el = document.getElementById("exam-coming-up");
+    if (el) {
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  };
 
   return (
     <section
       className="relative w-full overflow-hidden staging-hero"
       style={{
         background:
-          "linear-gradient(180deg, #FFFFFF 0%, #F1F5F9 60%, #E2E8F0 100%)",
+          "linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 60%, #F1F5F9 100%)",
       }}
     >
       <style>{`
@@ -42,320 +43,303 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
           align-items: center;
         }
         @media (max-width: 768px) {
-          .staging-hero { min-height: auto; padding-top: 12px; padding-bottom: 32px; display: block; }
-        }
-        .staging-hero-card {
-          background: #0B0F1A;
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 16px;
-          padding: 24px;
-          box-shadow: 0 30px 80px rgba(20,33,61,0.28), 0 10px 30px rgba(20,33,61,0.18);
-        }
-        @media (min-width: 768px) {
-          .staging-hero-card { padding: 36px 40px; }
-        }
-        .staging-hero-overlay-bottom {
-          position: absolute;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          height: 120px;
-          background: linear-gradient(to bottom, rgba(248,250,252,0) 0%, #F8FAFC 100%);
-          z-index: 2;
-          pointer-events: none;
-        }
-        .staging-hero-cap-inline {
-          display: inline-block;
-          vertical-align: top;
-          margin-left: 12px;
-          opacity: 0.7;
-          transform: rotate(15deg);
-          animation: heroCapFloat 3s ease-in-out infinite;
-          filter: drop-shadow(0 0 8px ${GOLD}cc);
-        }
-        @keyframes heroCapFloat {
-          0%, 100% { transform: rotate(15deg) translateY(0); }
-          50% { transform: rotate(15deg) translateY(-6px); }
-        }
-        @media (max-width: 768px) {
-          .staging-hero-cap-inline { display: none; }
+          .staging-hero { min-height: auto; padding-top: 24px; padding-bottom: 48px; display: block; }
         }
 
-        /* Photo annotation */
-        .photo-annotation {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          pointer-events: none;
-          z-index: 4;
-          animation: annotationFloat 2.5s ease-in-out infinite;
-        }
-        @keyframes annotationFloat {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-5px); }
-        }
-        .photo-annotation-svg {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          overflow: visible;
-          filter: drop-shadow(1px 1px 3px rgba(0,0,0,0.9));
-        }
-        .photo-annotation-path {
-          stroke-dasharray: 220;
-          stroke-dashoffset: 220;
-          animation: drawPath 0.8s ease-out 1s forwards;
-        }
-        @keyframes drawPath {
-          to { stroke-dashoffset: 0; }
-        }
-        .photo-annotation-arrowhead {
-          opacity: 0;
-          animation: arrowheadIn 0.2s ease-out 1.75s forwards;
-        }
-        @keyframes arrowheadIn {
-          to { opacity: 1; }
-        }
-        .photo-annotation-label {
-          position: absolute;
-          left: 63%;
-          top: 12%;
-          transform: rotate(-15deg);
-          transform-origin: left center;
-          font-family: Inter, sans-serif;
-          font-weight: 600;
-          font-size: 13px;
-          color: white;
-          background: rgba(0,0,0,0.25);
-          padding: 2px 6px;
-          border-radius: 4px;
-          text-shadow: 1px 1px 4px rgba(0,0,0,0.9);
-          white-space: nowrap;
-          opacity: 0;
-          animation: annotationLabelIn 0.3s ease-out 2s forwards;
-        }
-        @keyframes annotationLabelIn {
-          to { opacity: 1; }
-        }
-        @media (max-width: 768px) {
-          .photo-annotation { display: none; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .photo-annotation,
-          .photo-annotation-path,
-          .photo-annotation-arrowhead,
-          .photo-annotation-label {
-            opacity: 1 !important;
-            animation: none !important;
-            stroke-dashoffset: 0 !important;
-          }
-        }
-
-        /* Entrance animations — smoother, designed easing */
-        @keyframes heroPhotoIn {
-          0%   { opacity: 0; transform: scale(1.06); filter: blur(8px); }
-          60%  { opacity: 1; filter: blur(0); }
-          100% { opacity: 1; transform: scale(1); filter: blur(0); }
-        }
-        @keyframes heroPhotoDrift {
-          0%, 100% { transform: scale(1) translateY(0); }
-          50%      { transform: scale(1.015) translateY(-3px); }
-        }
+        /* Entrance animations */
         @keyframes heroFadeUp {
           from { opacity: 0; transform: translateY(20px); filter: blur(4px); }
           to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
-        }
-        @keyframes heroFadeIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
         }
         @keyframes heroBtnIn {
           from { opacity: 0; transform: translateY(10px) scale(0.96); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
         }
-        /* Cubic-bezier ease-out for refined feel */
-        .hero-anim-photo {
+        @keyframes cardFloat {
+          0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+          50%      { transform: translateY(-8px) rotate(var(--rot, 0deg)); }
+        }
+        @keyframes cardFadeIn {
+          from { opacity: 0; transform: translateY(20px) rotate(var(--rot, 0deg)) scale(0.95); }
+          to   { opacity: 1; transform: translateY(0)    rotate(var(--rot, 0deg)) scale(1); }
+        }
+
+        .hero-anim-eyebrow { opacity: 0; animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s forwards; }
+        .hero-anim-headline { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.25s forwards; }
+        .hero-anim-sub      { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.45s forwards; }
+        .hero-anim-bullets  { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.6s forwards; }
+        .hero-anim-btn      { opacity: 0; animation: heroBtnIn  0.55s cubic-bezier(0.34,1.56,0.64,1) 0.8s forwards; }
+
+        .product-card {
           opacity: 0;
           animation:
-            heroPhotoIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards,
-            heroPhotoDrift 6s ease-in-out 1.2s infinite;
-          will-change: transform, opacity, filter;
-          transform: translateZ(0);
-          backface-visibility: hidden;
+            cardFadeIn 0.7s cubic-bezier(0.16,1,0.3,1) forwards,
+            cardFloat 6s ease-in-out infinite;
+          will-change: transform;
         }
-        .hero-anim-line1 { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.35s forwards; }
-        .hero-anim-line2 { opacity: 0; animation: heroFadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards; }
-        .hero-anim-sub   { opacity: 0; animation: heroFadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.55s forwards; }
-        .hero-anim-btn   { opacity: 0; animation: heroBtnIn  0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.75s forwards; }
+        .product-card-1 { --rot: -3deg; animation-delay: 0.5s, 1.2s; }
+        .product-card-2 { --rot: 2deg;  animation-delay: 0.7s, 1.5s; }
+        .product-card-3 { --rot: -2deg; animation-delay: 0.9s, 1.8s; }
+
         @media (prefers-reduced-motion: reduce) {
-          .hero-anim-photo, .hero-anim-line1, .hero-anim-line2, .hero-anim-sub, .hero-anim-btn {
+          .hero-anim-eyebrow, .hero-anim-headline, .hero-anim-sub, .hero-anim-bullets, .hero-anim-btn,
+          .product-card, .product-card-1, .product-card-2, .product-card-3 {
             opacity: 1 !important;
             animation: none !important;
             transform: none !important;
             filter: none !important;
           }
-          .staging-hero-cap-inline { animation: none !important; }
         }
       `}</style>
 
-
-      <div className="relative z-[3] mx-auto max-w-[1140px] px-4 sm:px-6 py-4 md:py-20 w-full">
-        <div className="staging-hero-card flex flex-col">
-          <div className="flex flex-col md:flex-row items-center md:items-stretch gap-6 md:gap-0">
-          {/* LEFT — Photo (fixed ~300px) */}
-          <div className="flex flex-col items-center justify-center shrink-0 md:pr-6" style={{ width: "100%", maxWidth: 300 }}>
-            <div className="relative w-full max-w-[240px] md:max-w-[300px]">
-              <img
-                src={leeStadiumPhoto}
-                alt="Lee Ingram at Ole Miss stadium"
-                width={720}
-                height={653}
-                decoding="async"
-                fetchPriority="high"
-                className="w-full rounded-lg hero-anim-photo"
-                style={{
-                  borderRadius: 8,
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  display: "block",
-                }}
-              />
-              <div className="mt-3 text-center hero-anim-line1" style={{ fontFamily: "Inter, sans-serif" }}>
-                <p
-                  className="font-semibold"
-                  style={{
-                    color: "rgba(255,255,255,0.85)",
-                    fontSize: "13px",
-                    textShadow: subtextShadow,
-                  }}
-                >
-                  Lee Ingram · Ole Miss Alum
-                </p>
-                <p
-                  style={{
-                    color: "rgba(255,255,255,0.6)",
-                    fontSize: "11px",
-                    fontWeight: 400,
-                    marginTop: 2,
-                    textShadow: subtextShadow,
-                  }}
-                >
-                  Full-time Accounting Tutor
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* DIVIDER */}
-          <div
-            className="hidden md:block self-stretch"
-            style={{ width: "1px", background: "rgba(255,255,255,0.15)" }}
-            aria-hidden="true"
-          />
-
-          {/* RIGHT — Text column (max 480px) */}
-          <div className="flex-1 w-full flex flex-col justify-center text-center md:text-left md:pl-6" style={{ maxWidth: 480 }}>
-            <h1
-              className="text-white leading-[1.15] tracking-tight text-[26px] sm:text-[34px] md:text-[36px]"
-              style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: headlineShadow }}
+      <div className="relative z-[3] mx-auto max-w-[1180px] px-4 sm:px-6 py-8 md:py-20 w-full">
+        <div className="flex flex-col md:flex-row items-center gap-10 md:gap-12">
+          {/* LEFT — Copy */}
+          <div className="flex-1 w-full text-center md:text-left" style={{ maxWidth: 560 }}>
+            <div
+              className="hero-anim-eyebrow inline-block text-[11px] font-semibold uppercase tracking-[0.14em] px-3 py-1 rounded-full mb-5"
+              style={{
+                color: RED,
+                background: "rgba(206,17,38,0.08)",
+                border: `1px solid rgba(206,17,38,0.18)`,
+                fontFamily: "Inter, sans-serif",
+              }}
             >
-              <span className="block hero-anim-line2">
-                Accounting study tools that get you unstuck — fast.
-              </span>
+              Built by a real tutor
+            </div>
+
+            <h1
+              className="leading-[1.1] tracking-tight text-[34px] sm:text-[42px] md:text-[48px] hero-anim-headline"
+              style={{
+                fontFamily: "'DM Serif Display', serif",
+                fontWeight: 400,
+                color: NAVY,
+              }}
+            >
+              Study tools that get you unstuck — fast.
             </h1>
 
-            <TooltipProvider delayDuration={150}>
-              <div
-                className="mt-4 hero-anim-sub"
-                style={{ color: "rgba(255,255,255,0.8)", fontFamily: "Inter, sans-serif", textShadow: subtextShadow }}
+            <p
+              className="mt-5 hero-anim-sub"
+              style={{
+                color: "#475569",
+                fontFamily: "Inter, sans-serif",
+                fontSize: "16px",
+                lineHeight: 1.6,
+              }}
+            >
+              AI-powered accounting study tools built by a real tutor — for students who want to do more than just survive their exam.
+            </p>
+
+            <ul
+              className="mt-6 space-y-2.5 hero-anim-bullets text-left inline-block md:block"
+              style={{ fontFamily: "Inter, sans-serif" }}
+            >
+              {[
+                "Practice real exam-style problems",
+                "Understand it — not just memorize it",
+                "Built for the night before your test",
+              ].map((b) => (
+                <li key={b} className="flex items-start gap-2.5" style={{ color: "#1E293B", fontSize: "14.5px" }}>
+                  <span
+                    className="shrink-0 mt-[7px] inline-block rounded-full"
+                    style={{ width: 6, height: 6, background: RED }}
+                    aria-hidden="true"
+                  />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-8 hero-anim-btn flex flex-col sm:flex-row items-center md:items-start sm:items-center gap-3 sm:gap-5 justify-center md:justify-start">
+              <button
+                onClick={onGetStartedClick}
+                className="rounded-xl px-8 py-3.5 text-[16px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center gap-2"
+                style={{
+                  background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+                  fontFamily: "Inter, sans-serif",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.25), 0 8px 24px rgba(206,17,38,0.35)",
+                  letterSpacing: "0.01em",
+                }}
               >
-                <p style={{ fontSize: "15px", lineHeight: 1.6 }}>
-                  Tailored to students serious about passing. Built by accounting tutor, Lee Ingram. Trusted by 1,200+ since 2015.
+                Get Access <span aria-hidden="true">→</span>
+              </button>
+
+              <button
+                onClick={handleSeeHowItWorks}
+                className="text-[14px] font-semibold transition-opacity hover:opacity-70"
+                style={{
+                  color: NAVY,
+                  fontFamily: "Inter, sans-serif",
+                  background: "none",
+                  border: "none",
+                  padding: "10px 4px",
+                }}
+              >
+                See how it works ↓
+              </button>
+            </div>
+          </div>
+
+          {/* RIGHT — Product visual */}
+          <div className="flex-1 w-full flex items-center justify-center" style={{ minHeight: 400 }}>
+            <div
+              className="relative w-full"
+              style={{ maxWidth: 460, height: 440 }}
+            >
+              {/* Soft glow backdrop */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background:
+                    "radial-gradient(circle at 50% 50%, rgba(206,17,38,0.08) 0%, rgba(20,33,61,0) 65%)",
+                  filter: "blur(20px)",
+                }}
+              />
+
+              {/* Card 1 — Practice problem */}
+              <div
+                className="product-card product-card-1 absolute"
+                style={{
+                  top: 0,
+                  left: 0,
+                  width: 280,
+                  background: "#FFFFFF",
+                  borderRadius: 12,
+                  padding: 16,
+                  border: "1px solid #E2E8F0",
+                  boxShadow: "0 12px 32px rgba(15,23,42,0.12), 0 4px 8px rgba(15,23,42,0.06)",
+                  fontFamily: "Inter, sans-serif",
+                }}
+              >
+                <div className="flex items-center justify-between mb-2.5">
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded"
+                    style={{ color: RED, background: "rgba(206,17,38,0.08)" }}
+                  >
+                    Practice
+                  </span>
+                  <span className="text-[10px] font-medium" style={{ color: "#94A3B8" }}>
+                    BE13.4
+                  </span>
+                </div>
+                <p className="text-[12.5px] leading-snug" style={{ color: "#1E293B" }}>
+                  On Jan 1, Survive Co. issued <strong>$500,000</strong> of 6%, 10-year bonds at <strong>98</strong>. Record the entry.
+                </p>
+                <div
+                  className="mt-3 pt-3 border-t flex items-center justify-between"
+                  style={{ borderColor: "#F1F5F9" }}
+                >
+                  <span className="text-[10.5px] font-medium" style={{ color: "#64748B" }}>
+                    Try it →
+                  </span>
+                  <div className="flex gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#16A34A" }} />
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#E2E8F0" }} />
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#E2E8F0" }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2 — Explanation */}
+              <div
+                className="product-card product-card-2 absolute"
+                style={{
+                  top: 130,
+                  right: 0,
+                  width: 280,
+                  background: NAVY,
+                  borderRadius: 12,
+                  padding: 16,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 16px 40px rgba(20,33,61,0.35), 0 4px 8px rgba(20,33,61,0.2)",
+                  fontFamily: "Inter, sans-serif",
+                }}
+              >
+                <div className="flex items-center gap-2 mb-2.5">
+                  <span
+                    className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold"
+                    style={{ background: RED, color: "white" }}
+                  >
+                    ✓
+                  </span>
+                  <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.7)" }}>
+                    Explanation
+                  </span>
+                </div>
+                <table className="w-full text-[11.5px]" style={{ color: "white" }}>
+                  <tbody>
+                    <tr>
+                      <td className="py-0.5">Cash</td>
+                      <td className="py-0.5 text-right" style={{ color: "#86EFAC" }}>490,000</td>
+                      <td className="py-0.5 text-right opacity-50">—</td>
+                    </tr>
+                    <tr>
+                      <td className="py-0.5 pl-3">Discount on B/P</td>
+                      <td className="py-0.5 text-right" style={{ color: "#86EFAC" }}>10,000</td>
+                      <td className="py-0.5 text-right opacity-50">—</td>
+                    </tr>
+                    <tr>
+                      <td className="py-0.5 pl-6 italic" style={{ color: "rgba(255,255,255,0.7)" }}>Bonds Payable</td>
+                      <td className="py-0.5 text-right opacity-50">—</td>
+                      <td className="py-0.5 text-right" style={{ color: "#FCA5A5" }}>500,000</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p
+                  className="mt-2.5 pt-2.5 text-[10.5px] leading-relaxed border-t"
+                  style={{ color: "rgba(255,255,255,0.65)", borderColor: "rgba(255,255,255,0.1)" }}
+                >
+                  Issued at 98 → discount of 2% × $500K = $10K
                 </p>
               </div>
-              <Tooltip><TooltipTrigger asChild><span /></TooltipTrigger><TooltipContent /></Tooltip>
-            </TooltipProvider>
 
-          </div>
-          {/* End RIGHT column */}
-            </div>
-            {/* End inner photo+text row */}
-
-            {/* CTA group — centered across the entire card */}
-            <div className="mt-6 md:mt-8 flex justify-center hero-anim-btn">
-              <div className="relative inline-block">
+              {/* Card 3 — Flashcard */}
+              <div
+                className="product-card product-card-3 absolute"
+                style={{
+                  bottom: 0,
+                  left: 30,
+                  width: 240,
+                  background: "#FFFFFF",
+                  borderRadius: 12,
+                  padding: 18,
+                  border: "1px solid #E2E8F0",
+                  boxShadow: "0 12px 32px rgba(15,23,42,0.12), 0 4px 8px rgba(15,23,42,0.06)",
+                  fontFamily: "Inter, sans-serif",
+                  textAlign: "center",
+                }}
+              >
                 <div
-                  aria-hidden="true"
-                  className="absolute -inset-6 rounded-full pointer-events-none"
-                  style={{
-                    background:
-                      "radial-gradient(closest-side, rgba(206,17,38,0.5) 0%, rgba(120,40,180,0.25) 50%, rgba(20,33,61,0) 80%)",
-                    filter: "blur(24px)",
-                    zIndex: 0,
-                    animation: "heroBtnGlow 4s ease-in-out infinite",
-                  }}
-                />
-                <style>{`
-                  @keyframes heroBtnGlow {
-                    0%, 100% { opacity: 0.85; transform: scale(1); }
-                    50%      { opacity: 1;    transform: scale(1.06); }
-                  }
-                `}</style>
-                <button
-                  onClick={onGetStartedClick}
-                  className="relative rounded-xl px-12 pt-5 pb-3.5 text-[17px] md:text-[18px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] inline-flex items-center justify-center gap-2"
-                  style={{
-                    background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-                    fontFamily: "Inter, sans-serif",
-                    boxShadow:
-                      "inset 0 1px 0 rgba(255,255,255,0.25), 0 0 0 1px rgba(255,255,255,0.1), 0 10px 28px rgba(206,17,38,0.5), 0 20px 50px rgba(120,40,180,0.3)",
-                    letterSpacing: "0.01em",
-                    zIndex: 1,
-                  }}
+                  className="text-[9.5px] font-bold uppercase tracking-[0.16em] mb-2"
+                  style={{ color: "#94A3B8" }}
                 >
-                  Get Access <span aria-hidden="true">→</span>
-                </button>
-
-                {/* Refund + secondary link — centered under button width */}
-                <div className="mt-2 flex flex-col items-center">
-                  <div
-                    style={{
-                      color: "rgba(255,255,255,0.65)",
-                      fontFamily: "Inter, sans-serif",
-                      fontSize: "11px",
-                      textShadow: subtextShadow,
-                    }}
-                  >
-                    7-day refund guarantee
-                  </div>
-                  <button
-                    onClick={() => {
-                      const el = document.getElementById("exam-coming-up");
-                      if (el) {
-                        const top = el.getBoundingClientRect().top + window.scrollY;
-                        window.scrollTo({ top, behavior: "smooth" });
-                      }
-                    }}
-                    className="mt-1 text-[12px] font-medium underline underline-offset-[4px] decoration-1 transition-opacity hover:opacity-80 opacity-45"
-                    style={{
-                      color: "rgba(255,255,255,0.7)",
-                      fontFamily: "Inter, sans-serif",
-                      background: "none",
-                      border: "none",
-                      padding: 0,
-                    }}
-                  >
-                    See what you'll get ↓
-                  </button>
+                  Flashcard
+                </div>
+                <div
+                  className="text-[15px] leading-tight"
+                  style={{ fontFamily: "'DM Serif Display', serif", color: NAVY }}
+                >
+                  Carrying Value of Bond
+                </div>
+                <div
+                  className="mt-2 text-[12px] font-mono"
+                  style={{ color: RED }}
+                >
+                  Face − Discount + Premium
+                </div>
+                <div className="mt-3 flex justify-center gap-1.5">
+                  <span className="w-6 h-1 rounded-full" style={{ background: RED }} />
+                  <span className="w-2 h-1 rounded-full" style={{ background: "#E2E8F0" }} />
+                  <span className="w-2 h-1 rounded-full" style={{ background: "#E2E8F0" }} />
                 </div>
               </div>
             </div>
+          </div>
         </div>
       </div>
-
-      <div className="staging-hero-overlay-bottom" />
     </section>
   );
 }
