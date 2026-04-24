@@ -244,7 +244,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               textShadow: "0 2px 20px rgba(0,0,0,0.3)",
             }}
           >
-            Study tools for Intro &amp; Intermediate Accounting covering every chapter.
+            AI-powered exam prep for Intro &amp; Intermediate Accounting — built from 10+ years of tutoring and designed for what actually shows up on exams.
           </p>
 
           {/* CTA */}
