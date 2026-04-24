@@ -5,6 +5,7 @@ import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmailGate } from "@/contexts/EmailGateContext";
+import AliasTestingBanner from "@/components/AliasTestingBanner";
 
 // Below-the-fold — lazy load to shrink initial bundle
 const StagingTestimonialsSection = lazy(() => import("@/components/landing/StagingTestimonialsSection"));
@@ -301,6 +302,13 @@ export default function GetAccess() {
         onCtaClick={() => navigate("/staging")}
         onPricingClick={() => {}}
       />
+
+      {/* Alias-mode debug banner (lee+xxx@survivestudios.com only) */}
+      {email && (
+        <div className="px-4 sm:px-6 pt-3 flex justify-center">
+          <AliasTestingBanner email={email} />
+        </div>
+      )}
 
       {/* Founding-student celebration banner (top of checkout) */}
       {studentNumber != null && campusName && campusParam !== "ole-miss" && (

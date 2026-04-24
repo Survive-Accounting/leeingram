@@ -49,9 +49,24 @@ Deno.serve(async (req) => {
 
     const cleanEmail = email.trim().toLowerCase();
     const isTestMode = cleanEmail.startsWith("satest@");
-    // Test bypass: lee+anything@survivestudios.com is treated as if it were @olemiss.edu
-    const isLeeTestEmail = /^lee\+[^@]+@survivestudios\.com$/.test(cleanEmail);
-    const domain = isLeeTestEmail ? "olemiss.edu" : cleanEmail.split("@")[1];
+
+    // Alias-mode testing: lee+<alias>@survivestudios.com simulates <alias>.edu
+    // (with explicit overrides for olemiss/uark).
+    const ALIAS_OVERRIDES: Record<string, string> = {
+      olemiss: "olemiss.edu",
+      uark: "uark.edu",
+    };
+    const [localPart, realDomain] = cleanEmail.split("@");
+    let domain = realDomain;
+    let isAliasMode = false;
+    if (realDomain === "survivestudios.com" && localPart.includes("+")) {
+      const alias = localPart.split("+")[1]?.trim();
+      if (alias) {
+        domain = ALIAS_OVERRIDES[alias] ?? `${alias}.edu`;
+        isAliasMode = true;
+      }
+    }
+    const isLeeTestEmail = isAliasMode; // back-compat name used below
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY_LIVE") ?? Deno.env.get("STRIPE_SECRET_KEY_TEST");
     const stripeKeyTest = Deno.env.get("STRIPE_SECRET_KEY_TEST");
