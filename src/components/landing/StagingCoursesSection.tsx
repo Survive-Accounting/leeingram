@@ -248,7 +248,7 @@ export default function StagingCoursesSection({
           return (
             <>
               {/* DESKTOP — MacBook frame */}
-              <div ref={laptopRef} className="hidden md:block mt-6 mx-auto" style={{ maxWidth: 694 }}>
+              <div ref={laptopRef} className="hidden md:block mt-6 mx-auto" style={{ maxWidth: 860 }}>
                 {/* Eyebrow above the laptop — pill badge */}
                 <div className="text-center mb-4">
                   <span
@@ -271,9 +271,9 @@ export default function StagingCoursesSection({
                     0% { opacity: 0; }
                     100% { opacity: 1; }
                   }
-                  @keyframes demoCursorBlink {
-                    0%, 45% { opacity: 1; }
-                    55%, 100% { opacity: 0.05; }
+                  @keyframes cursorBlink {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0; }
                   }
                   @keyframes demoIdleFadeUp {
                     0% { opacity: 0; transform: translateY(8px); }
@@ -323,9 +323,11 @@ export default function StagingCoursesSection({
                     </div>
                     {/* Screen — 16:10 (always "powered on" with subtle glow) */}
                     <div
-                      className="relative w-full overflow-hidden"
+                      className="relative w-full"
                       style={{
                         aspectRatio: "16 / 10",
+                        minHeight: 440,
+                        overflow: "visible",
                         background:
                           "radial-gradient(ellipse at 50% 0%, #1a2845 0%, #0f1a30 60%, #0a1224 100%)",
                         borderRadius: 3,
@@ -402,7 +404,19 @@ export default function StagingCoursesSection({
                             }}
                           >
                             Which course are you studying?
-                            <span className="demo-cursor" aria-hidden="true">_</span>
+                            <span
+                              aria-hidden="true"
+                              style={{
+                                display: "inline-block",
+                                width: "3px",
+                                height: "1em",
+                                background: RED,
+                                marginLeft: "6px",
+                                verticalAlign: "middle",
+                                animation: "cursorBlink 1s step-end infinite",
+                                boxShadow: "0 0 10px rgba(206,17,38,0.5)",
+                              }}
+                            />
                           </h2>
                           <div className="relative w-full max-w-[460px] mt-4 demo-dropdown-anim">
                             <DropdownButton
@@ -470,52 +484,61 @@ interface DropdownButtonProps {
 
 function DropdownButton({ selected, open, setOpen, ordered, setSelectedSlug }: DropdownButtonProps) {
   return (
-    <div className="relative" style={{ zIndex: 100 }}>
+    <div className="relative mx-auto" style={{ zIndex: 100, maxWidth: 440 }}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full rounded-2xl px-5 py-4 flex items-center justify-between text-left transition-all hover:shadow-md"
+        className="w-full flex items-center justify-between text-left transition-all hover:shadow-md"
         style={{
           background: "#fff",
-          borderLeft: `4px solid ${NAVY}`,
-          boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04)",
+          borderRadius: 12,
+          padding: "16px 20px",
+          border: "none",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.16)",
           fontFamily: "Inter, sans-serif",
+          cursor: "pointer",
         }}
       >
         <div className="flex flex-col">
           {selected ? (
             <>
-              <span className="text-[18px] sm:text-[20px] font-bold leading-tight" style={{ color: NAVY }}>
+              <span className="text-[15px] font-semibold leading-tight" style={{ color: NAVY }}>
                 {selected.name}
               </span>
               {SUBTEXT_BY_SLUG[selected.slug] && (
-                <span className="text-[13px] mt-0.5" style={{ color: "#6B7280" }}>
+                <span className="text-[12px] mt-0.5" style={{ color: "#6B7280" }}>
                   {SUBTEXT_BY_SLUG[selected.slug]}
                 </span>
               )}
             </>
           ) : (
-            <span className="text-[17px] sm:text-[19px] font-semibold leading-tight" style={{ color: "#9CA3AF" }}>
+            <span className="text-[15px] font-medium leading-tight" style={{ color: "#9CA3AF" }}>
               Select your course →
             </span>
           )}
         </div>
         <ChevronDown
-          className="w-5 h-5 flex-shrink-0 transition-transform"
-          style={{ color: NAVY, transform: open ? "rotate(180deg)" : "none" }}
+          className="w-5 h-5 flex-shrink-0"
+          style={{
+            color: NAVY,
+            transition: "transform 200ms ease",
+            transform: open ? "rotate(180deg)" : "none",
+          }}
         />
       </button>
 
       {open && (
         <div
-          className="absolute left-0 right-0 mt-2 rounded-2xl overflow-hidden"
+          className="absolute left-0 right-0 mt-2 overflow-hidden"
           style={{
             background: "#fff",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.25), 0 0 0 1px rgba(0,0,0,0.06)",
+            borderRadius: 12,
+            border: "1px solid #E5E7EB",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.16)",
             zIndex: 110,
           }}
         >
           {ordered.map((c) => {
-            const color = COLOR_BY_SLUG[c.slug];
+            const isActive = selected?.slug === c.slug;
             return (
               <button
                 key={c.slug}
@@ -524,22 +547,29 @@ function DropdownButton({ selected, open, setOpen, ordered, setSelectedSlug }: D
                   setOpen(false);
                 }}
                 onMouseEnter={(e) => {
-                  if (color) e.currentTarget.style.background = color.tint;
+                  if (!isActive) e.currentTarget.style.background = "#F3F4F6";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "transparent";
+                  if (!isActive) e.currentTarget.style.background = "transparent";
                 }}
-                className="w-full px-5 py-3 text-left transition-colors"
+                className="w-full text-left transition-colors block"
                 style={{
+                  padding: "14px 16px",
+                  background: isActive ? NAVY : "transparent",
                   fontFamily: "Inter, sans-serif",
-                  borderLeft: `4px solid ${color?.border ?? "transparent"}`,
                 }}
               >
-                <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
+                <div
+                  className="text-[14px] font-semibold"
+                  style={{ color: isActive ? "#FFFFFF" : NAVY }}
+                >
                   {c.name}
                 </div>
                 {SUBTEXT_BY_SLUG[c.slug] && (
-                  <div className="text-[12px]" style={{ color: "#6B7280" }}>
+                  <div
+                    className="text-[12px] font-normal mt-0.5"
+                    style={{ color: isActive ? "rgba(255,255,255,0.75)" : "#6B7280" }}
+                  >
                     {SUBTEXT_BY_SLUG[c.slug]}
                   </div>
                 )}
