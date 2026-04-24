@@ -64,6 +64,8 @@ Deno.serve(async (req) => {
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      // Apple Pay & Google Pay are delivered automatically via "card" on eligible devices
+      payment_method_types: ["link", "card", "afterpay_clearpay"],
       customer_email: email,
       line_items: [
         {
