@@ -18,19 +18,16 @@ const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
 const PRICE = 99;
+const EXTEND_PRICE = 50;
 
 /**
  * Semester access windows: renew Jan 1 (→ Jun 30) and Jul 1 (→ Dec 31).
- * Base pass covers the current semester; auto-renew extends through the
- * next one.
+ * Returns short format like "Jun 30".
  */
 function getAccessWindow(extend: boolean): string {
   const now = new Date();
-  const year = now.getFullYear();
   const month = now.getMonth(); // 0-11
 
-  // Current semester end
-  let endYear = year;
   let endMonth = month < 6 ? 5 : 11; // June (5) or December (11)
   let endDay = month < 6 ? 30 : 31;
 
@@ -41,12 +38,11 @@ function getAccessWindow(extend: boolean): string {
     } else {
       endMonth = 5;
       endDay = 30;
-      endYear += 1;
     }
   }
 
-  const monthName = new Date(endYear, endMonth, 1).toLocaleString("en-US", { month: "long" });
-  return `${monthName} ${endDay}, ${endYear}`;
+  const monthName = new Date(2000, endMonth, 1).toLocaleString("en-US", { month: "short" });
+  return `${monthName} ${endDay}`;
 }
 
 const INCLUDES = [
