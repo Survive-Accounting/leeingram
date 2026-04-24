@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, ShieldCheck, X, Sparkles, ShoppingCart } from "lucide-react";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
-import TestimonialsSection from "@/components/landing/TestimonialsSection";
+import StagingTestimonialsSection from "@/components/landing/StagingTestimonialsSection";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmailGate } from "@/contexts/EmailGateContext";
 
