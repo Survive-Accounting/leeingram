@@ -1,18 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Check, ShieldCheck, X, Sparkles, ShoppingCart, Info } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Check, ShieldCheck, X, Sparkles, ShoppingCart } from "lucide-react";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmailGate } from "@/contexts/EmailGateContext";
-import {
-  getCampusProgression,
-  resolveCourseSlug,
-  type CourseSlug,
-} from "@/lib/campusProgressions";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -22,12 +15,13 @@ const BG_GRADIENT =
 const PRICE = 99;
 const EXTEND_PRICE = 50;
 const LIFETIME_UPGRADE_PRICE = 100;
+const MAX_EXTRA_SEMESTERS = 3; // 4 total including base
 
 /**
- * Returns a season+year label for the Nth semester from now.
- * stepsAhead = 0 → current semester (e.g., "Spring 2026")
+ * Returns a short season+year label for the Nth semester from now.
+ * stepsAhead = 0 → current semester (e.g., "Spring '26")
  */
-function getSeasonLabel(stepsAhead: number): string {
+function getShortSeasonLabel(stepsAhead: number): string {
   const now = new Date();
   let year = now.getFullYear();
   let isFirstHalf = now.getMonth() < 6; // Spring if true, else Fall
@@ -40,101 +34,38 @@ function getSeasonLabel(stepsAhead: number): string {
       year += 1;
     }
   }
-  return `${isFirstHalf ? "Spring" : "Fall"} ${year}`;
+  const yy = String(year).slice(-2);
+  return `${isFirstHalf ? "Spring" : "Fall"} \u2019${yy}`;
 }
-
-/**
- * Returns the access end date for the Nth semester from now.
- * Semesters run Jan 1 → Jun 30 and Jul 1 → Dec 31.
- * stepsAhead = 0 → current semester end, 1 → next semester end, etc.
- * Format: "Jun 30, 2026"
- */
-function getAccessEndDate(stepsAhead: number): string {
-  const now = new Date();
-  let year = now.getFullYear();
-  let isFirstHalf = now.getMonth() < 6; // true → ends Jun 30 of `year`
-
-  for (let i = 0; i < stepsAhead; i++) {
-    if (isFirstHalf) {
-      isFirstHalf = false; // now ends Dec 31 same year
-    } else {
-      isFirstHalf = true;
-      year += 1; // wraps to Jun 30 next year
-    }
-  }
-
-  const endMonth = isFirstHalf ? 5 : 11;
-  const endDay = isFirstHalf ? 30 : 31;
-  const monthName = new Date(2000, endMonth, 1).toLocaleString("en-US", { month: "short" });
-  return `${monthName} ${endDay}, ${year}`;
-}
-
 
 export default function GetAccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-
-  const campusParam = (searchParams.get("campus") || "").toLowerCase();
-  const courseParam = (searchParams.get("course") || "").toLowerCase();
   const emailParam = searchParams.get("email") || "";
 
-  const effectiveCampus = campusParam || "ole-miss";
-  const progression = useMemo(() => getCampusProgression(effectiveCampus), [effectiveCampus]);
-  const isOleMiss = progression.campusSlug === "ole-miss";
-
-  const resolvedCourseSlug = useMemo<CourseSlug>(
-    () => resolveCourseSlug(progression, courseParam),
-    [progression, courseParam],
-  );
-
-  const campusName = progression.campusName;
-  const resolvedCourse = progression.courses.find((c) => c.slug === resolvedCourseSlug)!;
-  const courseCode = resolvedCourse.code;
-  
-
-  // Index of the resolved course in the campus progression.
-  const urlStartIdx = progression.courses.findIndex((c) => c.slug === resolvedCourseSlug);
-  const [startIdxOverride, setStartIdxOverride] = useState<number | null>(null);
-  const startIdx = startIdxOverride ?? urlStartIdx;
-
-  // How many ADDITIONAL courses are stacked on top of the base course.
-  // 0 = just the resolved course; 1 = + next course; up to maxAdditional.
-  const maxAdditional = Math.max(0, progression.courses.length - 1 - startIdx);
   const [extraCount, setExtraCount] = useState(0);
   const [lifetimeUpgrade, setLifetimeUpgrade] = useState(false);
-  const [resetOpen, setResetOpen] = useState(false);
-  const effectiveCourseSlug = progression.courses[startIdx]?.slug ?? resolvedCourseSlug;
-  const effectiveCourseCode = progression.courses[startIdx]?.code ?? courseCode;
-  
 
-  // The full list of selected courses (base + extras).
-  const selectedCourses = useMemo(() => {
-    const list = [];
-    for (let i = 0; i <= extraCount; i++) {
-      const course = progression.courses[startIdx + i];
-      if (course) list.push({ course, idx: i });
-    }
-    return list;
-  }, [progression.courses, startIdx, extraCount]);
-
-  // All 4 semesters selected (base + 3 extras when starting at idx 0)?
-  const allSemestersAdded = extraCount >= maxAdditional && maxAdditional >= 3;
+  const totalSemesters = 1 + extraCount;
+  const allSemestersAdded = extraCount >= MAX_EXTRA_SEMESTERS;
   const showLifetime = allSemestersAdded;
 
   const baseTotal = PRICE + extraCount * EXTEND_PRICE;
   const totalPrice = baseTotal + (showLifetime && lifetimeUpgrade ? LIFETIME_UPGRADE_PRICE : 0);
   const addedAmount = totalPrice - PRICE;
-  const canAddAnother = extraCount < maxAdditional;
 
   // Reset lifetime if user removes a semester and it's no longer offered.
   useEffect(() => {
     if (!showLifetime && lifetimeUpgrade) setLifetimeUpgrade(false);
   }, [showLifetime, lifetimeUpgrade]);
 
-  // Access period label
-  const accessPeriodLabel = extraCount === 0
-    ? getSeasonLabel(0)
-    : `${getSeasonLabel(0)} → ${getSeasonLabel(extraCount)}`;
+  const selectedSemesters = useMemo(
+    () => Array.from({ length: totalSemesters }, (_, i) => ({
+      idx: i,
+      label: getShortSeasonLabel(i),
+    })),
+    [totalSemesters],
+  );
 
   // Resolve email: URL param → localStorage → sessionStorage.
   const initialEmail = useMemo(() => {
@@ -171,7 +102,7 @@ export default function GetAccess() {
   const handleCheckout = async () => {
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) {
-      requestAccess({ course: effectiveCourseSlug });
+      requestAccess({});
       return;
     }
     try {
@@ -182,19 +113,15 @@ export default function GetAccess() {
     setCheckoutError(null);
     setCheckoutLoading(true);
     try {
-      const includedCourses = selectedCourses.map(
-        ({ course }) => course.code ?? course.name,
-      );
       const { data, error } = await supabase.functions.invoke(
         "create-get-access-checkout",
         {
           body: {
             email: cleanEmail,
-            campus: progression.campusSlug,
-            selectedCourse: effectiveCourseSlug,
+            campus: "ole-miss",
             selectedPlan: "study_pass",
             amount: totalPrice,
-            includedCourses,
+            includedSemesters: selectedSemesters.map((s) => s.label),
             autoRenew: extraCount > 0,
             extraSemesters: extraCount,
             lifetimeUpgrade: showLifetime && lifetimeUpgrade,
@@ -215,6 +142,11 @@ export default function GetAccess() {
     }
   };
 
+  // Next semester to offer (the one immediately after the last selected).
+  const nextSemesterLabel = !allSemestersAdded
+    ? getShortSeasonLabel(totalSemesters)
+    : null;
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: BG_GRADIENT }}>
       <StagingNavbar
@@ -224,30 +156,6 @@ export default function GetAccess() {
 
       {/* Hero */}
       <section className="px-4 sm:px-6 pt-12 md:pt-20 pb-8 text-center relative">
-        {isOleMiss && (
-          <div
-            aria-hidden
-            className="absolute top-0 left-1/2 -translate-x-1/2 h-1 rounded-b-full"
-            style={{
-              width: 120,
-              background: `linear-gradient(90deg, #A6CCE2 0%, ${NAVY} 50%, ${RED} 100%)`,
-              opacity: 0.85,
-            }}
-          />
-        )}
-
-        <div
-          className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full text-[12px] font-semibold uppercase tracking-wider"
-          style={{
-            background: isOleMiss ? "rgba(166,204,226,0.22)" : "rgba(20,33,61,0.06)",
-            color: NAVY,
-            fontFamily: "Inter, sans-serif",
-            border: isOleMiss ? "1px solid rgba(20,33,61,0.18)" : "1px dashed rgba(20,33,61,0.25)",
-          }}
-        >
-          For {campusName}{effectiveCourseCode ? ` ${effectiveCourseCode}` : ""} students
-        </div>
-
         <h1
           className="text-[34px] sm:text-[44px] md:text-[54px] leading-tight"
           style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
@@ -295,38 +203,48 @@ export default function GetAccess() {
               🔒 One account per student
             </p>
 
-            {/* 1. Courses Included — top of card */}
+            {/* 1. Survive Study Pass — semester selection */}
             <div
-              className="mb-4 rounded-lg p-4"
+              className="mb-5 rounded-lg p-4"
               style={{
                 border: "1px solid #E2E8F0",
                 background: "#fff",
                 fontFamily: "Inter, sans-serif",
               }}
             >
-              <div className="text-[13px] font-semibold mb-3" style={{ color: NAVY }}>
-                Courses Included
+              <div className="text-[15px] font-semibold" style={{ color: NAVY }}>
+                Survive Study Pass
+              </div>
+              <div
+                className="mt-3 text-[12px] font-semibold uppercase tracking-wider"
+                style={{ color: "#64748B" }}
+              >
+                Access Period
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5">
-                {selectedCourses.map(({ course, idx }) => {
+              {/* Pills row — min-height keeps layout stable as pills wrap */}
+              <div
+                className="mt-2 flex flex-wrap items-center gap-1.5"
+                style={{ minHeight: 36 }}
+              >
+                {selectedSemesters.map(({ idx, label }) => {
                   const isBase = idx === 0;
                   const isLastAdded = idx === extraCount && extraCount > 0;
                   return (
                     <span
-                      key={course.slug}
-                      className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold animate-fade-in"
+                      key={label}
+                      className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12px] font-semibold animate-fade-in"
                       style={{
                         background: isBase ? "rgba(20,33,61,0.06)" : "#fff",
                         border: "1px solid #CBD5E1",
                         color: NAVY,
                       }}
                     >
-                      {course.code ?? course.name}
+                      {label}
                       {isLastAdded && (
                         <button
                           type="button"
-                          aria-label={`Remove ${course.code ?? course.name}`}
+                          aria-label={`Remove ${label}`}
                           onClick={() => setExtraCount((c) => Math.max(0, c - 1))}
                           className="rounded-full hover:bg-slate-100 transition-colors p-0.5"
                           style={{ color: "#94A3B8" }}
@@ -339,47 +257,27 @@ export default function GetAccess() {
                 })}
               </div>
 
-              {canAddAnother && (
-                <button
-                  type="button"
-                  onClick={() => setExtraCount((c) => Math.min(c + 1, maxAdditional))}
-                  className="mt-3 w-full rounded-lg py-2 text-[13px] font-semibold transition-colors hover:bg-slate-50"
-                  style={{
-                    border: "1px dashed #CBD5E1",
-                    color: NAVY,
-                    background: "#fff",
-                  }}
-                >
-                  + Add next course <span style={{ color: "#94A3B8", fontWeight: 500 }}>(+${EXTEND_PRICE})</span>
-                </button>
-              )}
-
-              <div className="mt-3 text-center">
-                <button
-                  type="button"
-                  onClick={() => setResetOpen(true)}
-                  className="text-[12px] hover:underline"
-                  style={{ color: "#94A3B8" }}
-                >
-                  Reset sequence
-                </button>
+              {/* Add-semester button — fixed slot to prevent layout jumps */}
+              <div className="mt-3" style={{ minHeight: 40 }}>
+                {nextSemesterLabel && (
+                  <button
+                    type="button"
+                    onClick={() => setExtraCount((c) => Math.min(c + 1, MAX_EXTRA_SEMESTERS))}
+                    className="w-full rounded-lg py-2 text-[13px] font-semibold transition-colors hover:bg-slate-50 animate-fade-in"
+                    style={{
+                      border: "1px dashed #CBD5E1",
+                      color: NAVY,
+                      background: "#fff",
+                    }}
+                  >
+                    + Add {nextSemesterLabel}{" "}
+                    <span style={{ color: "#94A3B8", fontWeight: 500 }}>(+${EXTEND_PRICE})</span>
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* 2. Semester Study Pass — lighter weight, info only */}
-            <div
-              className="mb-5 flex items-baseline justify-between gap-3"
-              style={{ fontFamily: "Inter, sans-serif" }}
-            >
-              <div className="text-[13px] font-medium" style={{ color: "#64748B" }}>
-                Semester Study Pass
-              </div>
-              <div className="text-[12px]" style={{ color: "#94A3B8" }}>
-                {accessPeriodLabel}
-              </div>
-            </div>
-
-            {/* 3. Pricing — directly above CTA */}
+            {/* 2. Pricing — directly above CTA */}
             <div
               className="mb-3 flex flex-col items-center text-center"
               style={{ fontFamily: "Inter, sans-serif" }}
@@ -396,18 +294,21 @@ export default function GetAccess() {
               <div className="mt-1.5 text-[12px]" style={{ color: "#94A3B8" }}>
                 One-time payment
               </div>
-              {addedAmount > 0 && (
-                <div
-                  key={`added-${addedAmount}`}
-                  className="mt-1 text-[12px] font-semibold animate-fade-in"
-                  style={{ color: "#16A34A" }}
-                >
-                  +${addedAmount} added
-                </div>
-              )}
+              {/* Reserve fixed space so CTA never shifts */}
+              <div style={{ minHeight: 18 }} className="mt-1">
+                {addedAmount > 0 && (
+                  <div
+                    key={`added-${addedAmount}`}
+                    className="text-[12px] font-semibold animate-fade-in"
+                    style={{ color: "#16A34A" }}
+                  >
+                    +${addedAmount} added
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* 4. CTA — directly below pricing */}
+            {/* 3. CTA */}
             <button
               onClick={handleCheckout}
               disabled={checkoutLoading}
@@ -429,7 +330,7 @@ export default function GetAccess() {
               )}
             </button>
 
-            {/* 5. Lifetime upgrade — below button */}
+            {/* 4. Lifetime upgrade — only when all 4 semesters selected */}
             {showLifetime && (
               <label
                 className="flex items-start gap-3 mt-3 p-3 rounded-lg cursor-pointer transition-all duration-200 animate-fade-in"
@@ -452,7 +353,7 @@ export default function GetAccess() {
                     <span style={{ color: "#64748B", fontWeight: 500 }}> (+${LIFETIME_UPGRADE_PRICE})</span>
                   </div>
                   <div className="text-[12px] mt-0.5" style={{ color: "#94A3B8" }}>
-                    Includes all future updates
+                    Includes all future semesters
                   </div>
                 </div>
               </label>
@@ -467,36 +368,7 @@ export default function GetAccess() {
               </div>
             )}
 
-            {/* Access period — moved BELOW the CTA */}
-            <div
-              key={`access-below-${extraCount}`}
-              className="mt-4 flex items-center justify-center gap-1.5 text-[13px] animate-fade-in"
-              style={{ color: "#334155", fontFamily: "Inter, sans-serif" }}
-            >
-              <span style={{ color: "#94A3B8" }}>Access:</span>
-              <span className="font-semibold">{accessPeriodLabel}</span>
-              <TooltipProvider delayDuration={100}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button type="button" className="inline-flex" aria-label="Access period info">
-                      <Info className="w-3 h-3" style={{ color: "#94A3B8" }} />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-[220px] text-[12px]">
-                    Always includes final exam week.
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            {showLifetime && lifetimeUpgrade && (
-              <div
-                className="mt-1 text-center text-[12px] animate-fade-in"
-                style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
-              >
-                Includes all future updates
-              </div>
-            )}
-
+            {/* 5. Trust block — only two lines */}
             <div
               className="mt-4 flex flex-col items-center gap-1.5 text-[12px]"
               style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
@@ -510,7 +382,6 @@ export default function GetAccess() {
                 Instant access after purchase
               </div>
             </div>
-
           </div>
         </div>
       </section>
@@ -522,47 +393,6 @@ export default function GetAccess() {
         onScrollToCourses={() => navigate("/staging")}
         onScrollToContact={() => navigate("/staging")}
       />
-
-      {/* Reset sequence — choose starting course */}
-      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
-        <DialogContent className="max-w-[380px]">
-          <DialogHeader>
-            <DialogTitle style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}>
-              Choose your starting course
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-2 mt-2" style={{ fontFamily: "Inter, sans-serif" }}>
-            {progression.courses.map((course, idx) => {
-              const isCurrent = idx === startIdx && extraCount === 0;
-              return (
-                <button
-                  key={course.slug}
-                  type="button"
-                  onClick={() => {
-                    setStartIdxOverride(idx);
-                    setExtraCount(0);
-                    setLifetimeUpgrade(false);
-                    setResetOpen(false);
-                  }}
-                  className="text-left rounded-lg px-4 py-3 text-[14px] font-semibold transition-all hover:bg-slate-50"
-                  style={{
-                    border: isCurrent ? `1.5px solid ${NAVY}` : "1px solid #E2E8F0",
-                    background: isCurrent ? "rgba(20,33,61,0.04)" : "#fff",
-                    color: NAVY,
-                  }}
-                >
-                  {course.code ?? course.name}
-                  {course.code && (
-                    <span className="ml-2 text-[12px] font-normal" style={{ color: "#64748B" }}>
-                      {course.name}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
