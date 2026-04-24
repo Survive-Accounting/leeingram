@@ -165,6 +165,16 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
             <p className="font-medium text-white">— Lee</p>
           </div>
 
+          {/* Email contact */}
+          <a
+            href="mailto:lee@surviveaccounting.com"
+            className="mt-5 inline-flex items-center gap-2 text-[13px] sm:text-[14px] hover:text-white transition-colors"
+            style={{ color: "rgba(255,255,255,0.75)" }}
+          >
+            <Mail className="w-4 h-4" />
+            lee@surviveaccounting.com
+          </a>
+
           {/* PS */}
           <p
             className="mt-6 text-[11px] sm:text-[12px] italic max-w-[440px]"
