@@ -275,10 +275,10 @@ export default function GetAccess() {
                   </button>
                 ) : (
                   <label
-                    className="flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all duration-200 animate-fade-in"
+                    className="flex items-start gap-3 p-3.5 rounded-lg cursor-pointer transition-all duration-200 animate-fade-in hover:brightness-[0.99]"
                     style={{
-                      border: lifetimeUpgrade ? `1px solid ${NAVY}` : "1px dashed #CBD5E1",
-                      background: lifetimeUpgrade ? "rgba(20,33,61,0.04)" : "#fff",
+                      border: lifetimeUpgrade ? `2px solid ${NAVY}` : "2px solid #BFDBFE",
+                      background: lifetimeUpgrade ? "#DBEAFE" : "#EFF6FF",
                     }}
                   >
                     <input
@@ -291,10 +291,10 @@ export default function GetAccess() {
                       <div className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: NAVY }}>
                         <Sparkles className="w-3.5 h-3.5" />
                         Upgrade to Lifetime Access
-                        <span style={{ color: "#64748B", fontWeight: 500 }}> (+${LIFETIME_UPGRADE_PRICE})</span>
+                        <span style={{ color: "#1E40AF", fontWeight: 600 }}> (+${LIFETIME_UPGRADE_PRICE})</span>
                       </div>
-                      <div className="text-[12px] mt-0.5" style={{ color: "#94A3B8" }}>
-                        Includes all future semesters
+                      <div className="text-[12px] mt-0.5" style={{ color: "#475569" }}>
+                        Never pay again. Includes all future semesters.
                       </div>
                     </div>
                   </label>
