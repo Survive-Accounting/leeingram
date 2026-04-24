@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Check, ShieldCheck, X, Sparkles, ShoppingCart } from "lucide-react";
+import { Check, ShieldCheck, X, Sparkles, ShoppingCart, ChevronDown } from "lucide-react";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import StagingTestimonialsSection from "@/components/landing/StagingTestimonialsSection";
