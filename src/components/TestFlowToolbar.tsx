@@ -133,19 +133,31 @@ export default function TestFlowToolbar() {
           })}
         </div>
 
-        {/* Reset button */}
-        <button
-          type="button"
-          onClick={handleReset}
-          className="rounded-md px-3 py-1.5 text-[11px] font-semibold transition hover:opacity-90"
-          style={{
-            background: "#CE1126",
-            color: "#FFFFFF",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
-          }}
-        >
-          ↻ Reset test session
-        </button>
+        {/* Reset + hide buttons */}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="rounded-md px-3 py-1.5 text-[11px] font-semibold transition hover:opacity-90"
+            style={{
+              background: "#CE1126",
+              color: "#FFFFFF",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+            }}
+          >
+            ↻ Reset test session
+          </button>
+          <button
+            type="button"
+            onClick={() => setHidden(true)}
+            aria-label="Hide test bar"
+            title="Hide test bar"
+            className="rounded-md p-1.5 transition hover:bg-amber-100"
+            style={{ color: "#92400E" }}
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );
