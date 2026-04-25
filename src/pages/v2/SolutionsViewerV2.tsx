@@ -537,22 +537,17 @@ function InlineExplanation({
 
   return (
     <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-5">
-      {/* Header */}
-      <div>
-        <h2 className="text-lg font-semibold tracking-tight">Get unstuck fast</h2>
-      </div>
-
-      {/* Top: subtle "Try it yourself" + Print PDF */}
+      {/* Top: "Try it yourself first!" + Print PDF */}
       <div className="flex items-center justify-between gap-3 pb-4 border-b border-border/60">
-        <span className="text-xs uppercase tracking-wider text-muted-foreground">
-          Try it yourself
+        <span className="text-sm font-medium text-foreground/80">
+          Try it yourself first!
         </span>
         <Button
           size="sm"
-          variant="ghost"
+          variant="outline"
           onClick={handlePrintPdf}
           disabled={printing}
-          className="gap-1.5 h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+          className="gap-1.5 h-8 px-3 text-xs font-medium"
         >
           {printing ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -565,7 +560,7 @@ function InlineExplanation({
 
       {/* Toolbox */}
       <div className="space-y-3">
-        <p className="text-sm font-medium text-foreground/80">Choose what you need:</p>
+        <p className="text-sm font-medium text-foreground/80">Choose what you need</p>
         <div className="grid grid-cols-2 gap-2">
           {TOOLBOX_ORDER.map((k) => {
             const isActive = activeSection === k;
@@ -582,18 +577,18 @@ function InlineExplanation({
               </Button>
             );
           })}
+          {hasJE && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setJeOpen(true)}
+              className="justify-start gap-2 h-9 text-xs sm:text-sm font-medium col-span-2"
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              Journal Entries
+            </Button>
+          )}
         </div>
-        {hasJE && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setJeOpen(true)}
-            className="w-full justify-start gap-2 h-9 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            <BookOpen className="h-3.5 w-3.5" />
-            See journal entries
-          </Button>
-        )}
       </div>
 
       {hasJE && (
