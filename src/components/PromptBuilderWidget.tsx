@@ -28,9 +28,13 @@ interface PromptCard {
   kind: PromptKind;
   inputText: string;
   output: string;
+  /** Screenshots pasted into the input — preserved on the card for re-paste into Lovable. */
+  screenshots: string[];
   error?: string;
   createdAt: number;
 }
+
+const MAX_SCREENSHOTS = 10;
 
 const MODES: { key: Mode; label: string; icon: typeof Wrench }[] = [
   { key: "ui_fix", label: "UI Fix", icon: Wrench },
