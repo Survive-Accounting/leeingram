@@ -68,9 +68,17 @@ function slugify(s: string) {
 
 export default function GetOrgAccess() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const signedInEmail = user?.email ?? null;
 
   // --- Email + campus detection ---
   const [email, setEmail] = useState("");
+
+  // Prefill email from signed-in user (not editable in UI, used as context).
+  useEffect(() => {
+    if (signedInEmail && !email) setEmail(signedInEmail);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signedInEmail]);
   const [emailError, setEmailError] = useState<string | null>(null);
 
   const [campuses, setCampuses] = useState<Campus[]>([]);
