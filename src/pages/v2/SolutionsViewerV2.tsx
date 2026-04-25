@@ -997,7 +997,7 @@ export default function SolutionsViewerV2() {
         const { data: a, error: aErr } = await supabase
           .from("teaching_assets")
           .select(
-            "id, asset_name, problem_title, source_ref, survive_problem_text, instruction_1, instruction_2, instruction_3, instruction_4, instruction_5, instruction_list, chapter_id",
+            "id, asset_name, problem_title, source_ref, survive_problem_text, instruction_1, instruction_2, instruction_3, instruction_4, instruction_5, instruction_list, chapter_id, journal_entry_completed_json",
           )
           .eq("asset_name", assetCode)
           .maybeSingle();
