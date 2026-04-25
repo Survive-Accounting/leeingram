@@ -155,17 +155,6 @@ export default function StagingNavbar({
           >
             Pricing
           </button>
-          <button
-            onClick={() => navigate("/get-org-access")}
-            className="hidden sm:inline-block text-[13px] font-semibold hover:opacity-70"
-            style={{
-              color: isSolid ? NAVY : "rgba(255,255,255,0.85)",
-              fontFamily: "Inter, sans-serif",
-              transition: `color ${TRANSITION}`,
-            }}
-          >
-            For Greek Orgs
-          </button>
 
           {/* Log In — wrap two visual states and crossfade between them */}
           <button
