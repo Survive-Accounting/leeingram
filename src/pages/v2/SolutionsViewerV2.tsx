@@ -478,7 +478,8 @@ function InlineExplanation({
       setSections(data.sections);
       return data.sections as ExplanationSections;
     } catch (e: any) {
-      setError(e?.message || "Something went wrong");
+      console.error("[explain-this-solution] failed:", e);
+      setError("Lee's tools are taking a breather. Try again in a moment — if it keeps happening, hit \"Need help?\" and we'll get on it.");
       return null;
     } finally {
       setLoading(false);
