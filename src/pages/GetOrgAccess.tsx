@@ -99,6 +99,37 @@ export default function GetOrgAccess() {
   );
   const perSeat = tier ? Math.round(tier.total / tier.seats) : 0;
 
+  // --- Founding chapter offer (50% off if campus has < 3 active orgs) ---
+  const FOUNDING_CAP = 3;
+  const FOUNDING_DISCOUNT_PCT = 50;
+  const [foundingClaimed, setFoundingClaimed] = useState<number | null>(null);
+  useEffect(() => {
+    if (!selectedCampusId) {
+      setFoundingClaimed(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { count, error } = await supabase
+        .from("org_accounts")
+        .select("id", { count: "exact", head: true })
+        .eq("campus_id", selectedCampusId)
+        .eq("status", "active");
+      if (cancelled) return;
+      if (error) {
+        console.error("[get-org-access] founding count", error);
+        setFoundingClaimed(null);
+      } else {
+        setFoundingClaimed(count ?? 0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCampusId]);
+  const foundingEligible =
+    foundingClaimed !== null && foundingClaimed < FOUNDING_CAP;
+
   // --- Auto re-up settings (prototype: stored only, no auto billing) ---
   const WEEKLY_LIMIT_OPTIONS = [10, 20, 30, 50] as const;
   const [autoReupEnabled, setAutoReupEnabled] = useState(true);
