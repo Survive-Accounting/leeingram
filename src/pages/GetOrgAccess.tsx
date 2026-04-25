@@ -110,6 +110,156 @@ export default function GetOrgAccess() {
 
   const [submitting, setSubmitting] = useState(false);
 
+  // --- Step 0: Role + chapter intent (gates the rest of the form) ---
+  type Role = "member" | "exec";
+  const [role, setRole] = useState<Role | null>(null);
+  const [intentChapter, setIntentChapter] = useState("");
+  const [intentSearchResults, setIntentSearchResults] = useState<GreekOrg[]>([]);
+  const [intentSearching, setIntentSearching] = useState(false);
+  const [intentSelectedOrg, setIntentSelectedOrg] = useState<GreekOrg | null>(null);
+  const [intentLocked, setIntentLocked] = useState(false);
+  const [memberWaitlistCount, setMemberWaitlistCount] = useState<number | null>(null);
+  const [waitlistEmail, setWaitlistEmail] = useState("");
+  const [joiningWaitlist, setJoiningWaitlist] = useState(false);
+  const [joinedWaitlist, setJoinedWaitlist] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const inviteUrl = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return `${window.location.origin}/get-org-access`;
+  }, []);
+
+  // Search chapters across all campuses (debounced)
+  useEffect(() => {
+    const q = intentChapter.trim();
+    if (!q || intentLocked) {
+      setIntentSearchResults([]);
+      return;
+    }
+    let cancelled = false;
+    setIntentSearching(true);
+    const timer = setTimeout(async () => {
+      const { data, error } = await supabase
+        .from("greek_orgs")
+        .select("id, campus_id, org_name, council, org_type, aliases, status")
+        .ilike("org_name", `%${q}%`)
+        .order("org_name")
+        .limit(8);
+      if (cancelled) return;
+      if (error) {
+        console.error("[get-org-access] chapter search", error);
+        setIntentSearchResults([]);
+      } else {
+        setIntentSearchResults((data as GreekOrg[]) || []);
+      }
+      setIntentSearching(false);
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [intentChapter, intentLocked]);
+
+  // When member commits, fetch waitlist count for that chapter
+  useEffect(() => {
+    if (role !== "member" || !intentLocked) {
+      setMemberWaitlistCount(null);
+      return;
+    }
+    const orgName = intentSelectedOrg?.org_name || intentChapter.trim();
+    if (!orgName) return;
+    let cancelled = false;
+    (async () => {
+      let query = supabase.from("greek_waitlist").select("id", { count: "exact", head: true });
+      if (intentSelectedOrg) {
+        query = query.eq("greek_org_id", intentSelectedOrg.id);
+      } else {
+        query = query.ilike("org_name", orgName);
+      }
+      const { count, error } = await query;
+      if (cancelled) return;
+      if (!error) setMemberWaitlistCount(count ?? 0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [role, intentLocked, intentSelectedOrg, intentChapter]);
+
+  // When officer commits, prefill the rest of the form
+  useEffect(() => {
+    if (role === "exec" && intentLocked) {
+      if (intentSelectedOrg) {
+        setSelectedCampusId(intentSelectedOrg.campus_id);
+        setSelectedOrgId(intentSelectedOrg.id);
+      } else if (intentChapter.trim()) {
+        setShowManual(true);
+        setManualOrgName(intentChapter.trim());
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role, intentLocked]);
+
+  const commitIntent = (org: GreekOrg | null) => {
+    if (org) {
+      setIntentSelectedOrg(org);
+      setIntentChapter(org.org_name);
+    } else {
+      setIntentSelectedOrg(null);
+    }
+    setIntentLocked(true);
+    setIntentSearchResults([]);
+  };
+
+  const resetIntent = () => {
+    setIntentLocked(false);
+    setIntentSelectedOrg(null);
+    setMemberWaitlistCount(null);
+    setJoinedWaitlist(false);
+  };
+
+  const handleCopyInvite = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setCopied(true);
+      toast.success("Invite link copied");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Could not copy link");
+    }
+  };
+
+  const handleJoinWaitlist = async () => {
+    const parsed = emailSchema.safeParse(waitlistEmail.trim());
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
+      return;
+    }
+    const orgName = intentSelectedOrg?.org_name || intentChapter.trim();
+    if (!orgName) {
+      toast.error("Tell us your chapter first.");
+      return;
+    }
+    setJoiningWaitlist(true);
+    try {
+      const { error } = await supabase.from("greek_waitlist").insert({
+        email: parsed.data.toLowerCase(),
+        org_name: orgName,
+        greek_org_id: intentSelectedOrg?.id ?? null,
+        campus_id: intentSelectedOrg?.campus_id ?? null,
+        source: "get_org_access",
+      });
+      if (error && !/duplicate key|unique/i.test(error.message)) throw error;
+      setJoinedWaitlist(true);
+      setMemberWaitlistCount((c) => (c == null ? 1 : c + 1));
+      toast.success("You're on the list. We'll email you when your chapter is in.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Could not join waitlist.";
+      toast.error(msg);
+    } finally {
+      setJoiningWaitlist(false);
+    }
+  };
+
   // Load seat-pricing tiers from DB
   useEffect(() => {
     let cancelled = false;
