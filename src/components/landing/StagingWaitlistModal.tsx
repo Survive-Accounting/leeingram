@@ -40,6 +40,7 @@ export default function StagingWaitlistModal({ open, onClose, initialEmail }: St
           { onConflict: "email" },
         );
       if (error) throw error;
+      await registerLead(trimmed);
       setSuccess(true);
     } catch {
       toast.error("Something went wrong. Try again.");
