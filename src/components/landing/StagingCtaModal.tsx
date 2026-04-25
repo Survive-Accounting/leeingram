@@ -5,6 +5,7 @@ import { Loader2, CheckCircle2, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useEventTracking, setStoredEmail } from "@/hooks/useEventTracking";
+import { registerLead } from "@/lib/registerLead";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
