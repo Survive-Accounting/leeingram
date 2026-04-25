@@ -93,7 +93,7 @@ ${asset.important_formulas ? `Important formulas: ${asset.important_formulas}` :
     try {
       highlights = JSON.parse(cleaned);
     } catch (e) {
-      throw new Error("Failed to parse AI response as JSON: " + e.message);
+      throw new Error("Failed to parse AI response as JSON: " + (e as any).message);
     }
 
     if (!Array.isArray(highlights)) {
@@ -131,7 +131,7 @@ ${asset.important_formulas ? `Important formulas: ${asset.important_formulas}` :
     );
   } catch (e) {
     console.error("generate-dissector-highlights error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: (e as any).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

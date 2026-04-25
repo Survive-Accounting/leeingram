@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
   } catch (err: any) {
     console.error("Revert error:", err);
     return new Response(
-      JSON.stringify({ success: false, error: String(err.message ?? err) }),
+      JSON.stringify({ success: false, error: String((err as any).message ?? err) }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

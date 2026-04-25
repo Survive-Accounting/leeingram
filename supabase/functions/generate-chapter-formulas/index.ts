@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
         await generateFormulasForChapter(sb, anthropicKey, ch, extraPrompt);
         completed++;
       } catch (err: any) {
-        errors.push(`${ch.chapter_name}: ${err.message}`);
+        errors.push(`${ch.chapter_name}: ${(err as any).message}`);
       }
     }
 
@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
   } catch (err: any) {
     console.error("generate-chapter-formulas error:", err);
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: (err as any).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

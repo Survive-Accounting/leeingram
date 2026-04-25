@@ -18,7 +18,7 @@ const ROOT_FOLDER_ID = "1Lu00SDbRHDxlMqAu_sa0aZbSw_HHfSbx";
 
 // ── Google Auth helpers ──────────────────────────────────────────────
 
-function base64url(buf: ArrayBuffer): string {
+function base64url(buf: ArrayBuffer | Uint8Array): string {
   return btoa(String.fromCharCode(...new Uint8Array(buf)))
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
@@ -964,7 +964,7 @@ Deno.serve(async (req) => {
 
   } catch (err: any) {
     console.error("create-prep-doc error:", err);
-    const msg = err instanceof Error ? err.message : "Unknown error";
+    const msg = err instanceof Error ? (err as any).message : "Unknown error";
     const httpStatus = err.googleCode && err.googleCode >= 400 && err.googleCode < 500 ? err.googleCode : 500;
     return new Response(JSON.stringify({
       success: false,

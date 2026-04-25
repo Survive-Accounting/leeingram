@@ -8,7 +8,7 @@ const corsHeaders = {
 
 // ── Google Auth helpers ────────────────────────────────────────────
 
-function base64url(buf: ArrayBuffer): string {
+function base64url(buf: ArrayBuffer | Uint8Array): string {
   return btoa(String.fromCharCode(...new Uint8Array(buf)))
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
@@ -448,7 +448,7 @@ Deno.serve(async (req) => {
 
   } catch (err: any) {
     console.error("generate-flowchart error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as any).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

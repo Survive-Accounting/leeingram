@@ -101,7 +101,7 @@ serve(async (req) => {
     return await respondWithProgress(sb, batch_run_id, run.total_sources, itemResults);
 
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: (e as any).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -415,7 +415,7 @@ async function processItem(sb: any, supabaseUrl: string, serviceKey: string, nex
     const durationMs = Date.now() - itemStart;
     await sb.from("chapter_batch_run_items").update({
       status: "failed",
-      last_error: genError.message?.slice(0, 1000) || "Unknown error",
+      last_error: (genError as any).message?.slice(0, 1000) || "Unknown error",
       ended_at: new Date().toISOString(),
       duration_ms: durationMs,
       updated_at: new Date().toISOString(),

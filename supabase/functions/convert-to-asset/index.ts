@@ -816,7 +816,7 @@ serve(async (req) => {
           important_formulas: candidate.important_formulas || null,
           concept_notes: candidate.concept_notes || null,
           exam_traps: candidate.exam_traps || null,
-          problem_title: title || null,
+          problem_title: body.title || null,
         })
         .select()
         .single();
@@ -862,7 +862,7 @@ serve(async (req) => {
       // ── Fire-and-forget post-approval enrichment ──
       // Generate supplementary JEs and flowcharts asynchronously
       if (newAsset?.id) {
-        const enrichUrl = `${supabaseUrl}/functions/v1`;
+        const enrichUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1`;
         const enrichHeaders = {
           Authorization: `Bearer ${serviceRoleKey}`,
           "Content-Type": "application/json",
@@ -2053,7 +2053,7 @@ REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary ent
   } catch (e) {
     console.error("convert-to-asset error:", e);
 
-    const errorMessage = e instanceof Error ? e.message : "Unknown error";
+    const errorMessage = e instanceof Error ? (e as any).message : "Unknown error";
 
     if (sbService && runId) {
       const durationMs = Date.now() - runStartedAt;

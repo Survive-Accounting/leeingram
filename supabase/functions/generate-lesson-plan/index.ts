@@ -163,7 +163,7 @@ Be specific and practical. Reference the actual textbook problems and concepts m
   } catch (e) {
     console.error("generate-lesson-plan error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: e instanceof Error ? (e as any).message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

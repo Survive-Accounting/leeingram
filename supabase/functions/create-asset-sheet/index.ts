@@ -18,7 +18,7 @@ const PROMO_TEMPLATE_ID = "15yytFbb_tOLCIsR4dLoFVb0oNTFm9X6LfUVN1OKGY-A"; // TOD
 
 // ── Google Auth helpers ──────────────────────────────────────────────
 
-function base64url(buf: ArrayBuffer): string {
+function base64url(buf: ArrayBuffer | Uint8Array): string {
   return btoa(String.fromCharCode(...new Uint8Array(buf)))
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
@@ -981,7 +981,7 @@ Deno.serve(async (req) => {
           status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } catch (e: any) {
-        throw new Error(`Test sheet creation failed: ${e.message}`);
+        throw new Error(`Test sheet creation failed: ${(e as any).message}`);
       }
     }
 
@@ -1002,7 +1002,7 @@ Deno.serve(async (req) => {
         results.master = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
         console.log(`Created Master sheet: ${sheetNames.master} (${fileId})`);
       } catch (e: any) {
-        const msg = `Master sheet creation failed: ${e.message}`;
+        const msg = `Master sheet creation failed: ${(e as any).message}`;
         console.error(msg);
         errors.push(msg);
       }
@@ -1015,7 +1015,7 @@ Deno.serve(async (req) => {
         results.practice = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
         console.log(`Created Practice sheet: ${sheetNames.practice} (${fileId})`);
       } catch (e: any) {
-        const msg = `Practice sheet creation failed: ${e.message}`;
+        const msg = `Practice sheet creation failed: ${(e as any).message}`;
         console.error(msg);
         errors.push(msg);
       }
@@ -1028,7 +1028,7 @@ Deno.serve(async (req) => {
         results.promo = { fileId, url: `https://docs.google.com/spreadsheets/d/${fileId}` };
         console.log(`Created Promo sheet: ${sheetNames.promo} (${fileId})`);
       } catch (e: any) {
-        const msg = `Promo sheet creation failed: ${e.message}`;
+        const msg = `Promo sheet creation failed: ${(e as any).message}`;
         console.error(msg);
         errors.push(msg);
       }
@@ -1188,7 +1188,7 @@ Deno.serve(async (req) => {
 
   } catch (err: any) {
     console.error("create-asset-sheet error:", err);
-    const msg = err instanceof Error ? err.message : "Unknown error";
+    const msg = err instanceof Error ? (err as any).message : "Unknown error";
     const httpStatus = err.googleCode && err.googleCode >= 400 && err.googleCode < 500 ? err.googleCode : 500;
     return new Response(JSON.stringify({ error: msg, google_status: err.googleStatus ?? null }), {
       status: httpStatus, headers: { ...corsHeaders, "Content-Type": "application/json" },

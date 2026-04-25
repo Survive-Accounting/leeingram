@@ -145,7 +145,7 @@ Extract the step-by-step worked solution.`;
     );
   } catch (e: any) {
     console.error("generate-worked-steps error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: (e as any).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

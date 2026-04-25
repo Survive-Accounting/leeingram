@@ -232,7 +232,7 @@ Return results using the provided tool.`,
   } catch (e) {
     console.error("extract-ocr error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: e instanceof Error ? (e as any).message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

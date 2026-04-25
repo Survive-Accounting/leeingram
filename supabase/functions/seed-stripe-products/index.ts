@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
           updates[`stripe_product_id_${ctx.mode}`] = product_id;
           updates[`stripe_price_id_${ctx.mode}`] = price_id;
         } catch (e: any) {
-          errors.push(`[${ctx.mode}] course ${course.code} × ${sem.name} ${sem.year}: ${e.message}`);
+          errors.push(`[${ctx.mode}] course ${course.code} × ${sem.name} ${sem.year}: ${(e as any).message}`);
         }
       }
 
@@ -318,7 +318,7 @@ Deno.serve(async (req) => {
         updates[`stripe_product_id_${ctx.mode}`] = product_id;
         updates[`stripe_price_id_${ctx.mode}`] = price_id;
       } catch (e: any) {
-        errors.push(`[${ctx.mode}] bundle ${spec.key}: ${e.message}`);
+        errors.push(`[${ctx.mode}] bundle ${spec.key}: ${(e as any).message}`);
       }
     }
 
@@ -362,7 +362,7 @@ Deno.serve(async (req) => {
         });
         updates[`stripe_coupon_id_${ctx.mode}`] = c.id;
       } catch (e: any) {
-        errors.push(`[${ctx.mode}] coupon ${spec.id}: ${e.message}`);
+        errors.push(`[${ctx.mode}] coupon ${spec.id}: ${(e as any).message}`);
       }
     }
 

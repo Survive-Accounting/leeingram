@@ -238,7 +238,7 @@ async function runBackup(sb: any) {
     const info = `SURVIVE ACCOUNTING BACKUP
 ========================
 Timestamp: ${ts}
-Supabase Project: ${supabaseUrl}
+Supabase Project: ${Deno.env.get("SUPABASE_URL")}
 
 Folders:
   📊 courses — One .txt per course with stats
@@ -307,12 +307,12 @@ serve(async (req) => {
     })
     .catch(async (err) => {
       console.error("Background backup failed:", err);
-      await sb.from("app_settings").upsert({ key: "backup_status", value: `failed: ${err.message}` }, { onConflict: "key" });
+      await sb.from("app_settings").upsert({ key: "backup_status", value: `failed: ${(err as any).message}` }, { onConflict: "key" });
     });
 
-  // @ts-ignore — EdgeRuntime.waitUntil keeps the worker alive after response
-  if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
-    EdgeRuntime.waitUntil(backupPromise);
+  // @ts-ignore — EdgeRuntime is available in Supabase edge runtime
+  if (typeof (globalThis as any).EdgeRuntime !== "undefined" && (globalThis as any).EdgeRuntime.waitUntil) {
+    (globalThis as any).EdgeRuntime.waitUntil(backupPromise);
   } else {
     // Fallback: await directly (may timeout on large backups)
     await backupPromise;

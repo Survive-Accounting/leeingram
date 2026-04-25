@@ -231,7 +231,7 @@ serve(async (req) => {
             results.push({ key: sectionKey, ok: true });
           }
         } catch (e: any) {
-          results.push({ key: sectionKey, ok: false, error: e.message });
+          results.push({ key: sectionKey, ok: false, error: (e as any).message });
         }
       }
 
@@ -274,7 +274,7 @@ serve(async (req) => {
         last_reviewed_by: reviewer_name,
         last_reviewed_at: new Date().toISOString(),
       }).eq("id", teaching_asset_id);
-      if (error) throw new Error("Failed to save: " + error.message);
+      if (error) throw new Error("Failed to save: " + (error as any).message);
 
       // (Slack notifications removed — handled client-side now)
 
@@ -295,7 +295,7 @@ serve(async (req) => {
       }
 
       const { error } = await sb.from("teaching_assets").update(updateObj).eq("id", teaching_asset_id);
-      if (error) throw new Error("Restore failed: " + error.message);
+      if (error) throw new Error("Restore failed: " + (error as any).message);
 
       // (Slack notifications removed — handled client-side now)
 
@@ -320,7 +320,7 @@ serve(async (req) => {
 
       if (Object.keys(updateObj).length > 0) {
         const { error } = await sb.from("teaching_assets").update(updateObj).eq("id", teaching_asset_id);
-        if (error) throw new Error("Partial restore failed: " + error.message);
+        if (error) throw new Error("Partial restore failed: " + (error as any).message);
       }
 
       return new Response(JSON.stringify({ success: true }), {
@@ -341,7 +341,7 @@ serve(async (req) => {
     throw new Error("Invalid action. Use: snapshot, run, approve, restore, restore_partial, notify_slack");
   } catch (e: any) {
     console.error("fix-asset error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: (e as any).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

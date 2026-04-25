@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("generate-lovable-prompt error", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
+    return new Response(JSON.stringify({ error: e instanceof Error ? (e as any).message : "Unknown" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

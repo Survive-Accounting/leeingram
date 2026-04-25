@@ -229,7 +229,7 @@ Generate 8-12 multiple-choice questions for this asset.`;
 
   } catch (err: any) {
     console.error("bank-teaching-asset error:", err);
-    return new Response(JSON.stringify({ error: err.message || "Unknown error" }), {
+    return new Response(JSON.stringify({ error: (err as any).message || "Unknown error" }), {
       status: err.status || 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

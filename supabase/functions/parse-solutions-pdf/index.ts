@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
   } catch (err: any) {
     console.error("parse-solutions-pdf error:", err);
     return new Response(
-      JSON.stringify({ error: err.message || "Unknown error" }),
+      JSON.stringify({ error: (err as any).message || "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -397,7 +397,7 @@ serve(async (req) => {
     console.error("generate-practice-pdf error:", e);
     return new Response(
       JSON.stringify({
-        error: e instanceof Error ? e.message : "Unknown error",
+        error: e instanceof Error ? (e as any).message : "Unknown error",
       }),
       {
         status: 400,

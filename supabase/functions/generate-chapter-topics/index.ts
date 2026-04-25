@@ -238,7 +238,7 @@ Please identify the 10 most important exam topics from these assets, ordered by 
   } catch (e) {
     console.error("generate-chapter-topics error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: e instanceof Error ? (e as any).message : "Unknown error" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

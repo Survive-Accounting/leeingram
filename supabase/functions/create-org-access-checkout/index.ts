@@ -248,7 +248,7 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown Stripe error";
+    const message = err instanceof Error ? (err as any).message : "Unknown Stripe error";
     console.error("[create-org-access-checkout] Stripe error:", message);
     return bad(message, 500);
   }
