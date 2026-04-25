@@ -1302,6 +1302,43 @@ export default function SolutionsViewerV2() {
                   color: "rgba(255,255,255,0.92)",
                 }}
               >
+                {/* Simplified ↔ Original toggle */}
+                <div className="flex items-center gap-2 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setSimplifyView("simplified")}
+                    className={cn(
+                      "px-3 h-7 text-xs font-medium rounded-md border transition-colors",
+                    )}
+                    style={
+                      simplifyView === "simplified"
+                        ? { background: "rgba(255,255,255,0.95)", color: "#14213D", borderColor: "rgba(255,255,255,0.95)" }
+                        : { background: "transparent", color: "rgba(255,255,255,0.7)", borderColor: "rgba(255,255,255,0.18)" }
+                    }
+                  >
+                    Simplified
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSimplifyView("original");
+                      if (originalImages.length > 0) setOriginalOpen(true);
+                    }}
+                    disabled={originalImages.length === 0}
+                    title={originalImages.length === 0 ? "Original textbook image not available" : "View original textbook problem"}
+                    className={cn(
+                      "px-3 h-7 text-xs font-medium rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
+                    )}
+                    style={
+                      simplifyView === "original"
+                        ? { background: "rgba(255,255,255,0.95)", color: "#14213D", borderColor: "rgba(255,255,255,0.95)" }
+                        : { background: "transparent", color: "rgba(255,255,255,0.7)", borderColor: "rgba(255,255,255,0.18)" }
+                    }
+                  >
+                    Original
+                  </button>
+                </div>
+
                 {asset.source_ref && (
                   <div
                     className="text-[11px] font-medium uppercase tracking-[0.12em]"
@@ -1313,7 +1350,7 @@ export default function SolutionsViewerV2() {
 
                 {/* Textbook problem title intentionally hidden — keep focus on the prompt itself. */}
 
-                {/* Problem text */}
+                {/* Problem text — simplified by default; falls back to raw on error or while loading */}
                 {asset.survive_problem_text && (
                   <div className="mt-5">
                     <div
@@ -1322,12 +1359,31 @@ export default function SolutionsViewerV2() {
                     >
                       Problem
                     </div>
-                    <div
-                      className="whitespace-pre-wrap text-[0.9375rem] max-w-prose [&>p+p]:mt-3"
-                      style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
-                    >
-                      {asset.survive_problem_text}
-                    </div>
+                    {simplifyView === "simplified" && simplifyLoading && !simplifiedText ? (
+                      <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Survive Accounting is thinking…
+                      </div>
+                    ) : simplifyView === "simplified" && simplifiedText ? (
+                      <div
+                        className="prose prose-invert max-w-prose text-[0.9375rem] prose-p:my-2 prose-ul:my-2 prose-li:my-1 prose-headings:text-white/95 prose-headings:font-semibold prose-strong:text-white"
+                        style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
+                      >
+                        <ReactMarkdown>{simplifiedText}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <div
+                        className="whitespace-pre-wrap text-[0.9375rem] max-w-prose [&>p+p]:mt-3"
+                        style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
+                      >
+                        {asset.survive_problem_text}
+                      </div>
+                    )}
+                    {simplifyError && (
+                      <div className="mt-2 text-xs" style={{ color: "rgba(255,180,180,0.85)" }}>
+                        {simplifyError}
+                      </div>
+                    )}
                   </div>
                 )}
 
