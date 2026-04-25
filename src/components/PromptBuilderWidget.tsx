@@ -818,9 +818,6 @@ function PromptCardView({
       {(card.status === "ready" || card.status === "sent") && card.output && (
         <>
           <div className="flex items-center gap-1">
-            <Button size="sm" className="h-6 text-[10px] px-2" onClick={onSend}>
-              <Send className="h-2.5 w-2.5 mr-1" /> Send to Lovable
-            </Button>
             <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={onCopy}>
               <Copy className="h-2.5 w-2.5 mr-1" /> Copy
             </Button>
