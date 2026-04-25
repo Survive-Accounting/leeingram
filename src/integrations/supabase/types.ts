@@ -5273,6 +5273,33 @@ export type Database = {
         }
         Relationships: []
       }
+      simplified_problem_cache: {
+        Row: {
+          asset_id: string
+          created_at: string
+          id: string
+          model_used: string | null
+          simplified_text: string
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          id?: string
+          model_used?: string | null
+          simplified_text: string
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          id?: string
+          model_used?: string | null
+          simplified_text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       site_content: {
         Row: {
           id: string
