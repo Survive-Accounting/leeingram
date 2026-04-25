@@ -656,7 +656,52 @@ export default function GetOrgAccess() {
               </p>
             </div>
 
-            {/* Step 0 — Role + Chapter intent */}
+            {/* Step 1 — Find your chapter (org kind) */}
+            <div className="mt-6">
+              <div
+                className="text-[18px] font-semibold mb-1"
+                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+              >
+                Find your chapter
+              </div>
+              <p
+                className="text-[13px] mb-3"
+                style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+              >
+                Start access for your fraternity or sorority
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { id: "fraternity" as const, label: "Fraternity" },
+                  { id: "sorority" as const, label: "Sorority" },
+                ]).map(({ id, label }) => {
+                  const selected = orgKind === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => {
+                        setOrgKind(id);
+                        if (intentLocked) resetIntent();
+                      }}
+                      className="rounded-xl px-3 py-3 flex items-center justify-center gap-2 text-[14px] font-semibold transition-all"
+                      style={{
+                        background: selected ? NAVY : "#fff",
+                        color: selected ? "#fff" : NAVY,
+                        border: `1.5px solid ${selected ? NAVY : "#E0E7F0"}`,
+                        fontFamily: "Inter, sans-serif",
+                        boxShadow: selected ? "0 4px 12px rgba(20,33,61,0.10)" : "none",
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Step 2 — Role + Chapter intent */}
+            {orgKind && (
             <div className="mt-6">
               <div
                 className="text-[13px] font-semibold uppercase tracking-wider mb-2"
