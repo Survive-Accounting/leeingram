@@ -76,6 +76,8 @@ export default function NonEduFallbackFlow({
         source: "non_edu_fallback",
       });
       if (error) throw error;
+      // Register as a campus lead too (will resolve campus if .edu, else "general").
+      await registerLead(trimmed, courseSlug ?? undefined);
       setStage("success");
     } catch {
       toast.error("Something went wrong. Try again.");
