@@ -19,7 +19,7 @@ import StagingEmailPromptModal, { type CelebrationData } from "@/components/land
 import StagingGetStartedModal from "@/components/landing/StagingGetStartedModal";
 import StagingFinalCtaSection from "@/components/landing/StagingFinalCtaSection";
 import type { CtaCourse } from "@/components/landing/StagingCtaModal";
-// (EmailGate context kept available globally for other surfaces)
+import { useEmailGate } from "@/contexts/EmailGateContext";
 
 const COURSES: CtaCourse[] = [
   {
