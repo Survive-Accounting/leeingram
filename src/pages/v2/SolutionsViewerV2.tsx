@@ -453,6 +453,10 @@ function InlineExplanation({
   const [sections, setSections] = useState<ExplanationSections | null>(null);
   const [activeSection, setActiveSection] = useState<ToolboxKey | null>(null);
   const [printing, setPrinting] = useState(false);
+  const [jeOpen, setJeOpen] = useState(false);
+
+  const hasJE = Array.isArray(asset.journal_entry_completed_json?.scenario_sections)
+    && asset.journal_entry_completed_json.scenario_sections.length > 0;
 
   // Reset on asset change
   useEffect(() => {
