@@ -667,6 +667,13 @@ function JumpModal({
   currentAssetName: string | undefined;
 }) {
   const navigate = useNavigate();
+
+  // Detect course family from any sibling asset_name (IA1/IA2 = intermediate, INTRO1/INTRO2 = intro).
+  const isIntro = useMemo(() => {
+    const sample = siblings.find((s) => s.asset_name)?.asset_name || currentAssetName || "";
+    return /^INTRO/i.test(sample);
+  }, [siblings, currentAssetName]);
+
   const groups = useMemo(() => {
     const g: Record<"BE" | "EX" | "PR" | "OTHER", typeof siblings> = {
       BE: [], EX: [], PR: [], OTHER: [],
@@ -675,53 +682,82 @@ function JumpModal({
     return g;
   }, [siblings]);
 
-  const groupLabels: Record<"BE" | "EX" | "PR" | "OTHER", string> = {
-    BE: "Brief Exercises / Quick Studies",
-    EX: "Exercises",
-    PR: "Problems",
-    OTHER: "Other",
-  };
+  const categories = useMemo(() => {
+    const list: { key: "BE" | "EX" | "PR"; label: string; count: number }[] = [];
+    if (groups.BE.length) list.push({ key: "BE", label: isIntro ? "Quick Studies" : "Brief Exercises", count: groups.BE.length });
+    if (groups.EX.length) list.push({ key: "EX", label: "Exercises", count: groups.EX.length });
+    if (groups.PR.length) list.push({ key: "PR", label: "Problems", count: groups.PR.length });
+    return list;
+  }, [groups, isIntro]);
+
+  const [activeCat, setActiveCat] = useState<"BE" | "EX" | "PR" | null>(null);
+
+  // Default to first available category whenever the modal opens or categories change.
+  useEffect(() => {
+    if (!open) return;
+    if (activeCat && groups[activeCat]?.length) return;
+    if (categories[0]) setActiveCat(categories[0].key);
+  }, [open, categories, activeCat, groups]);
 
   const go = (assetName: string) => {
     navigate(`/v2/solutions/${assetName}`);
     onOpenChange(false);
   };
 
+  const visibleItems = activeCat ? groups[activeCat] : [];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Jump to problem</DialogTitle>
-          <DialogDescription>{siblings.length} problems in this chapter</DialogDescription>
+          <DialogDescription>
+            {siblings.length} {siblings.length === 1 ? "problem" : "problems"} in this chapter
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-5">
-          {(["BE", "EX", "PR", "OTHER"] as const).map((key) => {
-            const items = groups[key];
-            if (items.length === 0) return null;
-            return (
-              <div key={key}>
-                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                  {groupLabels[key]} ({items.length})
-                </div>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                  {items.map((s) => {
-                    const isCurrent = s.asset_name === currentAssetName;
-                    return (
-                      <Button
-                        key={s.asset_name}
-                        size="sm"
-                        variant={isCurrent ? "default" : "outline"}
-                        className="font-mono text-xs h-8"
-                        onClick={() => go(s.asset_name)}
-                      >
-                        {s.source_ref || s.asset_name}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+
+        {categories.length > 0 && (
+          <div className="flex flex-wrap gap-2 pb-1">
+            {categories.map((c) => {
+              const isActive = c.key === activeCat;
+              return (
+                <Button
+                  key={c.key}
+                  size="sm"
+                  variant={isActive ? "default" : "outline"}
+                  className="h-8 text-xs"
+                  onClick={() => setActiveCat(c.key)}
+                >
+                  {c.label} <span className="ml-1.5 opacity-60">{c.count}</span>
+                </Button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="overflow-y-auto -mr-1 pr-1">
+          {visibleItems.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-6 text-center">
+              No problems in this category.
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+              {visibleItems.map((s) => {
+                const isCurrent = s.asset_name === currentAssetName;
+                return (
+                  <Button
+                    key={s.asset_name}
+                    size="sm"
+                    variant={isCurrent ? "default" : "outline"}
+                    className="font-mono text-xs h-8"
+                    onClick={() => go(s.asset_name)}
+                  >
+                    {s.source_ref || s.asset_name}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
