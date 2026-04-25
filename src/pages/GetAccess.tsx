@@ -385,7 +385,7 @@ export default function GetAccess() {
           className="mt-4 max-w-[640px] mx-auto text-[16px] sm:text-[18px]"
           style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
         >
-          Full access to cram through problems before your exam.
+          Cram through {problemCountLabel} exam-style problems before your exam.
         </p>
       </section>
 
