@@ -193,6 +193,12 @@ export function PromptBuilderWidget() {
   };
 
   // ---- Speech ----
+  /**
+   * Starts (or resumes) a SpeechRecognition session. Resume always starts a
+   * brand new SR session whose results are appended to whatever is already in
+   * `text` — this matches the agreed pause semantics (Pause = stop & finalise,
+   * Resume = new segment).
+   */
   const startRecording = () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) { toast.error("Speech recognition not supported. Try Chrome or Edge."); return; }
@@ -218,18 +224,57 @@ export function PromptBuilderWidget() {
         setInterim(interimText);
       }
     };
-    rec.onerror = (e: any) => { toast.error(`Mic error: ${e.error || "unknown"}`); setRecording(false); setInterim(""); };
-    rec.onend = () => { setRecording(false); setInterim(""); };
+    rec.onerror = (e: any) => {
+      toast.error(`Mic error: ${e.error || "unknown"}`);
+      setRecording(false);
+      setPaused(false);
+      setRecStartedAt(null);
+      setInterim("");
+    };
+    rec.onend = () => {
+      // Don't auto-flip recording=false; Pause stops the SR but we want to
+      // stay in "recording-but-paused" UX state until user taps Stop.
+      setInterim("");
+    };
 
     recognitionRef.current = rec;
     rec.start();
     setRecording(true);
+    setPaused(false);
+    setRecStartedAt(Date.now());
   };
 
+  /** User tapped Pause — stop the mic, freeze the timer, keep the bar visible. */
+  const pauseRecording = () => {
+    try { recognitionRef.current?.stop(); } catch { /* noop */ }
+    recognitionRef.current = null;
+    if (interim) {
+      const merged = (text + (text && !text.endsWith(" ") ? " " : "") + interim).trim();
+      setText(merged);
+      baseTextRef.current = merged;
+      setInterim("");
+    }
+    setPaused(true);
+    setRecStartedAt(null);
+  };
+
+  /** User tapped Stop — end recording entirely and surface the editor. */
   const stopRecording = () => {
     try { recognitionRef.current?.stop(); } catch { /* noop */ }
+    recognitionRef.current = null;
+    if (interim) {
+      const merged = (text + (text && !text.endsWith(" ") ? " " : "") + interim).trim();
+      setText(merged);
+      baseTextRef.current = merged;
+      setInterim("");
+    }
     setRecording(false);
-    setInterim("");
+    setPaused(false);
+    setRecStartedAt(null);
+    setBarCollapsed(false);
+    // Surface the editor so the user can review the transcript.
+    setOpen(true);
+    setMinimized(false);
   };
 
   // ---- Screenshots: paste / accumulate / copy back to clipboard ----
