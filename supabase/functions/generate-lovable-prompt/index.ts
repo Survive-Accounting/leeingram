@@ -1,6 +1,6 @@
 import { corsHeaders } from "@supabase/supabase-js/cors";
 
-const SYSTEM = `You are an expert product builder optimizing for speed, clarity, and conversion.
+const SYSTEM_BUILD = `You are an expert product builder optimizing for speed, clarity, and conversion.
 
 Always:
 - Use modular steps
@@ -26,6 +26,31 @@ Output STRICTLY in this markdown format (no preamble, no closing remarks):
 
 ## Constraints
 - <constraint>`;
+
+const SYSTEM_PLAN = `You are an expert product strategist writing a PLANNING prompt for Lovable.
+
+The output MUST instruct Lovable to NOT write code yet — only to produce an implementation plan for review.
+
+Output STRICTLY in this markdown format (no preamble, no closing remarks):
+
+Do not build yet. First create an implementation plan.
+
+## Goal
+<one sentence>
+
+## Proposed approach
+- <high-level approach point>
+
+## Files / areas likely affected
+- <file or area>
+
+## Open questions
+- <question for the user>
+
+## Risks / edge cases
+- <risk>
+
+End with: "Reply with approval or adjustments before I write any code."`;
 
 const MODE_HINTS: Record<string, string> = {
   ui_fix: "Mode: UI Fix. Focus on minimal, surgical UI corrections — preserve existing structure, fix only what is broken or unclear.",
