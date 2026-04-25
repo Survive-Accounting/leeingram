@@ -38,6 +38,12 @@ const cards = [
     icon: Code2,
     route: "/admin/web-dev-sprints",
   },
+  {
+    title: "V2 Assets Embed Panel",
+    subtitle: "LearnWorlds embed workflow for ~2,500 teaching assets",
+    icon: MonitorPlay,
+    route: "/v2/admin/assets",
+  },
 ];
 
 export default function DomainSelect() {
