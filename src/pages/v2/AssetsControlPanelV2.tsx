@@ -43,6 +43,7 @@ const NEXT_STATUS: Record<V2Status, V2Status> = {
 export default function AssetsControlPanelV2() {
   const [params, setParams] = useSearchParams();
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const courseId = params.get("course") || "";
   const chapterId = params.get("chapter") || "";
