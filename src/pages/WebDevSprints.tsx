@@ -639,37 +639,48 @@ export default function WebDevSprints() {
             </div>
           );
         })()}
-
-
-          <div className="text-center text-slate-400 py-16">Loading…</div>
-        ) : features.length === 0 ? (
-          <div className="text-center text-slate-400 py-16 bg-white rounded-xl border border-dashed border-slate-200">
-            No features yet.
-          </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={features.map((f) => f.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="grid grid-cols-1 gap-5">
-                {features.map((f) => (
-                  <SortableFeatureCard
-                    key={f.id}
-                    feature={f}
-                    canEdit={canEdit}
-                    onChange={handleUpdate}
-                    onDelete={() => handleDelete(f.id)}
-                  />
-                ))}
+        {(() => {
+          const visible =
+            statusFilter === "All" ? features : features.filter((f) => f.status === statusFilter);
+          if (loading)
+            return <div className="text-center text-slate-400 py-16">Loading…</div>;
+          if (features.length === 0)
+            return (
+              <div className="text-center text-slate-400 py-16 bg-white rounded-xl border border-dashed border-slate-200">
+                No features yet.
               </div>
-            </SortableContext>
-          </DndContext>
-        )}
+            );
+          if (visible.length === 0)
+            return (
+              <div className="text-center text-slate-400 py-16 bg-white rounded-xl border border-dashed border-slate-200">
+                No features with status "{statusFilter}".
+              </div>
+            );
+          return (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={visible.map((f) => f.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="grid grid-cols-1 gap-5">
+                  {visible.map((f) => (
+                    <SortableFeatureCard
+                      key={f.id}
+                      feature={f}
+                      canEdit={canEdit && statusFilter === "All"}
+                      onChange={handleUpdate}
+                      onDelete={() => handleDelete(f.id)}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          );
+        })()}
       </div>
 
       <AddFeatureModal
