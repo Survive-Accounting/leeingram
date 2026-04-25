@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(`Dispatching ${items.length} background jobs (fire-and-forget)...`);
+    console.log(`Dispatching ${items.length} background jobs (background task)...`);
 
     // Mark all as processing up-front
     const itemIds = items.map((i) => i.id);
@@ -101,112 +101,116 @@ Deno.serve(async (req) => {
       .update({ status: "processing", started_at: new Date().toISOString() })
       .in("id", itemIds);
 
-    // Dispatch SERIALLY — await each child before starting the next. This (combined
-    // with the per-job delay) guarantees we never have more than one OpenAI request
-    // in flight per worker, keeping us well under the TPM cap. On 429, we re-queue
-    // the job (up to MAX_RETRIES) so transient rate limits self-heal overnight.
-    let dispatched = 0;
-    let invalidCount = 0;
-    let retriedCount = 0;
+    // Run the serial dispatch loop as a background task so we can return
+    // immediately and avoid the 150s request idle timeout. The runtime keeps
+    // the worker alive until this promise settles.
+    const runBatch = async () => {
+      let dispatched = 0;
+      let invalidCount = 0;
+      let retriedCount = 0;
 
-    for (const item of items) {
-      const handler = JOB_HANDLERS[item.job_type];
-      if (!handler) {
-        invalidCount++;
-        await sb.from("background_jobs")
-          .update({ status: "failed", completed_at: new Date().toISOString(), error: `Unknown job_type: ${item.job_type}` })
-          .eq("id", item.id);
-        continue;
+      for (const item of items) {
+        const handler = JOB_HANDLERS[item.job_type];
+        if (!handler) {
+          invalidCount++;
+          await sb.from("background_jobs")
+            .update({ status: "failed", completed_at: new Date().toISOString(), error: `Unknown job_type: ${item.job_type}` })
+            .eq("id", item.id);
+          continue;
+        }
+
+        let ok = false;
+        let errMsg: string | null = null;
+        try {
+          const res = await fetch(`${supabaseUrl}/functions/v1/${handler.fn}`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${serviceRoleKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(handler.body(item.payload)),
+          });
+          ok = res.ok;
+          try {
+            const result = await res.json();
+            if (!res.ok || result?.error) {
+              ok = false;
+              errMsg = result?.error || `HTTP ${res.status}`;
+            }
+          } catch {
+            if (!res.ok) errMsg = `HTTP ${res.status}`;
+          }
+        } catch (err) {
+          ok = false;
+          errMsg = err instanceof Error ? err.message : String(err);
+        }
+
+        const isRetryable = !!errMsg && /\b429\b|rate[_ ]limit|\b50[234]\b|timeout|ETIMEDOUT|ECONNRESET|fetch failed/i.test(errMsg);
+        const retryCount = Number(item.payload?._retry_count ?? 0);
+        if (!ok && isRetryable && retryCount < MAX_RETRIES) {
+          const newPayload = { ...item.payload, _retry_count: retryCount + 1 };
+          await sb.from("background_jobs")
+            .update({
+              status: "queued",
+              started_at: null,
+              completed_at: null,
+              error: `retry ${retryCount + 1}/${MAX_RETRIES}: ${errMsg?.slice(0, 200)}`,
+              payload: newPayload,
+            })
+            .eq("id", item.id);
+          retriedCount++;
+          console.log(`↻ ${item.job_type} ${item.id} — re-queued (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+        } else {
+          await sb.from("background_jobs")
+            .update({
+              status: ok ? "done" : "failed",
+              completed_at: new Date().toISOString(),
+              error: errMsg,
+            })
+            .eq("id", item.id);
+          console.log(`${ok ? "✓" : "✗"} ${item.job_type} ${item.id}${errMsg ? ": " + errMsg : ""}`);
+        }
+        dispatched++;
+
+        const delay = JOB_DISPATCH_DELAY_MS[item.job_type] ?? DEFAULT_DISPATCH_DELAY_MS;
+        if (delay > 0) await sleep(delay);
       }
 
-      let ok = false;
-      let errMsg: string | null = null;
-      try {
-        const res = await fetch(`${supabaseUrl}/functions/v1/${handler.fn}`, {
+      const { count } = await sb
+        .from("background_jobs")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "queued");
+
+      const remaining = count ?? 0;
+      console.log(`Batch complete — dispatched=${dispatched} invalid=${invalidCount} retried=${retriedCount} remaining=${remaining}`);
+
+      if (remaining > 0) {
+        await sleep(SELF_CHAIN_DELAY_MS);
+        fetch(`${supabaseUrl}/functions/v1/process-background-jobs`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${serviceRoleKey}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(handler.body(item.payload)),
-        });
-        ok = res.ok;
-        try {
-          const result = await res.json();
-          if (!res.ok || result?.error) {
-            ok = false;
-            errMsg = result?.error || `HTTP ${res.status}`;
-          }
-        } catch {
-          if (!res.ok) errMsg = `HTTP ${res.status}`;
-        }
-      } catch (err) {
-        ok = false;
-        errMsg = err instanceof Error ? err.message : String(err);
+          body: JSON.stringify({}),
+        }).catch(e => console.error("Self-chain failed:", e));
       }
+    };
 
-      // Retry on 429 (rate limit) and transient 5xx (502/503/504) up to MAX_RETRIES by re-queuing the job
-      const isRetryable = !!errMsg && /\b429\b|rate[_ ]limit|\b50[234]\b|timeout|ETIMEDOUT|ECONNRESET|fetch failed/i.test(errMsg);
-      const retryCount = Number(item.payload?._retry_count ?? 0);
-      if (!ok && isRetryable && retryCount < MAX_RETRIES) {
-        const newPayload = { ...item.payload, _retry_count: retryCount + 1 };
-        await sb.from("background_jobs")
-          .update({
-            status: "queued",
-            started_at: null,
-            completed_at: null,
-            error: `retry ${retryCount + 1}/${MAX_RETRIES}: ${errMsg?.slice(0, 200)}`,
-            payload: newPayload,
-          })
-          .eq("id", item.id);
-        retriedCount++;
-        console.log(`↻ ${item.job_type} ${item.id} — re-queued (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-      } else {
-        await sb.from("background_jobs")
-          .update({
-            status: ok ? "done" : "failed",
-            completed_at: new Date().toISOString(),
-            error: errMsg,
-          })
-          .eq("id", item.id);
-        console.log(`${ok ? "✓" : "✗"} ${item.job_type} ${item.id}${errMsg ? ": " + errMsg : ""}`);
-      }
-      dispatched++;
-
-      // Pace dispatches per job_type to respect upstream API rate limits.
-      const delay = JOB_DISPATCH_DELAY_MS[item.job_type] ?? DEFAULT_DISPATCH_DELAY_MS;
-      if (delay > 0) await sleep(delay);
-    }
-
-    const { count } = await sb
-      .from("background_jobs")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "queued");
-
-    const remaining = count ?? 0;
-
-    if (remaining > 0) {
-      console.log(`${remaining} items remaining — self-chaining in ${SELF_CHAIN_DELAY_MS}ms...`);
-      // Small gap before re-invoking so we don't pile dispatcher invocations on top of each other.
-      await sleep(SELF_CHAIN_DELAY_MS);
-      fetch(`${supabaseUrl}/functions/v1/process-background-jobs`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${serviceRoleKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}),
-      }).catch(e => console.error("Self-chain failed:", e));
+    // @ts-ignore — EdgeRuntime is provided by Supabase Edge Functions runtime
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(runBatch());
+    } else {
+      // Fallback for local/dev: don't await, but loop will still run.
+      runBatch().catch(e => console.error("runBatch error:", e));
     }
 
     return new Response(JSON.stringify({
-      processed: items.length,
-      dispatched,
-      invalid: invalidCount,
-      retried: retriedCount,
-      remaining,
-      done: remaining === 0,
+      accepted: items.length,
+      status: "processing",
     }), {
+      status: 202,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
