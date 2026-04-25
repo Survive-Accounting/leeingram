@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
-const LW_BASE = "https://player.surviveaccounting.com";
+const POWDER = "#EAF2FA";
 
 interface Purchase {
   id: string;
@@ -14,198 +14,41 @@ interface Purchase {
   chapter_id: string | null;
   purchase_type: string;
   expires_at: string | null;
-  course_name?: string;
-  chapter_name?: string;
+  created_at: string;
 }
 
-// ─── Founding Student Section (Mock Data) ──────────────────────────────────
-const MOCK_STUDENT_NUMBER = 5;
-const MOCK_CAMPUS_NAME = "Ole Miss";
-const MOCK_GLOBAL_COUNT = 47;
-const LEADERBOARD_TARGET = 50;
-
-function MockBadge() {
-  return (
-    <span className="text-[10px] uppercase tracking-wide font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
-      Mock
-    </span>
-  );
+interface Course {
+  id: string;
+  course_name: string;
+  code: string | null;
+  slug: string | null;
 }
 
-function FoundingSection() {
-  const n: number = MOCK_STUDENT_NUMBER;
-  const campus = MOCK_CAMPUS_NAME;
-  const isFirst = n === 1;
-  const isFoundingTen = n <= 10;
-
-  const handleShare = async () => {
-    const text = `Just joined Survive Accounting — student #${n} at ${campus} 🎉 Be in the first 10 and get in at $25: surviveaccounting.com`;
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success("Copied! Share it with your study group 📲");
-    } catch {
-      toast.error("Couldn't copy — try again");
-    }
-  };
-
-  const headline = isFirst
-    ? `🏅 You're #1 at ${campus}!`
-    : isFoundingTen
-      ? `🎉 You're #${n} at ${campus}!`
-      : `Member #${n} at ${campus}`;
-
-  const subtext = isFirst
-    ? "You're the founding student at your campus. You got in at $25."
-    : isFoundingTen
-      ? `You're one of the first 10 founding students at ${campus}.`
-      : `Welcome to the ${campus} community.`;
-
-  const progressPct = Math.min(100, (MOCK_GLOBAL_COUNT / LEADERBOARD_TARGET) * 100);
-
-  return (
-    <section className="space-y-4">
-      {/* Founding Moment Card */}
-      <div
-        className="relative rounded-xl p-6 text-white overflow-hidden"
-        style={{ background: NAVY }}
-      >
-        <div className="absolute top-3 right-3"><MockBadge /></div>
-        <div className="space-y-3">
-          <h2
-            className={isFoundingTen ? "text-3xl font-bold" : "text-xl font-semibold"}
-            style={{ fontFamily: isFoundingTen ? "'DM Serif Display', Georgia, serif" : undefined }}
-          >
-            {headline}
-          </h2>
-          <p className="text-[14px] text-white/80 max-w-lg">{subtext}</p>
-          <span
-            className="inline-block text-[12px] font-semibold px-3 py-1 rounded-full text-white"
-            style={{ background: "#16A34A" }}
-          >
-            Founding Student — {campus}
-          </span>
-        </div>
-      </div>
-
-      {/* Share Your Spot */}
-      <button
-        onClick={handleShare}
-        className="text-[14px] font-semibold hover:underline"
-        style={{ color: RED }}
-      >
-        Share your spot →
-      </button>
-
-      {/* Global Counter */}
-      <p className="text-[13px]" style={{ color: "#666" }}>
-        You're part of a growing community —{" "}
-        <span className="font-semibold" style={{ color: NAVY }}>
-          {MOCK_GLOBAL_COUNT} students
-        </span>{" "}
-        across the SEC are surviving their exams with this.
-      </p>
-
-      {/* Leaderboard Placeholder */}
-      <div
-        className="relative rounded-xl border p-5 space-y-3"
-        style={{ background: "#F3F4F6", borderColor: "#E5E7EB" }}
-      >
-        <div className="absolute top-3 right-3"><MockBadge /></div>
-        <div>
-          <h3 className="text-[15px] font-semibold" style={{ color: NAVY }}>
-            Campus Leaderboard
-          </h3>
-          <p className="text-[13px] mt-1" style={{ color: "#666" }}>
-            🏆 Coming soon — which SEC campus can build the biggest study community?
-          </p>
-          <p className="text-[12px] mt-1" style={{ color: "#999" }}>
-            Activates at {LEADERBOARD_TARGET} students. You're helping us get there.
-          </p>
-        </div>
-        <div>
-          <div className="h-2 w-full rounded-full overflow-hidden" style={{ background: "#E5E7EB" }}>
-            <div
-              className="h-full rounded-full transition-all"
-              style={{ width: `${progressPct}%`, background: NAVY }}
-            />
-          </div>
-          <p className="text-[12px] mt-1.5 font-medium" style={{ color: "#666" }}>
-            {MOCK_GLOBAL_COUNT}/{LEADERBOARD_TARGET} students
-          </p>
-        </div>
-      </div>
-
-      {/* Study Time Tracker Placeholder */}
-      <div
-        className="relative rounded-xl border p-5"
-        style={{ background: "#F3F4F6", borderColor: "#E5E7EB" }}
-      >
-        <div className="absolute top-3 right-3"><MockBadge /></div>
-        <h3 className="text-[15px] font-semibold" style={{ color: NAVY }}>
-          Study Time Tracker
-        </h3>
-        <p className="text-[13px] mt-1" style={{ color: "#666" }}>
-          Coming soon — track your study sessions and compete with your campus.
-        </p>
-        <p className="text-[12px] mt-1" style={{ color: "#999" }}>
-          The more you study, the better you score.
-        </p>
-      </div>
-    </section>
-  );
+interface Chapter {
+  id: string;
+  chapter_number: number;
+  chapter_name: string;
 }
 
-const COURSES = [
-  {
-    id: "44444444-4444-4444-4444-444444444444",
-    code: "IA2",
-    name: "Intermediate Accounting 2",
-    slug: "intermediate-2",
-    status: "live" as const,
-    badge: null,
-  },
-  {
-    id: "22222222-2222-2222-2222-222222222222",
-    code: "INTRO2",
-    name: "Introductory Accounting 2",
-    slug: "managerial-accounting",
-    status: "upcoming" as const,
-    badge: "Launching April 24, 2026",
-  },
-  {
-    id: "11111111-1111-1111-1111-111111111111",
-    code: "INTRO1",
-    name: "Introductory Accounting 1",
-    slug: "financial-accounting",
-    status: "future" as const,
-    badge: "Available Fall 2026",
-  },
-  {
-    id: "33333333-3333-3333-3333-333333333333",
-    code: "IA1",
-    name: "Intermediate Accounting 1",
-    slug: "intermediate-1",
-    status: "future" as const,
-    badge: "Available Fall 2026",
-  },
-];
-
+/**
+ * Minimal MVP student dashboard.
+ * Shows the student's active study pass and the chapters in the course
+ * they purchased — pulled dynamically from the database.
+ */
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const [email, setEmail] = useState<string | null>(null);
-  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [purchase, setPurchase] = useState<Purchase | null>(null);
+  const [course, setCourse] = useState<Course | null>(null);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
-  const [justPaidPhase, setJustPaidPhase] = useState<"verifying" | "success" | "done">(
-    () => {
-      const p = new URLSearchParams(window.location.search);
-      return p.get("just_paid") === "1" || p.get("checkout") === "success"
-        ? "verifying"
-        : "done";
-    },
-  );
+  const [verifying, setVerifying] = useState<boolean>(() => {
+    const p = new URLSearchParams(window.location.search);
+    return p.get("just_paid") === "1" || p.get("checkout") === "success";
+  });
 
   useEffect(() => {
-    // Detect ?checkout=success and show success toast (legacy)
+    // Clean ?just_paid / ?checkout from the URL after we read them
     const params = new URLSearchParams(window.location.search);
     if (params.get("checkout") === "success") {
       toast.success("You're in! Welcome to Survive Accounting 🎉");
@@ -229,68 +72,85 @@ export default function StudentDashboard() {
       const userEmail = session.user.email.toLowerCase();
       setEmail(userEmail);
 
-      const now = new Date().toISOString();
       const { data: rows } = await supabase
         .from("student_purchases")
-        .select("id, course_id, chapter_id, purchase_type, expires_at")
-        .eq("email", userEmail);
+        .select("id, course_id, chapter_id, purchase_type, expires_at, created_at")
+        .eq("email", userEmail)
+        .order("created_at", { ascending: false });
 
       if (!rows || rows.length === 0) {
         navigate("/login?message=no_purchase", { replace: true });
         return;
       }
 
-      // Enrich with course/chapter names
-      const enriched = rows.map((r) => {
-        const course = COURSES.find((c) => c.id === r.course_id);
-        return { ...r, course_name: course?.name ?? "Course" };
-      });
+      // Pick the most recent active pass (or just the most recent if all expired)
+      const now = Date.now();
+      const active = rows.find((r) => !r.expires_at || new Date(r.expires_at).getTime() > now);
+      const chosen = active ?? rows[0];
+      setPurchase(chosen as Purchase);
 
-      setPurchases(enriched);
+      // Fetch course and chapters in parallel
+      const [{ data: courseRow }, { data: chapterRows }] = await Promise.all([
+        supabase
+          .from("courses")
+          .select("id, course_name, code, slug")
+          .eq("id", chosen.course_id)
+          .maybeSingle(),
+        supabase
+          .from("chapters")
+          .select("id, chapter_number, chapter_name")
+          .eq("course_id", chosen.course_id)
+          .order("chapter_number", { ascending: true }),
+      ]);
+
+      setCourse(courseRow as Course | null);
+      setChapters((chapterRows ?? []) as Chapter[]);
       setLoading(false);
+
+      // Tiny verifying overlay if just paid
+      if (verifying) {
+        setTimeout(() => setVerifying(false), 600);
+      }
     };
 
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
-
-  // Drive the just-paid overlay: verifying → success → done
-  useEffect(() => {
-    if (justPaidPhase === "done") return;
-    if (justPaidPhase === "verifying" && !loading && purchases.length > 0) {
-      const t = setTimeout(() => setJustPaidPhase("success"), 400);
-      return () => clearTimeout(t);
-    }
-    if (justPaidPhase === "success") {
-      const t = setTimeout(() => setJustPaidPhase("done"), 700);
-      return () => clearTimeout(t);
-    }
-  }, [justPaidPhase, loading, purchases.length]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/login", { replace: true });
   };
 
-  const activePasses = purchases.filter(
-    (p) => !p.expires_at || new Date(p.expires_at) > new Date()
-  );
-  const allExpired = purchases.length > 0 && activePasses.length === 0;
-  const purchasedCourseIds = new Set(activePasses.map((p) => p.course_id));
+  const openChapter = (ch: Chapter) => {
+    // Chapter routing not wired up yet — placeholder behavior
+    toast("Chapter access coming soon.", { icon: "📚" });
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#F8F9FA" }}>
-        <Loader2 className="h-6 w-6 animate-spin" style={{ color: "#999" }} />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: POWDER }}>
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: NAVY }} />
       </div>
     );
   }
 
+  const expiresStr = purchase?.expires_at
+    ? new Date(purchase.expires_at).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Through current semester";
+
+  const isActive = !purchase?.expires_at || new Date(purchase.expires_at).getTime() > Date.now();
+
   return (
-    <div className="min-h-screen" style={{ background: "#F8F9FA" }}>
+    <div className="min-h-screen" style={{ background: POWDER }}>
       {/* Header */}
       <header
-        className="border-b px-4 sm:px-6 h-14 flex items-center justify-between"
-        style={{ background: "#fff", borderColor: "#E5E7EB" }}
+        className="border-b px-4 sm:px-6 h-14 flex items-center justify-between bg-white"
+        style={{ borderColor: "#E5E7EB" }}
       >
         <div className="flex items-center gap-2.5">
           <div
@@ -306,259 +166,147 @@ export default function StudentDashboard() {
         <button
           onClick={handleSignOut}
           className="text-[13px] font-medium hover:underline"
-          style={{ color: "#999" }}
+          style={{ color: "#6B7280" }}
         >
-          Sign Out →
+          Sign out
         </button>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-        {/* 1. Welcome */}
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10 space-y-8">
+        {/* Welcome */}
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: NAVY }}>
-            Welcome back.
+          <h1
+            className="text-3xl sm:text-4xl"
+            style={{ color: NAVY, fontFamily: "'DM Serif Display', Georgia, serif" }}
+          >
+            Welcome back
           </h1>
-          <p className="text-[14px] mt-0.5" style={{ color: "#999" }}>
+          <p className="text-[14px] mt-1.5" style={{ color: "#6B7280" }}>
             {email}
           </p>
         </div>
 
-        {/* 1b. Founding Student Section [Mock] */}
-        <FoundingSection />
-
-        {/* 2. Active Study Passes */}
-        <section className="space-y-3">
-          <h2 className="text-[13px] font-semibold uppercase tracking-wider" style={{ color: "#999" }}>
-            Active Study Passes
+        {/* Study Pass Summary */}
+        <section
+          className="rounded-2xl bg-white p-6 shadow-sm border"
+          style={{ borderColor: "#E5E7EB", boxShadow: "0 1px 3px rgba(20,33,61,0.06)" }}
+        >
+          <h2
+            className="text-xl mb-4"
+            style={{ color: NAVY, fontFamily: "'DM Serif Display', Georgia, serif" }}
+          >
+            Survive Study Pass
           </h2>
+          <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[14px]">
+            <div>
+              <dt className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
+                Course
+              </dt>
+              <dd className="font-medium" style={{ color: NAVY }}>
+                {course?.course_name ?? "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
+                Access
+              </dt>
+              <dd className="font-medium" style={{ color: NAVY }}>
+                {expiresStr}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
+                Status
+              </dt>
+              <dd className="flex items-center gap-1.5 font-medium" style={{ color: isActive ? "#16A34A" : "#9CA3AF" }}>
+                <CheckCircle2 className="h-4 w-4" />
+                {isActive ? "Active" : "Expired"}
+              </dd>
+            </div>
+          </dl>
+        </section>
 
-          {allExpired ? (
+        {/* Your Chapters */}
+        <section>
+          <h2
+            className="text-2xl"
+            style={{ color: NAVY, fontFamily: "'DM Serif Display', Georgia, serif" }}
+          >
+            Your chapters
+          </h2>
+          <p className="text-[14px] mt-1 mb-4" style={{ color: "#6B7280" }}>
+            Start with the chapter you're studying.
+          </p>
+
+          {chapters.length === 0 ? (
             <div
-              className="rounded-xl border p-6 text-center space-y-2"
-              style={{ background: "#fff", borderColor: "#E5E7EB" }}
+              className="rounded-2xl bg-white p-6 text-center border"
+              style={{ borderColor: "#E5E7EB", boxShadow: "0 1px 3px rgba(20,33,61,0.06)" }}
             >
-              <p className="text-[15px] font-semibold" style={{ color: NAVY }}>
-                Your study pass has expired.
+              <p className="text-[14px]" style={{ color: "#6B7280" }}>
+                We're setting up your chapter list. Check back soon.
               </p>
-              <p className="text-[13px]" style={{ color: "#999" }}>
-                Purchase a new pass to regain access.
-              </p>
-              <a
-                href="/accy304"
-                className="inline-block mt-2 rounded-lg px-5 py-2.5 text-white text-[14px] font-semibold"
-                style={{ background: RED }}
-              >
-                Get a New Pass →
-              </a>
             </div>
           ) : (
-            <div className="space-y-3">
-              {activePasses.map((p) => {
-                const course = COURSES.find((c) => c.id === p.course_id);
-                const expiresStr = p.expires_at
-                  ? new Date(p.expires_at).toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })
-                  : null;
-
-                return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {chapters.map((ch) => (
+                <button
+                  key={ch.id}
+                  onClick={() => openChapter(ch)}
+                  className="text-left rounded-2xl bg-white p-5 border transition-all hover:-translate-y-0.5 hover:shadow-md group"
+                  style={{ borderColor: "#E5E7EB", boxShadow: "0 1px 3px rgba(20,33,61,0.06)" }}
+                >
                   <div
-                    key={p.id}
-                    className="rounded-xl border p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-                    style={{ background: "#fff", borderColor: "#E5E7EB" }}
+                    className="text-[11px] font-semibold uppercase tracking-wider mb-1"
+                    style={{ color: RED }}
                   >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[15px] font-semibold" style={{ color: NAVY }}>
-                          {p.course_name}
-                        </span>
-                        <span
-                          className="text-[11px] font-semibold px-2 py-0.5 rounded-full text-white"
-                          style={{
-                            background: p.purchase_type === "full_pass" ? "#16A34A" : "#2563EB",
-                          }}
-                        >
-                          {p.purchase_type === "full_pass" ? "Full Pass" : "Chapter Pass"}
-                        </span>
-                      </div>
-                      {expiresStr && (
-                        <p className="text-[13px]" style={{ color: "#999" }}>
-                          Access expires {expiresStr}
-                        </p>
-                      )}
-                      <p className="text-[12px]" style={{ color: "#CCC" }}>
-                        Study time tracking coming soon
-                      </p>
-                    </div>
-                    {course && (
-                      <a
-                        href={`${LW_BASE}/course/${course.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-lg px-4 py-2.5 text-white text-[14px] font-semibold flex items-center justify-center gap-1.5 whitespace-nowrap"
-                        style={{ background: NAVY, minHeight: 44 }}
-                      >
-                        Go to Course <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    )}
+                    Chapter {ch.chapter_number}
                   </div>
-                );
-              })}
+                  <div className="text-[15px] font-semibold mb-3" style={{ color: NAVY }}>
+                    {ch.chapter_name}
+                  </div>
+                  <div
+                    className="inline-flex items-center gap-1 text-[13px] font-medium"
+                    style={{ color: NAVY }}
+                  >
+                    Open chapter
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                </button>
+              ))}
             </div>
           )}
         </section>
 
-        {/* 3. Available Courses */}
-        <section className="space-y-3">
-          <h2 className="text-[13px] font-semibold uppercase tracking-wider" style={{ color: "#999" }}>
-            Available Courses
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {COURSES.map((c) => {
-              const isActive = purchasedCourseIds.has(c.id);
-
-              return (
-                <div
-                  key={c.id}
-                  className="rounded-xl border p-5 flex flex-col justify-between gap-3"
-                  style={{ background: "#fff", borderColor: "#E5E7EB" }}
-                >
-                  <div>
-                    <p className="text-[15px] font-semibold" style={{ color: NAVY }}>
-                      {c.name}
-                    </p>
-                    <p className="text-[12px] font-medium mt-0.5" style={{ color: "#999" }}>
-                      {c.code}
-                    </p>
-                  </div>
-
-                  {c.status === "live" && isActive && (
-                    <span
-                      className="text-[12px] font-semibold px-2.5 py-1 rounded-full self-start"
-                      style={{ background: "#DCFCE7", color: "#16A34A" }}
-                    >
-                      Active ✓
-                    </span>
-                  )}
-
-                  {c.status === "live" && !isActive && (
-                    <a
-                      href="/accy304"
-                      className="rounded-lg px-4 py-2.5 text-white text-[14px] font-semibold text-center"
-                      style={{ background: NAVY, minHeight: 44 }}
-                    >
-                      Get Access →
-                    </a>
-                  )}
-
-                  {c.status === "upcoming" && (
-                    <>
-                      <span
-                        className="text-[12px] font-semibold px-2.5 py-1 rounded-full self-start"
-                        style={{ background: "#FEF3C7", color: "#92400E" }}
-                      >
-                        {c.badge}
-                      </span>
-                      <button
-                        className="text-[13px] font-medium self-start hover:underline"
-                        style={{ color: "#999" }}
-                      >
-                        Notify Me →
-                      </button>
-                    </>
-                  )}
-
-                  {c.status === "future" && (
-                    <>
-                      <span
-                        className="text-[12px] font-semibold px-2.5 py-1 rounded-full self-start"
-                        style={{ background: "#F3F4F6", color: "#6B7280" }}
-                      >
-                        {c.badge}
-                      </span>
-                      <button
-                        className="text-[13px] font-medium self-start hover:underline"
-                        style={{ color: "#999" }}
-                      >
-                        Request Early Access →
-                      </button>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* 4. Quick Links */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-2 text-[13px]" style={{ color: "#999" }}>
-          <a href="mailto:lee@surviveaccounting.com" className="hover:underline">
-            Get in Touch with Lee →
-          </a>
-          <a href="/accy304#refund" className="hover:underline">
-            7-day refund policy →
-          </a>
+        {/* Support footer */}
+        <div className="pt-4 text-center">
+          <p className="text-[13px]" style={{ color: "#6B7280" }}>
+            Need help?{" "}
+            <a
+              href="mailto:lee@surviveaccounting.com"
+              className="font-semibold hover:underline"
+              style={{ color: RED }}
+            >
+              Contact Lee
+            </a>
+          </p>
         </div>
       </main>
 
-      {/* Just-paid blurred overlay */}
-      {justPaidPhase !== "done" && (
+      {/* Just-paid verifying overlay */}
+      {verifying && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4 transition-opacity"
-          style={{
-            background: "rgba(248, 249, 250, 0.55)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-          }}
+          className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
+          style={{ background: "rgba(234, 242, 250, 0.6)" }}
         >
           <div
-            className="w-full max-w-sm rounded-2xl p-7 text-center"
-            style={{
-              background: "#fff",
-              border: "1px solid rgba(20,33,61,0.08)",
-              boxShadow: "0 16px 48px rgba(20,33,61,0.18)",
-            }}
+            className="rounded-2xl bg-white px-8 py-6 shadow-lg flex items-center gap-3 border"
+            style={{ borderColor: "#E5E7EB" }}
           >
-            {justPaidPhase === "verifying" ? (
-              <>
-                <Loader2
-                  className="w-9 h-9 mx-auto mb-3 animate-spin"
-                  style={{ color: NAVY }}
-                />
-                <h2
-                  className="text-[20px] mb-1"
-                  style={{
-                    color: NAVY,
-                    fontFamily: "'DM Serif Display', Georgia, serif",
-                    fontWeight: 400,
-                  }}
-                >
-                  Verifying your payment…
-                </h2>
-                <p className="text-[13px]" style={{ color: "#64748B" }}>
-                  Just a moment.
-                </p>
-              </>
-            ) : (
-              <>
-                <CheckCircle2
-                  className="w-10 h-10 mx-auto mb-3"
-                  style={{ color: "#16A34A" }}
-                />
-                <h2
-                  className="text-[20px]"
-                  style={{
-                    color: NAVY,
-                    fontFamily: "'DM Serif Display', Georgia, serif",
-                    fontWeight: 400,
-                  }}
-                >
-                  You're in ✓
-                </h2>
-              </>
-            )}
+            <Loader2 className="h-5 w-5 animate-spin" style={{ color: NAVY }} />
+            <span className="text-[14px] font-medium" style={{ color: NAVY }}>
+              Verifying payment…
+            </span>
           </div>
         </div>
       )}
