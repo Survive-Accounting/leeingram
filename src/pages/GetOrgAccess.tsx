@@ -1525,13 +1525,15 @@ export default function GetOrgAccess() {
                 boxShadow: "0 6px 16px rgba(206,17,38,0.25)",
               }}
             >
-              {submitting
-                ? "Working…"
-                : tier
-                  ? paymentMethod === "manual"
-                    ? `Request invoice → ${tier.seats} passes · $${tier.total.toLocaleString()}`
-                    : `Continue → ${tier.seats} passes · $${tier.total.toLocaleString()}`
-                  : "Continue"}
+              {(() => {
+                if (submitting) return "Working…";
+                if (!tier) return "Continue";
+                const ctaTotal = foundingEligible
+                  ? Math.round(tier.total * (1 - FOUNDING_DISCOUNT_PCT / 100))
+                  : tier.total;
+                const verb = paymentMethod === "manual" ? "Request invoice" : "Continue";
+                return `${verb} → ${tier.seats} passes · $${ctaTotal.toLocaleString()}`;
+              })()}
             </button>
 
             <div
