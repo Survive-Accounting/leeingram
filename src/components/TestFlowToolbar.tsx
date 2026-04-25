@@ -1,6 +1,10 @@
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { X } from "lucide-react";
+
+const HIDDEN_KEY = "testFlowToolbar.hidden.v1";
 
 /**
  * Top-of-page testing strip:
@@ -20,6 +24,14 @@ const STEPS = [
 
 export default function TestFlowToolbar() {
   const { pathname } = useLocation();
+  const [hidden, setHidden] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem(HIDDEN_KEY) === "1"; } catch { return false; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(HIDDEN_KEY, hidden ? "1" : "0"); } catch { /* noop */ }
+  }, [hidden]);
 
   const activeIdx = (() => {
     for (let i = STEPS.length - 1; i >= 0; i--) {
@@ -45,6 +57,26 @@ export default function TestFlowToolbar() {
       window.location.replace("/");
     }, 350);
   };
+
+  if (hidden) {
+    return (
+      <button
+        type="button"
+        onClick={() => setHidden(false)}
+        className="fixed bottom-2 left-2 z-[100] rounded-full px-2.5 py-1 text-[10px] font-semibold transition hover:opacity-90"
+        style={{
+          background: "#FFF8E1",
+          color: "#92400E",
+          border: "1px solid #F4D58D",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+          fontFamily: "Inter, sans-serif",
+        }}
+        title="Show test flow toolbar"
+      >
+        🧪 Show test bar
+      </button>
+    );
+  }
 
   return (
     <div
@@ -101,19 +133,31 @@ export default function TestFlowToolbar() {
           })}
         </div>
 
-        {/* Reset button */}
-        <button
-          type="button"
-          onClick={handleReset}
-          className="rounded-md px-3 py-1.5 text-[11px] font-semibold transition hover:opacity-90"
-          style={{
-            background: "#CE1126",
-            color: "#FFFFFF",
-            boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
-          }}
-        >
-          ↻ Reset test session
-        </button>
+        {/* Reset + hide buttons */}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="rounded-md px-3 py-1.5 text-[11px] font-semibold transition hover:opacity-90"
+            style={{
+              background: "#CE1126",
+              color: "#FFFFFF",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+            }}
+          >
+            ↻ Reset test session
+          </button>
+          <button
+            type="button"
+            onClick={() => setHidden(true)}
+            aria-label="Hide test bar"
+            title="Hide test bar"
+            className="rounded-md p-1.5 transition hover:bg-amber-100"
+            style={{ color: "#92400E" }}
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );
