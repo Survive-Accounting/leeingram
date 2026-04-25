@@ -678,11 +678,13 @@ function ShareModal({
   onCopy: () => void;
 }) {
   const [copied, setCopied] = useState(false);
-  const url = typeof window !== "undefined" ? window.location.href : "";
-
-  // Reset copied state when reopened
+  // Recompute every time the modal opens so we always include the latest ?ref=<referrer_id>.
+  const [url, setUrl] = useState("");
   useEffect(() => {
-    if (open) setCopied(false);
+    if (open) {
+      setUrl(buildShareUrl());
+      setCopied(false);
+    }
   }, [open]);
 
   const handleCopy = async () => {
