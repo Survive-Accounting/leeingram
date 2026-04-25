@@ -367,13 +367,6 @@ export default function MitigateAccountSharing() {
           })}
         </div>
 
-        {/* Footer */}
-        <div
-          className="mt-8 rounded-lg p-4 text-xs text-white/55"
-          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-        >
-          <strong className="text-white/75">Defense in depth.</strong> No single signal proves abuse — we score across all eight and only act when multiple flags align. False positives stay rare; persistent sharers can't dodge every layer.
-        </div>
       </div>
 
       <CategoryModal
