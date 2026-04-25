@@ -73,6 +73,120 @@ function getInstructions(a: Asset): string[] {
   return [];
 }
 
+// ── Report Issue modal ────────────────────────────────────────────────
+type IssueType = "hard_to_read" | "formatting" | "incorrect_data" | "other";
+
+const ISSUE_OPTIONS: { value: IssueType; label: string }[] = [
+  { value: "hard_to_read", label: "Problem text is hard to read" },
+  { value: "formatting", label: "Formatting is broken" },
+  { value: "incorrect_data", label: "Data looks incorrect" },
+  { value: "other", label: "Something else" },
+];
+
+const MAX_ISSUE_TYPES = 2;
+
+function ReportIssueModal({
+  open,
+  onOpenChange,
+  asset,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  asset: Asset | null;
+}) {
+  const [selected, setSelected] = useState<IssueType[]>([]);
+  const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setSelected([]);
+      setNote("");
+    }
+  }, [open]);
+
+  const toggle = (value: IssueType) => {
+    setSelected((prev) => {
+      if (prev.includes(value)) return prev.filter((v) => v !== value);
+      if (prev.length >= MAX_ISSUE_TYPES) {
+        toast.message(`Select up to ${MAX_ISSUE_TYPES}`);
+        return prev;
+      }
+      return [...prev, value];
+    });
+  };
+
+  const submit = async () => {
+    if (!asset || selected.length === 0) return;
+    setSubmitting(true);
+    try {
+      let email: string | null = null;
+      try {
+        email = localStorage.getItem("v2_student_email");
+      } catch {}
+      const { error } = await supabase.from("problem_issue_reports").insert({
+        asset_id: asset.id,
+        asset_name: asset.asset_name,
+        user_email: email,
+        issue_types: selected,
+        note: note.trim() || null,
+      });
+      if (error) throw error;
+      toast.success("Thanks — issue logged.");
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error(e?.message || "Could not submit");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>What's wrong?</DialogTitle>
+          <DialogDescription>Select up to {MAX_ISSUE_TYPES}.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            {ISSUE_OPTIONS.map((opt) => {
+              const isSel = selected.includes(opt.value);
+              const atMax = !isSel && selected.length >= MAX_ISSUE_TYPES;
+              return (
+                <Button
+                  key={opt.value}
+                  size="sm"
+                  variant={isSel ? "default" : "outline"}
+                  className="text-xs h-8"
+                  disabled={atMax}
+                  onClick={() => toggle(opt.value)}
+                >
+                  {opt.label}
+                </Button>
+              );
+            })}
+          </div>
+          <Textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Add a note (optional)"
+            rows={3}
+            className="text-sm"
+          />
+          <Button
+            onClick={submit}
+            disabled={selected.length === 0 || submitting}
+            className="w-full"
+          >
+            {submitting ? "Sending…" : "Submit issue"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 // ── Need Help modal ────────────────────────────────────────────────────
 function NeedHelpModal({
