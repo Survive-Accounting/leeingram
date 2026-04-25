@@ -15,6 +15,15 @@ function bad(message: string, status = 400) {
   });
 }
 
+// EdgeRuntime.waitUntil shim for local dev
+// deno-lint-ignore no-explicit-any
+const waitUntil = (p: Promise<unknown>) => {
+  try {
+    // deno-lint-ignore no-explicit-any
+    (globalThis as any).EdgeRuntime?.waitUntil?.(p);
+  } catch { /* noop */ }
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -33,7 +42,6 @@ Deno.serve(async (req) => {
     return bad("Valid session_id required");
   }
 
-  // FORCED TEST MODE: must match create-get-access-checkout.
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY_TEST");
   if (!stripeKey) return bad("Stripe secret key not configured", 500);
 
@@ -78,9 +86,7 @@ Deno.serve(async (req) => {
 
     const cleanEmail = customer_email.toLowerCase();
 
-    // Idempotently get-or-create the auth user.
-    // Fast path: look up user_id from profiles by email (indexed). Fallback to
-    // createUser, which returns the existing user gracefully on conflict.
+    // Provision user (fast path: profile lookup, fallback: createUser)
     let userId: string | null = null;
     try {
       const { data: profileRow } = await admin
@@ -97,8 +103,6 @@ Deno.serve(async (req) => {
             email_confirm: true,
           });
         if (createErr) {
-          // If user already exists (race / no profile row yet), try generateLink
-          // to surface the user id.
           const { data: linkProbe } = await admin.auth.admin.generateLink({
             type: "magiclink",
             email: cleanEmail,
@@ -114,27 +118,50 @@ Deno.serve(async (req) => {
       return bad("Could not provision user account", 500);
     }
 
-    // Generate a magiclink the client can immediately consume to sign in.
-    // Run in parallel with the profile upsert below.
     const ua = req.headers.get("user-agent") ?? null;
     const fwd = req.headers.get("x-forwarded-for") ?? "";
     const ip = fwd.split(",")[0]?.trim() || null;
 
-    const [linkResult] = await Promise.all([
-      admin.auth.admin.generateLink({ type: "magiclink", email: cleanEmail }),
-      userId
-        ? admin.from("profiles").upsert(
-            {
-              user_id: userId,
-              email: cleanEmail,
-              last_login_at: new Date().toISOString(),
-              last_login_ip: ip,
-              last_user_agent: ua,
-            },
-            { onConflict: "user_id" },
-          )
-        : Promise.resolve(),
-    ]);
+    const md = (session.metadata ?? {}) as Record<string, string>;
+    const productType = md.purchase_type || md.selectedPlan || "semester_pass";
+    const courseSlug = md.selectedCourse || md.course;
+
+    // Parallelize all independent post-provision work.
+    const [linkResult, , campusRowRes, courseRowRes, existingRes] =
+      await Promise.all([
+        admin.auth.admin.generateLink({ type: "magiclink", email: cleanEmail }),
+        userId
+          ? admin.from("profiles").upsert(
+              {
+                user_id: userId,
+                email: cleanEmail,
+                last_login_at: new Date().toISOString(),
+                last_login_ip: ip,
+                last_user_agent: ua,
+              },
+              { onConflict: "user_id" },
+            )
+          : Promise.resolve({ data: null, error: null }),
+        md.campus
+          ? admin
+              .from("campuses")
+              .select("id")
+              .eq("slug", md.campus)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+        courseSlug
+          ? admin
+              .from("courses")
+              .select("id")
+              .eq("slug", courseSlug)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+        admin
+          .from("student_purchases")
+          .select("id, user_id")
+          .eq("stripe_session_id", sessionId)
+          .maybeSingle(),
+      ]);
 
     let actionLink: string | null = null;
     if (linkResult.error) {
@@ -143,92 +170,59 @@ Deno.serve(async (req) => {
       actionLink = linkResult.data?.properties?.action_link ?? null;
     }
 
-    // ── Idempotently record the purchase ──
-    // The Stripe webhook (`stripe-webhook`) is the canonical writer of
-    // student_purchases, but in test mode and during webhook hiccups it can
-    // miss. Without a row here, AuthCallback bounces the user back to /login
-    // with "no_purchase". So we defensively insert/upsert from the verified
-    // Checkout session — keyed on stripe_session_id to stay idempotent.
-    try {
-      const md = (session.metadata ?? {}) as Record<string, string>;
-      const productType =
-        md.purchase_type || md.selectedPlan || "semester_pass";
+    const campusId = (campusRowRes?.data as { id?: string } | null)?.id ?? null;
+    const courseId = (courseRowRes?.data as { id?: string } | null)?.id ?? null;
+    const existing = existingRes?.data as { id: string; user_id: string | null } | null;
 
-      // Resolve campus_id from slug if metadata included it.
-      let campusId: string | null = null;
-      if (md.campus) {
-        const { data: campusRow } = await admin
-          .from("campuses")
-          .select("id")
-          .eq("slug", md.campus)
-          .maybeSingle();
-        campusId = campusRow?.id ?? null;
-      }
+    // Insert purchase (or backfill user_id if webhook beat us)
+    if (!existing) {
+      const pricePaidCents =
+        typeof session.amount_total === "number" ? session.amount_total : null;
 
-      // Resolve course_id from slug if metadata included it.
-      let courseId: string | null = null;
-      const courseSlug = md.selectedCourse || md.course;
-      if (courseSlug) {
-        const { data: courseRow } = await admin
-          .from("courses")
-          .select("id")
-          .eq("slug", courseSlug)
-          .maybeSingle();
-        courseId = courseRow?.id ?? null;
-      }
-
-      // Skip insert if a row for this session already exists.
-      const { data: existing } = await admin
+      const { error: insertErr } = await admin
         .from("student_purchases")
-        .select("id, user_id")
-        .eq("stripe_session_id", sessionId)
-        .maybeSingle();
-
-      if (!existing) {
-        const pricePaidCents =
-          typeof session.amount_total === "number"
-            ? session.amount_total
-            : null;
-
-        const { error: insertErr } = await admin
-          .from("student_purchases")
-          .insert({
-            email: cleanEmail,
-            user_id: userId,
-            course_id: courseId,
-            chapter_id: null,
-            purchase_type: productType,
-            stripe_customer_id: (session.customer as string) || null,
-            stripe_session_id: sessionId,
-            campus_id: campusId,
-            price_paid_cents: pricePaidCents,
-            lw_enrollment_status: "pending",
-          });
-        if (insertErr) {
-          console.error(
-            "[verify-get-access-checkout] purchase insert failed:",
-            insertErr,
-          );
-        }
-      } else if (userId && !existing.user_id) {
-        // Backfill user_id on the row the webhook already wrote.
-        await admin
-          .from("student_purchases")
-          .update({ user_id: userId })
-          .eq("id", existing.id);
+        .insert({
+          email: cleanEmail,
+          user_id: userId,
+          course_id: courseId,
+          chapter_id: null,
+          purchase_type: productType,
+          stripe_customer_id: (session.customer as string) || null,
+          stripe_session_id: sessionId,
+          campus_id: campusId,
+          price_paid_cents: pricePaidCents,
+          lw_enrollment_status: "pending",
+        });
+      if (insertErr) {
+        console.error(
+          "[verify-get-access-checkout] purchase insert failed:",
+          insertErr,
+        );
       }
+    } else if (userId && !existing.user_id) {
+      await admin
+        .from("student_purchases")
+        .update({ user_id: userId })
+        .eq("id", existing.id);
+    }
 
-      // Link any other purchases for this email to the user.
-      if (userId) {
-        await admin
+    // Defer the cross-purchase backfill — not needed for redirect.
+    if (userId) {
+      waitUntil(
+        admin
           .from("student_purchases")
           .update({ user_id: userId })
           .eq("email", cleanEmail)
-          .is("user_id", null);
-      }
-    } catch (err) {
-      console.error("[verify-get-access-checkout] purchase upsert:", err);
-      // Non-fatal — user can still sign in; the webhook may catch up.
+          .is("user_id", null)
+          .then(({ error }) => {
+            if (error) {
+              console.error(
+                "[verify-get-access-checkout] backfill (deferred):",
+                error,
+              );
+            }
+          }),
+      );
     }
 
     return new Response(

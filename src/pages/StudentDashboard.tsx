@@ -195,13 +195,24 @@ export default function StudentDashboard() {
   const [email, setEmail] = useState<string | null>(null);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [justPaidPhase, setJustPaidPhase] = useState<"verifying" | "success" | "done">(
+    () => {
+      const p = new URLSearchParams(window.location.search);
+      return p.get("just_paid") === "1" || p.get("checkout") === "success"
+        ? "verifying"
+        : "done";
+    },
+  );
 
   useEffect(() => {
-    // Detect ?checkout=success and show success toast
+    // Detect ?checkout=success and show success toast (legacy)
     const params = new URLSearchParams(window.location.search);
     if (params.get("checkout") === "success") {
       toast.success("You're in! Welcome to Survive Accounting 🎉");
+    }
+    if (params.get("just_paid") === "1" || params.get("checkout") === "success") {
       params.delete("checkout");
+      params.delete("just_paid");
       const newSearch = params.toString();
       const newUrl =
         window.location.pathname + (newSearch ? `?${newSearch}` : "") + window.location.hash;
