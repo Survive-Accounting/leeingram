@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { HumanSentModal } from "@/components/HumanSentModal";
 
 const ALLOWED = ["lee@survivestudios.com", "jking.cim@gmail.com"];
 const LOVABLE_URL = "https://lovable.dev/projects/51843e0a-bf2a-4413-bab2-a6c4ea7a1395";
@@ -49,6 +50,7 @@ export function PromptBuilderWidget() {
   const allowed = ALLOWED.includes((user?.email ?? "").trim().toLowerCase());
 
   const [open, setOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [text, setText] = useState("");
   const [mode, setMode] = useState<Mode>("new_feature");
   const [recording, setRecording] = useState(false);
@@ -329,32 +331,45 @@ export function PromptBuilderWidget() {
 
   return (
     <>
-      <button
-        onPointerDown={onLauncherPointerDown}
-        onPointerMove={onLauncherPointerMove}
-        onPointerUp={onLauncherPointerUp}
-        style={{ left: pos.x, top: pos.y, touchAction: "none" }}
-        className="fixed z-[9999] flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-foreground/20"
-        aria-label="Open Prompt Builder (Cmd+K) — drag to move"
-        title="Click to open · Drag to move · ⌘K"
+      <div
+        style={{ left: pos.x, top: pos.y }}
+        className="fixed z-[9999] flex items-center gap-1.5"
       >
-        <Zap className="h-4 w-4" />
-        Build Prompt
-      </button>
+        <button
+          onPointerDown={onLauncherPointerDown}
+          onPointerMove={onLauncherPointerMove}
+          onPointerUp={onLauncherPointerUp}
+          style={{ touchAction: "none" }}
+          className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-foreground/20"
+          aria-label="Open Prompt Builder (Cmd+K) — drag to move"
+          title="Click to open · Drag to move · ⌘K"
+        >
+          <Zap className="h-4 w-4" />
+          Build Prompt
+        </button>
+        <button
+          onClick={() => setAboutOpen(true)}
+          className="rounded-full bg-background/90 backdrop-blur px-2.5 py-1 text-[10px] font-medium tracking-wide text-muted-foreground hover:text-foreground border border-border shadow-sm transition-colors"
+          aria-label="About HumanSent"
+          title="About HumanSent"
+        >
+          HumanSent
+        </button>
+      </div>
+
+      <HumanSentModal open={aboutOpen} onOpenChange={setAboutOpen} />
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col gap-3 overflow-hidden p-0 relative">
-          {/* Subtle brand signature — visible during recordings/demos */}
-          <a
-            href="https://humansent.com"
-            target="_blank"
-            rel="noopener noreferrer"
+          {/* Subtle brand signature — opens the about modal */}
+          <button
+            onClick={() => setAboutOpen(true)}
             className="absolute bottom-3 right-3 z-50 rounded-full bg-background/80 backdrop-blur px-2.5 py-1 text-[10px] font-medium tracking-wide text-muted-foreground/80 border border-border/60 shadow-sm hover:text-foreground hover:bg-background transition-colors animate-fade-in select-none"
-            aria-label="Built with HumanSent.com"
+            aria-label="About HumanSent"
             title="HumanSent.com"
           >
             Built with <span className="text-foreground/90">HumanSent.com</span>
-          </a>
+          </button>
           <div className="flex flex-col gap-3 p-6 pb-3 border-b border-border">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
