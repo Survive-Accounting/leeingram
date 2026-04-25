@@ -233,13 +233,13 @@ export default function QuickEmailGateModal({
               className="text-[22px] sm:text-[24px] leading-tight text-center"
               style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
             >
-              Enter your email
+              Enter your school email
             </h2>
             <p
               className="mt-2 text-center text-[13px]"
               style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
             >
-              Access your study tools
+              We'll personalize your study tools for your course
             </p>
 
             <input
