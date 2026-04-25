@@ -328,6 +328,53 @@ export function PromptBuilderWidget() {
     }
   };
 
+  /**
+   * Global paste capture — when the panel is closed/minimized but the user is
+   * actively recording (or paused), pasted images should still land in the
+   * screenshot tray. Without this, the user has to reopen the panel just to
+   * get an image into the prompt.
+   *
+   * Only active while a recording session is alive, so we don't steal the
+   * user's clipboard pastes elsewhere on the site.
+   */
+  useEffect(() => {
+    const sessionAlive = recording || paused;
+    if (!sessionAlive) return;
+
+    const onGlobalPaste = (e: ClipboardEvent) => {
+      // If the paste target lives inside the panel, the local handler runs.
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('[data-prompt-builder-panel="true"]')) return;
+
+      const items = Array.from(e.clipboardData?.items ?? []);
+      const imageItems = items.filter((it) => it.type.startsWith("image/"));
+      if (imageItems.length === 0) return;
+      e.preventDefault();
+
+      void (async () => {
+        const remaining = MAX_SCREENSHOTS - screenshots.length;
+        if (remaining <= 0) {
+          toast.error(`Max ${MAX_SCREENSHOTS} screenshots — delete one first.`);
+          return;
+        }
+        const toAdd = imageItems.slice(0, remaining);
+        const urls: string[] = [];
+        for (const it of toAdd) {
+          const f = it.getAsFile();
+          if (!f) continue;
+          try { urls.push(await fileToDataUrl(f)); } catch { /* skip */ }
+        }
+        if (urls.length === 0) return;
+        setScreenshots((s) => [...s, ...urls]);
+        toast.success(`Added ${urls.length} screenshot${urls.length > 1 ? "s" : ""}`);
+      })();
+    };
+
+    window.addEventListener("paste", onGlobalPaste);
+    return () => window.removeEventListener("paste", onGlobalPaste);
+  }, [recording, paused, screenshots.length]);
+
+
   // ---- AI ----
   const callAI = async (payload: { text: string; mode: Mode; promptKind: PromptKind }) => {
     const { data, error } = await supabase.functions.invoke("generate-lovable-prompt", { body: payload });
