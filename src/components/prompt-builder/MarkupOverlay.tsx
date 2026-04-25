@@ -207,8 +207,9 @@ export function MarkupOverlay({ onClose }: Props) {
     }
   };
 
-  return (
+  return createPortal(
     <>
+
       <svg
         ref={svgRef}
         data-prompt-builder-ui="true"
