@@ -1595,6 +1595,12 @@ export default function SolutionsViewerV2() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ShareModal
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        onCopy={() => trackShareEvent("copy_link")}
+      />
     </div>
   );
 }
