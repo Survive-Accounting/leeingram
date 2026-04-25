@@ -334,7 +334,7 @@ export function PromptBuilderWidget() {
         onPointerMove={onLauncherPointerMove}
         onPointerUp={onLauncherPointerUp}
         style={{ left: pos.x, top: pos.y, touchAction: "none" }}
-        className="fixed z-[60] flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none"
+        className="fixed z-[9999] flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-foreground/20"
         aria-label="Open Prompt Builder (Cmd+K) — drag to move"
         title="Click to open · Drag to move · ⌘K"
       >
