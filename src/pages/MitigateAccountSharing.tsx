@@ -154,6 +154,8 @@ const CATEGORIES: Category[] = [
     complexity: 7,
     technical:
       "Each viewer event in asset_events is enriched with IP→ASN→geo (city, region, country) at ingest. We compute the great-circle distance between consecutive sessions and divide by elapsed time. Velocities exceeding ~900 km/h ('impossible travel') flag the account. We also score IP entropy: H = -Σp(i)·log₂p(i) over the trailing 30 days.",
+    halfTechy:
+      "We log the IP address on every page view and run it through a geo-IP lookup (city, state, country). For each account, we compare back-to-back sessions: if you went from Mississippi to Texas in 30 minutes, that's physically impossible. We also count how many different IPs an account uses — one student should be 1–3, not 12.",
     laymans:
       "If your account is logged in from Mississippi at 2pm and Texas at 2:30pm, that's not possible — unless you're in a teleporter. We track those 'impossible trips.' We also notice if one account is suddenly being used from 12 different cities in a month.",
     mockup: [
