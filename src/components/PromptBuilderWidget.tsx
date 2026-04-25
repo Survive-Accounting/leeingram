@@ -4,14 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Zap, Mic, MicOff, Image as ImageIcon, X, Copy, Loader2, Sparkles,
-  Wrench, Plus, TrendingUp, Send, Check, Trash2,
+  Wrench, Plus, TrendingUp, Send, Check, Trash2, EyeOff,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { HumanSentModal } from "@/components/HumanSentModal";
 
 const ALLOWED = ["lee@survivestudios.com", "jking.cim@gmail.com"];
 const LOVABLE_URL = "https://lovable.dev/projects/51843e0a-bf2a-4413-bab2-a6c4ea7a1395";
@@ -49,8 +48,12 @@ export function PromptBuilderWidget() {
   const { user } = useAuth();
   const allowed = ALLOWED.includes((user?.email ?? "").trim().toLowerCase());
 
+  const HIDDEN_KEY = "promptBuilder.hidden.v1";
+  const [hidden, setHidden] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem(HIDDEN_KEY) === "1"; } catch { return false; }
+  });
   const [open, setOpen] = useState(false);
-  const [aboutOpen, setAboutOpen] = useState(false);
   const [text, setText] = useState("");
   const [mode, setMode] = useState<Mode>("new_feature");
   const [recording, setRecording] = useState(false);
@@ -124,18 +127,34 @@ export function PromptBuilderWidget() {
     if (!d?.moved) setOpen(true);
   };
 
-  // Hotkey: Cmd/Ctrl+K to open widget (global)
+  // Persist hidden state + listen for global show events
+  useEffect(() => {
+    try { localStorage.setItem(HIDDEN_KEY, hidden ? "1" : "0"); } catch { /* noop */ }
+  }, [hidden]);
+
+  useEffect(() => {
+    const onShow = () => setHidden(false);
+    window.addEventListener("promptBuilder:show", onShow);
+    return () => window.removeEventListener("promptBuilder:show", onShow);
+  }, []);
+
+  // Hotkey: Cmd/Ctrl+K to open widget. Shift+Cmd/Ctrl+K to toggle visibility.
   useEffect(() => {
     if (!allowed) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setOpen((v) => !v);
+        if (e.shiftKey) {
+          setHidden((h) => !h);
+        } else {
+          if (hidden) setHidden(false);
+          setOpen((v) => !v);
+        }
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [allowed]);
+  }, [allowed, hidden]);
 
   useEffect(() => {
     return () => {
@@ -329,11 +348,24 @@ export function PromptBuilderWidget() {
 
   if (!allowed) return null;
 
+  if (hidden) {
+    return (
+      <button
+        onClick={() => setHidden(false)}
+        className="fixed bottom-3 left-3 z-[9999] rounded-full bg-background/80 backdrop-blur px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border shadow-sm transition-colors"
+        title="Show Prompt Builder (Shift+⌘K)"
+        aria-label="Show Prompt Builder"
+      >
+        ⚡
+      </button>
+    );
+  }
+
   return (
     <>
       <div
         style={{ left: pos.x, top: pos.y }}
-        className="fixed z-[9999] flex items-center gap-1.5"
+        className="fixed z-[9999] flex items-center gap-1.5 group"
       >
         <button
           onPointerDown={onLauncherPointerDown}
@@ -342,34 +374,23 @@ export function PromptBuilderWidget() {
           style={{ touchAction: "none" }}
           className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-foreground/20"
           aria-label="Open Prompt Builder (Cmd+K) — drag to move"
-          title="Click to open · Drag to move · ⌘K"
+          title="Click to open · Drag to move · ⌘K · Shift+⌘K to hide"
         >
           <Zap className="h-4 w-4" />
           Build Prompt
         </button>
         <button
-          onClick={() => setAboutOpen(true)}
-          className="rounded-full bg-background/90 backdrop-blur px-2.5 py-1 text-[10px] font-medium tracking-wide text-muted-foreground hover:text-foreground border border-border shadow-sm transition-colors"
-          aria-label="About HumanSent"
-          title="About HumanSent"
+          onClick={() => setHidden(true)}
+          className="opacity-0 group-hover:opacity-100 rounded-full bg-background/90 backdrop-blur p-1.5 text-muted-foreground hover:text-foreground border border-border shadow-sm transition-opacity"
+          aria-label="Hide Prompt Builder"
+          title="Hide (Shift+⌘K to toggle)"
         >
-          HumanSent
+          <EyeOff className="h-3 w-3" />
         </button>
       </div>
 
-      <HumanSentModal open={aboutOpen} onOpenChange={setAboutOpen} />
-
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col gap-3 overflow-hidden p-0 relative">
-          {/* Subtle brand signature — opens the about modal */}
-          <button
-            onClick={() => setAboutOpen(true)}
-            className="absolute bottom-3 right-3 z-50 rounded-full bg-background/80 backdrop-blur px-2.5 py-1 text-[10px] font-medium tracking-wide text-muted-foreground/80 border border-border/60 shadow-sm hover:text-foreground hover:bg-background transition-colors animate-fade-in select-none"
-            aria-label="About HumanSent"
-            title="HumanSent.com"
-          >
-            Built with <span className="text-foreground/90">HumanSent.com</span>
-          </button>
           <div className="flex flex-col gap-3 p-6 pb-3 border-b border-border">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
