@@ -1511,6 +1511,31 @@ export default function SolutionsViewerV2() {
         siblings={siblings}
         currentAssetName={asset?.asset_name}
       />
+
+      <Dialog open={originalOpen} onOpenChange={setOriginalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Original textbook problem</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto -mr-1 pr-1 space-y-3">
+            {originalImages.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-8 text-center">
+                Original textbook image isn't available for this problem yet.
+              </div>
+            ) : (
+              originalImages.map((url, i) => (
+                <img
+                  key={i}
+                  src={url}
+                  alt={`Original textbook problem${originalImages.length > 1 ? ` (page ${i + 1})` : ""}`}
+                  className="w-full h-auto rounded-md border border-border bg-white"
+                  loading="lazy"
+                />
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
