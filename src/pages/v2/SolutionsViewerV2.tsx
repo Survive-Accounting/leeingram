@@ -364,7 +364,7 @@ export default function SolutionsViewerV2() {
       </Helmet>
 
       {isPreview && (
-        <div className="fixed top-2 right-2 z-50 bg-amber-500 text-amber-950 text-[10px] font-mono px-2 py-1 rounded shadow-lg border border-amber-600">
+        <div className="fixed top-2 right-2 z-50 bg-destructive text-destructive-foreground text-[10px] font-mono px-2 py-1 rounded shadow-lg">
           PREVIEW · {asset?.asset_name || assetCode}
         </div>
       )}
