@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, LayoutList, Wand2, Printer, BookOpen } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, LayoutList, Wand2, Printer, BookOpen, Share2, Copy, Check } from "lucide-react";
 import { StructuredJEDisplay } from "@/components/StructuredJEDisplay";
 import { generateSimplifiedPracticePdf } from "@/lib/generateSimplifiedPracticePdf";
 import ReactMarkdown from "react-markdown";
@@ -308,7 +308,8 @@ const REASON_OPTIONS: { value: FeedbackReason; label: string }[] = [
 
 const MAX_REASONS = 2;
 
-function ExplanationFeedback({ asset }: { asset: Asset }) {
+function ExplanationFeedback({ asset, onShareClick }: { asset: Asset; onShareClick: () => void }) {
+  const [helpful, setHelpful] = useState<boolean | null>(null);
   const [stage, setStage] = useState<"ask" | "negative" | "done">("ask");
   const [reasons, setReasons] = useState<FeedbackReason[]>([]);
   const [note, setNote] = useState("");
@@ -338,17 +339,18 @@ function ExplanationFeedback({ asset }: { asset: Asset }) {
     });
   };
 
-  const submit = async (helpful: boolean, rs: FeedbackReason[] = [], n: string = "") => {
+  const submit = async (isHelpful: boolean, rs: FeedbackReason[] = [], n: string = "") => {
     setSubmitting(true);
     try {
       await supabase.from("explanation_feedback").insert({
         asset_id: asset.id,
         asset_name: asset.asset_name,
         user_email: getEmail(),
-        helpful,
+        helpful: isHelpful,
         reason: rs.length ? rs : null,
         note: n.trim() || null,
       });
+      setHelpful(isHelpful);
       setStage("done");
     } catch (e: any) {
       toast.error("Could not send feedback");
@@ -358,6 +360,22 @@ function ExplanationFeedback({ asset }: { asset: Asset }) {
   };
 
   if (stage === "done") {
+    if (helpful) {
+      return (
+        <div className="space-y-3 py-1">
+          <div className="text-sm font-medium text-foreground leading-snug">
+            🔥 Awesome — glad that clicked.
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Want to help a friend before their exam?
+          </div>
+          <Button size="sm" className="w-full" onClick={onShareClick}>
+            <Share2 className="h-3.5 w-3.5 mr-1.5" />
+            Send this to a friend
+          </Button>
+        </div>
+      );
+    }
     return (
       <div className="text-center text-sm text-muted-foreground py-2">
         Got it 👍 Thanks for the feedback.
@@ -443,11 +461,13 @@ function InlineExplanation({
   chapter,
   simplifiedText,
   setSimplifiedText,
+  onShareClick,
 }: {
   asset: Asset;
   chapter: ChapterMeta | null;
   simplifiedText: string | null;
   setSimplifiedText: (t: string | null) => void;
+  onShareClick: () => void;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -639,10 +659,80 @@ function InlineExplanation({
 
       {sections && activeSection && (
         <div className="pt-3 border-t border-border">
-          <ExplanationFeedback asset={asset} />
+          <ExplanationFeedback asset={asset} onShareClick={onShareClick} />
         </div>
       )}
     </div>
+  );
+}
+
+// ── Share modal ───────────────────────────────────────────────────────
+function ShareModal({
+  open,
+  onOpenChange,
+  onCopy,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onCopy: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const url = typeof window !== "undefined" ? window.location.href : "";
+
+  // Reset copied state when reopened
+  useEffect(() => {
+    if (open) setCopied(false);
+  }, [open]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      onCopy();
+      toast.success("Link copied");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Couldn't copy — long-press the link to copy manually");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Share this problem</DialogTitle>
+          <DialogDescription>
+            Copy this link and send it to a friend:
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex items-center gap-2">
+          <Input
+            value={url}
+            readOnly
+            onFocus={(e) => e.currentTarget.select()}
+            className="text-xs font-mono"
+          />
+          <Button onClick={handleCopy} className="shrink-0" size="sm">
+            {copied ? (
+              <>
+                <Check className="h-3.5 w-3.5 mr-1.5" />
+                Copied
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5 mr-1.5" />
+                Copy link
+              </>
+            )}
+          </Button>
+        </div>
+
+        <p className="text-xs text-muted-foreground italic">
+          "Helped me cram this way faster — try this"
+        </p>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1038,6 +1128,28 @@ export default function SolutionsViewerV2() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [jumpOpen, setJumpOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  // Track share interactions (asset_share_events)
+  const trackShareEvent = async (eventType: "share_click" | "copy_link") => {
+    if (!asset) return;
+    try {
+      await supabase.from("asset_share_events").insert({
+        teaching_asset_id: asset.id,
+        asset_name: asset.asset_name,
+        event_type: eventType,
+        referrer: typeof document !== "undefined" ? document.referrer || null : null,
+        user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+      });
+    } catch {
+      // non-blocking
+    }
+  };
+
+  const openShareModal = () => {
+    trackShareEvent("share_click");
+    setShareOpen(true);
+  };
 
   // Simplify-this-problem state (keeps simplified text + active view per asset)
   const [simplifiedText, setSimplifiedText] = useState<string | null>(null);
@@ -1245,20 +1357,36 @@ export default function SolutionsViewerV2() {
           >
             Survive Accounting
           </Link>
-          <button
-            type="button"
-            onClick={() => setJumpOpen(true)}
-            disabled={siblings.length === 0}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-medium transition-all hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              color: "rgba(255,255,255,0.85)",
-            }}
-          >
-            <LayoutList className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Jump</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openShareModal}
+              title="Share this problem"
+              aria-label="Share this problem"
+              className="inline-flex items-center justify-center h-9 w-9 rounded-lg transition-all hover:bg-white/10"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "rgba(255,255,255,0.75)",
+              }}
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setJumpOpen(true)}
+              disabled={siblings.length === 0}
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-medium transition-all hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "rgba(255,255,255,0.85)",
+              }}
+            >
+              <LayoutList className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Jump</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -1440,6 +1568,7 @@ export default function SolutionsViewerV2() {
                 chapter={chapter}
                 simplifiedText={simplifiedText}
                 setSimplifiedText={setSimplifiedText}
+                onShareClick={openShareModal}
               />
             </div>
           </div>
@@ -1536,6 +1665,12 @@ export default function SolutionsViewerV2() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ShareModal
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        onCopy={() => trackShareEvent("copy_link")}
+      />
     </div>
   );
 }
