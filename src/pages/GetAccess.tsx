@@ -86,6 +86,39 @@ export default function GetAccess() {
     };
   }, [campusParam]);
 
+  useEffect(() => {
+    if (!courseParam) {
+      setProblemCount(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data: course } = await supabase
+        .from("courses")
+        .select("id")
+        .eq("slug", courseParam)
+        .maybeSingle();
+      if (!course?.id || cancelled) return;
+      const { count } = await supabase
+        .from("teaching_assets")
+        .select("id", { count: "exact", head: true })
+        .eq("course_id", course.id);
+      if (!cancelled && typeof count === "number") setProblemCount(count);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [courseParam]);
+
+  const problemCountLabel = useMemo(() => {
+    const n = problemCount ?? 0;
+    if (n < 50) return "200+";
+    // Round DOWN to nearest 25 below 200, nearest 50 above
+    const step = n >= 200 ? 100 : n >= 100 ? 50 : 25;
+    const rounded = Math.floor(n / step) * step;
+    return `${rounded}+`;
+  }, [problemCount]);
+
   const [extraCount, setExtraCount] = useState(0);
   const [lifetimeUpgrade, setLifetimeUpgrade] = useState(false);
   const [autoRenew, setAutoRenew] = useState(false);
