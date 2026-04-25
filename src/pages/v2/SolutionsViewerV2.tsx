@@ -1287,20 +1287,36 @@ export default function SolutionsViewerV2() {
           >
             Survive Accounting
           </Link>
-          <button
-            type="button"
-            onClick={() => setJumpOpen(true)}
-            disabled={siblings.length === 0}
-            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-medium transition-all hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              color: "rgba(255,255,255,0.85)",
-            }}
-          >
-            <LayoutList className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Jump</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openShareModal}
+              title="Share this problem"
+              aria-label="Share this problem"
+              className="inline-flex items-center justify-center h-9 w-9 rounded-lg transition-all hover:bg-white/10"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "rgba(255,255,255,0.75)",
+              }}
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setJumpOpen(true)}
+              disabled={siblings.length === 0}
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-medium transition-all hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: "rgba(255,255,255,0.85)",
+              }}
+            >
+              <LayoutList className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Jump</span>
+            </button>
+          </div>
         </div>
       </header>
 
