@@ -666,6 +666,76 @@ function InlineExplanation({
   );
 }
 
+// ── Share modal ───────────────────────────────────────────────────────
+function ShareModal({
+  open,
+  onOpenChange,
+  onCopy,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onCopy: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const url = typeof window !== "undefined" ? window.location.href : "";
+
+  // Reset copied state when reopened
+  useEffect(() => {
+    if (open) setCopied(false);
+  }, [open]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      onCopy();
+      toast.success("Link copied");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Couldn't copy — long-press the link to copy manually");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Share this problem</DialogTitle>
+          <DialogDescription>
+            Copy this link and send it to a friend:
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex items-center gap-2">
+          <Input
+            value={url}
+            readOnly
+            onFocus={(e) => e.currentTarget.select()}
+            className="text-xs font-mono"
+          />
+          <Button onClick={handleCopy} className="shrink-0" size="sm">
+            {copied ? (
+              <>
+                <Check className="h-3.5 w-3.5 mr-1.5" />
+                Copied
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5 mr-1.5" />
+                Copy link
+              </>
+            )}
+          </Button>
+        </div>
+
+        <p className="text-xs text-muted-foreground italic">
+          "Helped me cram this way faster — try this"
+        </p>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Jump modal ────────────────────────────────────────────────────────
 function getRefPrefix(ref: string | null): "BE" | "EX" | "PR" | "OTHER" {
   if (!ref) return "OTHER";
