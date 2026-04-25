@@ -384,7 +384,7 @@ function SocialProofStrip() {
   const stats: Array<{ label: string; bold: string }> = [
     { bold: "2,500+", label: "practice problems" },
     { bold: "4", label: "courses covered" },
-    { bold: "10+", label: "years tutoring" },
+    { bold: "Based on 10+", label: "years tutoring" },
   ];
   return (
     <div
