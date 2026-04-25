@@ -576,12 +576,13 @@ export function PromptBuilderWidget() {
 }
 
 function PromptCardView({
-  card, onCopy, onSend, onDelete,
+  card, onCopy, onSend, onDelete, onCopyImage,
 }: {
   card: PromptCard;
   onCopy: () => void;
   onSend: () => void;
   onDelete: () => void;
+  onCopyImage: (dataUrl: string, label: string) => void;
 }) {
   const modeLabel = MODES.find((m) => m.key === card.mode)?.label ?? "";
   const kindLabel = card.kind === "plan" ? "Plan" : "Build";
@@ -597,6 +598,12 @@ function PromptCardView({
         <span className="text-[9px] uppercase tracking-wide text-muted-foreground font-medium">
           {modeLabel}
         </span>
+        {card.screenshots.length > 0 && (
+          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-foreground bg-background/60 rounded px-1.5 py-0.5">
+            <ImageIcon className="h-2.5 w-2.5" />
+            {card.screenshots.length}
+          </span>
+        )}
         <Button size="sm" variant="ghost" className="h-6 w-6 p-0 ml-auto text-muted-foreground hover:text-destructive" onClick={onDelete} title="Delete">
           <Trash2 className="h-3 w-3" />
         </Button>
@@ -618,6 +625,33 @@ function PromptCardView({
           <pre className="whitespace-pre-wrap text-[11px] font-mono leading-snug text-foreground bg-background/60 rounded p-1.5 max-h-44 overflow-y-auto">
             {card.output}
           </pre>
+
+          {card.screenshots.length > 0 && (
+            <div className="rounded border border-border bg-background/60 p-1.5 space-y-1">
+              <div className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">
+                Screenshots — copy each, then paste into Lovable
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {card.screenshots.map((url, i) => (
+                  <button
+                    key={i}
+                    onClick={() => onCopyImage(url, `Screenshot ${i + 1}`)}
+                    className="relative group rounded overflow-hidden border border-border hover:border-primary transition-colors"
+                    title={`Copy screenshot ${i + 1} to clipboard`}
+                  >
+                    <img src={url} alt={`Screenshot ${i + 1}`} className="h-12 w-16 object-cover" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+                      <ClipboardCopy className="h-3 w-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <span className="absolute bottom-0.5 left-0.5 text-[9px] font-bold text-white bg-black/60 rounded px-1 leading-tight">
+                      {i + 1}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-1">
             <Button size="sm" className="h-6 text-[10px] px-2" onClick={onSend}>
               <Send className="h-2.5 w-2.5 mr-1" /> Send to Lovable
