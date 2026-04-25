@@ -274,6 +274,8 @@ function ExplanationPanel({
 export default function SolutionsViewerV2() {
   const { assetCode } = useParams<{ assetCode: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isPreview = searchParams.get("mode") === "preview";
 
   const [asset, setAsset] = useState<Asset | null>(null);
   const [chapter, setChapter] = useState<ChapterMeta | null>(null);
