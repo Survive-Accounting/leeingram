@@ -422,6 +422,17 @@ export default function GetAccess() {
             {/* Header row — Secure Checkout + Price Badge */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
+                <span
+                  className="inline-block rounded-full px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-wider mb-2"
+                  style={{
+                    background: "#FEF2F2",
+                    color: RED,
+                    border: "1px solid #FECACA",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                >
+                  Finals Week Pricing
+                </span>
                 <h2
                   className="text-[24px] sm:text-[28px] leading-tight"
                   style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
