@@ -145,6 +145,7 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
         { onConflict: "email,course_id" },
       );
       if (dbErr) throw dbErr;
+      await registerLead(trimmed, intent.course.slug);
       trackEvent("waitlist_signup", { course_name: intent.course.name, email_domain: trimmed.split("@")[1] });
       setNotifySuccess(true);
     } catch {
