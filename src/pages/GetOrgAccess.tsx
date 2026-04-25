@@ -877,16 +877,22 @@ export default function GetOrgAccess() {
                   {role === "member" && (
                     <div className="mt-4">
                       <div
-                        className="text-[14px] font-semibold"
+                        className="text-[16px] font-semibold leading-snug"
                         style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
                       >
-                        Your chapter doesn't have access yet.
+                        {(intentSelectedOrg?.org_name || intentChapter.trim() || "Your chapter")} doesn't have access yet.
+                      </div>
+                      <div
+                        className="mt-1 text-[14px] font-medium"
+                        style={{ color: "#15803D", fontFamily: "Inter, sans-serif" }}
+                      >
+                        You're on the list.
                       </div>
                       <p
-                        className="mt-1 text-[13px]"
+                        className="mt-2 text-[13px]"
                         style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
                       >
-                        Send your treasurer or exec the invite link to get the chapter set up.
+                        Share the setup link with your president or academic chair to get access started.
                       </p>
 
                       {memberWaitlistCount != null && memberWaitlistCount > 0 && (
@@ -907,7 +913,7 @@ export default function GetOrgAccess() {
                           style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 12px rgba(206,17,38,0.20)" }}
                         >
                           <Copy size={14} />
-                          {copied ? "Copied!" : "Copy invite link"}
+                          {copied ? "Copied!" : "Copy setup link"}
                         </button>
                       </div>
 
