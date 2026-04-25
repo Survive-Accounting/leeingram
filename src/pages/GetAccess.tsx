@@ -626,7 +626,10 @@ export default function GetAccess() {
             </div>
 
             {/* Access Period — compact inline upsell */}
-            <div className="mt-3.5" style={{ fontFamily: "Inter, sans-serif" }}>
+            <div
+              className="mt-7 pt-5 border-t"
+              style={{ fontFamily: "Inter, sans-serif", borderColor: "#EEF1F5" }}
+            >
               <div
                 className="text-[10px] font-semibold uppercase tracking-[0.08em]"
                 style={{ color: "#94A3B8" }}
