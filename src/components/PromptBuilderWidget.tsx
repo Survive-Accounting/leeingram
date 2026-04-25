@@ -438,58 +438,117 @@ export function PromptBuilderWidget() {
     );
   }
 
+  /** True whenever a recording session is alive (recording or paused). */
+  const sessionAlive = recording || paused;
+
   return (
     <>
-      {/* Launcher pill */}
-      <div data-prompt-builder-ui="true" style={{ left: pos.x, top: pos.y }} className="fixed z-[9999] flex items-center gap-1.5 group">
-        <button
-          onPointerDown={onLauncherPointerDown}
-          onPointerMove={onLauncherPointerMove}
-          onPointerUp={onLauncherPointerUp}
-          onClick={onLauncherClick}
-          style={{ touchAction: "none" }}
-          className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-foreground/20"
-          title="Click to open · Drag to move · ⌘K"
-        >
-          <Zap className="h-4 w-4" />
-          Build Prompt
-        </button>
-        <button
-          onClick={() => setHidden(true)}
-          className="opacity-0 group-hover:opacity-100 rounded-full bg-background/90 backdrop-blur p-1.5 text-muted-foreground hover:text-foreground border border-border shadow-sm transition-opacity"
-          title="Hide (Shift+⌘K to toggle)"
-        >
-          <EyeOff className="h-3 w-3" />
-        </button>
-      </div>
+      {/* Launcher — circular ⚡ on mobile, draggable pill on desktop */}
+      {isMobile ? (
+        <div data-prompt-builder-ui="true" className="fixed bottom-5 right-4 z-[9999] flex flex-col items-end gap-1.5 group">
+          <button
+            onClick={() => { setOpen(true); setMinimized(false); }}
+            className={cn(
+              "h-12 w-12 rounded-full flex items-center justify-center shadow-lg shadow-primary/30 ring-2 ring-primary-foreground/20 transition-transform active:scale-95",
+              sessionAlive
+                ? "bg-destructive text-destructive-foreground"
+                : "bg-primary text-primary-foreground"
+            )}
+            title="Open Prompt Builder"
+            aria-label="Open Prompt Builder"
+          >
+            {sessionAlive ? <Mic className="h-5 w-5 animate-pulse" /> : <Zap className="h-5 w-5" />}
+          </button>
+          <button
+            onClick={() => setHidden(true)}
+            className="opacity-60 hover:opacity-100 rounded-full bg-background/90 backdrop-blur p-1 text-muted-foreground border border-border shadow-sm transition-opacity"
+            title="Hide"
+            aria-label="Hide Prompt Builder"
+          >
+            <EyeOff className="h-3 w-3" />
+          </button>
+        </div>
+      ) : (
+        <div data-prompt-builder-ui="true" style={{ left: pos.x, top: pos.y }} className="fixed z-[9999] flex items-center gap-1.5 group">
+          <button
+            onPointerDown={onLauncherPointerDown}
+            onPointerMove={onLauncherPointerMove}
+            onPointerUp={onLauncherPointerUp}
+            onClick={onLauncherClick}
+            style={{ touchAction: "none" }}
+            className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-foreground/20"
+            title="Click to open · Drag to move · ⌘K"
+          >
+            <Zap className="h-4 w-4" />
+            Build Prompt
+          </button>
+          <button
+            onClick={() => setHidden(true)}
+            className="opacity-0 group-hover:opacity-100 rounded-full bg-background/90 backdrop-blur p-1.5 text-muted-foreground hover:text-foreground border border-border shadow-sm transition-opacity"
+            title="Hide (Shift+⌘K to toggle)"
+          >
+            <EyeOff className="h-3 w-3" />
+          </button>
+        </div>
+      )}
 
-      {/* Minimized pill */}
-      {open && minimized && (
+      {/* Floating recording bar / collapsed bubble.
+          Visible whenever a recording session is alive — even with the panel closed. */}
+      {sessionAlive && (
+        <RecordingBar
+          startedAt={recStartedAt}
+          paused={paused}
+          collapsed={barCollapsed}
+          onPause={pauseRecording}
+          onResume={startRecording}
+          onStop={stopRecording}
+          onMinimize={() => setBarCollapsed(true)}
+          onExpand={() => {
+            setBarCollapsed(false);
+            setOpen(true);
+            setMinimized(false);
+          }}
+        />
+      )}
+
+      {/* Minimized panel pill — only on desktop; on mobile the launcher already collapses */}
+      {!isMobile && open && minimized && (
         <button
           data-prompt-builder-ui="true"
           onClick={() => setMinimized(false)}
           className="fixed bottom-4 right-4 z-[9999] flex items-center gap-2 rounded-full bg-primary px-3 py-2 text-xs font-medium text-primary-foreground shadow-lg hover:scale-105 transition-transform"
         >
           <Sparkles className="h-3.5 w-3.5" /> Prompt Builder
-          {recording && <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />}
+          {sessionAlive && <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />}
         </button>
       )}
 
-      {/* Compact floating window */}
+      {/* Panel — bottom sheet on mobile, draggable window on desktop */}
       {open && !minimized && (
         <div
           data-prompt-builder-ui="true"
+          data-prompt-builder-panel="true"
           role="dialog"
           aria-modal="false"
-          style={{
-            left: winPos.x,
-            top: winPos.y,
-            width: WINDOW_SIZE.w,
-            maxHeight: "calc(100vh - 32px)",
-          }}
-          className="fixed z-[9999] flex flex-col rounded-xl border border-border bg-background shadow-2xl overflow-hidden"
-          {...dragHandlers}
+          style={
+            isMobile
+              ? undefined
+              : {
+                  left: winPos.x,
+                  top: winPos.y,
+                  width: WINDOW_SIZE.w,
+                  maxHeight: "calc(100vh - 32px)",
+                }
+          }
+          className={cn(
+            "fixed z-[9999] flex flex-col bg-background shadow-2xl overflow-hidden",
+            isMobile
+              ? "left-0 right-0 bottom-0 max-h-[85vh] rounded-t-2xl border-t border-border animate-in slide-in-from-bottom duration-200"
+              : "rounded-xl border border-border"
+          )}
+          {...(isMobile ? {} : dragHandlers)}
         >
+
           {/* Title bar */}
           <div data-drag-handle="true" className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-border bg-muted/40 cursor-grab active:cursor-grabbing select-none">
             <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
