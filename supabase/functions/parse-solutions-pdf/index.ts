@@ -136,22 +136,15 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to download PDF: ${dlError?.message || "no data"}`);
     }
 
-    // Use pdf-parse to extract text
-    const pdfParse = (await import("npm:pdf-parse@1.1.1")).default;
+    // Extract text using unpdf (Deno-compatible)
+    const { extractText } = await import("https://esm.sh/unpdf@0.12.1");
     const buffer = new Uint8Array(await fileData.arrayBuffer());
-    const pdfData = await pdfParse(buffer);
+    const { text, totalPages } = await extractText(buffer, { mergePages: false });
 
-    // Build per-page text (pdf-parse gives us combined text; we split by form feeds or use numpages)
-    // pdf-parse doesn't give per-page easily, so we'll use a page-marker approach
-    const rawText = pdfData.text || "";
-    const numPages = pdfData.numpages || 1;
-
-    // Simple page splitting: split by form feed or estimate
-    const pageTexts = rawText.split(/\f/);
-    const pages = pageTexts.map((text: string, i: number) => ({
-      pageNum: i + 1,
-      text,
-    }));
+    // unpdf returns text as string[] (one per page) when mergePages is false
+    const pageTextsArr: string[] = Array.isArray(text) ? text : [String(text || "")];
+    const numPages = totalPages || pageTextsArr.length || 1;
+    const pages = pageTextsArr.map((t, i) => ({ pageNum: i + 1, text: t || "" }));
 
     // Detect blocks
     const blocks = detectBlocks(pages);
