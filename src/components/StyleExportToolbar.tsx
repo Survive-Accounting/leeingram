@@ -9,9 +9,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  buildMarkdownBrief, buildZipBundle, captureElementToPng, captureFullPage,
-  downloadBlob, downloadText, findExportableSections, type ExportableSection,
+  buildMarkdownBrief, buildZipBundle, captureElementToClipboard, captureFullPageToClipboard,
+  downloadBlob, findExportableSections, type ExportableSection,
 } from "@/lib/styleExport";
+import { copyToClipboard } from "@/lib/clipboardFallback";
 
 const ALLOWED = ["lee@survivestudios.com", "jking.cim@gmail.com"];
 const HIDDEN_KEY = "styleExport.hidden.v1";
