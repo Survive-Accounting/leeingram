@@ -1246,9 +1246,7 @@ export default function GetOrgAccess() {
                     {PRESETS.map((p) => {
                       const matchedTier = findTier(p.seats);
                       const selected = matchedTier ? matchedTier.id === selectedTierId : false;
-                      const discountedTotal = foundingEligible
-                        ? Math.round(p.total * (1 - FOUNDING_DISCOUNT_PCT / 100))
-                        : p.total;
+                      const discountedTotal = applyDiscount(p.total);
                       const perMember = Math.round(discountedTotal / p.seats);
                       const isPopular = p.key === "chapter";
                       return (
