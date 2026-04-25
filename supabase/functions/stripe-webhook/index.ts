@@ -49,8 +49,8 @@ Deno.serve(async (req) => {
         throw err;
       }
     } catch {
-      console.error("Webhook signature verification failed:", err.message);
-      return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+      console.error("Webhook signature verification failed:", (err as any).message);
+      return new Response(`Webhook Error: ${(err as any).message}`, { status: 400 });
     }
   }
 

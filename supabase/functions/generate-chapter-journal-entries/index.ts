@@ -317,7 +317,7 @@ Include every major transaction type a student needs to know for exams. Group in
 
         completed++;
       } catch (err: any) {
-        errors.push(`${ch.chapter_name}: ${err.message}`);
+        errors.push(`${ch.chapter_name}: ${(err as any).message}`);
       }
     }
 
@@ -327,7 +327,7 @@ Include every major transaction type a student needs to know for exams. Group in
     );
   } catch (err: any) {
     console.error("generate-chapter-journal-entries error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as any).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

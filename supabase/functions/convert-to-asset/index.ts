@@ -2053,7 +2053,7 @@ REMINDER: Name the primary entity 'Survive Company A ([role])' and secondary ent
   } catch (e) {
     console.error("convert-to-asset error:", e);
 
-    const errorMessage = e instanceof Error ? e.message : "Unknown error";
+    const errorMessage = e instanceof Error ? (e as any).message : "Unknown error";
 
     if (sbService && runId) {
       const durationMs = Date.now() - runStartedAt;

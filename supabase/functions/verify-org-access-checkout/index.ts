@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       }
     } catch (err) {
       console.error("[verify-org-access-checkout] Stripe error", err);
-      return bad(err instanceof Error ? err.message : "Stripe error", 500);
+      return bad(err instanceof Error ? (err as any).message : "Stripe error", 500);
     }
   } else if (orgAccountId) {
     // Manual invoice path — no session_id, just load by account id

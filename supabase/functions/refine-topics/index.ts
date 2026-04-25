@@ -176,7 +176,7 @@ Analyze the topic organization and suggest improvements. Consider:
     console.error("refine-topics error:", e);
     return new Response(
       JSON.stringify({
-        error: e instanceof Error ? e.message : "Unknown error",
+        error: e instanceof Error ? (e as any).message : "Unknown error",
       }),
       {
         status: 500,

@@ -307,7 +307,7 @@ serve(async (req) => {
     })
     .catch(async (err) => {
       console.error("Background backup failed:", err);
-      await sb.from("app_settings").upsert({ key: "backup_status", value: `failed: ${err.message}` }, { onConflict: "key" });
+      await sb.from("app_settings").upsert({ key: "backup_status", value: `failed: ${(err as any).message}` }, { onConflict: "key" });
     });
 
   // @ts-ignore — EdgeRuntime is available in Supabase edge runtime

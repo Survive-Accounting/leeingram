@@ -127,7 +127,7 @@ Rules:
     });
   } catch (e) {
     console.error("swap-problem-numbers error:", e);
-    return new Response(JSON.stringify({ success: false, error: e instanceof Error ? e.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ success: false, error: e instanceof Error ? (e as any).message : "Unknown error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

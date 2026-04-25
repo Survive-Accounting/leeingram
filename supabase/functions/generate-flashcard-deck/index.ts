@@ -193,7 +193,7 @@ ${questionSummaries.length > 0 ? `\nBanked Questions (for reference):\n${questio
     );
   } catch (e) {
     console.error("generate-flashcard-deck error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: (e as any).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

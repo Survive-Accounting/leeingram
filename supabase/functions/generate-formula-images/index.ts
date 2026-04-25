@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
         .eq("chapter_id", chapterId)
         .eq("is_approved", true)
         .order("sort_order");
-      if (error) throw new Error(`Failed to fetch formulas: ${error.message}`);
+      if (error) throw new Error(`Failed to fetch formulas: ${(error as any).message}`);
       formulas = data || [];
     }
 
@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
           await delay(500);
         }
       } catch (e: any) {
-        errors.push(`${formula.formula_name}: ${e.message}`);
+        errors.push(`${formula.formula_name}: ${(e as any).message}`);
       }
     }
 
@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
   } catch (err: any) {
     console.error("generate-formula-images error:", err);
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: (err as any).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -307,7 +307,7 @@ Deno.serve(async (req) => {
           }
         }
       } catch (e: any) {
-        console.error(`✗ ${asset.asset_name}: ${e.message}`);
+        console.error(`✗ ${asset.asset_name}: ${(e as any).message}`);
         errored++;
       }
 

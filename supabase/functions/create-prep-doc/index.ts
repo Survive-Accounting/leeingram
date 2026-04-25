@@ -964,7 +964,7 @@ Deno.serve(async (req) => {
 
   } catch (err: any) {
     console.error("create-prep-doc error:", err);
-    const msg = err instanceof Error ? err.message : "Unknown error";
+    const msg = err instanceof Error ? (err as any).message : "Unknown error";
     const httpStatus = err.googleCode && err.googleCode >= 400 && err.googleCode < 500 ? err.googleCode : 500;
     return new Response(JSON.stringify({
       success: false,

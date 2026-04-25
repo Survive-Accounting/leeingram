@@ -243,7 +243,7 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown Stripe error";
+    const message = err instanceof Error ? (err as any).message : "Unknown Stripe error";
     console.error("[verify-get-access-checkout]", message);
     return bad(message, 500);
   }

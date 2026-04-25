@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
     });
   } catch (err: any) {
     console.error("standardize-formatting error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as any).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -191,7 +191,7 @@ serve(async (req) => {
           archiveFolderId = await findOrCreateFolder(token, ARCHIVE_FOLDER_NAME, chapterFolderId);
           archiveFolderCache.set(cacheKey, archiveFolderId);
         } catch (e) {
-          errors.push(`${asset.asset_name}: Failed to find/create archive folder: ${e.message}`);
+          errors.push(`${asset.asset_name}: Failed to find/create archive folder: ${(e as any).message}`);
           failedCount++;
           continue;
         }
@@ -203,7 +203,7 @@ serve(async (req) => {
         try {
           await moveFileToFolder(token, fileId, archiveFolderId);
         } catch (e) {
-          errors.push(`${asset.asset_name}: Failed to archive sheet ${fileId}: ${e.message}`);
+          errors.push(`${asset.asset_name}: Failed to archive sheet ${fileId}: ${(e as any).message}`);
           assetFailed = true;
         }
       }
@@ -241,7 +241,7 @@ serve(async (req) => {
 
   } catch (e) {
     console.error("archive-sheets error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: (e as any).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

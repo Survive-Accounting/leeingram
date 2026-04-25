@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
           }
         } catch (err) {
           ok = false;
-          errMsg = err instanceof Error ? err.message : String(err);
+          errMsg = err instanceof Error ? (err as any).message : String(err);
         }
 
         const isRetryable = !!errMsg && /\b429\b|rate[_ ]limit|\b50[234]\b|timeout|ETIMEDOUT|ECONNRESET|fetch failed/i.test(errMsg);
@@ -215,7 +215,7 @@ Deno.serve(async (req) => {
     });
   } catch (err: any) {
     console.error("process-background-jobs error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as any).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

@@ -313,7 +313,7 @@ Deno.serve(async (req) => {
     };
   } catch (err: any) {
     console.error("Fetch asset error:", err);
-    return new Response(JSON.stringify({ error: err.message ?? "Fetch failed" }), {
+    return new Response(JSON.stringify({ error: (err as any).message ?? "Fetch failed" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -381,7 +381,7 @@ Deno.serve(async (req) => {
             },
             body: JSON.stringify({
               ai_generation_status: "failed",
-              ai_generation_error: String(err.message ?? err).slice(0, 2000),
+              ai_generation_error: String((err as any).message ?? err).slice(0, 2000),
             }),
           },
         );
@@ -393,7 +393,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: false,
         asset_id,
-        error: String(err.message ?? err),
+        error: String((err as any).message ?? err),
       }),
       {
         status: 500,
@@ -514,7 +514,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: false,
         asset_id,
-        error: String(err.message ?? err),
+        error: String((err as any).message ?? err),
       }),
       {
         status: 500,

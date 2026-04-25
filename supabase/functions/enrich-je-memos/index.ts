@@ -132,7 +132,7 @@ Journal entries to describe:\n${entrySummaries.map((s, i) => `${i + 1}. ${s}`).j
     );
   } catch (e) {
     console.error("enrich-je-memos error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: (e as any).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

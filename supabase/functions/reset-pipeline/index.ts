@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
         sheet_template_version: null,
       })
       .neq("id", "00000000-0000-0000-0000-000000000000");
-    if (e2) errors.push(`Archive teaching assets: ${e2.message}`);
+    if (e2) errors.push(`Archive teaching assets: ${(e2 as any).message}`);
 
     // 3. Reset chapter_problems pipeline_status back to 'imported' and status back to 'raw'
     const { error: e3 } = await sb
@@ -278,7 +278,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: (err as any).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -165,7 +165,7 @@ Generate the corrected/additional content now.`;
         is_approved: false,
         generated_at: new Date().toISOString(),
       }, { onConflict: "chapter_id" });
-      if (error) throw new Error(`DB error: ${error.message}`);
+      if (error) throw new Error(`DB error: ${(error as any).message}`);
       insertedCount = 1;
     }
 
@@ -188,7 +188,7 @@ Generate the corrected/additional content now.`;
         generated_at: new Date().toISOString(),
       }));
       const { error } = await sb.from("chapter_key_terms").insert(rows);
-      if (error) throw new Error(`DB error: ${error.message}`);
+      if (error) throw new Error(`DB error: ${(error as any).message}`);
       insertedCount = rows.length;
     }
 
@@ -213,7 +213,7 @@ Generate the corrected/additional content now.`;
         onConflict: "chapter_id,account_name",
         ignoreDuplicates: true,
       });
-      if (error) throw new Error(`DB error: ${error.message}`);
+      if (error) throw new Error(`DB error: ${(error as any).message}`);
       insertedCount = rows.length;
     }
 
@@ -236,7 +236,7 @@ Generate the corrected/additional content now.`;
         generated_at: new Date().toISOString(),
       }));
       const { error } = await sb.from("chapter_memory_items").insert(rows);
-      if (error) throw new Error(`DB error: ${error.message}`);
+      if (error) throw new Error(`DB error: ${(error as any).message}`);
       insertedCount = rows.length;
     }
 
@@ -259,7 +259,7 @@ Generate the corrected/additional content now.`;
         generated_at: new Date().toISOString(),
       }));
       const { error } = await sb.from("chapter_formulas").insert(rows);
-      if (error) throw new Error(`DB error: ${error.message}`);
+      if (error) throw new Error(`DB error: ${(error as any).message}`);
       insertedCount = rows.length;
     }
 
@@ -299,7 +299,7 @@ Generate the corrected/additional content now.`;
         generated_at: new Date().toISOString(),
       }));
       const { error } = await sb.from("chapter_journal_entries").insert(rows);
-      if (error) throw new Error(`DB error: ${error.message}`);
+      if (error) throw new Error(`DB error: ${(error as any).message}`);
       insertedCount = rows.length;
     }
 
@@ -319,7 +319,7 @@ Generate the corrected/additional content now.`;
         sort_order: nextSort++,
       }));
       const { error } = await sb.from("chapter_exam_mistakes").insert(rows);
-      if (error) throw new Error(`DB error: ${error.message}`);
+      if (error) throw new Error(`DB error: ${(error as any).message}`);
       insertedCount = rows.length;
     }
 
@@ -328,7 +328,7 @@ Generate the corrected/additional content now.`;
     });
   } catch (err: any) {
     console.error("apply-content-fixes error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as any).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -352,7 +352,7 @@ Deno.serve(async (req) => {
       const presData = await googleFetch(`${GOOGLE_SLIDES_API}/${presentationId}`, token);
       defaultSlideId = presData.slides?.[0]?.objectId;
     } catch (e: any) {
-      console.warn("Slides API not available, presentation created but content not populated:", e.message);
+      console.warn("Slides API not available, presentation created but content not populated:", (e as any).message);
       slidesApiAvailable = false;
     }
 
@@ -430,7 +430,7 @@ Deno.serve(async (req) => {
         });
         console.log("Slide content populated successfully");
       } catch (e: any) {
-        console.warn("Could not populate slide content (Slides API may not be enabled):", e.message);
+        console.warn("Could not populate slide content (Slides API may not be enabled):", (e as any).message);
       }
     }
 
@@ -464,7 +464,7 @@ Deno.serve(async (req) => {
 
   } catch (err: any) {
     console.error("create-test-slide error:", err);
-    const msg = err instanceof Error ? err.message : "Unknown error";
+    const msg = err instanceof Error ? (err as any).message : "Unknown error";
     const httpStatus = err.googleCode && err.googleCode >= 400 && err.googleCode < 500 ? err.googleCode : 500;
     return new Response(JSON.stringify({
       success: false,

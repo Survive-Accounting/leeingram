@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
       );
       existingValues = readRes.values || [];
     } catch (e: any) {
-      if (e.message.includes("400") || e.message.includes("Unable to parse range")) {
+      if ((e as any).message.includes("400") || (e as any).message.includes("Unable to parse range")) {
         return new Response(JSON.stringify({ error: "Hidden_Data tab not found in this spreadsheet." }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -280,7 +280,7 @@ Deno.serve(async (req) => {
 
   } catch (err: any) {
     console.error("sync-mc-to-sheet error:", err);
-    const msg = err instanceof Error ? err.message : "Unknown error";
+    const msg = err instanceof Error ? (err as any).message : "Unknown error";
     return new Response(JSON.stringify({ success: false, error: msg }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

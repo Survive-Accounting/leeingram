@@ -149,7 +149,7 @@ What journal entries should a complete solution include for this problem? List o
     });
   } catch (err) {
     console.error("suggest-missing-je error:", err);
-    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: err instanceof Error ? (err as any).message : "Unknown error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

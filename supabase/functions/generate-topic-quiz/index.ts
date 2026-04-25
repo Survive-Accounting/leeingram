@@ -479,7 +479,7 @@ ${assetContext || "No teaching assets available for this topic."}${jeRecallAdden
   } catch (e) {
     console.error("generate-topic-quiz error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: e instanceof Error ? (e as any).message : "Unknown error" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

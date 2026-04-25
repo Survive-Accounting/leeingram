@@ -588,7 +588,7 @@ Deno.serve(async (req) => {
           result.results[key] = await fn();
         } catch (err: any) {
           result.results[key] = "error";
-          errors.push(`${ch.chapter_name} / ${key}: ${err.message}`);
+          errors.push(`${ch.chapter_name} / ${key}: ${(err as any).message}`);
         }
       }
       allResults.push(result);
@@ -600,6 +600,6 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify(response), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: (err as any).message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

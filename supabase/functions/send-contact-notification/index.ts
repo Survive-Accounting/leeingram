@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
   } catch (e: any) {
     console.error("send-contact-notification error:", e);
     return new Response(
-      JSON.stringify({ error: e.message || "Internal server error" }),
+      JSON.stringify({ error: (e as any).message || "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
