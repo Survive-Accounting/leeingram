@@ -46,6 +46,8 @@ const CATEGORIES: Category[] = [
     complexity: 1,
     technical:
       "Signups are gated by a regex match on /\\.edu$/ and a domain MX-record lookup to confirm the school is real. The domain is then resolved against the campuses table to bind the account to a specific campus_id. Non-.edu signups are routed through the email_campus_overrides table for manual approval.",
+    halfTechy:
+      "Sign-up only accepts a .edu email, and we double-check the domain is a real school (not just a string ending in .edu). Then we look up the domain in our campuses table and tag the account to that school. If someone signs up with gmail.com, it lands in a manual-approval queue instead.",
     laymans:
       "You can't sign up without a real school email. That alone stops most casual sharing — students don't want to hand out their university login. And it ties every account to a specific school so we know who belongs where.",
     mockup: [
