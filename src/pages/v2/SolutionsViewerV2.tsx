@@ -839,6 +839,16 @@ export default function SolutionsViewerV2() {
   const [reportOpen, setReportOpen] = useState(false);
   const [jumpOpen, setJumpOpen] = useState(false);
 
+  // Simplify-this-problem state (keeps simplified text + active view per asset)
+  const [simplifiedText, setSimplifiedText] = useState<string | null>(null);
+  const [simplifyView, setSimplifyView] = useState<SimplifyView>("original");
+
+  // Reset simplify view when asset changes
+  useEffect(() => {
+    setSimplifyView("original");
+    setSimplifiedText(null);
+  }, [assetCode]);
+
   useEffect(() => {
     if (!assetCode) return;
     let cancelled = false;
