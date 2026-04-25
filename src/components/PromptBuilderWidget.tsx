@@ -385,6 +385,37 @@ export function PromptBuilderWidget() {
     }
   };
 
+  /**
+   * Capture the current page (excluding the prompt builder UI itself) as a PNG,
+   * then open the markup editor.
+   */
+  const capturePage = useCallback(async () => {
+    setCapturing(true);
+    // Briefly minimize so we don't snapshot our own widget over the page.
+    const wasMinimized = minimized;
+    setMinimized(true);
+    // Wait two frames so React commits the change before snapshot.
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    try {
+      const dataUrl = await toPng(document.body, {
+        cacheBust: true,
+        pixelRatio: 1,
+        // Skip our own floating UI in the snapshot.
+        filter: (node) => {
+          if (!(node instanceof HTMLElement)) return true;
+          return !node.dataset?.promptBuilderUi;
+        },
+      });
+      setMarkupSrc(dataUrl);
+    } catch (err) {
+      console.error(err);
+      toast.error("Capture failed. Some images may block CORS.");
+    } finally {
+      setCapturing(false);
+      if (!wasMinimized) setMinimized(false);
+    }
+  }, [minimized]);
+
   if (!allowed) return null;
 
   if (hidden) {
