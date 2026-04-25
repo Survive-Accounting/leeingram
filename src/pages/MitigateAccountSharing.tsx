@@ -225,7 +225,7 @@ function CategoryModal({
                 )}
               </div>
               <p className="text-white/50 text-xs">
-                Complexity {category.complexity} of {CATEGORIES.length}
+                Rank {category.complexity} of {CATEGORIES.length}
               </p>
             </div>
           </div>
