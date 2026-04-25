@@ -3,10 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import StagingNavbar from "@/components/landing/StagingNavbar";
+import LandingFooter from "@/components/landing/LandingFooter";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
-const POWDER = "#EAF2FA";
+const BG_GRADIENT =
+  "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
 interface Purchase {
   id: string;
@@ -129,7 +132,7 @@ export default function StudentDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: POWDER }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: BG_GRADIENT }}>
         <Loader2 className="h-6 w-6 animate-spin" style={{ color: NAVY }} />
       </div>
     );
@@ -146,60 +149,56 @@ export default function StudentDashboard() {
   const isActive = !purchase?.expires_at || new Date(purchase.expires_at).getTime() > Date.now();
 
   return (
-    <div className="min-h-screen" style={{ background: POWDER }}>
-      {/* Header */}
-      <header
-        className="border-b px-4 sm:px-6 h-14 flex items-center justify-between bg-white"
-        style={{ borderColor: "#E5E7EB" }}
-      >
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
-            style={{ background: NAVY, fontFamily: "'DM Serif Display', Georgia, serif" }}
-          >
-            SA
-          </div>
-          <span className="text-[15px] font-semibold" style={{ color: NAVY }}>
-            Survive Accounting
-          </span>
-        </div>
-        <button
-          onClick={handleSignOut}
-          className="text-[13px] font-medium hover:underline"
-          style={{ color: "#6B7280" }}
-        >
-          Sign out
-        </button>
-      </header>
+    <div className="min-h-screen flex flex-col" style={{ background: BG_GRADIENT }}>
+      <StagingNavbar
+        onCtaClick={() => navigate("/")}
+        onPricingClick={() => navigate("/")}
+      />
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10 space-y-8">
+      <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 pt-12 md:pt-16 pb-16 space-y-8">
         {/* Welcome */}
-        <div>
+        <div className="text-center sm:text-left">
           <h1
-            className="text-3xl sm:text-4xl"
-            style={{ color: NAVY, fontFamily: "'DM Serif Display', Georgia, serif" }}
+            className="text-[34px] sm:text-[44px] md:text-[54px] leading-tight"
+            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
           >
             Welcome back
           </h1>
-          <p className="text-[14px] mt-1.5" style={{ color: "#6B7280" }}>
+          <p
+            className="mt-3 text-[15px] sm:text-[16px]"
+            style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
+          >
             {email}
           </p>
+          <div className="mt-3 flex justify-center sm:justify-start">
+            <button
+              onClick={handleSignOut}
+              className="text-[12px] font-medium hover:underline"
+              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+            >
+              Sign out
+            </button>
+          </div>
         </div>
 
         {/* Study Pass Summary */}
         <section
-          className="rounded-2xl bg-white p-6 shadow-sm border"
-          style={{ borderColor: "#E5E7EB", boxShadow: "0 1px 3px rgba(20,33,61,0.06)" }}
+          className="rounded-2xl p-6"
+          style={{
+            background: "#fff",
+            border: "1px solid #E0E7F0",
+            boxShadow: "0 24px 60px rgba(20,33,61,0.10), 0 2px 8px rgba(20,33,61,0.04)",
+          }}
         >
           <h2
-            className="text-xl mb-4"
-            style={{ color: NAVY, fontFamily: "'DM Serif Display', Georgia, serif" }}
+            className="text-[22px] mb-4 leading-tight"
+            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
           >
             Survive Study Pass
           </h2>
-          <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[14px]">
+          <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[14px]" style={{ fontFamily: "Inter, sans-serif" }}>
             <div>
-              <dt className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-1" style={{ color: "#94A3B8" }}>
                 Course
               </dt>
               <dd className="font-medium" style={{ color: NAVY }}>
@@ -207,7 +206,7 @@ export default function StudentDashboard() {
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-1" style={{ color: "#94A3B8" }}>
                 Access
               </dt>
               <dd className="font-medium" style={{ color: NAVY }}>
@@ -215,10 +214,10 @@ export default function StudentDashboard() {
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-1" style={{ color: "#94A3B8" }}>
                 Status
               </dt>
-              <dd className="flex items-center gap-1.5 font-medium" style={{ color: isActive ? "#16A34A" : "#9CA3AF" }}>
+              <dd className="flex items-center gap-1.5 font-medium" style={{ color: isActive ? "#16A34A" : "#94A3B8" }}>
                 <CheckCircle2 className="h-4 w-4" />
                 {isActive ? "Active" : "Expired"}
               </dd>
@@ -229,21 +228,25 @@ export default function StudentDashboard() {
         {/* Your Chapters */}
         <section>
           <h2
-            className="text-2xl"
-            style={{ color: NAVY, fontFamily: "'DM Serif Display', Georgia, serif" }}
+            className="text-[26px] leading-tight"
+            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
           >
             Your chapters
           </h2>
-          <p className="text-[14px] mt-1 mb-4" style={{ color: "#6B7280" }}>
+          <p className="text-[14px] mt-1 mb-4" style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}>
             Start with the chapter you're studying.
           </p>
 
           {chapters.length === 0 ? (
             <div
-              className="rounded-2xl bg-white p-6 text-center border"
-              style={{ borderColor: "#E5E7EB", boxShadow: "0 1px 3px rgba(20,33,61,0.06)" }}
+              className="rounded-2xl p-6 text-center"
+              style={{
+                background: "#fff",
+                border: "1px solid #E0E7F0",
+                boxShadow: "0 24px 60px rgba(20,33,61,0.10), 0 2px 8px rgba(20,33,61,0.04)",
+              }}
             >
-              <p className="text-[14px]" style={{ color: "#6B7280" }}>
+              <p className="text-[14px]" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
                 We're setting up your chapter list. Check back soon.
               </p>
             </div>
@@ -253,11 +256,16 @@ export default function StudentDashboard() {
                 <button
                   key={ch.id}
                   onClick={() => openChapter(ch)}
-                  className="text-left rounded-2xl bg-white p-5 border transition-all hover:-translate-y-0.5 hover:shadow-md group"
-                  style={{ borderColor: "#E5E7EB", boxShadow: "0 1px 3px rgba(20,33,61,0.06)" }}
+                  className="text-left rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg group"
+                  style={{
+                    background: "#fff",
+                    border: "1px solid #E0E7F0",
+                    boxShadow: "0 12px 32px rgba(20,33,61,0.08), 0 2px 6px rgba(20,33,61,0.04)",
+                    fontFamily: "Inter, sans-serif",
+                  }}
                 >
                   <div
-                    className="text-[11px] font-semibold uppercase tracking-wider mb-1"
+                    className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-1"
                     style={{ color: RED }}
                   >
                     Chapter {ch.chapter_number}
@@ -280,14 +288,18 @@ export default function StudentDashboard() {
 
         {/* Legacy Video Library — secondary, for existing LearnWorlds students */}
         <div
-          className="rounded-xl border p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-          style={{ borderColor: "rgba(20,33,61,0.12)", background: "rgba(20,33,61,0.02)" }}
+          className="rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+          style={{
+            background: "rgba(255,255,255,0.6)",
+            border: "1px solid #E0E7F0",
+            fontFamily: "Inter, sans-serif",
+          }}
         >
           <div className="min-w-0">
             <h3 className="text-[14px] font-semibold" style={{ color: NAVY }}>
               Legacy Video Library
             </h3>
-            <p className="text-[13px] mt-0.5" style={{ color: "#6B7280" }}>
+            <p className="text-[13px] mt-0.5" style={{ color: "#64748B" }}>
               Access the previous Survive Accounting video library.
             </p>
           </div>
@@ -304,8 +316,8 @@ export default function StudentDashboard() {
         </div>
 
         {/* Support footer */}
-        <div className="pt-4 text-center">
-          <p className="text-[13px]" style={{ color: "#6B7280" }}>
+        <div className="pt-2 text-center">
+          <p className="text-[13px]" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
             Need help?{" "}
             <a
               href="mailto:lee@surviveaccounting.com"
@@ -317,6 +329,11 @@ export default function StudentDashboard() {
           </p>
         </div>
       </main>
+
+      <LandingFooter
+        onScrollToCourses={() => navigate("/")}
+        onScrollToContact={() => navigate("/")}
+      />
 
       {/* Just-paid verifying overlay */}
       {verifying && (
