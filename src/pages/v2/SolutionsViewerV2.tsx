@@ -1165,9 +1165,8 @@ export default function SolutionsViewerV2() {
     void captureRefFromUrl({ problemId: asset.id, problemCode: asset.asset_name });
   }, [asset?.id]);
 
-  // Simplify-this-problem state (keeps simplified text + active view per asset)
+  // Simplify-this-problem state (keeps simplified text per asset)
   const [simplifiedText, setSimplifiedText] = useState<string | null>(null);
-  const [simplifyView, setSimplifyView] = useState<SimplifyView>("simplified");
   const [simplifyLoading, setSimplifyLoading] = useState(false);
   const [simplifyError, setSimplifyError] = useState<string | null>(null);
 
@@ -1175,13 +1174,16 @@ export default function SolutionsViewerV2() {
   const [originalImages, setOriginalImages] = useState<string[]>([]);
   const [originalOpen, setOriginalOpen] = useState(false);
 
+  // Instructions accordion (collapsed by default for fast cram mode)
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
+
   // Reset on asset change
   useEffect(() => {
-    setSimplifyView("simplified");
     setSimplifiedText(null);
     setSimplifyError(null);
     setOriginalImages([]);
     setOriginalOpen(false);
+    setInstructionsOpen(false);
   }, [assetCode]);
 
   useEffect(() => {
