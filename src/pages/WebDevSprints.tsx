@@ -156,7 +156,9 @@ function FeatureCard({
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-6">
       <div className="flex items-start justify-between gap-4 mb-3">
-        <div className="flex-1 min-w-0">
+        <div className="flex items-start gap-2 flex-1 min-w-0">
+          {dragHandle}
+          <div className="flex-1 min-w-0">
           {editing ? (
             <Input
               value={draft.title}
