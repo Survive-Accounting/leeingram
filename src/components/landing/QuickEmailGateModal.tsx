@@ -194,8 +194,24 @@ export default function QuickEmailGateModal({
 
   const subheader = useMemo(() => {
     if (campusKnown && campusName) return `${campusName} courses`;
-    return "We're setting things up for your school.";
+    return "Choose the course you're studying";
   }, [campusKnown, campusName]);
+
+  /** Friendly display names for known global course slugs (no abbreviations). */
+  const FRIENDLY_NAMES: Record<string, { name: string; helper: string }> = {
+    "intro-accounting-1": { name: "Intro to Financial Accounting", helper: "First semester · the accounting equation, journal entries, financial statements" },
+    "intro-1": { name: "Intro to Financial Accounting", helper: "First semester · the accounting equation, journal entries, financial statements" },
+    "accy-201": { name: "Intro to Financial Accounting", helper: "First semester · the accounting equation, journal entries, financial statements" },
+    "intro-accounting-2": { name: "Intro to Managerial Accounting", helper: "Second semester · costs, budgeting, decision-making for managers" },
+    "intro-2": { name: "Intro to Managerial Accounting", helper: "Second semester · costs, budgeting, decision-making for managers" },
+    "accy-202": { name: "Intro to Managerial Accounting", helper: "Second semester · costs, budgeting, decision-making for managers" },
+    "intermediate-accounting-1": { name: "Intermediate Accounting I", helper: "Deep dive · cash, receivables, inventory, PP&E" },
+    "ia1": { name: "Intermediate Accounting I", helper: "Deep dive · cash, receivables, inventory, PP&E" },
+    "accy-303": { name: "Intermediate Accounting I", helper: "Deep dive · cash, receivables, inventory, PP&E" },
+    "intermediate-accounting-2": { name: "Intermediate Accounting II", helper: "Advanced · bonds, leases, pensions, EPS" },
+    "ia2": { name: "Intermediate Accounting II", helper: "Advanced · bonds, leases, pensions, EPS" },
+    "accy-304": { name: "Intermediate Accounting II", helper: "Advanced · bonds, leases, pensions, EPS" },
+  };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -327,8 +343,14 @@ export default function QuickEmailGateModal({
                 </p>
               ) : (
                 courses.map((c) => {
-                  const label = c.local_name || c.course_name;
-                  const sub = c.local_code || c.code;
+                  const friendly = FRIENDLY_NAMES[c.slug];
+                  // When campus isn't known, prefer the polished friendly name; otherwise prefer campus-local label.
+                  const label = campusKnown
+                    ? (c.local_name || c.course_name)
+                    : (friendly?.name || c.course_name);
+                  const sub = campusKnown
+                    ? (c.local_code || c.code)
+                    : (friendly?.helper || c.code || null);
                   return (
                     <button
                       key={c.id}
@@ -341,7 +363,7 @@ export default function QuickEmailGateModal({
                         {label}
                       </div>
                       {sub && (
-                        <div className="text-[12px]" style={{ color: "#6B7280" }}>
+                        <div className="text-[12px] mt-0.5" style={{ color: "#6B7280" }}>
                           {sub}
                         </div>
                       )}
