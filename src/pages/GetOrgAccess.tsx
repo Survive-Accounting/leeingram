@@ -756,9 +756,12 @@ export default function GetOrgAccess() {
 
               {/* Chapter search (only after role chosen) */}
               {role && !intentLocked && (
-                <div className="mt-4">
-                  <div className="text-[13px] mb-2" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-                    Your chapter
+                <div className="mt-6">
+                  <div
+                    className="text-[18px] font-semibold mb-2"
+                    style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                  >
+                    Select your chapter
                   </div>
                   <div className="relative">
                     <Search
