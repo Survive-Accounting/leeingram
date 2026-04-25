@@ -5,6 +5,7 @@ import type { CtaCourse } from "@/components/landing/StagingCtaModal";
 import { DevShortcut } from "@/components/DevShortcut";
 import { isAllowedEmail, isWhitelistedEmail } from "@/lib/emailWhitelist";
 import { supabase } from "@/integrations/supabase/client";
+import { registerLead } from "@/lib/registerLead";
 import { toast } from "sonner";
 import NonEduFallbackFlow from "@/components/landing/NonEduFallbackFlow";
 
