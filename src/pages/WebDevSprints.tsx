@@ -495,6 +495,7 @@ export default function WebDevSprints() {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<Status | "All">("All");
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -608,36 +609,78 @@ export default function WebDevSprints() {
           )}
         </div>
 
-        {loading ? (
-          <div className="text-center text-slate-400 py-16">Loading…</div>
-        ) : features.length === 0 ? (
-          <div className="text-center text-slate-400 py-16 bg-white rounded-xl border border-dashed border-slate-200">
-            No features yet.
-          </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={features.map((f) => f.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="grid grid-cols-1 gap-5">
-                {features.map((f) => (
-                  <SortableFeatureCard
-                    key={f.id}
-                    feature={f}
-                    canEdit={canEdit}
-                    onChange={handleUpdate}
-                    onDelete={() => handleDelete(f.id)}
-                  />
-                ))}
+        {(() => {
+          const counts: Record<string, number> = { All: features.length };
+          STATUSES.forEach((s) => (counts[s] = features.filter((f) => f.status === s).length));
+          const pills: ("All" | Status)[] = ["All", ...STATUSES];
+          return (
+            <div className="flex flex-wrap gap-2 mb-6">
+              {pills.map((p) => {
+                const active = statusFilter === p;
+                const dot = p === "All" ? "bg-slate-400" : STATUS_STYLES[p as Status].dot;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setStatusFilter(p)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                      active
+                        ? "bg-slate-900 text-white border-slate-900"
+                        : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+                    {p}
+                    <span className={`text-[10px] ${active ? "text-slate-300" : "text-slate-400"}`}>
+                      {counts[p]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
+        {(() => {
+          const visible =
+            statusFilter === "All" ? features : features.filter((f) => f.status === statusFilter);
+          if (loading)
+            return <div className="text-center text-slate-400 py-16">Loading…</div>;
+          if (features.length === 0)
+            return (
+              <div className="text-center text-slate-400 py-16 bg-white rounded-xl border border-dashed border-slate-200">
+                No features yet.
               </div>
-            </SortableContext>
-          </DndContext>
-        )}
+            );
+          if (visible.length === 0)
+            return (
+              <div className="text-center text-slate-400 py-16 bg-white rounded-xl border border-dashed border-slate-200">
+                No features with status "{statusFilter}".
+              </div>
+            );
+          return (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={visible.map((f) => f.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="grid grid-cols-1 gap-5">
+                  {visible.map((f) => (
+                    <SortableFeatureCard
+                      key={f.id}
+                      feature={f}
+                      canEdit={canEdit && statusFilter === "All"}
+                      onChange={handleUpdate}
+                      onDelete={() => handleDelete(f.id)}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          );
+        })()}
       </div>
 
       <AddFeatureModal
