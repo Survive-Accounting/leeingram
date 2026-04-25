@@ -105,14 +105,21 @@ export function PromptBuilderWidget() {
     const target = e.currentTarget;
     const rect = target.getBoundingClientRect();
     dragRef.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top, moved: false };
-    target.setPointerCapture(e.pointerId);
+    // Don't capture the pointer yet — only do so once we've actually moved past the
+    // drag threshold. Capturing here causes Radix to think the click is "outside"
+    // when the Sheet opens, which then closes it immediately.
   };
   const onLauncherPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
     const d = dragRef.current;
     if (!d) return;
     const nx = e.clientX - d.dx;
     const ny = e.clientY - d.dy;
-    if (Math.abs(nx - pos.x) > 3 || Math.abs(ny - pos.y) > 3) d.moved = true;
+    const movedNow = Math.abs(nx - pos.x) > 3 || Math.abs(ny - pos.y) > 3;
+    if (movedNow && !d.moved) {
+      d.moved = true;
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* noop */ }
+    }
+    if (!d.moved) return;
     const w = e.currentTarget.offsetWidth;
     const h = e.currentTarget.offsetHeight;
     setPos({
@@ -122,9 +129,20 @@ export function PromptBuilderWidget() {
   };
   const onLauncherPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
     const d = dragRef.current;
-    dragRef.current = null;
-    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* noop */ }
-    if (!d?.moved) setOpen(true);
+    if (d?.moved) {
+      try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    }
+    // Leave dragRef set briefly so onClick can read it; clear on next tick.
+    setTimeout(() => { dragRef.current = null; }, 0);
+  };
+  const onLauncherClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    // Suppress click that follows a drag.
+    if (dragRef.current?.moved) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    setOpen(true);
   };
 
   // Persist hidden state + listen for global show events
@@ -371,6 +389,7 @@ export function PromptBuilderWidget() {
           onPointerDown={onLauncherPointerDown}
           onPointerMove={onLauncherPointerMove}
           onPointerUp={onLauncherPointerUp}
+          onClick={onLauncherClick}
           style={{ touchAction: "none" }}
           className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-foreground/20"
           aria-label="Open Prompt Builder (Cmd+K) — drag to move"
