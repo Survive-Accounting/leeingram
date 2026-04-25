@@ -14,7 +14,7 @@ const SUBJECTS = [
 export default function ContactForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [subject, setSubject] = useState("I'm stuck on something");
+  const [subject, setSubject] = useState("Just saying hi");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
 
