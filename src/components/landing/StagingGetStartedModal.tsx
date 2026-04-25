@@ -89,6 +89,8 @@ export default function StagingGetStartedModal({
 
     setEmailError(null);
     setStep1Loading(true);
+    // Fire-and-forget lead registration (.edu path) — captures campus from email domain.
+    void registerLead(trimmed, preselectedCourseSlug);
     setTimeout(() => {
       setStep1Loading(false);
       setStep(2);
