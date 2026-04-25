@@ -7375,6 +7375,45 @@ export type Database = {
         }
         Relationships: []
       }
+      web_dev_features: {
+        Row: {
+          bullet_points: Json
+          created_at: string
+          description: string
+          id: string
+          image_url: string | null
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          bullet_points?: Json
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          bullet_points?: Json
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

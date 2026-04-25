@@ -54,6 +54,7 @@ const EmailFactory = lazy(() => import("./pages/EmailFactory"));
 const Marketing = lazy(() => import("./pages/Marketing"));
 const DomainSelect = lazy(() => import("./pages/DomainSelect"));
 const MitigateAccountSharing = lazy(() => import("./pages/MitigateAccountSharing"));
+const WebDevSprints = lazy(() => import("./pages/WebDevSprints"));
 const Writing = lazy(() => import("./pages/Writing"));
 const Leeingram = lazy(() => import("./pages/Leeingram"));
 const ProfIngram = lazy(() => import("./pages/ProfIngram"));
@@ -245,6 +246,8 @@ const AppRoutes = () => {
         <Route path="/domains" element={<ProtectedRoute><DomainSelect /></ProtectedRoute>} />
         <Route path="/admin/mitigate-sharing" element={<MitigateAccountSharing />} />
         <Route path="/mitigate-sharing" element={<MitigateAccountSharing />} />
+        <Route path="/admin/web-dev-sprints" element={<WebDevSprints />} />
+        <Route path="/web-dev-sprints" element={<Navigate to="/admin/web-dev-sprints" replace />} />
         <Route path="/content" element={<ProtectedRoute><ContentFactory /></ProtectedRoute>} />
         <Route path="/content-roadmap" element={<ProtectedRoute><ContentRoadmap /></ProtectedRoute>} />
         <Route path="/chapter/:chapterId" element={<ProtectedRoute><ChapterPage /></ProtectedRoute>} />
