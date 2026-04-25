@@ -223,7 +223,7 @@ export default function GetOrgAccess() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [intentChapter, intentLocked]);
+  }, [intentChapter, intentLocked, orgKind, selectedCampusId]);
 
   // When member commits, fetch waitlist count for that chapter
   useEffect(() => {
