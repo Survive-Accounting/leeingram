@@ -127,18 +127,34 @@ export function PromptBuilderWidget() {
     if (!d?.moved) setOpen(true);
   };
 
-  // Hotkey: Cmd/Ctrl+K to open widget (global)
+  // Persist hidden state + listen for global show events
+  useEffect(() => {
+    try { localStorage.setItem(HIDDEN_KEY, hidden ? "1" : "0"); } catch { /* noop */ }
+  }, [hidden]);
+
+  useEffect(() => {
+    const onShow = () => setHidden(false);
+    window.addEventListener("promptBuilder:show", onShow);
+    return () => window.removeEventListener("promptBuilder:show", onShow);
+  }, []);
+
+  // Hotkey: Cmd/Ctrl+K to open widget. Shift+Cmd/Ctrl+K to toggle visibility.
   useEffect(() => {
     if (!allowed) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setOpen((v) => !v);
+        if (e.shiftKey) {
+          setHidden((h) => !h);
+        } else {
+          if (hidden) setHidden(false);
+          setOpen((v) => !v);
+        }
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [allowed]);
+  }, [allowed, hidden]);
 
   useEffect(() => {
     return () => {
