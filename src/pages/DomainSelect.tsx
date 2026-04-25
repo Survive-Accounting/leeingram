@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { Button } from "@/components/ui/button";
-import { LogOut, Layers, Building2, Sparkles, Shield } from "lucide-react";
+import { LogOut, Layers, Building2, Sparkles, Shield, Code2 } from "lucide-react";
 import { useEffect } from "react";
 
 const NAVY = "#14213D";
@@ -31,6 +31,12 @@ const cards = [
     subtitle: "Fingerprinting, Geo Anomaly, Watermarking, +5 more",
     icon: Shield,
     route: "/admin/mitigate-sharing",
+  },
+  {
+    title: "Web Dev Sprints",
+    subtitle: "Active build sprints, scope, and progress",
+    icon: Code2,
+    route: "/admin/web-dev-sprints",
   },
 ];
 
