@@ -13,6 +13,7 @@ import { EmailGateProvider } from "@/contexts/EmailGateContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
+import { PromptBuilderWidget } from "@/components/PromptBuilderWidget";
 
 // ── Lazy-loaded pages ────────────────────────────────────────────────
 const Landing = lazy(() => import("./pages/Landing"));
@@ -356,6 +357,7 @@ const App = () => (
                     <ImpersonationBanner />
                     <SprintTimerBar />
                     <RoleRouteGuard />
+                    <PromptBuilderWidget />
                     <AppRoutes />
                   </RoutedAppBoundary>
                 </EmailGateProvider>
