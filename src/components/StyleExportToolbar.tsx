@@ -181,13 +181,14 @@ export function StyleExportToolbar() {
           />
           <ToolbarItem
             icon={<FileText className="h-3.5 w-3.5" />}
-            label="Download brief (.md)"
-            sub="Single Markdown file for ChatGPT"
+            label="Copy brief (Markdown)"
+            sub="Paste into ChatGPT"
             busy={busy === "md"}
             onClick={() => wrap("md", async () => {
               const md = await buildMarkdownBrief();
-              downloadText(md, "survive-landing-style-pack.md", "text/markdown");
-              toast.success("Markdown brief downloaded");
+              const ok = await copyToClipboard(md);
+              if (ok) toast.success("Markdown brief copied to clipboard");
+              else toast.error("Copy failed — clipboard blocked");
             })}
           />
 
@@ -196,12 +197,13 @@ export function StyleExportToolbar() {
           </div>
           <ToolbarItem
             icon={<ImageIcon className="h-3.5 w-3.5" />}
-            label="Export full page (.png)"
-            sub="Entire landing — high-DPR snapshot"
+            label="Copy full page (.png)"
+            sub="Entire landing — to clipboard"
             busy={busy === "page"}
             onClick={() => wrap("page", async () => {
-              await captureFullPage(`landing-full-${Date.now()}.png`);
-              toast.success("Page PNG saved");
+              const ok = await captureFullPageToClipboard();
+              if (ok) toast.success("Page PNG copied to clipboard");
+              else toast.error("Copy failed — browser blocked image clipboard");
             })}
           />
 
@@ -222,11 +224,9 @@ export function StyleExportToolbar() {
                   sub={`#${s.id}`}
                   busy={busy === `section-${s.id}`}
                   onClick={() => wrap(`section-${s.id}`, async () => {
-                    await captureElementToPng(
-                      s.element,
-                      `landing-${s.id}-${Date.now()}.png`,
-                    );
-                    toast.success(`${s.label} PNG saved`);
+                    const ok = await captureElementToClipboard(s.element);
+                    if (ok) toast.success(`${s.label} PNG copied to clipboard`);
+                    else toast.error("Copy failed — browser blocked image clipboard");
                   })}
                 />
               ))}
