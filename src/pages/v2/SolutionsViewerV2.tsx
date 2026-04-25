@@ -461,11 +461,13 @@ function InlineExplanation({
   chapter,
   simplifiedText,
   setSimplifiedText,
+  onShareClick,
 }: {
   asset: Asset;
   chapter: ChapterMeta | null;
   simplifiedText: string | null;
   setSimplifiedText: (t: string | null) => void;
+  onShareClick: () => void;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
