@@ -185,17 +185,15 @@ export function findExportableSections(): ExportableSection[] {
   }));
 }
 
-/** Capture a single element to PNG and download it. */
-export async function captureElementToPng(
+/** Capture a single element to a PNG Blob (no download). */
+export async function captureElementToBlob(
   el: HTMLElement,
-  filename: string,
   opts: { pixelRatio?: number; backgroundColor?: string } = {},
-) {
+): Promise<Blob> {
   const dataUrl = await toPng(el, {
     pixelRatio: opts.pixelRatio ?? 2,
     backgroundColor: opts.backgroundColor ?? "#F8FAFC",
     cacheBust: true,
-    // Skip nodes that have data-export-ignore (e.g. the toolbar itself)
     filter: (node) => {
       if (node instanceof HTMLElement && node.dataset.exportIgnore != null) {
         return false;
@@ -203,16 +201,38 @@ export async function captureElementToPng(
       return true;
     },
   });
-  const blob = await (await fetch(dataUrl)).blob();
-  downloadBlob(blob, filename);
+  return (await fetch(dataUrl)).blob();
 }
 
-/** Capture the full landing page (root container, minus the toolbar). */
-export async function captureFullPage(filename = "landing-full.png") {
-  // Prefer an explicitly tagged page wrapper; fall back to <main> or <body>.
+/** Copy a PNG blob to the clipboard. Returns true on success. */
+export async function copyPngBlobToClipboard(blob: Blob): Promise<boolean> {
+  try {
+    if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
+      return false;
+    }
+    await navigator.clipboard.write([
+      new ClipboardItem({ "image/png": blob }),
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Capture an element and copy the PNG to the clipboard. */
+export async function captureElementToClipboard(
+  el: HTMLElement,
+  opts: { pixelRatio?: number; backgroundColor?: string } = {},
+): Promise<boolean> {
+  const blob = await captureElementToBlob(el, opts);
+  return copyPngBlobToClipboard(blob);
+}
+
+/** Capture the full landing page and copy to clipboard. */
+export async function captureFullPageToClipboard(): Promise<boolean> {
   const root =
     document.querySelector<HTMLElement>("[data-export-page]") ||
     document.querySelector<HTMLElement>("main") ||
     document.body;
-  await captureElementToPng(root, filename);
+  return captureElementToClipboard(root);
 }
