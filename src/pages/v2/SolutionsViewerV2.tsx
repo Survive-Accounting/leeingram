@@ -421,28 +421,27 @@ function ExplanationFeedback({ asset }: { asset: Asset }) {
   );
 }
 
-function ExplanationPanel({
-  open,
-  onOpenChange,
-  asset,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  asset: Asset | null;
-}) {
+function InlineExplanation({ asset }: { asset: Asset }) {
+  const [started, setStarted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sections, setSections] = useState<ExplanationSections | null>(null);
   const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set());
 
+  // Reset on asset change
   useEffect(() => {
-    if (!open || !asset) return;
+    setStarted(false);
+    setSections(null);
+    setError(null);
+    setOpenSections(new Set());
+  }, [asset.asset_name]);
+
+  useEffect(() => {
+    if (!started) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
       setError(null);
-      setSections(null);
-      setOpenSections(new Set());
       try {
         const { data, error } = await supabase.functions.invoke("explain-this-solution", {
           body: { asset_code: asset.asset_name },
@@ -460,7 +459,7 @@ function ExplanationPanel({
     return () => {
       cancelled = true;
     };
-  }, [open, asset?.asset_name]);
+  }, [started, asset.asset_name]);
 
   const toggleSection = (key: SectionKey) => {
     setOpenSections((prev) => {
@@ -471,101 +470,215 @@ function ExplanationPanel({
     });
   };
 
+  if (!started) {
+    return (
+      <div className="rounded-2xl border-2 border-dashed border-border bg-muted/30 p-6 text-center">
+        <p className="text-sm text-muted-foreground mb-4">
+          Try it first. When you're ready, get a quick walkthrough.
+        </p>
+        <Button size="lg" onClick={() => setStarted(true)} className="gap-2">
+          <Sparkles className="h-4 w-4" />
+          Explain this
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-lg overflow-y-auto p-0"
-      >
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-5 py-3 flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <SheetHeader className="flex-1 p-0 text-left">
-            <SheetTitle className="text-base">Explain this</SheetTitle>
-          </SheetHeader>
+    <div className="space-y-5">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <Sparkles className="h-4 w-4 text-primary" />
+        Explanation
+      </div>
+
+      {loading && !sections && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Lee is thinking…
+          </div>
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
         </div>
+      )}
 
-        <div className="px-5 py-5 space-y-5">
-          {loading && !sections && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Lee is thinking…
-              </div>
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-5/6" />
-            </div>
-          )}
-
-          {error && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          {sections && (
-            <>
-              {/* Always-visible: What matters */}
-              <section className="rounded-lg border border-border bg-card p-4">
-                <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                  <span aria-hidden>💡</span> What matters
-                </h3>
-                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
-                  <ReactMarkdown>{sections.what_matters}</ReactMarkdown>
-                </div>
-              </section>
-
-              {/* Section toggle buttons */}
-              <div className="flex flex-wrap gap-2">
-                {(Object.keys(SECTION_META) as SectionKey[]).map((k) => {
-                  const isOpen = openSections.has(k);
-                  return (
-                    <Button
-                      key={k}
-                      size="sm"
-                      variant={isOpen ? "default" : "outline"}
-                      className="text-xs h-8"
-                      onClick={() => toggleSection(k)}
-                    >
-                      <span className="mr-1.5" aria-hidden>{SECTION_META[k].emoji}</span>
-                      {SECTION_META[k].label}
-                    </Button>
-                  );
-                })}
-              </div>
-
-              {/* Revealed sections */}
-              <div className="space-y-3">
-                {(Object.keys(SECTION_META) as SectionKey[]).map((k) => {
-                  if (!openSections.has(k)) return null;
-                  return (
-                    <section
-                      key={k}
-                      className="rounded-lg border border-border bg-muted/30 p-4 animate-in fade-in slide-in-from-top-1 duration-200"
-                    >
-                      <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                        <span aria-hidden>{SECTION_META[k].emoji}</span> {SECTION_META[k].label}
-                      </h3>
-                      <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
-                        <ReactMarkdown>{sections[k]}</ReactMarkdown>
-                      </div>
-                    </section>
-                  );
-                })}
-              </div>
-              {/* Feedback */}
-              {asset && (
-                <div className="pt-4 mt-2 border-t border-border">
-                  <ExplanationFeedback asset={asset} />
-                </div>
-              )}
-            </>
-          )}
+      {error && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          {error}
         </div>
-      </SheetContent>
-    </Sheet>
+      )}
+
+      {sections && (
+        <>
+          <section className="rounded-lg border border-border bg-card p-4">
+            <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+              <span aria-hidden>💡</span> What matters
+            </h3>
+            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
+              <ReactMarkdown>{sections.what_matters}</ReactMarkdown>
+            </div>
+          </section>
+
+          <div className="flex flex-wrap gap-2">
+            {(Object.keys(SECTION_META) as SectionKey[]).map((k) => {
+              const isOpen = openSections.has(k);
+              return (
+                <Button
+                  key={k}
+                  size="sm"
+                  variant={isOpen ? "default" : "outline"}
+                  className="text-xs h-8"
+                  onClick={() => toggleSection(k)}
+                >
+                  <span className="mr-1.5" aria-hidden>{SECTION_META[k].emoji}</span>
+                  {SECTION_META[k].label}
+                </Button>
+              );
+            })}
+          </div>
+
+          <div className="space-y-3">
+            {(Object.keys(SECTION_META) as SectionKey[]).map((k) => {
+              if (!openSections.has(k)) return null;
+              return (
+                <section
+                  key={k}
+                  className="rounded-lg border border-border bg-muted/30 p-4 animate-in fade-in slide-in-from-top-1 duration-200"
+                >
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                    <span aria-hidden>{SECTION_META[k].emoji}</span> {SECTION_META[k].label}
+                  </h3>
+                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
+                    <ReactMarkdown>{sections[k]}</ReactMarkdown>
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+
+          <div className="pt-4 border-t border-border">
+            <ExplanationFeedback asset={asset} />
+          </div>
+        </>
+      )}
+    </div>
   );
 }
+
+// ── Jump modal ────────────────────────────────────────────────────────
+function getRefPrefix(ref: string | null): "BE" | "EX" | "PR" | "OTHER" {
+  if (!ref) return "OTHER";
+  const u = ref.toUpperCase();
+  if (u.startsWith("BE") || u.startsWith("QS")) return "BE";
+  if (u.startsWith("EX") || u.startsWith("E")) return "EX";
+  if (u.startsWith("P")) return "PR";
+  return "OTHER";
+}
+
+function JumpModal({
+  open,
+  onOpenChange,
+  siblings,
+  currentAssetName,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  siblings: { asset_name: string; source_ref: string | null }[];
+  currentAssetName: string | undefined;
+}) {
+  const navigate = useNavigate();
+  const groups = useMemo(() => {
+    const g: Record<"BE" | "EX" | "PR" | "OTHER", typeof siblings> = {
+      BE: [], EX: [], PR: [], OTHER: [],
+    };
+    siblings.forEach((s) => g[getRefPrefix(s.source_ref)].push(s));
+    return g;
+  }, [siblings]);
+
+  const groupLabels: Record<"BE" | "EX" | "PR" | "OTHER", string> = {
+    BE: "Brief Exercises / Quick Studies",
+    EX: "Exercises",
+    PR: "Problems",
+    OTHER: "Other",
+  };
+
+  const go = (assetName: string) => {
+    navigate(`/v2/solutions/${assetName}`);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Jump to problem</DialogTitle>
+          <DialogDescription>{siblings.length} problems in this chapter</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-5">
+          {(["BE", "EX", "PR", "OTHER"] as const).map((key) => {
+            const items = groups[key];
+            if (items.length === 0) return null;
+            return (
+              <div key={key}>
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  {groupLabels[key]} ({items.length})
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                  {items.map((s) => {
+                    const isCurrent = s.asset_name === currentAssetName;
+                    return (
+                      <Button
+                        key={s.asset_name}
+                        size="sm"
+                        variant={isCurrent ? "default" : "outline"}
+                        className="font-mono text-xs h-8"
+                        onClick={() => go(s.asset_name)}
+                      >
+                        {s.source_ref || s.asset_name}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Key term highlighter ──────────────────────────────────────────────
+const KEY_TERMS = [
+  "Total Assets", "Total Liabilities", "Total Equity", "Stockholders' Equity",
+  "Net Income", "Net Loss", "Gross Profit", "Operating Income",
+  "Retained Earnings", "Cash Flow", "Cost of Goods Sold", "COGS",
+  "Revenue", "Expenses", "Dividends", "Earnings per Share", "EPS",
+  "Depreciation", "Amortization", "Accounts Receivable", "Accounts Payable",
+  "Journal Entry", "Journal Entries", "Adjusting Entry", "Trial Balance",
+  "Balance Sheet", "Income Statement",
+];
+
+function highlightTerms(text: string): React.ReactNode {
+  if (!text) return text;
+  const pattern = new RegExp(
+    `\\b(${KEY_TERMS.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\b`,
+    "gi",
+  );
+  const parts = text.split(pattern);
+  return parts.map((part, i) => {
+    if (KEY_TERMS.some((t) => t.toLowerCase() === part.toLowerCase())) {
+      return (
+        <span key={i} className="font-semibold text-primary">
+          {part}
+        </span>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
 
 // ── Main page ──────────────────────────────────────────────────────────
 export default function SolutionsViewerV2() {
