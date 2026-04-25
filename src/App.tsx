@@ -359,6 +359,7 @@ const App = () => (
                     <SprintTimerBar />
                     <RoleRouteGuard />
                     <PromptBuilderWidget />
+                    <StyleExportToolbar />
                     <AppRoutes />
                   </RoutedAppBoundary>
                 </EmailGateProvider>
