@@ -328,7 +328,7 @@ export default function MitigateAccountSharing() {
               How We Mitigate Account Sharing at Survive
             </h1>
             <p className="text-white/60 text-sm">
-              Eight layered defenses, ordered from least to most complex. Click any layer for plain-English, technical, or a dashboard preview.
+              Eight layered defenses, ordered from least to most complex. Click for deeper dive.
             </p>
           </div>
         </div>
