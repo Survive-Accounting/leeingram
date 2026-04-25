@@ -102,12 +102,14 @@ function FeatureCard({
   canEdit,
   onChange,
   onDelete,
+  onBuildPrompt,
   dragHandle,
 }: {
   feature: Feature;
   canEdit: boolean;
   onChange: (next: Feature) => Promise<void>;
   onDelete: () => Promise<void>;
+  onBuildPrompt?: () => void;
   dragHandle?: React.ReactNode;
 }) {
   const [editing, setEditing] = useState(false);
