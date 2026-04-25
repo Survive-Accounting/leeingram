@@ -308,7 +308,8 @@ const REASON_OPTIONS: { value: FeedbackReason; label: string }[] = [
 
 const MAX_REASONS = 2;
 
-function ExplanationFeedback({ asset }: { asset: Asset }) {
+function ExplanationFeedback({ asset, onShareClick }: { asset: Asset; onShareClick: () => void }) {
+  const [helpful, setHelpful] = useState<boolean | null>(null);
   const [stage, setStage] = useState<"ask" | "negative" | "done">("ask");
   const [reasons, setReasons] = useState<FeedbackReason[]>([]);
   const [note, setNote] = useState("");
