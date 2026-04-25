@@ -1,6 +1,10 @@
-import { corsHeaders } from "@supabase/supabase-js/cors";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
 
-const SYSTEM = `You are an expert product builder optimizing for speed, clarity, and conversion.
+const SYSTEM_BUILD = `You are an expert product builder optimizing for speed, clarity, and conversion.
 
 Always:
 - Use modular steps
@@ -27,6 +31,31 @@ Output STRICTLY in this markdown format (no preamble, no closing remarks):
 ## Constraints
 - <constraint>`;
 
+const SYSTEM_PLAN = `You are an expert product strategist writing a PLANNING prompt for Lovable.
+
+The output MUST instruct Lovable to NOT write code yet — only to produce an implementation plan for review.
+
+Output STRICTLY in this markdown format (no preamble, no closing remarks):
+
+Do not build yet. First create an implementation plan.
+
+## Goal
+<one sentence>
+
+## Proposed approach
+- <high-level approach point>
+
+## Files / areas likely affected
+- <file or area>
+
+## Open questions
+- <question for the user>
+
+## Risks / edge cases
+- <risk>
+
+End with: "Reply with approval or adjustments before I write any code."`;
+
 const MODE_HINTS: Record<string, string> = {
   ui_fix: "Mode: UI Fix. Focus on minimal, surgical UI corrections — preserve existing structure, fix only what is broken or unclear.",
   new_feature: "Mode: New Feature. Focus on a clean, modular new build with clear data, UI, and behavior boundaries.",
@@ -43,7 +72,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { text, screenshotBase64, screenshotMime, mode, refinement, priorPrompt } = await req.json();
+    const { text, screenshotBase64, screenshotMime, mode, refinement, priorPrompt, promptKind } = await req.json();
     if (!text || typeof text !== "string" || !text.trim()) {
       return new Response(JSON.stringify({ error: "text is required" }), {
         status: 400,
@@ -53,6 +82,9 @@ Deno.serve(async (req) => {
 
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
+
+    const kind: "build" | "plan" = promptKind === "plan" ? "plan" : "build";
+    const SYSTEM = kind === "plan" ? SYSTEM_PLAN : SYSTEM_BUILD;
 
     const parts: string[] = [];
     if (mode && MODE_HINTS[mode]) parts.push(MODE_HINTS[mode]);
@@ -100,7 +132,7 @@ Deno.serve(async (req) => {
     const data = await resp.json();
     const prompt = data?.choices?.[0]?.message?.content ?? "";
 
-    return new Response(JSON.stringify({ prompt }), {
+    return new Response(JSON.stringify({ prompt, promptKind: kind }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
