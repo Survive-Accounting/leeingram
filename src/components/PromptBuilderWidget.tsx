@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useDraggable } from "./prompt-builder/useDraggable";
 import { MarkupOverlay } from "./prompt-builder/MarkupOverlay";
+import { RecordingBar } from "./prompt-builder/RecordingBar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ALLOWED = ["lee@survivestudios.com", "jking.cim@gmail.com"];
 const LOVABLE_URL = "https://lovable.dev/projects/51843e0a-bf2a-4413-bab2-a6c4ea7a1395";
