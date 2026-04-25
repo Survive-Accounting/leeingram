@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, LayoutList, Wand2, Printer } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, LayoutList, Wand2, Printer, BookOpen } from "lucide-react";
+import { StructuredJEDisplay } from "@/components/StructuredJEDisplay";
 import { generateSimplifiedPracticePdf } from "@/lib/generateSimplifiedPracticePdf";
 import ReactMarkdown from "react-markdown";
 
@@ -29,6 +30,7 @@ type Asset = {
   instruction_5: string | null;
   instruction_list: string | null;
   chapter_id: string;
+  journal_entry_completed_json: any | null;
 };
 
 type ChapterMeta = { id: string; chapter_number: number; chapter_name: string };
@@ -451,6 +453,10 @@ function InlineExplanation({
   const [sections, setSections] = useState<ExplanationSections | null>(null);
   const [activeSection, setActiveSection] = useState<ToolboxKey | null>(null);
   const [printing, setPrinting] = useState(false);
+  const [jeOpen, setJeOpen] = useState(false);
+
+  const hasJE = Array.isArray(asset.journal_entry_completed_json?.scenario_sections)
+    && asset.journal_entry_completed_json.scenario_sections.length > 0;
 
   // Reset on asset change
   useEffect(() => {
@@ -575,7 +581,34 @@ function InlineExplanation({
             );
           })}
         </div>
+        {hasJE && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setJeOpen(true)}
+            className="w-full justify-start gap-2 h-9 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            See journal entries
+          </Button>
+        )}
       </div>
+
+      {hasJE && (
+        <Dialog open={jeOpen} onOpenChange={setJeOpen}>
+          <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Journal Entries</DialogTitle>
+            </DialogHeader>
+            <div className="overflow-y-auto pr-1 -mr-1">
+              <StructuredJEDisplay
+                data={asset.journal_entry_completed_json}
+                showHeading={false}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Active section content */}
       {error && (
@@ -995,7 +1028,7 @@ export default function SolutionsViewerV2() {
         const { data: a, error: aErr } = await supabase
           .from("teaching_assets")
           .select(
-            "id, asset_name, problem_title, source_ref, survive_problem_text, instruction_1, instruction_2, instruction_3, instruction_4, instruction_5, instruction_list, chapter_id",
+            "id, asset_name, problem_title, source_ref, survive_problem_text, instruction_1, instruction_2, instruction_3, instruction_4, instruction_5, instruction_list, chapter_id, journal_entry_completed_json",
           )
           .eq("asset_name", assetCode)
           .maybeSingle();
