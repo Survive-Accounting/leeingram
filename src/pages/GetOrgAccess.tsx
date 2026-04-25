@@ -615,65 +615,23 @@ export default function GetOrgAccess() {
             }}
           >
             {/* Header */}
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2
-                  className="text-[24px] sm:text-[28px] leading-tight"
-                  style={{
-                    color: NAVY,
-                    fontFamily: "'DM Serif Display', serif",
-                    fontWeight: 400,
-                  }}
-                >
-                  Set up your chapter
-                </h2>
-                <p
-                  className="mt-1 text-[12px] flex items-center gap-1"
-                  style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                >
-                  Powered by{" "}
-                  <span
-                    className="font-semibold"
-                    style={{
-                      color: "#635BFF",
-                      fontFamily: "Inter, sans-serif",
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    Stripe
-                  </span>
-                </p>
-              </div>
-
-              <div
-                className="rounded-2xl px-5 py-3.5 flex flex-col items-center justify-center shrink-0"
+            <div>
+              <h2
+                className="text-[24px] sm:text-[28px] leading-tight"
                 style={{
-                  background: "#F0F6FF",
-                  border: `1px solid ${NAVY}`,
-                  boxShadow:
-                    "0 12px 28px rgba(20,33,61,0.16), 0 4px 10px rgba(20,33,61,0.08), inset 0 1px 0 rgba(255,255,255,0.6)",
-                  minWidth: 132,
-                  transform: "translateY(-3px)",
+                  color: NAVY,
+                  fontFamily: "'DM Serif Display', serif",
+                  fontWeight: 400,
                 }}
               >
-                <div
-                  className="font-bold leading-none"
-                  style={{
-                    fontSize: 36,
-                    color: NAVY,
-                    letterSpacing: "-0.03em",
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                >
-                  ${(tier?.total ?? 0).toLocaleString()}
-                </div>
-                <div
-                  className="mt-1.5 text-[10px] font-medium uppercase tracking-wider"
-                  style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                >
-                  ${perSeat}/seat
-                </div>
-              </div>
+                Let's get your chapter set up
+              </h2>
+              <p
+                className="mt-2 text-[14px]"
+                style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+              >
+                A few quick questions first — we'll show pricing once we know your chapter.
+              </p>
             </div>
 
             {/* Step 0 — Role + Chapter intent */}
