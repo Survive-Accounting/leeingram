@@ -3028,6 +3028,39 @@ export type Database = {
           },
         ]
       }
+      explanation_feedback: {
+        Row: {
+          asset_id: string
+          asset_name: string | null
+          created_at: string
+          helpful: boolean
+          id: string
+          note: string | null
+          reason: string | null
+          user_email: string | null
+        }
+        Insert: {
+          asset_id: string
+          asset_name?: string | null
+          created_at?: string
+          helpful: boolean
+          id?: string
+          note?: string | null
+          reason?: string | null
+          user_email?: string | null
+        }
+        Update: {
+          asset_id?: string
+          asset_name?: string | null
+          created_at?: string
+          helpful?: boolean
+          id?: string
+          note?: string | null
+          reason?: string | null
+          user_email?: string | null
+        }
+        Relationships: []
+      }
       export_set_items: {
         Row: {
           export_set_id: string
