@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import StagingHero from "@/components/landing/StagingHero";
 import TestFlowToolbar from "@/components/TestFlowToolbar";
+import { StyleExportToolbar } from "@/components/StyleExportToolbar";
 
 import StagingCoursesSection from "@/components/landing/StagingCoursesSection";
 
