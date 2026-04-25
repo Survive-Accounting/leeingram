@@ -528,7 +528,8 @@ function InlineExplanation({
       setSimplifiedText(data.simplified_text);
       buildPdf(data.simplified_text);
     } catch (e: any) {
-      setError(e?.message || "Could not generate PDF");
+      console.error("[simplify-problem] failed:", e);
+      setError("Couldn't build the PDF right now. Try again in a sec — if it keeps failing, ping us via \"Need help?\".");
     } finally {
       setPrinting(false);
     }
