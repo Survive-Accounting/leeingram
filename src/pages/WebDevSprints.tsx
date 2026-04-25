@@ -914,6 +914,13 @@ export default function WebDevSprints() {
         open={adding}
         onClose={() => setAdding(false)}
         onCreate={handleCreate}
+        onPreviewPrompt={(f) => setPromptFeature(f)}
+      />
+
+      <BuildPromptModal
+        open={!!promptFeature}
+        onClose={() => setPromptFeature(null)}
+        feature={promptFeature}
       />
     </div>
   );
