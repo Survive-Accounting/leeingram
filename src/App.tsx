@@ -353,6 +353,7 @@ const App = () => (
                     <RoleRouteGuard />
                     <PromptBuilderWidget />
                     <StyleExportToolbar />
+                    <AdminToolsMenu />
                     <AppRoutes />
                   </RoutedAppBoundary>
                 </EmailGateProvider>
