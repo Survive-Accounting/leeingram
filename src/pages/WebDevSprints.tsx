@@ -613,6 +613,26 @@ function AddFeatureModal({
             </Select>
           </div>
           <div className="flex justify-end gap-2 pt-2">
+            {onPreviewPrompt && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  onPreviewPrompt({
+                    title: title.trim(),
+                    description: description.trim(),
+                    bullet_points: bullets.split("\n").map((s) => s.trim()).filter(Boolean),
+                    build_steps: buildSteps,
+                    testing_steps: testingSteps,
+                    status,
+                  })
+                }
+                disabled={!title.trim()}
+                className="text-amber-700 border-amber-200 hover:bg-amber-50 mr-auto"
+              >
+                <Zap className="h-4 w-4 mr-1.5" /> Generate Build Prompt
+              </Button>
+            )}
             <Button variant="ghost" onClick={onClose}>
               Cancel
             </Button>
