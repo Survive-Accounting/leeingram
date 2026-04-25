@@ -253,6 +253,19 @@ export default function StudentDashboard() {
     init();
   }, [navigate]);
 
+  // Drive the just-paid overlay: verifying → success → done
+  useEffect(() => {
+    if (justPaidPhase === "done") return;
+    if (justPaidPhase === "verifying" && !loading && purchases.length > 0) {
+      const t = setTimeout(() => setJustPaidPhase("success"), 400);
+      return () => clearTimeout(t);
+    }
+    if (justPaidPhase === "success") {
+      const t = setTimeout(() => setJustPaidPhase("done"), 700);
+      return () => clearTimeout(t);
+    }
+  }, [justPaidPhase, loading, purchases.length]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/login", { replace: true });
