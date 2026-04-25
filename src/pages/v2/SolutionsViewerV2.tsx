@@ -742,6 +742,17 @@ export default function SolutionsViewerV2() {
               )}
             </section>
 
+            {/* Report issue link */}
+            <div className="flex justify-end -mt-3">
+              <button
+                onClick={() => setReportOpen(true)}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <AlertTriangle className="h-3 w-3" />
+                Report issue
+              </button>
+            </div>
+
             {/* Try it nudge + Explain button */}
             <div className="rounded-2xl border-2 border-dashed border-border p-5 sm:p-6 text-center bg-muted/30">
               <p className="text-sm text-muted-foreground mb-3">
