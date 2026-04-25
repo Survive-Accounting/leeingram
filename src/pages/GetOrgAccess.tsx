@@ -99,6 +99,37 @@ export default function GetOrgAccess() {
   );
   const perSeat = tier ? Math.round(tier.total / tier.seats) : 0;
 
+  // --- Founding chapter offer (50% off if campus has < 3 active orgs) ---
+  const FOUNDING_CAP = 3;
+  const FOUNDING_DISCOUNT_PCT = 50;
+  const [foundingClaimed, setFoundingClaimed] = useState<number | null>(null);
+  useEffect(() => {
+    if (!selectedCampusId) {
+      setFoundingClaimed(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { count, error } = await supabase
+        .from("org_accounts")
+        .select("id", { count: "exact", head: true })
+        .eq("campus_id", selectedCampusId)
+        .eq("status", "active");
+      if (cancelled) return;
+      if (error) {
+        console.error("[get-org-access] founding count", error);
+        setFoundingClaimed(null);
+      } else {
+        setFoundingClaimed(count ?? 0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCampusId]);
+  const foundingEligible =
+    foundingClaimed !== null && foundingClaimed < FOUNDING_CAP;
+
   // --- Auto re-up settings (prototype: stored only, no auto billing) ---
   const WEEKLY_LIMIT_OPTIONS = [10, 20, 30, 50] as const;
   const [autoReupEnabled, setAutoReupEnabled] = useState(true);
@@ -475,8 +506,12 @@ export default function GetOrgAccess() {
         (selectedOrg as any)?.org_name_manual?.trim?.() ||
         "";
 
-      const pricePerSeatCents = Math.round((tier.total / tier.seats) * 100);
-      const totalCents = Math.round(tier.total * 100);
+      const baseTotal = tier.total;
+      const discountedTotal = foundingEligible
+        ? Math.round(baseTotal * (1 - FOUNDING_DISCOUNT_PCT / 100))
+        : baseTotal;
+      const pricePerSeatCents = Math.round((discountedTotal / tier.seats) * 100);
+      const totalCents = Math.round(discountedTotal * 100);
 
       const { data, error } = await supabase.functions.invoke(
         "create-org-access-checkout",
@@ -489,12 +524,15 @@ export default function GetOrgAccess() {
             seats: tier.seats,
             price_per_seat_cents: pricePerSeatCents,
             total_cents: totalCents,
-            is_promo: tier.is_promo,
+            is_promo: tier.is_promo || foundingEligible,
             tier_id: tier.id,
             payment_method: paymentMethod,
             auto_reup_enabled: autoReupEnabled,
             weekly_seat_limit: autoReupEnabled ? weeklySeatLimit : null,
             origin: window.location.origin,
+            founding_discount: foundingEligible
+              ? { percent: FOUNDING_DISCOUNT_PCT, base_total_cents: Math.round(baseTotal * 100) }
+              : null,
           },
         },
       );
@@ -1136,6 +1174,37 @@ export default function GetOrgAccess() {
                 4. Choose your pack
               </div>
 
+              {foundingEligible && (
+                <div
+                  className="mb-3 rounded-xl px-4 py-2.5 flex items-center justify-between gap-3"
+                  style={{
+                    background: "linear-gradient(90deg, #FFF7E6 0%, #FFFBF0 100%)",
+                    border: "1px solid #F5C77E",
+                  }}
+                >
+                  <div className="min-w-0">
+                    <div
+                      className="text-[13px] font-bold flex items-center gap-1.5"
+                      style={{ color: "#92400E", fontFamily: "Inter, sans-serif" }}
+                    >
+                      🎉 Founding Chapter Offer
+                    </div>
+                    <div
+                      className="text-[12px] mt-0.5"
+                      style={{ color: "#92400E", fontFamily: "Inter, sans-serif" }}
+                    >
+                      {foundingClaimed} / {FOUNDING_CAP} claimed — {FOUNDING_DISCOUNT_PCT}% off your first purchase
+                    </div>
+                  </div>
+                  <span
+                    className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                    style={{ background: "#92400E", color: "#FFF7E6", fontFamily: "Inter, sans-serif" }}
+                  >
+                    Auto-applied
+                  </span>
+                </div>
+              )}
+
               {(() => {
                 const PRESETS = [
                   { key: "house", name: "House", seats: 10, total: 750, badge: null as string | null, badgeColor: "" },
@@ -1168,7 +1237,10 @@ export default function GetOrgAccess() {
                     {PRESETS.map((p) => {
                       const matchedTier = findTier(p.seats);
                       const selected = matchedTier ? matchedTier.id === selectedTierId : false;
-                      const perMember = Math.round(p.total / p.seats);
+                      const discountedTotal = foundingEligible
+                        ? Math.round(p.total * (1 - FOUNDING_DISCOUNT_PCT / 100))
+                        : p.total;
+                      const perMember = Math.round(discountedTotal / p.seats);
                       const isPopular = p.key === "chapter";
                       return (
                         <button
@@ -1218,14 +1290,22 @@ export default function GetOrgAccess() {
                           </div>
 
                           <div
-                            className="mt-4 text-[32px] font-bold leading-none"
+                            className="mt-4 text-[32px] font-bold leading-none flex items-baseline gap-2"
                             style={{
                               color: NAVY,
                               fontFamily: "Inter, sans-serif",
                               letterSpacing: "-0.03em",
                             }}
                           >
-                            ${p.total.toLocaleString()}
+                            ${discountedTotal.toLocaleString()}
+                            {foundingEligible && (
+                              <span
+                                className="text-[14px] font-medium line-through"
+                                style={{ color: "#94A3B8", letterSpacing: 0 }}
+                              >
+                                ${p.total.toLocaleString()}
+                              </span>
+                            )}
                           </div>
                           <div
                             className="text-[12px] mt-1.5"
@@ -1445,13 +1525,15 @@ export default function GetOrgAccess() {
                 boxShadow: "0 6px 16px rgba(206,17,38,0.25)",
               }}
             >
-              {submitting
-                ? "Working…"
-                : tier
-                  ? paymentMethod === "manual"
-                    ? `Request invoice → ${tier.seats} passes · $${tier.total.toLocaleString()}`
-                    : `Continue → ${tier.seats} passes · $${tier.total.toLocaleString()}`
-                  : "Continue"}
+              {(() => {
+                if (submitting) return "Working…";
+                if (!tier) return "Continue";
+                const ctaTotal = foundingEligible
+                  ? Math.round(tier.total * (1 - FOUNDING_DISCOUNT_PCT / 100))
+                  : tier.total;
+                const verb = paymentMethod === "manual" ? "Request invoice" : "Continue";
+                return `${verb} → ${tier.seats} passes · $${ctaTotal.toLocaleString()}`;
+              })()}
             </button>
 
             <div
