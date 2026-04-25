@@ -50,6 +50,7 @@ export function PromptBuilderWidget() {
   const allowed = ALLOWED.includes((user?.email ?? "").trim().toLowerCase());
 
   const [open, setOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [text, setText] = useState("");
   const [mode, setMode] = useState<Mode>("new_feature");
   const [recording, setRecording] = useState(false);
