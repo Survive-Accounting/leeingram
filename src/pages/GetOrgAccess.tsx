@@ -625,6 +625,15 @@ export default function GetOrgAccess() {
           >
             {/* Header */}
             <div>
+              {signedInEmail && (
+                <div
+                  className="text-[12px] mb-2"
+                  style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                >
+                  Signed in as:{" "}
+                  <span style={{ color: "#64748B", fontWeight: 500 }}>{signedInEmail}</span>
+                </div>
+              )}
               <h2
                 className="text-[24px] sm:text-[28px] leading-tight"
                 style={{
