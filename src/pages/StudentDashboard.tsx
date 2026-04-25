@@ -278,6 +278,31 @@ export default function StudentDashboard() {
           )}
         </section>
 
+        {/* Legacy Video Library — secondary, for existing LearnWorlds students */}
+        <div
+          className="rounded-xl border p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+          style={{ borderColor: "rgba(20,33,61,0.12)", background: "rgba(20,33,61,0.02)" }}
+        >
+          <div className="min-w-0">
+            <h3 className="text-[14px] font-semibold" style={{ color: NAVY }}>
+              Legacy Video Library
+            </h3>
+            <p className="text-[13px] mt-0.5" style={{ color: "#6B7280" }}>
+              Access the previous Survive Accounting video library.
+            </p>
+          </div>
+          <a
+            href="https://player.surviveaccounting.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] font-medium transition-colors hover:bg-white shrink-0"
+            style={{ borderColor: "rgba(20,33,61,0.2)", color: NAVY }}
+          >
+            Open video library
+            <ArrowRight className="h-3.5 w-3.5" />
+          </a>
+        </div>
+
         {/* Support footer */}
         <div className="pt-4 text-center">
           <p className="text-[13px]" style={{ color: "#6B7280" }}>
