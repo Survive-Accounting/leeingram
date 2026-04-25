@@ -126,8 +126,7 @@ export default function StudentDashboard() {
   };
 
   const openChapter = (ch: Chapter) => {
-    // Chapter routing not wired up yet — placeholder behavior
-    toast("Chapter access coming soon.", { icon: "📚" });
+    window.open(`/cram/${ch.id}`, "_blank", "noopener,noreferrer");
   };
 
   if (loading) {
@@ -164,7 +163,7 @@ export default function StudentDashboard() {
         onPricingClick={() => navigate("/")}
       />
 
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 pt-12 md:pt-16 pb-16 space-y-8">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-12 md:pt-16 pb-16 space-y-10">
         {/* Welcome */}
         <div className="text-center sm:text-left">
           <h1
@@ -222,34 +221,34 @@ export default function StudentDashboard() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {chapters.map((ch) => (
                 <button
                   key={ch.id}
                   onClick={() => openChapter(ch)}
-                  className="text-left rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg group"
+                  className="text-left rounded-2xl p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl group"
                   style={{
                     background: "#fff",
                     border: "1px solid #E0E7F0",
-                    boxShadow: "0 12px 32px rgba(20,33,61,0.08), 0 2px 6px rgba(20,33,61,0.04)",
+                    boxShadow: "0 8px 24px rgba(20,33,61,0.06), 0 2px 6px rgba(20,33,61,0.04)",
                     fontFamily: "Inter, sans-serif",
                   }}
                 >
                   <div
-                    className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-1"
-                    style={{ color: RED }}
+                    className="text-[28px] sm:text-[32px] font-bold leading-none mb-2 transition-colors group-hover:text-[color:var(--accent-red)]"
+                    style={{
+                      color: NAVY,
+                      letterSpacing: "-0.02em",
+                      ["--accent-red" as any]: RED,
+                    }}
                   >
-                    Chapter {ch.chapter_number}
-                  </div>
-                  <div className="text-[15px] font-semibold mb-3" style={{ color: NAVY }}>
-                    {ch.chapter_name}
+                    Ch {ch.chapter_number}
                   </div>
                   <div
-                    className="inline-flex items-center gap-1 text-[13px] font-medium"
-                    style={{ color: NAVY }}
+                    className="text-[13px] leading-snug line-clamp-2"
+                    style={{ color: "#64748B" }}
                   >
-                    Open chapter
-                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                    {ch.chapter_name}
                   </div>
                 </button>
               ))}
