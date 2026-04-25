@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Zap, Mic, MicOff, X, Copy, Loader2, Sparkles,
   Wrench, Plus, TrendingUp, Send, Trash2, EyeOff, Minus, GripHorizontal,
@@ -398,6 +399,8 @@ export function PromptBuilderWidget() {
       screenshots: [...screenshots],
       createdAt: Date.now(),
     };
+    // eslint-disable-next-line no-console
+    console.debug("[PromptBuilder] generating card", { kind, mode, screenshotsAttached: screenshots.length });
     setCards((prev) => [card, ...prev]);
     setText("");
     setInterim("");
@@ -771,6 +774,8 @@ function PromptCardView({
   const modeLabel = MODES.find((m) => m.key === card.mode)?.label ?? "";
   const kindLabel = card.kind === "plan" ? "Plan" : "Build";
   const KindIcon = card.kind === "plan" ? ListTodo : Hammer;
+  const [showImages, setShowImages] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(false);
 
   return (
     <div className={cn("rounded-md border p-2 space-y-1.5", STATUS_STYLES[card.status])}>
@@ -783,10 +788,14 @@ function PromptCardView({
           {modeLabel}
         </span>
         {card.screenshots.length > 0 && (
-          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-foreground bg-background/60 rounded px-1.5 py-0.5">
+          <button
+            onClick={() => setShowImages(true)}
+            className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-foreground bg-background/60 hover:bg-background rounded px-1.5 py-0.5 transition-colors"
+            title="View screenshots — click to copy each"
+          >
             <ImageIcon className="h-2.5 w-2.5" />
             {card.screenshots.length}
-          </span>
+          </button>
         )}
         <Button size="sm" variant="ghost" className="h-6 w-6 p-0 ml-auto text-muted-foreground hover:text-destructive" onClick={onDelete} title="Delete">
           <Trash2 className="h-3 w-3" />
@@ -806,36 +815,6 @@ function PromptCardView({
 
       {(card.status === "ready" || card.status === "sent") && card.output && (
         <>
-          <pre className="whitespace-pre-wrap text-[11px] font-mono leading-snug text-foreground bg-background/60 rounded p-1.5 max-h-44 overflow-y-auto">
-            {card.output}
-          </pre>
-
-          {card.screenshots.length > 0 && (
-            <div className="rounded border border-border bg-background/60 p-1.5 space-y-1">
-              <div className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">
-                Screenshots — copy each, then paste into Lovable
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {card.screenshots.map((url, i) => (
-                  <button
-                    key={i}
-                    onClick={() => onCopyImage(url, `Screenshot ${i + 1}`)}
-                    className="relative group rounded overflow-hidden border border-border hover:border-primary transition-colors"
-                    title={`Copy screenshot ${i + 1} to clipboard`}
-                  >
-                    <img src={url} alt={`Screenshot ${i + 1}`} className="h-12 w-16 object-cover" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center">
-                      <ClipboardCopy className="h-3 w-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                    <span className="absolute bottom-0.5 left-0.5 text-[9px] font-bold text-white bg-black/60 rounded px-1 leading-tight">
-                      {i + 1}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           <div className="flex items-center gap-1">
             <Button size="sm" className="h-6 text-[10px] px-2" onClick={onSend}>
               <Send className="h-2.5 w-2.5 mr-1" /> Send to Lovable
@@ -843,9 +822,54 @@ function PromptCardView({
             <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={onCopy}>
               <Copy className="h-2.5 w-2.5 mr-1" /> Copy
             </Button>
+            <button
+              onClick={() => setShowPrompt((v) => !v)}
+              className="ml-auto text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+              title="Toggle prompt text"
+            >
+              {showPrompt ? "Hide" : "View"} prompt
+            </button>
           </div>
+
+          {showPrompt && (
+            <pre className="whitespace-pre-wrap text-[11px] font-mono leading-snug text-foreground bg-background/60 rounded p-1.5 max-h-44 overflow-y-auto">
+              {card.output}
+            </pre>
+          )}
         </>
       )}
+
+      {/* Screenshot grid modal */}
+      <Dialog open={showImages} onOpenChange={setShowImages}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-sm flex items-center gap-2">
+              <ImageIcon className="h-4 w-4" />
+              {card.screenshots.length} screenshot{card.screenshots.length === 1 ? "" : "s"} — click to copy
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-2 max-h-[70vh] overflow-y-auto">
+            {card.screenshots.map((url, i) => (
+              <button
+                key={i}
+                onClick={() => onCopyImage(url, `Screenshot ${i + 1}`)}
+                className="relative group rounded-md overflow-hidden border border-border hover:border-primary transition-colors bg-muted"
+                title={`Copy screenshot ${i + 1} — paste into Lovable`}
+              >
+                <img src={url} alt={`Screenshot ${i + 1}`} className="w-full h-32 object-cover" />
+                <div className="absolute inset-0 bg-background/0 group-hover:bg-background/70 transition-colors flex items-center justify-center">
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1 text-xs font-medium text-foreground bg-background rounded px-2 py-1 shadow">
+                    <ClipboardCopy className="h-3 w-3" /> Copy
+                  </span>
+                </div>
+                <span className="absolute top-1 left-1 text-[10px] font-bold text-primary-foreground bg-primary/90 rounded px-1.5 py-0.5 leading-tight">
+                  {i + 1}
+                </span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
