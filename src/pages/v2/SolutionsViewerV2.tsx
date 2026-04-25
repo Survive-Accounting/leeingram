@@ -30,6 +30,7 @@ type Asset = {
   instruction_5: string | null;
   instruction_list: string | null;
   chapter_id: string;
+  journal_entry_completed_json: any | null;
 };
 
 type ChapterMeta = { id: string; chapter_number: number; chapter_name: string };
