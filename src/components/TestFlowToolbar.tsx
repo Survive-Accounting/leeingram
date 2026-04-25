@@ -58,6 +58,26 @@ export default function TestFlowToolbar() {
     }, 350);
   };
 
+  if (hidden) {
+    return (
+      <button
+        type="button"
+        onClick={() => setHidden(false)}
+        className="fixed bottom-2 left-2 z-[100] rounded-full px-2.5 py-1 text-[10px] font-semibold transition hover:opacity-90"
+        style={{
+          background: "#FFF8E1",
+          color: "#92400E",
+          border: "1px solid #F4D58D",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+          fontFamily: "Inter, sans-serif",
+        }}
+        title="Show test flow toolbar"
+      >
+        🧪 Show test bar
+      </button>
+    );
+  }
+
   return (
     <div
       className="fixed bottom-0 left-0 right-0 z-[100] w-full border-t"
