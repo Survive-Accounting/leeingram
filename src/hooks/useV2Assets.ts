@@ -111,18 +111,26 @@ export function useV2StatusCounts() {
   return useQuery({
     queryKey: ["v2-status-counts"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("teaching_assets")
-        .select("v2_status")
-        .neq("google_sheet_status", "archived");
-      if (error) throw error;
-      const counts = { draft: 0, ready: 0, embedded: 0, total: 0 };
-      for (const r of data || []) {
-        counts.total++;
-        const s = ((r as any).v2_status || "draft") as V2Status;
-        counts[s]++;
-      }
-      return counts;
+      const statuses: V2Status[] = ["draft", "ready", "embedded"];
+      const [totalRes, ...perStatus] = await Promise.all([
+        supabase
+          .from("teaching_assets")
+          .select("id", { count: "exact", head: true })
+          .neq("google_sheet_status", "archived"),
+        ...statuses.map((s) =>
+          supabase
+            .from("teaching_assets")
+            .select("id", { count: "exact", head: true })
+            .neq("google_sheet_status", "archived")
+            .eq("v2_status", s),
+        ),
+      ]);
+      return {
+        total: totalRes.count || 0,
+        draft: perStatus[0].count || 0,
+        ready: perStatus[1].count || 0,
+        embedded: perStatus[2].count || 0,
+      };
     },
   });
 }
