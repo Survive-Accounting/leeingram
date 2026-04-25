@@ -1161,62 +1161,64 @@ export default function SolutionsViewerV2() {
                 {/* Problem title (prominent) */}
                 {asset.problem_title && (
                   <h1
-                    className="mt-2 text-[1.5rem] sm:text-[1.7rem] font-semibold leading-tight tracking-tight"
+                    className="mt-2 text-[1.35rem] sm:text-[1.5rem] font-semibold leading-tight tracking-tight"
                     style={{ color: "#FFFFFF", fontFamily: "'DM Serif Display', serif" }}
                   >
                     {asset.problem_title}
                   </h1>
                 )}
 
-                {/* Original view: problem text + (separate) instructions card below */}
-                {simplifyView === "original" && asset.survive_problem_text && (
-                  <div
-                    className="mt-5 whitespace-pre-wrap text-[1rem] max-w-prose [&>p+p]:mt-4"
-                    style={{ color: "rgba(255,255,255,0.9)", lineHeight: 1.8 }}
-                  >
-                    {asset.survive_problem_text}
+                {/* Problem text */}
+                {asset.survive_problem_text && (
+                  <div className="mt-5">
+                    <div
+                      className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2"
+                      style={{ color: "rgba(255,255,255,0.45)" }}
+                    >
+                      Problem
+                    </div>
+                    <div
+                      className="whitespace-pre-wrap text-[0.9375rem] max-w-prose [&>p+p]:mt-3"
+                      style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
+                    >
+                      {asset.survive_problem_text}
+                    </div>
                   </div>
                 )}
 
-                {/* Simplified view: combined block of cleaned-up problem + instructions */}
-                {simplifyView === "simplified" && simplifiedText && (
+                {/* Instructions — separated by divider for clarity */}
+                {instructions.length > 0 && (
                   <div
-                    className="mt-5 prose prose-invert max-w-none prose-p:my-3 prose-ul:my-3 prose-li:my-1.5 prose-headings:mt-5 prose-headings:mb-2 prose-headings:text-base prose-headings:font-semibold text-[1rem]"
-                    style={{ lineHeight: 1.75 }}
+                    className="mt-6 pt-5 border-t"
+                    style={{ borderColor: "rgba(255,255,255,0.08)" }}
                   >
-                    <ReactMarkdown>{simplifiedText}</ReactMarkdown>
+                    <div
+                      className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2"
+                      style={{ color: "rgba(255,255,255,0.45)" }}
+                    >
+                      Instructions
+                    </div>
+                    <ul className="space-y-2 text-[0.9375rem]" style={{ lineHeight: 1.6 }}>
+                      {instructions.map((ins, i) => (
+                        <li key={i} className="flex gap-2.5">
+                          <span
+                            className="font-semibold shrink-0 mt-0.5"
+                            style={{ color: "rgba(255,255,255,0.7)" }}
+                          >
+                            {String.fromCharCode(97 + i)}.
+                          </span>
+                          <span
+                            className="whitespace-pre-wrap"
+                            style={{ color: "rgba(255,255,255,0.88)" }}
+                          >
+                            {highlightTerms(ins)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
-
-                {/* Simplify trigger / toggle */}
-                <SimplifiedProblem
-                  asset={asset}
-                  chapter={chapter}
-                  view={simplifyView}
-                  onViewChange={setSimplifyView}
-                  simplifiedText={simplifiedText}
-                  setSimplifiedText={setSimplifiedText}
-                />
               </section>
-
-              {/* Card 2: What you need to solve — only in Original view */}
-              {simplifyView === "original" && instructions.length > 0 && (
-                <section className="rounded-2xl border bg-card p-6 shadow-sm">
-                  <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                    What you need to solve
-                  </h2>
-                  <ul className="space-y-2.5 text-[0.95rem] leading-relaxed">
-                    {instructions.map((ins, i) => (
-                      <li key={i} className="flex gap-2.5">
-                        <span className="font-semibold text-primary shrink-0 mt-0.5">
-                          {String.fromCharCode(97 + i)}.
-                        </span>
-                        <span className="whitespace-pre-wrap">{highlightTerms(ins)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
 
               {/* Report issue link */}
               <div className="flex justify-end">
@@ -1230,9 +1232,14 @@ export default function SolutionsViewerV2() {
               </div>
             </div>
 
-            {/* RIGHT: Explain */}
+            {/* RIGHT: Get unstuck fast toolbox */}
             <div className="lg:sticky lg:top-20 lg:self-start min-w-0">
-              <InlineExplanation asset={asset} />
+              <InlineExplanation
+                asset={asset}
+                chapter={chapter}
+                simplifiedText={simplifiedText}
+                setSimplifiedText={setSimplifiedText}
+              />
             </div>
           </div>
         )}
