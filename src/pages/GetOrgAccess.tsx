@@ -704,20 +704,21 @@ export default function GetOrgAccess() {
             {orgKind && (
             <div className="mt-6">
               <div
-                className="text-[13px] font-semibold uppercase tracking-wider mb-2"
+                className="text-[18px] font-semibold mb-3"
                 style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
               >
-                Start your chapter access
+                Which best describes you?
               </div>
 
               {/* Role buttons */}
-              <div className="text-[13px] mb-2" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-                Who are you?
-              </div>
               <div className="grid grid-cols-2 gap-2">
                 {([
-                  { id: "member" as const, label: "ΑΒΓΔ Member", Icon: UserRound },
-                  { id: "exec" as const, label: "ΑΒΓΔ Officer / Exec", Icon: Crown },
+                  {
+                    id: "member" as const,
+                    label: orgKind === "sorority" ? "Member of my sorority" : "Member of my fraternity",
+                    Icon: UserRound,
+                  },
+                  { id: "exec" as const, label: "Officer / Exec", Icon: Crown },
                 ]).map(({ id, label, Icon }) => {
                   const selected = role === id;
                   return (
