@@ -399,6 +399,8 @@ export function PromptBuilderWidget() {
       screenshots: [...screenshots],
       createdAt: Date.now(),
     };
+    // eslint-disable-next-line no-console
+    console.debug("[PromptBuilder] generating card", { kind, mode, screenshotsAttached: screenshots.length });
     setCards((prev) => [card, ...prev]);
     setText("");
     setInterim("");
