@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Zap, Mic, MicOff, X, Copy, Loader2, Sparkles,
   Wrench, Plus, TrendingUp, Send, Trash2, EyeOff, Minus, GripHorizontal,
