@@ -595,12 +595,15 @@ export function PromptBuilderWidget() {
               <Button
                 size="sm"
                 variant={markupOn ? "default" : "outline"}
-                className="h-7 px-2 text-[11px]"
+                className={cn(
+                  "h-7 px-2 text-[11px] transition-all",
+                  markupOn && "ring-2 ring-primary/40 shadow-sm"
+                )}
                 onClick={() => setMarkupOn((v) => !v)}
-                title="Toggle on-page markup overlay"
+                title={markupOn ? "Exit markup & clear circles" : "Toggle on-page markup overlay"}
               >
                 <Pencil className="h-3 w-3 mr-1" />
-                Markup
+                {markupOn ? "Markup: On" : "Markup"}
               </Button>
             </div>
 
