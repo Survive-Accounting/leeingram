@@ -328,7 +328,7 @@ export default function StagingCoursesSection({
           className="mt-3 sm:mt-4 text-[15px] sm:text-[16px]"
           style={{ fontFamily: "Inter, sans-serif", color: "#6B7280", lineHeight: 1.55 }}
         >
-          Pick a problem. Get a quick explanation when you're stuck. Try it below!
+          Pick a problem. Get a quick explanation when you're stuck.
         </p>
 
       </div>
