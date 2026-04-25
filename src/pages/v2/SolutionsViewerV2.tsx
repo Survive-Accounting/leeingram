@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, LayoutList, Wand2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, LayoutList, Wand2, Printer } from "lucide-react";
+import { generateSimplifiedPracticePdf } from "@/lib/generateSimplifiedPracticePdf";
 import ReactMarkdown from "react-markdown";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -685,20 +686,62 @@ type SimplifyView = "original" | "simplified";
 
 function SimplifiedProblem({
   asset,
+  chapter,
   view,
   onViewChange,
   simplifiedText,
   setSimplifiedText,
 }: {
   asset: Asset;
+  chapter: ChapterMeta | null;
   view: SimplifyView;
   onViewChange: (v: SimplifyView) => void;
   simplifiedText: string | null;
   setSimplifiedText: (t: string | null) => void;
 }) {
   const [loading, setLoading] = useState(false);
+  const [printing, setPrinting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkedCache, setCheckedCache] = useState(false);
+
+  // Build the practice PDF from a simplified-markdown string
+  const buildAndDownloadPdf = (md: string) => {
+    const chapterLabel = chapter
+      ? `Ch ${chapter.chapter_number}: ${chapter.chapter_name}`
+      : null;
+    const doc = generateSimplifiedPracticePdf({
+      sourceRef: asset.source_ref,
+      problemTitle: asset.problem_title,
+      chapterLabel,
+      courseName: null,
+      simplifiedMarkdown: md,
+    });
+    const safeRef = (asset.source_ref || asset.asset_name).replace(/[^A-Za-z0-9._-]/g, "_");
+    doc.save(`${safeRef}-practice.pdf`);
+  };
+
+  // Print handler: ensure simplified text exists, then download PDF
+  const handlePrint = async () => {
+    setError(null);
+    if (simplifiedText) {
+      buildAndDownloadPdf(simplifiedText);
+      return;
+    }
+    setPrinting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("simplify-problem", {
+        body: { asset_id: asset.id },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Failed to prepare PDF");
+      setSimplifiedText(data.simplified_text);
+      buildAndDownloadPdf(data.simplified_text);
+    } catch (e: any) {
+      setError(e?.message || "Could not generate PDF");
+    } finally {
+      setPrinting(false);
+    }
+  };
 
   // Check cache on asset load
   useEffect(() => {
@@ -748,37 +791,62 @@ function SimplifiedProblem({
     }
   };
 
-  // No simplified version yet → show CTA
+  // No simplified version yet → show CTA + Print
   if (!simplifiedText) {
     return (
-      <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-muted/20 p-3">
-        <div className="text-xs text-muted-foreground">
-          Dense textbook wording? Get a cleaner, scannable version.
+      <div className="mt-4 space-y-2">
+        {error && <div className="text-xs text-destructive">{error}</div>}
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-muted/20 p-3 flex-wrap">
+          <div className="text-xs text-muted-foreground min-w-0">
+            Dense textbook wording? Get a cleaner, scannable version — or print it for offline practice.
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={generate}
+              disabled={loading || printing || !checkedCache}
+              className="gap-1.5 h-8"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Simplifying…
+                </>
+              ) : (
+                <>
+                  <Wand2 className="h-3.5 w-3.5" />
+                  Simplify this problem
+                </>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handlePrint}
+              disabled={loading || printing || !checkedCache}
+              className="gap-1.5 h-8"
+              title="Download a clean, printable version for offline practice"
+            >
+              {printing ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Preparing…
+                </>
+              ) : (
+                <>
+                  <Printer className="h-3.5 w-3.5" />
+                  Print this problem
+                </>
+              )}
+            </Button>
+          </div>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={generate}
-          disabled={loading || !checkedCache}
-          className="gap-1.5 h-8 shrink-0"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Simplifying…
-            </>
-          ) : (
-            <>
-              <Wand2 className="h-3.5 w-3.5" />
-              Simplify this problem
-            </>
-          )}
-        </Button>
       </div>
     );
   }
 
-  // Has simplified version → toggle UI
+  // Has simplified version → toggle UI + Print
   return (
     <div className="mt-4 space-y-2">
       {error && (
@@ -791,31 +859,48 @@ function SimplifiedProblem({
             ? "Simplified version (for clarity only)"
             : "Original textbook version"}
         </div>
-        <div className="inline-flex rounded-md border border-border p-0.5 bg-muted/40">
-          <button
-            type="button"
-            onClick={() => onViewChange("original")}
-            className={cn(
-              "px-2.5 py-1 text-xs rounded transition-colors",
-              view === "original"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-md border border-border p-0.5 bg-muted/40">
+            <button
+              type="button"
+              onClick={() => onViewChange("original")}
+              className={cn(
+                "px-2.5 py-1 text-xs rounded transition-colors",
+                view === "original"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Original
+            </button>
+            <button
+              type="button"
+              onClick={() => onViewChange("simplified")}
+              className={cn(
+                "px-2.5 py-1 text-xs rounded transition-colors",
+                view === "simplified"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Simplified
+            </button>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handlePrint}
+            disabled={printing}
+            className="gap-1.5 h-7 px-2.5 text-xs"
+            title="Download a clean, printable version for offline practice"
           >
-            Original
-          </button>
-          <button
-            type="button"
-            onClick={() => onViewChange("simplified")}
-            className={cn(
-              "px-2.5 py-1 text-xs rounded transition-colors",
-              view === "simplified"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
+            {printing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Printer className="h-3.5 w-3.5" />
             )}
-          >
-            Simplified
-          </button>
+            Print
+          </Button>
         </div>
       </div>
     </div>
@@ -1021,6 +1106,7 @@ export default function SolutionsViewerV2() {
                 {/* Simplify trigger / toggle */}
                 <SimplifiedProblem
                   asset={asset}
+                  chapter={chapter}
                   view={simplifyView}
                   onViewChange={setSimplifyView}
                   simplifiedText={simplifiedText}
