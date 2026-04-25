@@ -273,6 +273,7 @@ export default function StagingLandingPage() {
   return (
     <div data-export-page className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8FAFC" }}>
       <TestFlowToolbar />
+      <StyleExportToolbar />
 
       <div data-export-id="navbar" data-export-label="Navbar">
         <StagingNavbar
