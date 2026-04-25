@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, LayoutList } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -421,28 +421,27 @@ function ExplanationFeedback({ asset }: { asset: Asset }) {
   );
 }
 
-function ExplanationPanel({
-  open,
-  onOpenChange,
-  asset,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  asset: Asset | null;
-}) {
+function InlineExplanation({ asset }: { asset: Asset }) {
+  const [started, setStarted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sections, setSections] = useState<ExplanationSections | null>(null);
   const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set());
 
+  // Reset on asset change
   useEffect(() => {
-    if (!open || !asset) return;
+    setStarted(false);
+    setSections(null);
+    setError(null);
+    setOpenSections(new Set());
+  }, [asset.asset_name]);
+
+  useEffect(() => {
+    if (!started) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
       setError(null);
-      setSections(null);
-      setOpenSections(new Set());
       try {
         const { data, error } = await supabase.functions.invoke("explain-this-solution", {
           body: { asset_code: asset.asset_name },
@@ -460,7 +459,7 @@ function ExplanationPanel({
     return () => {
       cancelled = true;
     };
-  }, [open, asset?.asset_name]);
+  }, [started, asset.asset_name]);
 
   const toggleSection = (key: SectionKey) => {
     setOpenSections((prev) => {
@@ -471,101 +470,215 @@ function ExplanationPanel({
     });
   };
 
+  if (!started) {
+    return (
+      <div className="rounded-2xl border-2 border-dashed border-border bg-muted/30 p-6 text-center">
+        <p className="text-sm text-muted-foreground mb-4">
+          Try it first. When you're ready, get a quick walkthrough.
+        </p>
+        <Button size="lg" onClick={() => setStarted(true)} className="gap-2">
+          <Sparkles className="h-4 w-4" />
+          Explain this
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-lg overflow-y-auto p-0"
-      >
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-5 py-3 flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <SheetHeader className="flex-1 p-0 text-left">
-            <SheetTitle className="text-base">Explain this</SheetTitle>
-          </SheetHeader>
+    <div className="space-y-5">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <Sparkles className="h-4 w-4 text-primary" />
+        Explanation
+      </div>
+
+      {loading && !sections && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Lee is thinking…
+          </div>
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
         </div>
+      )}
 
-        <div className="px-5 py-5 space-y-5">
-          {loading && !sections && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Lee is thinking…
-              </div>
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-5/6" />
-            </div>
-          )}
-
-          {error && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          {sections && (
-            <>
-              {/* Always-visible: What matters */}
-              <section className="rounded-lg border border-border bg-card p-4">
-                <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                  <span aria-hidden>💡</span> What matters
-                </h3>
-                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
-                  <ReactMarkdown>{sections.what_matters}</ReactMarkdown>
-                </div>
-              </section>
-
-              {/* Section toggle buttons */}
-              <div className="flex flex-wrap gap-2">
-                {(Object.keys(SECTION_META) as SectionKey[]).map((k) => {
-                  const isOpen = openSections.has(k);
-                  return (
-                    <Button
-                      key={k}
-                      size="sm"
-                      variant={isOpen ? "default" : "outline"}
-                      className="text-xs h-8"
-                      onClick={() => toggleSection(k)}
-                    >
-                      <span className="mr-1.5" aria-hidden>{SECTION_META[k].emoji}</span>
-                      {SECTION_META[k].label}
-                    </Button>
-                  );
-                })}
-              </div>
-
-              {/* Revealed sections */}
-              <div className="space-y-3">
-                {(Object.keys(SECTION_META) as SectionKey[]).map((k) => {
-                  if (!openSections.has(k)) return null;
-                  return (
-                    <section
-                      key={k}
-                      className="rounded-lg border border-border bg-muted/30 p-4 animate-in fade-in slide-in-from-top-1 duration-200"
-                    >
-                      <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                        <span aria-hidden>{SECTION_META[k].emoji}</span> {SECTION_META[k].label}
-                      </h3>
-                      <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
-                        <ReactMarkdown>{sections[k]}</ReactMarkdown>
-                      </div>
-                    </section>
-                  );
-                })}
-              </div>
-              {/* Feedback */}
-              {asset && (
-                <div className="pt-4 mt-2 border-t border-border">
-                  <ExplanationFeedback asset={asset} />
-                </div>
-              )}
-            </>
-          )}
+      {error && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          {error}
         </div>
-      </SheetContent>
-    </Sheet>
+      )}
+
+      {sections && (
+        <>
+          <section className="rounded-lg border border-border bg-card p-4">
+            <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+              <span aria-hidden>💡</span> What matters
+            </h3>
+            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
+              <ReactMarkdown>{sections.what_matters}</ReactMarkdown>
+            </div>
+          </section>
+
+          <div className="flex flex-wrap gap-2">
+            {(Object.keys(SECTION_META) as SectionKey[]).map((k) => {
+              const isOpen = openSections.has(k);
+              return (
+                <Button
+                  key={k}
+                  size="sm"
+                  variant={isOpen ? "default" : "outline"}
+                  className="text-xs h-8"
+                  onClick={() => toggleSection(k)}
+                >
+                  <span className="mr-1.5" aria-hidden>{SECTION_META[k].emoji}</span>
+                  {SECTION_META[k].label}
+                </Button>
+              );
+            })}
+          </div>
+
+          <div className="space-y-3">
+            {(Object.keys(SECTION_META) as SectionKey[]).map((k) => {
+              if (!openSections.has(k)) return null;
+              return (
+                <section
+                  key={k}
+                  className="rounded-lg border border-border bg-muted/30 p-4 animate-in fade-in slide-in-from-top-1 duration-200"
+                >
+                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                    <span aria-hidden>{SECTION_META[k].emoji}</span> {SECTION_META[k].label}
+                  </h3>
+                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
+                    <ReactMarkdown>{sections[k]}</ReactMarkdown>
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+
+          <div className="pt-4 border-t border-border">
+            <ExplanationFeedback asset={asset} />
+          </div>
+        </>
+      )}
+    </div>
   );
 }
+
+// ── Jump modal ────────────────────────────────────────────────────────
+function getRefPrefix(ref: string | null): "BE" | "EX" | "PR" | "OTHER" {
+  if (!ref) return "OTHER";
+  const u = ref.toUpperCase();
+  if (u.startsWith("BE") || u.startsWith("QS")) return "BE";
+  if (u.startsWith("EX") || u.startsWith("E")) return "EX";
+  if (u.startsWith("P")) return "PR";
+  return "OTHER";
+}
+
+function JumpModal({
+  open,
+  onOpenChange,
+  siblings,
+  currentAssetName,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  siblings: { asset_name: string; source_ref: string | null }[];
+  currentAssetName: string | undefined;
+}) {
+  const navigate = useNavigate();
+  const groups = useMemo(() => {
+    const g: Record<"BE" | "EX" | "PR" | "OTHER", typeof siblings> = {
+      BE: [], EX: [], PR: [], OTHER: [],
+    };
+    siblings.forEach((s) => g[getRefPrefix(s.source_ref)].push(s));
+    return g;
+  }, [siblings]);
+
+  const groupLabels: Record<"BE" | "EX" | "PR" | "OTHER", string> = {
+    BE: "Brief Exercises / Quick Studies",
+    EX: "Exercises",
+    PR: "Problems",
+    OTHER: "Other",
+  };
+
+  const go = (assetName: string) => {
+    navigate(`/v2/solutions/${assetName}`);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Jump to problem</DialogTitle>
+          <DialogDescription>{siblings.length} problems in this chapter</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-5">
+          {(["BE", "EX", "PR", "OTHER"] as const).map((key) => {
+            const items = groups[key];
+            if (items.length === 0) return null;
+            return (
+              <div key={key}>
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  {groupLabels[key]} ({items.length})
+                </div>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                  {items.map((s) => {
+                    const isCurrent = s.asset_name === currentAssetName;
+                    return (
+                      <Button
+                        key={s.asset_name}
+                        size="sm"
+                        variant={isCurrent ? "default" : "outline"}
+                        className="font-mono text-xs h-8"
+                        onClick={() => go(s.asset_name)}
+                      >
+                        {s.source_ref || s.asset_name}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Key term highlighter ──────────────────────────────────────────────
+const KEY_TERMS = [
+  "Total Assets", "Total Liabilities", "Total Equity", "Stockholders' Equity",
+  "Net Income", "Net Loss", "Gross Profit", "Operating Income",
+  "Retained Earnings", "Cash Flow", "Cost of Goods Sold", "COGS",
+  "Revenue", "Expenses", "Dividends", "Earnings per Share", "EPS",
+  "Depreciation", "Amortization", "Accounts Receivable", "Accounts Payable",
+  "Journal Entry", "Journal Entries", "Adjusting Entry", "Trial Balance",
+  "Balance Sheet", "Income Statement",
+];
+
+function highlightTerms(text: string): React.ReactNode {
+  if (!text) return text;
+  const pattern = new RegExp(
+    `\\b(${KEY_TERMS.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\b`,
+    "gi",
+  );
+  const parts = text.split(pattern);
+  return parts.map((part, i) => {
+    if (KEY_TERMS.some((t) => t.toLowerCase() === part.toLowerCase())) {
+      return (
+        <span key={i} className="font-semibold text-primary">
+          {part}
+        </span>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
 
 // ── Main page ──────────────────────────────────────────────────────────
 export default function SolutionsViewerV2() {
@@ -580,9 +693,9 @@ export default function SolutionsViewerV2() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  const [explainOpen, setExplainOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [jumpOpen, setJumpOpen] = useState(false);
 
   useEffect(() => {
     if (!assetCode) return;
@@ -669,7 +782,7 @@ export default function SolutionsViewerV2() {
 
       {/* Top bar */}
       <header className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b">
-        <div className="max-w-3xl mx-auto px-4 h-12 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between gap-3">
           <button
             onClick={() => navigate(-1)}
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -677,21 +790,30 @@ export default function SolutionsViewerV2() {
             <ChevronLeft className="h-4 w-4" />
             Back
           </button>
-          <div className="text-sm font-medium tracking-tight">{headerLabel}</div>
-          <div className="w-12" />
+          <div className="text-sm font-medium tracking-tight truncate">{headerLabel}</div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setJumpOpen(true)}
+            disabled={siblings.length === 0}
+            className="gap-1.5 h-8"
+          >
+            <LayoutList className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Jump</span>
+          </Button>
         </div>
       </header>
 
       {/* Improvement banner */}
       <div className="border-b bg-muted/40">
-        <div className="max-w-3xl mx-auto px-4 py-2 text-center text-xs text-muted-foreground">
+        <div className="max-w-6xl mx-auto px-4 py-2 text-center text-xs text-muted-foreground">
           ✨ We're improving this in real-time — your feedback helps
         </div>
       </div>
 
-      <main className="max-w-3xl mx-auto px-4 pt-6 pb-32">
+      <main className="max-w-6xl mx-auto px-4 pt-6 pb-32">
         {loading && (
-          <div className="space-y-3">
+          <div className="space-y-3 max-w-3xl">
             <Skeleton className="h-6 w-2/3" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
@@ -710,78 +832,75 @@ export default function SolutionsViewerV2() {
         )}
 
         {!loading && asset && (
-          <article className="space-y-6">
-            {/* Problem card */}
-            <section className="rounded-2xl border bg-card p-6 sm:p-8 shadow-sm">
-              {asset.source_ref && (
-                <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                  {asset.source_ref}
-                </div>
-              )}
-              {asset.problem_title && (
-                <h1 className="mt-1 text-xl sm:text-2xl font-semibold leading-tight tracking-tight">
-                  {asset.problem_title}
-                </h1>
-              )}
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* LEFT: Problem + What you need to solve */}
+            <div className="space-y-4 min-w-0">
+              <div className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+                <span aria-hidden>📘</span> Based on real textbook problems
+              </div>
 
-              {asset.survive_problem_text && (
-                <div className="mt-4 whitespace-pre-wrap text-[0.95rem] leading-relaxed text-foreground/90">
-                  {asset.survive_problem_text}
-                </div>
-              )}
-
-              {instructions.length > 0 && (
-                <div className="mt-5 pt-5 border-t">
-                  <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
-                    Instructions
+              {/* Card 1: Problem */}
+              <section className="rounded-2xl border bg-card p-6 shadow-sm">
+                {asset.source_ref && (
+                  <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                    {asset.source_ref}
                   </div>
-                  <ol className="space-y-2 text-[0.95rem] leading-relaxed">
+                )}
+                {asset.problem_title && (
+                  <h1 className="mt-1 text-xl sm:text-2xl font-semibold leading-tight tracking-tight">
+                    {asset.problem_title}
+                  </h1>
+                )}
+                {asset.survive_problem_text && (
+                  <div className="mt-4 whitespace-pre-wrap text-[0.95rem] leading-[1.7] text-foreground/90 max-w-prose">
+                    {asset.survive_problem_text}
+                  </div>
+                )}
+              </section>
+
+              {/* Card 2: What you need to solve */}
+              {instructions.length > 0 && (
+                <section className="rounded-2xl border bg-card p-6 shadow-sm">
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                    What you need to solve
+                  </h2>
+                  <ul className="space-y-2.5 text-[0.95rem] leading-relaxed">
                     {instructions.map((ins, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="font-semibold text-primary shrink-0">
+                      <li key={i} className="flex gap-2.5">
+                        <span className="font-semibold text-primary shrink-0 mt-0.5">
                           {String.fromCharCode(97 + i)}.
                         </span>
-                        <span className="whitespace-pre-wrap">{ins}</span>
+                        <span className="whitespace-pre-wrap">{highlightTerms(ins)}</span>
                       </li>
                     ))}
-                  </ol>
-                </div>
+                  </ul>
+                </section>
               )}
-            </section>
 
-            {/* Report issue link */}
-            <div className="flex justify-end -mt-3">
-              <button
-                onClick={() => setReportOpen(true)}
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <AlertTriangle className="h-3 w-3" />
-                Report issue
-              </button>
+              {/* Report issue link */}
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setReportOpen(true)}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <AlertTriangle className="h-3 w-3" />
+                  Report issue
+                </button>
+              </div>
             </div>
 
-            {/* Try it nudge + Explain button */}
-            <div className="rounded-2xl border-2 border-dashed border-border p-5 sm:p-6 text-center bg-muted/30">
-              <p className="text-sm text-muted-foreground mb-3">
-                Try it first. When you're ready, get a quick walkthrough.
-              </p>
-              <Button
-                size="lg"
-                onClick={() => setExplainOpen(true)}
-                className="gap-2"
-              >
-                <Sparkles className="h-4 w-4" />
-                Explain this
-              </Button>
+            {/* RIGHT: Explain */}
+            <div className="lg:sticky lg:top-20 lg:self-start min-w-0">
+              <InlineExplanation asset={asset} />
             </div>
-          </article>
+          </div>
         )}
       </main>
 
       {/* Sticky bottom nav */}
       {!loading && asset && (
         <nav className="fixed bottom-0 inset-x-0 z-20 bg-background/95 backdrop-blur border-t">
-          <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
+          <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -831,9 +950,14 @@ export default function SolutionsViewerV2() {
         </button>
       )}
 
-      <ExplanationPanel open={explainOpen} onOpenChange={setExplainOpen} asset={asset} />
       <NeedHelpModal open={helpOpen} onOpenChange={setHelpOpen} asset={asset} />
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
+      <JumpModal
+        open={jumpOpen}
+        onOpenChange={setJumpOpen}
+        siblings={siblings}
+        currentAssetName={asset?.asset_name}
+      />
     </div>
   );
 }
