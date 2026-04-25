@@ -326,7 +326,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               textShadow: "0 2px 20px rgba(0,0,0,0.3)",
             }}
           >
-            Accounting study tools that get you unstuck — fast.
+            A faster way to cram accounting problems.
           </h1>
 
           {/* Subtext */}
