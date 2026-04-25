@@ -5,6 +5,7 @@ import { Loader2, CheckCircle2, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useEventTracking, setStoredEmail } from "@/hooks/useEventTracking";
+import { registerLead } from "@/lib/registerLead";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -144,6 +145,7 @@ export default function StagingCtaModal({ intent, onClose, courses, onIntentChan
         { onConflict: "email,course_id" },
       );
       if (dbErr) throw dbErr;
+      await registerLead(trimmed, intent.course.slug);
       trackEvent("waitlist_signup", { course_name: intent.course.name, email_domain: trimmed.split("@")[1] });
       setNotifySuccess(true);
     } catch {

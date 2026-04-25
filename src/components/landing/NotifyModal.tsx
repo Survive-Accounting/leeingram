@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { registerLead } from "@/lib/registerLead";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,6 +34,8 @@ export default function NotifyModal({ open, onClose, courseName, courseId }: Not
         { onConflict: "email,course_id" }
       );
       if (dbErr) throw dbErr;
+      // Register as a campus lead (idempotent; resolves campus from email domain).
+      await registerLead(trimmed);
       setSuccess(true);
     } catch {
       toast.error("Something went wrong. Try again.");

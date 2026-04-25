@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Loader2, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { registerLead } from "@/lib/registerLead";
 import { toast } from "sonner";
 import { DevShortcut } from "@/components/DevShortcut";
 
@@ -75,6 +76,8 @@ export default function NonEduFallbackFlow({
         source: "non_edu_fallback",
       });
       if (error) throw error;
+      // Register as a campus lead too (will resolve campus if .edu, else "general").
+      await registerLead(trimmed, courseSlug ?? undefined);
       setStage("success");
     } catch {
       toast.error("Something went wrong. Try again.");

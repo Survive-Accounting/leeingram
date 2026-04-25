@@ -5,6 +5,7 @@ import type { CtaCourse } from "@/components/landing/StagingCtaModal";
 import { DevShortcut } from "@/components/DevShortcut";
 import { isAllowedEmail, isWhitelistedEmail } from "@/lib/emailWhitelist";
 import { supabase } from "@/integrations/supabase/client";
+import { registerLead } from "@/lib/registerLead";
 import { toast } from "sonner";
 import NonEduFallbackFlow from "@/components/landing/NonEduFallbackFlow";
 
@@ -88,6 +89,8 @@ export default function StagingGetStartedModal({
 
     setEmailError(null);
     setStep1Loading(true);
+    // Fire-and-forget lead registration (.edu path) — captures campus from email domain.
+    void registerLead(trimmed, preselectedCourseSlug);
     setTimeout(() => {
       setStep1Loading(false);
       setStep(2);
@@ -120,6 +123,8 @@ export default function StagingGetStartedModal({
         source: "non_edu_fallback",
       });
       if (error) throw error;
+      // Also register as a campus lead (will resolve to "general" if no .edu match).
+      await registerLead(trimmed, preselectedCourseSlug);
       setView("non_edu_success");
     } catch {
       toast.error("Something went wrong. Try again.");
