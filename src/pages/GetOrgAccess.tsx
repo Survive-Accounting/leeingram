@@ -135,6 +135,7 @@ export default function GetOrgAccess() {
   const [autoReupEnabled, setAutoReupEnabled] = useState(true);
   const [autoRenewEnabled, setAutoRenewEnabled] = useState(true);
   const [weeklySeatLimit, setWeeklySeatLimit] = useState<number>(20);
+  const [budgetEstimate, setBudgetEstimate] = useState<number | "">("");
   const AUTO_REUP_DISCOUNT_PCT = 5;
   const AUTO_RENEW_DISCOUNT_PCT = 5;
 
