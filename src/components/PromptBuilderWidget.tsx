@@ -2,13 +2,23 @@ import { useEffect, useRef, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Zap, Mic, MicOff, Image as ImageIcon, X, Copy, Loader2, Sparkles } from "lucide-react";
+import { Zap, Mic, MicOff, Image as ImageIcon, X, Copy, Loader2, Sparkles, Wrench, Plus, TrendingUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const ALLOWED = ["lee@survivestudios.com", "jking.cim@gmail.com"];
+
+type Mode = "ui_fix" | "new_feature" | "conversion";
+type Refinement = "concise" | "modular" | "conversion";
+
+const MODES: { key: Mode; label: string; icon: typeof Wrench }[] = [
+  { key: "ui_fix", label: "UI Fix", icon: Wrench },
+  { key: "new_feature", label: "New Feature", icon: Plus },
+  { key: "conversion", label: "Conversion", icon: TrendingUp },
+];
 
 export function PromptBuilderWidget() {
   const { user } = useAuth();
@@ -16,8 +26,10 @@ export function PromptBuilderWidget() {
 
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
+  const [mode, setMode] = useState<Mode>("new_feature");
   const [recording, setRecording] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [refining, setRefining] = useState<Refinement | null>(null);
   const [output, setOutput] = useState("");
   const [screenshot, setScreenshot] = useState<{ dataUrl: string; base64: string; mime: string } | null>(null);
 
@@ -99,6 +111,22 @@ export function PromptBuilderWidget() {
     }
   };
 
+  const callAI = async (opts: { refinement?: Refinement } = {}) => {
+    const { data, error } = await supabase.functions.invoke("generate-lovable-prompt", {
+      body: {
+        text,
+        mode,
+        screenshotBase64: screenshot?.base64,
+        screenshotMime: screenshot?.mime,
+        refinement: opts.refinement,
+        priorPrompt: opts.refinement ? output : undefined,
+      },
+    });
+    if (error) throw error;
+    if ((data as any)?.error) throw new Error((data as any).error);
+    return (data as any)?.prompt ?? "";
+  };
+
   const generate = async () => {
     if (!text.trim()) {
       toast.error("Add a description first.");
@@ -107,21 +135,27 @@ export function PromptBuilderWidget() {
     setGenerating(true);
     setOutput("");
     try {
-      const { data, error } = await supabase.functions.invoke("generate-lovable-prompt", {
-        body: {
-          text,
-          screenshotBase64: screenshot?.base64,
-          screenshotMime: screenshot?.mime,
-        },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      setOutput((data as any)?.prompt ?? "");
+      const prompt = await callAI();
+      setOutput(prompt);
     } catch (e) {
       console.error(e);
       toast.error(e instanceof Error ? e.message : "Generation failed");
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const refine = async (refinement: Refinement) => {
+    if (!output) return;
+    setRefining(refinement);
+    try {
+      const prompt = await callAI({ refinement });
+      setOutput(prompt);
+    } catch (e) {
+      console.error(e);
+      toast.error(e instanceof Error ? e.message : "Refinement failed");
+    } finally {
+      setRefining(null);
     }
   };
 
@@ -149,6 +183,27 @@ export function PromptBuilderWidget() {
               <Sparkles className="h-4 w-4" /> Lovable Prompt Builder
             </SheetTitle>
           </SheetHeader>
+
+          {/* Mode selector */}
+          <div className="flex gap-1.5 rounded-lg bg-muted p-1">
+            {MODES.map((m) => {
+              const Icon = m.icon;
+              const active = mode === m.key;
+              return (
+                <button
+                  key={m.key}
+                  onClick={() => setMode(m.key)}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+                    active ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {m.label}
+                </button>
+              );
+            })}
+          </div>
 
           <Textarea
             value={text}
@@ -228,6 +283,31 @@ export function PromptBuilderWidget() {
                 <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed text-foreground">
                   {output}
                 </pre>
+              )}
+
+              {output && !generating && (
+                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-border/60">
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground self-center mr-1">
+                    Refine:
+                  </span>
+                  {([
+                    { key: "concise" as const, label: "More concise" },
+                    { key: "modular" as const, label: "More modular" },
+                    { key: "conversion" as const, label: "↑ Conversion focus" },
+                  ]).map((r) => (
+                    <Button
+                      key={r.key}
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      disabled={refining !== null}
+                      onClick={() => refine(r.key)}
+                    >
+                      {refining === r.key ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}
+                      {r.label}
+                    </Button>
+                  ))}
+                </div>
               )}
             </div>
           )}
