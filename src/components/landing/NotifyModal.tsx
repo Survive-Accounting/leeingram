@@ -34,6 +34,8 @@ export default function NotifyModal({ open, onClose, courseName, courseId }: Not
         { onConflict: "email,course_id" }
       );
       if (dbErr) throw dbErr;
+      // Register as a campus lead (idempotent; resolves campus from email domain).
+      await registerLead(trimmed);
       setSuccess(true);
     } catch {
       toast.error("Something went wrong. Try again.");
