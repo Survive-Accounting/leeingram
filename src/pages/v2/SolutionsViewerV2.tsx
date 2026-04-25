@@ -1482,6 +1482,7 @@ export default function SolutionsViewerV2() {
                 chapter={chapter}
                 simplifiedText={simplifiedText}
                 setSimplifiedText={setSimplifiedText}
+                onShareClick={openShareModal}
               />
             </div>
           </div>
