@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Wrench, ChevronDown } from "lucide-react";
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -13,11 +13,36 @@ const ITEMS: { key: DevToolKey; label: string; sub: string }[] = [
   { key: "testBar",       label: "Show Test Bar",  sub: "Student-flow path + reset session" },
 ];
 
+const HIDDEN_STORAGE_KEY = "devTool.adminBar.hidden";
+
 export function AdminToolsMenu() {
   const isStaff = useIsStaff();
   const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem(HIDDEN_STORAGE_KEY) === "1"; } catch { return false; }
+  });
+
+  // Ctrl+Alt+A toggles the bar (works even when hidden)
+  useEffect(() => {
+    if (!isStaff) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.altKey && !e.shiftKey && !e.metaKey && (e.key === "a" || e.key === "A")) {
+        e.preventDefault();
+        setHidden((prev) => {
+          const next = !prev;
+          try { localStorage.setItem(HIDDEN_STORAGE_KEY, next ? "1" : "0"); } catch { /* noop */ }
+          if (next) setOpen(false);
+          return next;
+        });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isStaff]);
 
   if (!isStaff) return null;
+  if (hidden) return null;
 
   return (
     <div
