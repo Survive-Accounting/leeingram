@@ -1003,15 +1003,33 @@ export default function SolutionsViewerV2() {
                     {asset.problem_title}
                   </h1>
                 )}
-                {asset.survive_problem_text && (
+
+                {/* Original view: problem text + (separate) instructions card below */}
+                {simplifyView === "original" && asset.survive_problem_text && (
                   <div className="mt-4 whitespace-pre-wrap text-[0.95rem] leading-[1.7] text-foreground/90 max-w-prose">
                     {asset.survive_problem_text}
                   </div>
                 )}
+
+                {/* Simplified view: combined block of cleaned-up problem + instructions */}
+                {simplifyView === "simplified" && simplifiedText && (
+                  <div className="mt-4 prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-li:my-1 prose-headings:mt-4 prose-headings:mb-2 prose-headings:text-base text-[0.95rem] leading-relaxed">
+                    <ReactMarkdown>{simplifiedText}</ReactMarkdown>
+                  </div>
+                )}
+
+                {/* Simplify trigger / toggle */}
+                <SimplifiedProblem
+                  asset={asset}
+                  view={simplifyView}
+                  onViewChange={setSimplifyView}
+                  simplifiedText={simplifiedText}
+                  setSimplifiedText={setSimplifiedText}
+                />
               </section>
 
-              {/* Card 2: What you need to solve */}
-              {instructions.length > 0 && (
+              {/* Card 2: What you need to solve — only in Original view */}
+              {simplifyView === "original" && instructions.length > 0 && (
                 <section className="rounded-2xl border bg-card p-6 shadow-sm">
                   <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
                     What you need to solve
