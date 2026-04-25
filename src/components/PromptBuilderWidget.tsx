@@ -58,6 +58,7 @@ const WINDOW_SIZE = { w: 380, h: 520 };
 export function PromptBuilderWidget() {
   const { user } = useAuth();
   const allowed = ALLOWED.includes((user?.email ?? "").trim().toLowerCase());
+  const isMobile = useIsMobile();
 
   const [hidden, setHidden] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -69,6 +70,17 @@ export function PromptBuilderWidget() {
   const [interim, setInterim] = useState("");
   const [mode, setMode] = useState<Mode>("new_feature");
   const [recording, setRecording] = useState(false);
+  /** Whether the user paused — recording bar stays visible, mic is off, timer stops. */
+  const [paused, setPaused] = useState(false);
+  /** Wall-clock timestamp when the current segment started (null while paused). */
+  const [recStartedAt, setRecStartedAt] = useState<number | null>(null);
+  /**
+   * When recording is active, this controls whether the floating recording bar
+   * is shown as the full bar (false) or the small bubble (true).
+   * Independent from the panel's `minimized` state so the bar can show
+   * even when the panel is closed.
+   */
+  const [barCollapsed, setBarCollapsed] = useState(false);
   const [cards, setCards] = useState<PromptCard[]>([]);
   const [markupOn, setMarkupOn] = useState(false);
   const [screenshots, setScreenshots] = useState<string[]>([]);
