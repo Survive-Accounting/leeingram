@@ -323,30 +323,26 @@ export default function StudentDashboard() {
 
         {/* Legacy Video Library — secondary, for existing LearnWorlds students */}
         <div
-          className="rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+          className="mt-4 mx-auto max-w-md rounded-xl px-4 py-3 flex items-center justify-between gap-3"
           style={{
-            background: "rgba(255,255,255,0.6)",
-            border: "1px solid #E0E7F0",
+            background: "transparent",
+            border: "1px dashed rgba(20,33,61,0.15)",
             fontFamily: "Inter, sans-serif",
           }}
         >
           <div className="min-w-0">
-            <h3 className="text-[14px] font-semibold" style={{ color: NAVY }}>
+            <p className="text-[12px] font-medium" style={{ color: "#64748B" }}>
               Legacy Video Library
-            </h3>
-            <p className="text-[13px] mt-0.5" style={{ color: "#64748B" }}>
-              Access the previous Survive Accounting video library.
             </p>
           </div>
           <a
             href="https://player.surviveaccounting.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] font-medium transition-colors hover:bg-white shrink-0"
-            style={{ borderColor: "rgba(20,33,61,0.2)", color: NAVY }}
+            className="inline-flex items-center gap-1 text-[12px] font-medium hover:underline shrink-0"
+            style={{ color: "#64748B" }}
           >
-            Open video library
-            <ArrowRight className="h-3.5 w-3.5" />
+            Open video library <ArrowRight className="h-3 w-3" />
           </a>
         </div>
 
