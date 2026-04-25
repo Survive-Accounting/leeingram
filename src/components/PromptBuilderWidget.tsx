@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useDraggable } from "./prompt-builder/useDraggable";
 import { MarkupOverlay } from "./prompt-builder/MarkupOverlay";
+import { RecordingBar } from "./prompt-builder/RecordingBar";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ALLOWED = ["lee@survivestudios.com", "jking.cim@gmail.com"];
 const LOVABLE_URL = "https://lovable.dev/projects/51843e0a-bf2a-4413-bab2-a6c4ea7a1395";
@@ -56,6 +58,7 @@ const WINDOW_SIZE = { w: 380, h: 520 };
 export function PromptBuilderWidget() {
   const { user } = useAuth();
   const allowed = ALLOWED.includes((user?.email ?? "").trim().toLowerCase());
+  const isMobile = useIsMobile();
 
   const [hidden, setHidden] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -67,6 +70,17 @@ export function PromptBuilderWidget() {
   const [interim, setInterim] = useState("");
   const [mode, setMode] = useState<Mode>("new_feature");
   const [recording, setRecording] = useState(false);
+  /** Whether the user paused — recording bar stays visible, mic is off, timer stops. */
+  const [paused, setPaused] = useState(false);
+  /** Wall-clock timestamp when the current segment started (null while paused). */
+  const [recStartedAt, setRecStartedAt] = useState<number | null>(null);
+  /**
+   * When recording is active, this controls whether the floating recording bar
+   * is shown as the full bar (false) or the small bubble (true).
+   * Independent from the panel's `minimized` state so the bar can show
+   * even when the panel is closed.
+   */
+  const [barCollapsed, setBarCollapsed] = useState(false);
   const [cards, setCards] = useState<PromptCard[]>([]);
   const [markupOn, setMarkupOn] = useState(false);
   const [screenshots, setScreenshots] = useState<string[]>([]);
@@ -179,6 +193,12 @@ export function PromptBuilderWidget() {
   };
 
   // ---- Speech ----
+  /**
+   * Starts (or resumes) a SpeechRecognition session. Resume always starts a
+   * brand new SR session whose results are appended to whatever is already in
+   * `text` — this matches the agreed pause semantics (Pause = stop & finalise,
+   * Resume = new segment).
+   */
   const startRecording = () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) { toast.error("Speech recognition not supported. Try Chrome or Edge."); return; }
@@ -204,18 +224,57 @@ export function PromptBuilderWidget() {
         setInterim(interimText);
       }
     };
-    rec.onerror = (e: any) => { toast.error(`Mic error: ${e.error || "unknown"}`); setRecording(false); setInterim(""); };
-    rec.onend = () => { setRecording(false); setInterim(""); };
+    rec.onerror = (e: any) => {
+      toast.error(`Mic error: ${e.error || "unknown"}`);
+      setRecording(false);
+      setPaused(false);
+      setRecStartedAt(null);
+      setInterim("");
+    };
+    rec.onend = () => {
+      // Don't auto-flip recording=false; Pause stops the SR but we want to
+      // stay in "recording-but-paused" UX state until user taps Stop.
+      setInterim("");
+    };
 
     recognitionRef.current = rec;
     rec.start();
     setRecording(true);
+    setPaused(false);
+    setRecStartedAt(Date.now());
   };
 
+  /** User tapped Pause — stop the mic, freeze the timer, keep the bar visible. */
+  const pauseRecording = () => {
+    try { recognitionRef.current?.stop(); } catch { /* noop */ }
+    recognitionRef.current = null;
+    if (interim) {
+      const merged = (text + (text && !text.endsWith(" ") ? " " : "") + interim).trim();
+      setText(merged);
+      baseTextRef.current = merged;
+      setInterim("");
+    }
+    setPaused(true);
+    setRecStartedAt(null);
+  };
+
+  /** User tapped Stop — end recording entirely and surface the editor. */
   const stopRecording = () => {
     try { recognitionRef.current?.stop(); } catch { /* noop */ }
+    recognitionRef.current = null;
+    if (interim) {
+      const merged = (text + (text && !text.endsWith(" ") ? " " : "") + interim).trim();
+      setText(merged);
+      baseTextRef.current = merged;
+      setInterim("");
+    }
     setRecording(false);
-    setInterim("");
+    setPaused(false);
+    setRecStartedAt(null);
+    setBarCollapsed(false);
+    // Surface the editor so the user can review the transcript.
+    setOpen(true);
+    setMinimized(false);
   };
 
   // ---- Screenshots: paste / accumulate / copy back to clipboard ----
@@ -268,6 +327,53 @@ export function PromptBuilderWidget() {
       console.warn("clipboard image write failed", err);
     }
   };
+
+  /**
+   * Global paste capture — when the panel is closed/minimized but the user is
+   * actively recording (or paused), pasted images should still land in the
+   * screenshot tray. Without this, the user has to reopen the panel just to
+   * get an image into the prompt.
+   *
+   * Only active while a recording session is alive, so we don't steal the
+   * user's clipboard pastes elsewhere on the site.
+   */
+  useEffect(() => {
+    const sessionAlive = recording || paused;
+    if (!sessionAlive) return;
+
+    const onGlobalPaste = (e: ClipboardEvent) => {
+      // If the paste target lives inside the panel, the local handler runs.
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('[data-prompt-builder-panel="true"]')) return;
+
+      const items = Array.from(e.clipboardData?.items ?? []);
+      const imageItems = items.filter((it) => it.type.startsWith("image/"));
+      if (imageItems.length === 0) return;
+      e.preventDefault();
+
+      void (async () => {
+        const remaining = MAX_SCREENSHOTS - screenshots.length;
+        if (remaining <= 0) {
+          toast.error(`Max ${MAX_SCREENSHOTS} screenshots — delete one first.`);
+          return;
+        }
+        const toAdd = imageItems.slice(0, remaining);
+        const urls: string[] = [];
+        for (const it of toAdd) {
+          const f = it.getAsFile();
+          if (!f) continue;
+          try { urls.push(await fileToDataUrl(f)); } catch { /* skip */ }
+        }
+        if (urls.length === 0) return;
+        setScreenshots((s) => [...s, ...urls]);
+        toast.success(`Added ${urls.length} screenshot${urls.length > 1 ? "s" : ""}`);
+      })();
+    };
+
+    window.addEventListener("paste", onGlobalPaste);
+    return () => window.removeEventListener("paste", onGlobalPaste);
+  }, [recording, paused, screenshots.length]);
+
 
   // ---- AI ----
   const callAI = async (payload: { text: string; mode: Mode; promptKind: PromptKind }) => {
@@ -332,58 +438,117 @@ export function PromptBuilderWidget() {
     );
   }
 
+  /** True whenever a recording session is alive (recording or paused). */
+  const sessionAlive = recording || paused;
+
   return (
     <>
-      {/* Launcher pill */}
-      <div data-prompt-builder-ui="true" style={{ left: pos.x, top: pos.y }} className="fixed z-[9999] flex items-center gap-1.5 group">
-        <button
-          onPointerDown={onLauncherPointerDown}
-          onPointerMove={onLauncherPointerMove}
-          onPointerUp={onLauncherPointerUp}
-          onClick={onLauncherClick}
-          style={{ touchAction: "none" }}
-          className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-foreground/20"
-          title="Click to open · Drag to move · ⌘K"
-        >
-          <Zap className="h-4 w-4" />
-          Build Prompt
-        </button>
-        <button
-          onClick={() => setHidden(true)}
-          className="opacity-0 group-hover:opacity-100 rounded-full bg-background/90 backdrop-blur p-1.5 text-muted-foreground hover:text-foreground border border-border shadow-sm transition-opacity"
-          title="Hide (Shift+⌘K to toggle)"
-        >
-          <EyeOff className="h-3 w-3" />
-        </button>
-      </div>
+      {/* Launcher — circular ⚡ on mobile, draggable pill on desktop */}
+      {isMobile ? (
+        <div data-prompt-builder-ui="true" className="fixed bottom-5 right-4 z-[9999] flex flex-col items-end gap-1.5 group">
+          <button
+            onClick={() => { setOpen(true); setMinimized(false); }}
+            className={cn(
+              "h-12 w-12 rounded-full flex items-center justify-center shadow-lg shadow-primary/30 ring-2 ring-primary-foreground/20 transition-transform active:scale-95",
+              sessionAlive
+                ? "bg-destructive text-destructive-foreground"
+                : "bg-primary text-primary-foreground"
+            )}
+            title="Open Prompt Builder"
+            aria-label="Open Prompt Builder"
+          >
+            {sessionAlive ? <Mic className="h-5 w-5 animate-pulse" /> : <Zap className="h-5 w-5" />}
+          </button>
+          <button
+            onClick={() => setHidden(true)}
+            className="opacity-60 hover:opacity-100 rounded-full bg-background/90 backdrop-blur p-1 text-muted-foreground border border-border shadow-sm transition-opacity"
+            title="Hide"
+            aria-label="Hide Prompt Builder"
+          >
+            <EyeOff className="h-3 w-3" />
+          </button>
+        </div>
+      ) : (
+        <div data-prompt-builder-ui="true" style={{ left: pos.x, top: pos.y }} className="fixed z-[9999] flex items-center gap-1.5 group">
+          <button
+            onPointerDown={onLauncherPointerDown}
+            onPointerMove={onLauncherPointerMove}
+            onPointerUp={onLauncherPointerUp}
+            onClick={onLauncherClick}
+            style={{ touchAction: "none" }}
+            className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-foreground/20"
+            title="Click to open · Drag to move · ⌘K"
+          >
+            <Zap className="h-4 w-4" />
+            Build Prompt
+          </button>
+          <button
+            onClick={() => setHidden(true)}
+            className="opacity-0 group-hover:opacity-100 rounded-full bg-background/90 backdrop-blur p-1.5 text-muted-foreground hover:text-foreground border border-border shadow-sm transition-opacity"
+            title="Hide (Shift+⌘K to toggle)"
+          >
+            <EyeOff className="h-3 w-3" />
+          </button>
+        </div>
+      )}
 
-      {/* Minimized pill */}
-      {open && minimized && (
+      {/* Floating recording bar / collapsed bubble.
+          Visible whenever a recording session is alive — even with the panel closed. */}
+      {sessionAlive && (
+        <RecordingBar
+          startedAt={recStartedAt}
+          paused={paused}
+          collapsed={barCollapsed}
+          onPause={pauseRecording}
+          onResume={startRecording}
+          onStop={stopRecording}
+          onMinimize={() => setBarCollapsed(true)}
+          onExpand={() => {
+            setBarCollapsed(false);
+            setOpen(true);
+            setMinimized(false);
+          }}
+        />
+      )}
+
+      {/* Minimized panel pill — only on desktop; on mobile the launcher already collapses */}
+      {!isMobile && open && minimized && (
         <button
           data-prompt-builder-ui="true"
           onClick={() => setMinimized(false)}
           className="fixed bottom-4 right-4 z-[9999] flex items-center gap-2 rounded-full bg-primary px-3 py-2 text-xs font-medium text-primary-foreground shadow-lg hover:scale-105 transition-transform"
         >
           <Sparkles className="h-3.5 w-3.5" /> Prompt Builder
-          {recording && <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />}
+          {sessionAlive && <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />}
         </button>
       )}
 
-      {/* Compact floating window */}
+      {/* Panel — bottom sheet on mobile, draggable window on desktop */}
       {open && !minimized && (
         <div
           data-prompt-builder-ui="true"
+          data-prompt-builder-panel="true"
           role="dialog"
           aria-modal="false"
-          style={{
-            left: winPos.x,
-            top: winPos.y,
-            width: WINDOW_SIZE.w,
-            maxHeight: "calc(100vh - 32px)",
-          }}
-          className="fixed z-[9999] flex flex-col rounded-xl border border-border bg-background shadow-2xl overflow-hidden"
-          {...dragHandlers}
+          style={
+            isMobile
+              ? undefined
+              : {
+                  left: winPos.x,
+                  top: winPos.y,
+                  width: WINDOW_SIZE.w,
+                  maxHeight: "calc(100vh - 32px)",
+                }
+          }
+          className={cn(
+            "fixed z-[9999] flex flex-col bg-background shadow-2xl overflow-hidden",
+            isMobile
+              ? "left-0 right-0 bottom-0 max-h-[85vh] rounded-t-2xl border-t border-border animate-in slide-in-from-bottom duration-200"
+              : "rounded-xl border border-border"
+          )}
+          {...(isMobile ? {} : dragHandlers)}
         >
+
           {/* Title bar */}
           <div data-drag-handle="true" className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-border bg-muted/40 cursor-grab active:cursor-grabbing select-none">
             <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
@@ -513,13 +678,29 @@ export function PromptBuilderWidget() {
             <div className="flex items-center gap-1.5">
               <Button
                 size="sm"
-                variant={recording ? "destructive" : "secondary"}
+                variant={recording && !paused ? "destructive" : "secondary"}
                 className="h-7 px-2 text-[11px]"
-                onClick={recording ? stopRecording : startRecording}
+                onClick={
+                  recording && !paused
+                    ? pauseRecording
+                    : (paused ? startRecording : startRecording)
+                }
               >
-                {recording ? <MicOff className="h-3 w-3 mr-1" /> : <Mic className="h-3 w-3 mr-1" />}
-                {recording ? "Stop" : "Talk"}
+                {recording && !paused
+                  ? <><MicOff className="h-3 w-3 mr-1" />Pause</>
+                  : <><Mic className="h-3 w-3 mr-1" />{paused ? "Resume" : "Talk"}</>}
               </Button>
+              {sessionAlive && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-[11px]"
+                  onClick={stopRecording}
+                  title="Stop recording"
+                >
+                  Stop
+                </Button>
+              )}
 
               <div className="ml-auto flex items-center gap-1">
                 <Button
