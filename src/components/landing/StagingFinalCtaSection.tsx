@@ -60,7 +60,7 @@ export default function StagingFinalCtaSection({
           className="text-white leading-tight tracking-tight text-[36px] sm:text-[52px]"
           style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
         >
-          Your exam isn't going to wait.
+          Your exam is coming up.
         </h2>
         <p
           className="mt-4 text-[16px]"
