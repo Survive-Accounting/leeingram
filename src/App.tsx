@@ -205,6 +205,7 @@ const AppRoutes = () => {
         <Route path="/solutions/:assetCode" element={<SolutionsViewer />} />
         <Route path="/solutions-staging/:assetCode" element={<ProtectedRoute><SolutionsViewerStaging /></ProtectedRoute>} />
         <Route path="/v2/solutions/:assetCode" element={<SolutionsViewerV2 />} />
+        <Route path="/v2/admin/assets" element={<AssetsControlPanelV2 />} />
         <Route path="/practice/:assetCode" element={<PracticeViewer />} />
         <Route path="/cram/:chapterId" element={<ChapterCramTool />} />
         <Route path="/cram" element={<ChapterCramTool />} />
