@@ -58,12 +58,23 @@ export function PromptBuilderWidget() {
     try { return localStorage.getItem(HIDDEN_KEY) === "1"; } catch { return false; }
   });
   const [open, setOpen] = useState(false);
+  const [minimized, setMinimized] = useState(false);
   const [text, setText] = useState("");
   const [mode, setMode] = useState<Mode>("new_feature");
   const [recording, setRecording] = useState(false);
   const [screenshot, setScreenshot] = useState<{ dataUrl: string; base64: string; mime: string } | null>(null);
   const [cards, setCards] = useState<PromptCard[]>([]);
   const [refiningId, setRefiningId] = useState<string | null>(null);
+  const [capturing, setCapturing] = useState(false);
+  const [markupSrc, setMarkupSrc] = useState<string | null>(null);
+
+  // Floating modal window position
+  const WINDOW_SIZE = { w: 560, h: 640 };
+  const { pos: winPos, dragHandlers } = useDraggable(
+    "promptBuilder.windowPos.v1",
+    { x: typeof window !== "undefined" ? Math.max(24, window.innerWidth - WINDOW_SIZE.w - 24) : 24, y: 80 },
+    WINDOW_SIZE,
+  );
 
   const recognitionRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
