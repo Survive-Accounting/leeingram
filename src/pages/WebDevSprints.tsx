@@ -9,6 +9,8 @@ import {
   Pencil,
   Video as VideoIcon,
   Image as ImageIcon,
+  ExternalLink,
+  Link as LinkIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -45,6 +47,7 @@ type Feature = {
   bullet_points: string[];
   video_url: string | null;
   image_url: string | null;
+  page_url: string | null;
   status: Status;
   sort_order: number;
   created_at: string;
@@ -200,6 +203,17 @@ function FeatureCard({
               className="text-sm"
             />
           </div>
+          <div className="sm:col-span-2">
+            <Label className="text-xs flex items-center gap-1">
+              <LinkIcon className="h-3 w-3" /> Page URL
+            </Label>
+            <Input
+              value={draft.page_url ?? ""}
+              onChange={(e) => setDraft({ ...draft, page_url: e.target.value || null })}
+              placeholder="/admin/... or https://..."
+              className="text-sm"
+            />
+          </div>
         </div>
       )}
 
@@ -220,6 +234,21 @@ function FeatureCard({
           alt={feature.title}
           className="w-full rounded-lg border border-slate-200 mb-3"
         />
+      )}
+
+      {!editing && feature.page_url && (
+        <a
+          href={feature.page_url}
+          target={feature.page_url.startsWith("http") ? "_blank" : undefined}
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          View page
+          <span className="text-xs text-slate-400 font-normal truncate max-w-[260px]">
+            {feature.page_url}
+          </span>
+        </a>
       )}
 
       {canEdit && (
@@ -279,6 +308,7 @@ function AddFeatureModal({
   const [bullets, setBullets] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [pageUrl, setPageUrl] = useState("");
   const [status, setStatus] = useState<Status>("Not Started");
   const [saving, setSaving] = useState(false);
 
@@ -288,6 +318,7 @@ function AddFeatureModal({
     setBullets("");
     setVideoUrl("");
     setImageUrl("");
+    setPageUrl("");
     setStatus("Not Started");
   };
 
@@ -304,6 +335,7 @@ function AddFeatureModal({
         bullet_points: bullets.split("\n").map((s) => s.trim()).filter(Boolean),
         video_url: videoUrl.trim() || null,
         image_url: imageUrl.trim() || null,
+        page_url: pageUrl.trim() || null,
         status,
       });
       reset();
@@ -348,6 +380,14 @@ function AddFeatureModal({
               <Label>Image URL</Label>
               <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
             </div>
+          </div>
+          <div>
+            <Label>Page URL</Label>
+            <Input
+              value={pageUrl}
+              onChange={(e) => setPageUrl(e.target.value)}
+              placeholder="/admin/... or https://..."
+            />
           </div>
           <div>
             <Label>Status</Label>
@@ -415,6 +455,7 @@ export default function WebDevSprints() {
         bullet_points: next.bullet_points,
         video_url: next.video_url,
         image_url: next.image_url,
+        page_url: next.page_url,
         status: next.status,
       })
       .eq("id", next.id);

@@ -1,0 +1,1 @@
+ALTER TABLE public.web_dev_features ADD COLUMN IF NOT EXISTS page_url text;
