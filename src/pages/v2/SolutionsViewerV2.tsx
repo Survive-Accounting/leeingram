@@ -1658,6 +1658,30 @@ export default function SolutionsViewerV2() {
         currentAssetName={asset?.asset_name}
       />
 
+      {/* Blocking modal while we generate the practice version on first open */}
+      <Dialog
+        open={!!asset && simplifyLoading && !simplifiedText && !simplifyError}
+        // Non-dismissable: no onOpenChange, no close X is rendered because we don't allow it to close
+      >
+        <DialogContent
+          className="sm:max-w-sm"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+          // Hide the default close button while generating
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-base">Getting this problem ready…</DialogTitle>
+            <DialogDescription>
+              We're putting together a clean, scannable version. Just a sec.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={originalOpen} onOpenChange={setOriginalOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
