@@ -1441,6 +1441,8 @@ export default function GetOrgAccess() {
               <ShieldCheck size={14} />
               Secure checkout · No upfront commitment from members
             </div>
+              </>
+            )}
           </div>
 
           {/* SECONDARY CARD */}
