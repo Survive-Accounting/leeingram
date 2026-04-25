@@ -360,6 +360,22 @@ function ExplanationFeedback({ asset, onShareClick }: { asset: Asset; onShareCli
   };
 
   if (stage === "done") {
+    if (helpful) {
+      return (
+        <div className="space-y-3 py-1">
+          <div className="text-sm font-medium text-foreground leading-snug">
+            🔥 Awesome — glad that clicked.
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Want to help a friend before their exam?
+          </div>
+          <Button size="sm" className="w-full" onClick={onShareClick}>
+            <Share2 className="h-3.5 w-3.5 mr-1.5" />
+            Send this to a friend
+          </Button>
+        </div>
+      );
+    }
     return (
       <div className="text-center text-sm text-muted-foreground py-2">
         Got it 👍 Thanks for the feedback.
