@@ -208,13 +208,18 @@ export function MarkupOverlay({ onClose }: Props) {
   };
 
   return createPortal(
-    <>
-
+    <div
+      data-prompt-builder-ui="true"
+      className="fixed inset-0 z-[2147483646] overflow-hidden"
+      style={{ width: "100vw", height: "100vh", pointerEvents: "auto" }}
+    >
       <svg
         ref={svgRef}
         data-prompt-builder-ui="true"
-        className="fixed inset-0 z-[2147483646]"
-        style={{ touchAction: "none", cursor: "crosshair", background: "rgba(0,0,0,0.001)" }}
+        className="absolute inset-0 h-full w-full"
+        width="100%"
+        height="100%"
+        style={{ touchAction: "none", cursor: "crosshair", background: "rgba(0,0,0,0.001)", pointerEvents: "auto" }}
         onPointerDown={onSurfacePointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
