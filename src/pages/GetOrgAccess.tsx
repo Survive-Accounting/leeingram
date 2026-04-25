@@ -4,6 +4,7 @@ import { Check, ShieldCheck, Users, Link2, Sparkles, Search, Plus, Crown, UserRo
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -67,9 +68,17 @@ function slugify(s: string) {
 
 export default function GetOrgAccess() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const signedInEmail = user?.email ?? null;
 
   // --- Email + campus detection ---
   const [email, setEmail] = useState("");
+
+  // Prefill email from signed-in user (not editable in UI, used as context).
+  useEffect(() => {
+    if (signedInEmail && !email) setEmail(signedInEmail);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signedInEmail]);
   const [emailError, setEmailError] = useState<string | null>(null);
 
   const [campuses, setCampuses] = useState<Campus[]>([]);
@@ -616,6 +625,15 @@ export default function GetOrgAccess() {
           >
             {/* Header */}
             <div>
+              {signedInEmail && (
+                <div
+                  className="text-[12px] mb-2"
+                  style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                >
+                  Signed in as:{" "}
+                  <span style={{ color: "#64748B", fontWeight: 500 }}>{signedInEmail}</span>
+                </div>
+              )}
               <h2
                 className="text-[24px] sm:text-[28px] leading-tight"
                 style={{
