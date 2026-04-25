@@ -141,6 +141,7 @@ function FeatureCard({
           ) : (
             <h3 className="text-lg font-semibold text-slate-900">{feature.title}</h3>
           )}
+          </div>
         </div>
         {editing ? (
           <Select
