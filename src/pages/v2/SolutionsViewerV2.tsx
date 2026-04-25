@@ -179,6 +179,107 @@ const SECTION_META: Record<SectionKey, { label: string; emoji: string }> = {
   exam_tip: { label: "Exam tip", emoji: "🚨" },
 };
 
+type FeedbackReason = "unclear_steps" | "concept" | "too_long" | "still_confused";
+
+const REASON_OPTIONS: { value: FeedbackReason; label: string }[] = [
+  { value: "unclear_steps", label: "Steps were unclear" },
+  { value: "concept", label: "Didn't understand the concept" },
+  { value: "too_long", label: "Too long / confusing" },
+  { value: "still_confused", label: "Still confused" },
+];
+
+function ExplanationFeedback({ asset }: { asset: Asset }) {
+  const [stage, setStage] = useState<"ask" | "negative" | "done">("ask");
+  const [reason, setReason] = useState<FeedbackReason | null>(null);
+  const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const getEmail = () => {
+    try {
+      return localStorage.getItem("v2_student_email") || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const submit = async (helpful: boolean, r: FeedbackReason | null = null, n: string = "") => {
+    setSubmitting(true);
+    try {
+      await supabase.from("explanation_feedback").insert({
+        asset_id: asset.id,
+        asset_name: asset.asset_name,
+        user_email: getEmail(),
+        helpful,
+        reason: r,
+        note: n.trim() || null,
+      });
+      setStage("done");
+    } catch (e: any) {
+      toast.error("Could not send feedback");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (stage === "done") {
+    return (
+      <div className="text-center text-sm text-muted-foreground py-2">
+        Got it 👍 Thanks for the feedback.
+      </div>
+    );
+  }
+
+  if (stage === "negative") {
+    return (
+      <div className="space-y-3">
+        <div className="text-sm font-medium">What didn't click?</div>
+        <div className="flex flex-wrap gap-2">
+          {REASON_OPTIONS.map((opt) => (
+            <Button
+              key={opt.value}
+              size="sm"
+              variant={reason === opt.value ? "default" : "outline"}
+              className="text-xs h-8"
+              onClick={() => setReason(opt.value)}
+            >
+              {opt.label}
+            </Button>
+          ))}
+        </div>
+        <Textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Add a note (optional)"
+          rows={2}
+          className="text-sm"
+        />
+        <Button
+          size="sm"
+          className="w-full"
+          disabled={!reason || submitting}
+          onClick={() => submit(false, reason, note)}
+        >
+          {submitting ? "Sending…" : "Send feedback"}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm font-medium">Did this help?</span>
+      <div className="flex gap-2">
+        <Button size="sm" variant="outline" disabled={submitting} onClick={() => submit(true)}>
+          👍 Yes
+        </Button>
+        <Button size="sm" variant="outline" disabled={submitting} onClick={() => setStage("negative")}>
+          👎 Not really
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function ExplanationPanel({
   open,
   onOpenChange,
@@ -311,6 +412,12 @@ function ExplanationPanel({
                   );
                 })}
               </div>
+              {/* Feedback */}
+              {asset && (
+                <div className="pt-4 mt-2 border-t border-border">
+                  <ExplanationFeedback asset={asset} />
+                </div>
+              )}
             </>
           )}
         </div>
