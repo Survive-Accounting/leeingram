@@ -65,6 +65,7 @@ export default function StagingEmailPromptModal({
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
   const [view, setView] = useState<"edu" | "non_edu" | "non_edu_success">("edu");
   const [fallbackEmail, setFallbackEmail] = useState("");
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -73,10 +74,9 @@ export default function StagingEmailPromptModal({
       setSubmitting(false);
       setView("edu");
       setFallbackEmail("");
+      setMagicLinkSent(false);
     }
   }, [open]);
-
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
