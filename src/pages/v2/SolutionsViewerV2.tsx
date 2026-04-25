@@ -473,14 +473,32 @@ function InlineExplanation({ asset }: { asset: Asset }) {
 
   if (!started) {
     return (
-      <div className="rounded-2xl border-2 border-dashed border-border bg-muted/30 p-6 text-center">
-        <p className="text-sm text-muted-foreground mb-4">
+      <div
+        className="rounded-2xl p-10 flex flex-col items-center justify-center text-center min-h-[260px]"
+        style={{
+          background:
+            "radial-gradient(ellipse 90% 70% at 50% 35%, rgba(80,130,255,0.18) 0%, transparent 65%), linear-gradient(180deg, #1A2B5C 0%, #14213D 100%)",
+          border: "1px solid rgba(255,255,255,0.06)",
+          boxShadow:
+            "0 1px 0 rgba(255,255,255,0.04) inset, 0 20px 40px -20px rgba(0,0,0,0.5), 0 0 60px -20px rgba(80,130,255,0.3)",
+        }}
+      >
+        <p className="text-[15px] mb-6 max-w-sm" style={{ color: "rgba(255,255,255,0.75)" }}>
           Try it first. When you're ready, get a quick walkthrough.
         </p>
-        <Button size="lg" onClick={() => setStarted(true)} className="gap-2">
+        <button
+          type="button"
+          onClick={() => setStarted(true)}
+          className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-[15px] font-semibold text-white transition-transform hover:scale-[1.02] active:scale-[0.99]"
+          style={{
+            background: "linear-gradient(180deg, #E63950 0%, #CE1126 50%, #A30E1F 100%)",
+            boxShadow:
+              "0 1px 0 rgba(255,255,255,0.18) inset, 0 10px 24px -8px rgba(206,17,38,0.55), 0 2px 6px rgba(0,0,0,0.25)",
+          }}
+        >
           <Sparkles className="h-4 w-4" />
           Explain this
-        </Button>
+        </button>
       </div>
     );
   }
