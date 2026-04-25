@@ -1036,27 +1036,46 @@ export default function SolutionsViewerV2() {
       )}
 
       {/* Top bar */}
-      <header className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b">
-        <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between gap-3">
+      <header
+        className="sticky top-0 z-20 backdrop-blur-xl"
+        style={{
+          background: "rgba(20,33,61,0.72)",
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 20px -8px rgba(0,0,0,0.4)",
+        }}
+      >
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between gap-6">
           <Link
             to="/my-dashboard"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm rounded-md px-2 py-1.5 -ml-2 transition-all hover:bg-white/5"
+            style={{ color: "rgba(255,255,255,0.55)" }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.95)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.55)")}
           >
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Back to dashboard</span>
             <span className="sm:hidden">Dashboard</span>
           </Link>
-          <div className="text-sm font-medium tracking-tight truncate">{headerLabel}</div>
-          <Button
-            size="sm"
-            variant="outline"
+          <div
+            className="text-sm font-medium tracking-tight truncate"
+            style={{ color: "rgba(255,255,255,0.92)" }}
+          >
+            {headerLabel}
+          </div>
+          <button
+            type="button"
             onClick={() => setJumpOpen(true)}
             disabled={siblings.length === 0}
-            className="gap-1.5 h-8"
+            className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-medium transition-all hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "rgba(255,255,255,0.85)",
+            }}
           >
             <LayoutList className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Jump</span>
-          </Button>
+          </button>
         </div>
       </header>
 
