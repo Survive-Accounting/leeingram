@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Loader2, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { registerLead } from "@/lib/registerLead";
 import { toast } from "sonner";
 import { DevShortcut } from "@/components/DevShortcut";
 
