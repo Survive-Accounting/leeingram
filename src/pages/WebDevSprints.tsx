@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
+  Zap,
 } from "lucide-react";
 import {
   DndContext,
