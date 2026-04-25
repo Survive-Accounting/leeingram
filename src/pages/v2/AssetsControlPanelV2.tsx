@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useSearchParams } from "react-router-dom";
-import { ExternalLink, Eye, Copy, Check, MessageCircle, Loader2, RefreshCw } from "lucide-react";
+import { ExternalLink, Eye, Copy, Check, MessageCircle, Loader2, RefreshCw, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
