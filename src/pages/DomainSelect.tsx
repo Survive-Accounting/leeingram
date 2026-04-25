@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVaAccount } from "@/hooks/useVaAccount";
 import { Button } from "@/components/ui/button";
-import { LogOut, Layers, Building2, Sparkles, Shield, Code2 } from "lucide-react";
+import { LogOut, Layers, Building2, Sparkles, Shield, Code2, MonitorPlay } from "lucide-react";
 import { useEffect } from "react";
 
 const NAVY = "#14213D";
@@ -37,6 +37,12 @@ const cards = [
     subtitle: "Active build sprints, scope, and progress",
     icon: Code2,
     route: "/admin/web-dev-sprints",
+  },
+  {
+    title: "V2 Assets Embed Panel",
+    subtitle: "LearnWorlds embed workflow for ~2,500 teaching assets",
+    icon: MonitorPlay,
+    route: "/v2/admin/assets",
   },
 ];
 

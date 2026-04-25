@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useSearchParams } from "react-router-dom";
-import { ExternalLink, Eye, Copy, Check, MessageCircle, Loader2, RefreshCw } from "lucide-react";
+import { ExternalLink, Eye, Copy, Check, MessageCircle, Loader2, RefreshCw, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ const NEXT_STATUS: Record<V2Status, V2Status> = {
 export default function AssetsControlPanelV2() {
   const [params, setParams] = useSearchParams();
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const courseId = params.get("course") || "";
   const chapterId = params.get("chapter") || "";
@@ -130,15 +132,25 @@ export default function AssetsControlPanelV2() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50">
       <Helmet><title>V2 Assets Control Panel</title></Helmet>
 
       {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto max-w-[1400px] px-4 py-3 flex items-center justify-between gap-4">
+      <header className="max-w-[1400px] mx-auto px-6 pt-10 pb-6">
+        <button
+          onClick={() => navigate("/domains")}
+          className="inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs uppercase tracking-widest mb-6 transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Home
+        </button>
+
+        <div className="flex items-end justify-between mb-2 gap-4 flex-wrap">
           <div>
-            <h1 className="text-base font-semibold">Teaching Assets V2 — Control Panel</h1>
-            <p className="text-xs text-muted-foreground">
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 mb-1">
+              Teaching Assets V2 — Control Panel
+            </h1>
+            <p className="text-slate-500 text-sm">
               LearnWorlds embed workflow · {counts?.total ?? "—"} total
             </p>
           </div>
