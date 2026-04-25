@@ -108,7 +108,7 @@ export default function QuickEmailGateModal({
             .filter(Boolean) as CourseRow[];
 
           if (mapped.length > 0) {
-            setCourses(mapped);
+            setCourses(sortByCanonicalOrder(mapped));
             return;
           }
         }
@@ -118,19 +118,7 @@ export default function QuickEmailGateModal({
       const { data: all } = await supabase
         .from("courses")
         .select("id, slug, code, course_name");
-      // Stable order: Intro 1, Intro 2, Intermediate 1, Intermediate 2.
-      const ORDER = [
-        "intro-accounting-1",
-        "intro-accounting-2",
-        "intermediate-accounting-1",
-        "intermediate-accounting-2",
-      ];
-      const sorted = (all ?? []).slice().sort((a: any, b: any) => {
-        const ai = ORDER.indexOf(a.slug);
-        const bi = ORDER.indexOf(b.slug);
-        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-      });
-      setCourses(sorted as CourseRow[]);
+      setCourses(sortByCanonicalOrder((all ?? []) as CourseRow[]));
     } finally {
       setCoursesLoading(false);
     }
