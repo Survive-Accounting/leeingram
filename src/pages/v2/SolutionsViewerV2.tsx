@@ -1058,6 +1058,28 @@ export default function SolutionsViewerV2() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [jumpOpen, setJumpOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  // Track share interactions (asset_share_events)
+  const trackShareEvent = async (eventType: "share_click" | "copy_link") => {
+    if (!asset) return;
+    try {
+      await supabase.from("asset_share_events").insert({
+        teaching_asset_id: asset.id,
+        asset_name: asset.asset_name,
+        event_type: eventType,
+        referrer: typeof document !== "undefined" ? document.referrer || null : null,
+        user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+      });
+    } catch {
+      // non-blocking
+    }
+  };
+
+  const openShareModal = () => {
+    trackShareEvent("share_click");
+    setShareOpen(true);
+  };
 
   // Simplify-this-problem state (keeps simplified text + active view per asset)
   const [simplifiedText, setSimplifiedText] = useState<string | null>(null);
