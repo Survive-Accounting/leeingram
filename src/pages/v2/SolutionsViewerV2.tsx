@@ -1078,21 +1078,40 @@ export default function SolutionsViewerV2() {
                 }}
               >
                 {asset.source_ref && (
-                  <div className="text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
-                    Practice based on <span className="font-mono">{asset.source_ref}</span>
+                  <div
+                    className="text-[11px] font-medium uppercase tracking-[0.12em]"
+                    style={{ color: "rgba(255,255,255,0.5)" }}
+                  >
+                    Practice based on <span className="font-mono normal-case tracking-normal">{asset.source_ref}</span>
                   </div>
+                )}
+
+                {/* Problem title (prominent) */}
+                {asset.problem_title && (
+                  <h1
+                    className="mt-2 text-[1.5rem] sm:text-[1.7rem] font-semibold leading-tight tracking-tight"
+                    style={{ color: "#FFFFFF", fontFamily: "'DM Serif Display', serif" }}
+                  >
+                    {asset.problem_title}
+                  </h1>
                 )}
 
                 {/* Original view: problem text + (separate) instructions card below */}
                 {simplifyView === "original" && asset.survive_problem_text && (
-                  <div className="mt-4 whitespace-pre-wrap text-[0.95rem] leading-[1.7] max-w-prose" style={{ color: "rgba(255,255,255,0.92)" }}>
+                  <div
+                    className="mt-5 whitespace-pre-wrap text-[1rem] max-w-prose [&>p+p]:mt-4"
+                    style={{ color: "rgba(255,255,255,0.9)", lineHeight: 1.8 }}
+                  >
                     {asset.survive_problem_text}
                   </div>
                 )}
 
                 {/* Simplified view: combined block of cleaned-up problem + instructions */}
                 {simplifyView === "simplified" && simplifiedText && (
-                  <div className="mt-4 prose prose-sm prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-li:my-1 prose-headings:mt-4 prose-headings:mb-2 prose-headings:text-base text-[0.95rem] leading-relaxed">
+                  <div
+                    className="mt-5 prose prose-invert max-w-none prose-p:my-3 prose-ul:my-3 prose-li:my-1.5 prose-headings:mt-5 prose-headings:mb-2 prose-headings:text-base prose-headings:font-semibold text-[1rem]"
+                    style={{ lineHeight: 1.75 }}
+                  >
                     <ReactMarkdown>{simplifiedText}</ReactMarkdown>
                   </div>
                 )}
