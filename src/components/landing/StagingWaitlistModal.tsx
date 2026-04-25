@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { registerLead } from "@/lib/registerLead";
 import { toast } from "sonner";
 
 const NAVY = "#14213D";
