@@ -133,7 +133,18 @@ export default function GetOrgAccess() {
   // --- Auto re-up settings (prototype: stored only, no auto billing) ---
   const WEEKLY_LIMIT_OPTIONS = [10, 20, 30, 50] as const;
   const [autoReupEnabled, setAutoReupEnabled] = useState(true);
+  const [autoRenewEnabled, setAutoRenewEnabled] = useState(true);
   const [weeklySeatLimit, setWeeklySeatLimit] = useState<number>(20);
+  const AUTO_REUP_DISCOUNT_PCT = 5;
+  const AUTO_RENEW_DISCOUNT_PCT = 5;
+
+  // Stack all active percent-off discounts (founding + auto-reup + auto-renew)
+  const activeDiscounts: Array<{ key: string; label: string; pct: number }> = [];
+  if (foundingEligible) activeDiscounts.push({ key: "founding", label: "Founding chapter", pct: FOUNDING_DISCOUNT_PCT });
+  if (autoReupEnabled) activeDiscounts.push({ key: "auto_reup", label: "Auto-add seats", pct: AUTO_REUP_DISCOUNT_PCT });
+  if (autoReupEnabled && autoRenewEnabled) activeDiscounts.push({ key: "auto_renew", label: "Auto-renew next semester", pct: AUTO_RENEW_DISCOUNT_PCT });
+  const totalDiscountPct = activeDiscounts.reduce((sum, d) => sum + d.pct, 0);
+  const applyDiscount = (amount: number) => Math.round(amount * (1 - totalDiscountPct / 100));
 
   // --- Payment method preference ---
   type PaymentMethod = "ach" | "card" | "manual";
@@ -507,9 +518,7 @@ export default function GetOrgAccess() {
         "";
 
       const baseTotal = tier.total;
-      const discountedTotal = foundingEligible
-        ? Math.round(baseTotal * (1 - FOUNDING_DISCOUNT_PCT / 100))
-        : baseTotal;
+      const discountedTotal = applyDiscount(baseTotal);
       const pricePerSeatCents = Math.round((discountedTotal / tier.seats) * 100);
       const totalCents = Math.round(discountedTotal * 100);
 
@@ -524,15 +533,15 @@ export default function GetOrgAccess() {
             seats: tier.seats,
             price_per_seat_cents: pricePerSeatCents,
             total_cents: totalCents,
-            is_promo: tier.is_promo || foundingEligible,
+            is_promo: tier.is_promo || totalDiscountPct > 0,
             tier_id: tier.id,
             payment_method: paymentMethod,
             auto_reup_enabled: autoReupEnabled,
+            auto_renew_enabled: autoReupEnabled && autoRenewEnabled,
             weekly_seat_limit: autoReupEnabled ? weeklySeatLimit : null,
             origin: window.location.origin,
-            founding_discount: foundingEligible
-              ? { percent: FOUNDING_DISCOUNT_PCT, base_total_cents: Math.round(baseTotal * 100) }
-              : null,
+            applied_discounts: activeDiscounts,
+            base_total_cents: Math.round(baseTotal * 100),
           },
         },
       );
@@ -1237,9 +1246,7 @@ export default function GetOrgAccess() {
                     {PRESETS.map((p) => {
                       const matchedTier = findTier(p.seats);
                       const selected = matchedTier ? matchedTier.id === selectedTierId : false;
-                      const discountedTotal = foundingEligible
-                        ? Math.round(p.total * (1 - FOUNDING_DISCOUNT_PCT / 100))
-                        : p.total;
+                      const discountedTotal = applyDiscount(p.total);
                       const perMember = Math.round(discountedTotal / p.seats);
                       const isPopular = p.key === "chapter";
                       return (
@@ -1298,7 +1305,7 @@ export default function GetOrgAccess() {
                             }}
                           >
                             ${discountedTotal.toLocaleString()}
-                            {foundingEligible && (
+                            {totalDiscountPct > 0 && (
                               <span
                                 className="text-[14px] font-medium line-through"
                                 style={{ color: "#94A3B8", letterSpacing: 0 }}
@@ -1360,16 +1367,60 @@ export default function GetOrgAccess() {
                   />
                   <div className="flex-1 min-w-0">
                     <div
-                      className="text-[14px] font-semibold"
+                      className="text-[14px] font-semibold flex items-center gap-2 flex-wrap"
                       style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
                     >
-                      Auto-add seats when members join
+                      Auto-add members as they join
+                      <span
+                        className="rounded-full px-1.5 py-0.5 text-[10px] font-bold"
+                        style={{ background: "#DCFCE7", color: "#15803D", fontFamily: "Inter, sans-serif" }}
+                      >
+                        save {AUTO_REUP_DISCOUNT_PCT}%
+                      </span>
                     </div>
                     <div
                       className="text-[12px] mt-0.5"
                       style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
                     >
-                      We'll summarize new seats weekly before billing.
+                      We'll add seats automatically as members join. You'll get a summary before billing.
+                    </div>
+
+                    {/* Smooth-reveal nested toggle */}
+                    <div
+                      className="overflow-hidden transition-all duration-300 ease-out"
+                      style={{
+                        maxHeight: autoReupEnabled ? 120 : 0,
+                        opacity: autoReupEnabled ? 1 : 0,
+                        marginTop: autoReupEnabled ? 12 : 0,
+                      }}
+                    >
+                      <label
+                        className="flex items-start gap-2.5 cursor-pointer rounded-lg p-2.5"
+                        style={{ background: "#fff", border: "1px solid #E0E7F0" }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={autoRenewEnabled}
+                          onChange={(e) => setAutoRenewEnabled(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 cursor-pointer"
+                          style={{ accentColor: NAVY }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div
+                            className="text-[13px] font-semibold flex items-center gap-2 flex-wrap"
+                            style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                          >
+                            Auto-renew next semester
+                            <span
+                              className="rounded-full px-1.5 py-0.5 text-[10px] font-bold"
+                              style={{ background: "#DCFCE7", color: "#15803D", fontFamily: "Inter, sans-serif" }}
+                            >
+                              save another {AUTO_RENEW_DISCOUNT_PCT}%
+                            </span>
+                          </div>
+                        </div>
+                      </label>
                     </div>
                   </div>
                 </label>
@@ -1528,9 +1579,7 @@ export default function GetOrgAccess() {
               {(() => {
                 if (submitting) return "Working…";
                 if (!tier) return "Continue";
-                const ctaTotal = foundingEligible
-                  ? Math.round(tier.total * (1 - FOUNDING_DISCOUNT_PCT / 100))
-                  : tier.total;
+                const ctaTotal = applyDiscount(tier.total);
                 const verb = paymentMethod === "manual" ? "Request invoice" : "Continue";
                 return `${verb} → ${tier.seats} passes · $${ctaTotal.toLocaleString()}`;
               })()}
