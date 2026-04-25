@@ -216,7 +216,7 @@ serve(async (req) => {
       }
       parsed = JSON.parse(cleaned);
     } catch (e) {
-      parseError = e.message;
+      parseError = (e as any).message;
     }
 
     const topLevelKeys = parsed ? Object.keys(parsed) : [];
@@ -293,16 +293,16 @@ serve(async (req) => {
           entity_id: body.source_problem_id,
           event_type: "ai_generate_completed",
           severity: "error",
-          payload_json: { error: e.message, provider: body.provider, model: body.model, run_id: body.run_id },
+          payload_json: { error: (e as any).message, provider: body.provider, model: body.model, run_id: body.run_id },
         });
       }
       // Log to generation_events if run_id available
       if (body.run_id) {
-        await logEvent(body.run_id, "backend", "error", "BACKEND_ERROR", e.message, { stack: e.stack?.slice(0, 1000) });
+        await logEvent(body.run_id, "backend", "error", "BACKEND_ERROR", (e as any).message, { stack: (e as any).stack?.slice(0, 1000) });
       }
     } catch (_) { /* swallow logging errors */ }
 
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: (e as any).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
