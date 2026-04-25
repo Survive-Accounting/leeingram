@@ -96,7 +96,7 @@ export default function StagingNavbar({
 
         {/* Logo */}
         <button
-          onClick={() => navigate("/staging")}
+          onClick={() => navigate("/")}
           className="relative text-[16px] sm:text-[18px] tracking-tight"
           style={{ fontFamily: "'DM Serif Display', serif" }}
         >
