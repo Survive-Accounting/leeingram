@@ -183,6 +183,9 @@ export default function QuickEmailGateModal({
     }
 
     // 2. No access → resolve campus, then show course list.
+    //    A campus is only "known" (and may show local branding/courses)
+    //    once an admin has flipped its `status` to 'approved'. Until then,
+    //    we show the generic 4-course list with no campus name.
     let resolvedSlug = "ole-miss";
     let resolvedName = "";
     let known = false;
@@ -194,9 +197,17 @@ export default function QuickEmailGateModal({
         const slug = (data?.campus_slug as string) || "";
         const name = (data?.campus_name as string) || "";
         if (slug && slug !== "general") {
-          resolvedSlug = slug;
-          resolvedName = name;
-          known = true;
+          // Verify approval status before exposing campus-specific UI.
+          const { data: campusStatusRow } = await supabase
+            .from("campuses")
+            .select("status")
+            .eq("slug", slug)
+            .maybeSingle();
+          if (campusStatusRow?.status === "approved") {
+            resolvedSlug = slug;
+            resolvedName = name;
+            known = true;
+          }
         }
       }
     } catch {
@@ -206,7 +217,7 @@ export default function QuickEmailGateModal({
     setCampusSlug(resolvedSlug);
     setCampusName(resolvedName);
     setCampusKnown(known);
-    await loadCourses(resolvedSlug);
+    await loadCourses(resolvedSlug, known);
     setStep("courses");
     setLoading(false);
   };
