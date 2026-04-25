@@ -279,7 +279,7 @@ export default function StagingLandingPage() {
       <div data-export-id="navbar" data-export-label="Navbar">
         <StagingNavbar
           transparentOnTop
-          onCtaClick={() => handleGetAccessClick(defaultCourse)}
+          onCtaClick={() => requestAccess({ course: defaultCourse.slug })}
           onPricingClick={() => handleGetAccessClick(defaultCourse)}
           onCoursesClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
         />
@@ -289,9 +289,9 @@ export default function StagingLandingPage() {
         <StagingHero
           liveCourse={defaultCourse}
           futureCourses={[]}
-          onLiveCourseClick={() => handleGetAccessClick(defaultCourse)}
+          onLiveCourseClick={() => requestAccess({ course: defaultCourse.slug })}
           onNotifyClick={() => handleCardClick(defaultCourse)}
-          onGetStartedClick={() => handleGetAccessClick(defaultCourse)}
+          onGetStartedClick={() => requestAccess({ course: defaultCourse.slug })}
         />
       </div>
 
@@ -300,7 +300,7 @@ export default function StagingLandingPage() {
       </div>
 
       <div data-export-id="testimonials" data-export-label="Testimonials">
-        <StagingTestimonialsSection onCtaClick={() => handleGetAccessClick(defaultCourse)} />
+        <StagingTestimonialsSection onCtaClick={() => requestAccess({ course: defaultCourse.slug })} />
       </div>
 
       <div ref={coursesRef} id="demo-section" data-export-id="courses" data-export-label="Courses Grid">
