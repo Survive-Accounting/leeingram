@@ -1079,7 +1079,12 @@ export default function SolutionsViewerV2() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 pt-6 pb-32">
+      <main
+        className="relative max-w-6xl mx-auto px-4 pt-6 pb-32"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse 70% 50% at 30% 20%, rgba(99,52,180,0.07) 0%, transparent 60%), radial-gradient(ellipse 60% 45% at 75% 60%, rgba(80,130,255,0.06) 0%, transparent 65%)",
+        }}>
         {loading && (
           <div className="space-y-3 max-w-3xl">
             <Skeleton className="h-6 w-2/3" />
