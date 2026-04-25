@@ -615,17 +615,28 @@ export default function WebDevSprints() {
             No features yet.
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5">
-            {features.map((f) => (
-              <FeatureCard
-                key={f.id}
-                feature={f}
-                canEdit={canEdit}
-                onChange={handleUpdate}
-                onDelete={() => handleDelete(f.id)}
-              />
-            ))}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={features.map((f) => f.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="grid grid-cols-1 gap-5">
+                {features.map((f) => (
+                  <SortableFeatureCard
+                    key={f.id}
+                    feature={f}
+                    canEdit={canEdit}
+                    onChange={handleUpdate}
+                    onDelete={() => handleDelete(f.id)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 
