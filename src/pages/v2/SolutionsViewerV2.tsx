@@ -826,6 +826,7 @@ export default function SolutionsViewerV2() {
 
       <ExplanationPanel open={explainOpen} onOpenChange={setExplainOpen} asset={asset} />
       <NeedHelpModal open={helpOpen} onOpenChange={setHelpOpen} asset={asset} />
+      <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
     </div>
   );
 }
