@@ -167,17 +167,6 @@ export function MarkupOverlay({ onClose }: Props) {
     setInteraction(null);
   };
 
-  const undo = () => {
-    setCircles((cs) => {
-      const next = cs.slice(0, -1);
-      if (selectedId && !next.some((c) => c.id === selectedId)) setSelectedId(null);
-      return next;
-    });
-  };
-  const clearAll = () => {
-    setCircles([]);
-    setSelectedId(null);
-  };
   const deleteCircle = (id: string) => {
     setCircles((cs) => cs.filter((c) => c.id !== id));
     if (selectedId === id) setSelectedId(null);

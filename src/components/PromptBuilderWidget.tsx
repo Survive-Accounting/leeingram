@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Zap, Mic, MicOff, X, Copy, Loader2, Sparkles,
-  Wrench, Plus, TrendingUp, Send, Trash2, EyeOff, Minus, GripHorizontal,
+  Wrench, TrendingUp, Send, Trash2, EyeOff, Minus, GripHorizontal,
   Pencil, ListTodo, Hammer, Image as ImageIcon, ClipboardCopy,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
