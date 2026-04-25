@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2 } from "lucide-react";
@@ -73,25 +73,6 @@ function getInstructions(a: Asset): string[] {
   return [];
 }
 
-// ── Typing animation hook ──────────────────────────────────────────────
-function useTypewriter(text: string, speed = 14) {
-  const [out, setOut] = useState("");
-  const idxRef = useRef(0);
-  useEffect(() => {
-    setOut("");
-    idxRef.current = 0;
-    if (!text) return;
-    const id = window.setInterval(() => {
-      // Type a few chars per tick for snappy feel
-      const step = Math.max(2, Math.round(text.length / 400));
-      idxRef.current = Math.min(text.length, idxRef.current + step);
-      setOut(text.slice(0, idxRef.current));
-      if (idxRef.current >= text.length) window.clearInterval(id);
-    }, speed);
-    return () => window.clearInterval(id);
-  }, [text, speed]);
-  return out;
-}
 
 // ── Need Help modal ────────────────────────────────────────────────────
 function NeedHelpModal({
@@ -183,6 +164,21 @@ function NeedHelpModal({
 }
 
 // ── Explanation panel (Sheet from right, full-screen on mobile) ────────
+type ExplanationSections = {
+  what_matters: string;
+  how_to_solve: string;
+  why_it_works: string;
+  exam_tip: string;
+};
+
+type SectionKey = "how_to_solve" | "why_it_works" | "exam_tip";
+
+const SECTION_META: Record<SectionKey, { label: string; emoji: string }> = {
+  how_to_solve: { label: "How to solve", emoji: "📌" },
+  why_it_works: { label: "Why it works", emoji: "⚖️" },
+  exam_tip: { label: "Exam tip", emoji: "🚨" },
+};
+
 function ExplanationPanel({
   open,
   onOpenChange,
@@ -194,8 +190,8 @@ function ExplanationPanel({
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [markdown, setMarkdown] = useState("");
-  const typed = useTypewriter(markdown, 10);
+  const [sections, setSections] = useState<ExplanationSections | null>(null);
+  const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set());
 
   useEffect(() => {
     if (!open || !asset) return;
@@ -203,7 +199,8 @@ function ExplanationPanel({
     (async () => {
       setLoading(true);
       setError(null);
-      setMarkdown("");
+      setSections(null);
+      setOpenSections(new Set());
       try {
         const { data, error } = await supabase.functions.invoke("explain-this-solution", {
           body: { asset_code: asset.asset_name },
@@ -211,7 +208,7 @@ function ExplanationPanel({
         if (cancelled) return;
         if (error) throw error;
         if (!data?.success) throw new Error(data?.error || "Failed to load explanation");
-        setMarkdown(data.markdown || "");
+        setSections(data.sections);
       } catch (e: any) {
         if (!cancelled) setError(e?.message || "Something went wrong");
       } finally {
@@ -223,11 +220,20 @@ function ExplanationPanel({
     };
   }, [open, asset?.asset_name]);
 
+  const toggleSection = (key: SectionKey) => {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-xl overflow-y-auto p-0"
+        className="w-full sm:max-w-lg overflow-y-auto p-0"
       >
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-5 py-3 flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
@@ -236,8 +242,8 @@ function ExplanationPanel({
           </SheetHeader>
         </div>
 
-        <div className="px-5 py-5">
-          {loading && !typed && (
+        <div className="px-5 py-5 space-y-5">
+          {loading && !sections && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -246,7 +252,6 @@ function ExplanationPanel({
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-5/6" />
-              <Skeleton className="h-4 w-2/3" />
             </div>
           )}
 
@@ -256,13 +261,57 @@ function ExplanationPanel({
             </div>
           )}
 
-          {typed && (
-            <article className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-5 prose-headings:mb-2 prose-headings:text-base prose-headings:font-semibold prose-p:my-2 prose-p:leading-relaxed">
-              <ReactMarkdown>{typed}</ReactMarkdown>
-              {typed.length < markdown.length && (
-                <span className="inline-block w-2 h-4 align-middle bg-primary/70 animate-pulse ml-0.5" />
-              )}
-            </article>
+          {sections && (
+            <>
+              {/* Always-visible: What matters */}
+              <section className="rounded-lg border border-border bg-card p-4">
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                  <span aria-hidden>💡</span> What matters
+                </h3>
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
+                  <ReactMarkdown>{sections.what_matters}</ReactMarkdown>
+                </div>
+              </section>
+
+              {/* Section toggle buttons */}
+              <div className="flex flex-wrap gap-2">
+                {(Object.keys(SECTION_META) as SectionKey[]).map((k) => {
+                  const isOpen = openSections.has(k);
+                  return (
+                    <Button
+                      key={k}
+                      size="sm"
+                      variant={isOpen ? "default" : "outline"}
+                      className="text-xs h-8"
+                      onClick={() => toggleSection(k)}
+                    >
+                      <span className="mr-1.5" aria-hidden>{SECTION_META[k].emoji}</span>
+                      {SECTION_META[k].label}
+                    </Button>
+                  );
+                })}
+              </div>
+
+              {/* Revealed sections */}
+              <div className="space-y-3">
+                {(Object.keys(SECTION_META) as SectionKey[]).map((k) => {
+                  if (!openSections.has(k)) return null;
+                  return (
+                    <section
+                      key={k}
+                      className="rounded-lg border border-border bg-muted/30 p-4 animate-in fade-in slide-in-from-top-1 duration-200"
+                    >
+                      <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                        <span aria-hidden>{SECTION_META[k].emoji}</span> {SECTION_META[k].label}
+                      </h3>
+                      <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
+                        <ReactMarkdown>{sections[k]}</ReactMarkdown>
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       </SheetContent>
