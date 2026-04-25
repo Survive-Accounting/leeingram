@@ -496,6 +496,35 @@ export default function WebDevSprints() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = features.findIndex((f) => f.id === active.id);
+    const newIndex = features.findIndex((f) => f.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const reordered = arrayMove(features, oldIndex, newIndex).map((f, i) => ({
+      ...f,
+      sort_order: i + 1,
+    }));
+    setFeatures(reordered); // optimistic
+
+    const results = await Promise.all(
+      reordered.map((f) =>
+        supabase.from("web_dev_features").update({ sort_order: f.sort_order }).eq("id", f.id),
+      ),
+    );
+    if (results.some((r) => r.error)) {
+      toast.error("Failed to save order");
+      await load();
+    }
+  };
+
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase
