@@ -90,8 +90,6 @@ export function PromptBuilderWidget() {
     return () => clearTimeout(t);
   }, [cards]);
 
-  if (!allowed) return null;
-
   const startRecording = () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) {
