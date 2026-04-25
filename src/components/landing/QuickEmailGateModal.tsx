@@ -348,9 +348,8 @@ export default function QuickEmailGateModal({
                   const label = campusKnown
                     ? (c.local_name || c.course_name)
                     : (friendly?.name || c.course_name);
-                  const sub = campusKnown
-                    ? (c.local_code || c.code)
-                    : (friendly?.helper || c.code || null);
+                  // Only show secondary line for known campuses (local course code).
+                  const sub = campusKnown ? (c.local_code || c.code) : null;
                   return (
                     <button
                       key={c.id}
