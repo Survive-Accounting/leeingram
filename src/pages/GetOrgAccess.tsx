@@ -627,6 +627,258 @@ export default function GetOrgAccess() {
               </div>
             </div>
 
+            {/* Step 0 — Role + Chapter intent */}
+            <div className="mt-6">
+              <div
+                className="text-[13px] font-semibold uppercase tracking-wider mb-2"
+                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+              >
+                Start your chapter access
+              </div>
+
+              {/* Role buttons */}
+              <div className="text-[13px] mb-2" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
+                Who are you?
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { id: "member" as const, label: "ΑΒΓΔ Member", Icon: UserRound },
+                  { id: "exec" as const, label: "ΑΒΓΔ Officer / Exec", Icon: Crown },
+                ]).map(({ id, label, Icon }) => {
+                  const selected = role === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => {
+                        setRole(id);
+                        if (intentLocked) resetIntent();
+                      }}
+                      className="rounded-xl px-3 py-3 flex items-center justify-center gap-2 text-[14px] font-semibold transition-all"
+                      style={{
+                        background: selected ? NAVY : "#fff",
+                        color: selected ? "#fff" : NAVY,
+                        border: `1.5px solid ${selected ? NAVY : "#E0E7F0"}`,
+                        fontFamily: "Inter, sans-serif",
+                        boxShadow: selected ? "0 4px 12px rgba(20,33,61,0.10)" : "none",
+                      }}
+                    >
+                      <Icon size={16} />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Chapter search (only after role chosen) */}
+              {role && !intentLocked && (
+                <div className="mt-4">
+                  <div className="text-[13px] mb-2" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
+                    Your chapter
+                  </div>
+                  <div className="relative">
+                    <Search
+                      size={16}
+                      className="absolute left-3 top-1/2 -translate-y-1/2"
+                      style={{ color: "#94A3B8" }}
+                    />
+                    <input
+                      type="text"
+                      value={intentChapter}
+                      onChange={(e) => {
+                        setIntentChapter(e.target.value);
+                        setIntentSelectedOrg(null);
+                      }}
+                      placeholder="Search your chapter (e.g. Pi Beta Phi, Ole Miss)"
+                      className={`${inputBase} pl-9`}
+                      style={inputStyle}
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Live results */}
+                  {intentChapter.trim() && (
+                    <div
+                      className="mt-2 rounded-lg overflow-hidden"
+                      style={{ border: "1px solid #E0E7F0", background: "#FAFBFC" }}
+                    >
+                      {intentSearching ? (
+                        <div
+                          className="px-3 py-3 text-[13px]"
+                          style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                        >
+                          Searching…
+                        </div>
+                      ) : intentSearchResults.length === 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => commitIntent(null)}
+                          className="w-full text-left px-3 py-3 text-[13px] hover:bg-white"
+                          style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                        >
+                          Use "<strong>{intentChapter.trim()}</strong>" anyway →
+                        </button>
+                      ) : (
+                        <>
+                          {intentSearchResults.map((o) => (
+                            <button
+                              key={o.id}
+                              type="button"
+                              onClick={() => commitIntent(o)}
+                              className="w-full text-left px-3 py-2.5 hover:bg-white transition-colors"
+                              style={{
+                                color: NAVY,
+                                fontFamily: "Inter, sans-serif",
+                                borderBottom: "1px solid #F1F5F9",
+                              }}
+                            >
+                              <div className="text-[14px] font-medium">{o.org_name}</div>
+                              <div className="text-[11px]" style={{ color: "#94A3B8" }}>
+                                {o.council || "Greek"}
+                                {o.org_type ? ` · ${o.org_type}` : ""}
+                              </div>
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => commitIntent(null)}
+                            className="w-full text-left px-3 py-2.5 text-[13px] hover:bg-white"
+                            style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                          >
+                            <Plus size={12} className="inline mr-1" />
+                            Use "<strong>{intentChapter.trim()}</strong>" — not in list
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Locked summary + branching */}
+              {role && intentLocked && (
+                <div
+                  className="mt-4 rounded-xl p-4"
+                  style={{ background: "#F8FAFC", border: "1px solid #E0E7F0" }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div
+                        className="text-[11px] font-bold uppercase tracking-wider mb-0.5"
+                        style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                      >
+                        {role === "exec" ? "Officer / Exec" : "Member"}
+                      </div>
+                      <div
+                        className="text-[15px] font-semibold truncate"
+                        style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                      >
+                        {intentSelectedOrg?.org_name || intentChapter.trim()}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={resetIntent}
+                      className="text-[12px] font-medium hover:underline shrink-0"
+                      style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                    >
+                      Change
+                    </button>
+                  </div>
+
+                  {/* MEMBER branch */}
+                  {role === "member" && (
+                    <div className="mt-4">
+                      <div
+                        className="text-[14px] font-semibold"
+                        style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                      >
+                        Your chapter doesn't have access yet.
+                      </div>
+                      <p
+                        className="mt-1 text-[13px]"
+                        style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                      >
+                        Send your treasurer or exec the invite link to get the chapter set up.
+                      </p>
+
+                      {memberWaitlistCount != null && memberWaitlistCount > 0 && (
+                        <div
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-semibold"
+                          style={{ background: "#FFF1E6", color: "#B45309", fontFamily: "Inter, sans-serif" }}
+                        >
+                          <Flame size={12} />
+                          {memberWaitlistCount} member{memberWaitlistCount === 1 ? "" : "s"} already ready to join
+                        </div>
+                      )}
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={handleCopyInvite}
+                          className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-[13px] font-bold text-white"
+                          style={{ background: RED, fontFamily: "Inter, sans-serif", boxShadow: "0 4px 12px rgba(206,17,38,0.20)" }}
+                        >
+                          <Copy size={14} />
+                          {copied ? "Copied!" : "Copy invite link"}
+                        </button>
+                      </div>
+
+                      {/* Waitlist join */}
+                      <div className="mt-4 pt-4" style={{ borderTop: "1px dashed #E0E7F0" }}>
+                        {joinedWaitlist ? (
+                          <div
+                            className="text-[13px] font-medium"
+                            style={{ color: "#15803D", fontFamily: "Inter, sans-serif" }}
+                          >
+                            ✓ You're on the waitlist. We'll email you the moment your chapter signs up.
+                          </div>
+                        ) : (
+                          <>
+                            <div
+                              className="text-[12px] font-semibold uppercase tracking-wider mb-1.5"
+                              style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                            >
+                              Or join the waitlist
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <input
+                                type="email"
+                                value={waitlistEmail}
+                                maxLength={255}
+                                onChange={(e) => setWaitlistEmail(e.target.value)}
+                                placeholder="you@school.edu"
+                                className={inputBase}
+                                style={{ ...inputStyle, flex: 1 }}
+                                autoComplete="email"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleJoinWaitlist}
+                                disabled={joiningWaitlist}
+                                className="rounded-lg px-4 py-2.5 text-[13px] font-bold disabled:opacity-50"
+                                style={{
+                                  background: "#fff",
+                                  color: NAVY,
+                                  border: `1.5px solid ${NAVY}`,
+                                  fontFamily: "Inter, sans-serif",
+                                }}
+                              >
+                                {joiningWaitlist ? "Joining…" : "Join waitlist"}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {role === "exec" && intentLocked && (
+              <>
+
             {/* Step 1 — Email */}
             <div className="mt-6">
               <div
