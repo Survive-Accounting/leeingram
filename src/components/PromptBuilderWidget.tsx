@@ -325,10 +325,13 @@ export function PromptBuilderWidget() {
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
-        className="fixed bottom-4 left-4 z-[60] flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform"
-        aria-label="Open Prompt Builder (Cmd+K)"
-        title="Cmd+K"
+        onPointerDown={onLauncherPointerDown}
+        onPointerMove={onLauncherPointerMove}
+        onPointerUp={onLauncherPointerUp}
+        style={{ left: pos.x, top: pos.y, touchAction: "none" }}
+        className="fixed z-[60] flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none"
+        aria-label="Open Prompt Builder (Cmd+K) — drag to move"
+        title="Click to open · Drag to move · ⌘K"
       >
         <Zap className="h-4 w-4" />
         Build Prompt
