@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronRight,
   Loader2,
+  Zap,
 } from "lucide-react";
 import {
   DndContext,
@@ -35,6 +36,11 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  BuildPromptModal,
+  splitFeatureSections,
+  type BuildPromptFeature,
+} from "@/components/BuildPromptModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -102,12 +108,14 @@ function FeatureCard({
   canEdit,
   onChange,
   onDelete,
+  onBuildPrompt,
   dragHandle,
 }: {
   feature: Feature;
   canEdit: boolean;
   onChange: (next: Feature) => Promise<void>;
   onDelete: () => Promise<void>;
+  onBuildPrompt?: () => void;
   dragHandle?: React.ReactNode;
 }) {
   const [editing, setEditing] = useState(false);
@@ -299,6 +307,16 @@ function FeatureCard({
             </>
           ) : (
             <>
+              {onBuildPrompt && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onBuildPrompt}
+                  className="text-amber-700 border-amber-200 hover:bg-amber-50"
+                >
+                  <Zap className="h-4 w-4 mr-1" /> Build Prompt
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -324,12 +342,14 @@ function AddFeatureModal({
   open,
   onClose,
   onCreate,
+  onPreviewPrompt,
 }: {
   open: boolean;
   onClose: () => void;
   onCreate: (
     f: Omit<Feature, "id" | "created_at" | "updated_at" | "sort_order">,
   ) => Promise<void>;
+  onPreviewPrompt?: (f: BuildPromptFeature) => void;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -593,6 +613,26 @@ function AddFeatureModal({
             </Select>
           </div>
           <div className="flex justify-end gap-2 pt-2">
+            {onPreviewPrompt && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  onPreviewPrompt({
+                    title: title.trim(),
+                    description: description.trim(),
+                    bullet_points: bullets.split("\n").map((s) => s.trim()).filter(Boolean),
+                    build_steps: buildSteps,
+                    testing_steps: testingSteps,
+                    status,
+                  })
+                }
+                disabled={!title.trim()}
+                className="text-amber-700 border-amber-200 hover:bg-amber-50 mr-auto"
+              >
+                <Zap className="h-4 w-4 mr-1.5" /> Generate Build Prompt
+              </Button>
+            )}
             <Button variant="ghost" onClick={onClose}>
               Cancel
             </Button>
@@ -611,11 +651,13 @@ function SortableFeatureCard({
   canEdit,
   onChange,
   onDelete,
+  onBuildPrompt,
 }: {
   feature: Feature;
   canEdit: boolean;
   onChange: (next: Feature) => Promise<void>;
   onDelete: () => Promise<void>;
+  onBuildPrompt?: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: feature.id });
@@ -646,6 +688,7 @@ function SortableFeatureCard({
         canEdit={canEdit}
         onChange={onChange}
         onDelete={onDelete}
+        onBuildPrompt={onBuildPrompt}
         dragHandle={handle}
       />
     </div>
@@ -661,6 +704,19 @@ export default function WebDevSprints() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [statusFilter, setStatusFilter] = useState<Status | "All">("All");
+  const [promptFeature, setPromptFeature] = useState<BuildPromptFeature | null>(null);
+
+  const openBuildPrompt = (f: Feature) => {
+    const split = splitFeatureSections(f.bullet_points);
+    setPromptFeature({
+      title: f.title,
+      description: f.description,
+      bullet_points: split.bullets,
+      build_steps: split.build_steps,
+      testing_steps: split.testing_steps,
+      status: f.status,
+    });
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -866,6 +922,7 @@ export default function WebDevSprints() {
                       canEdit={canEdit && statusFilter === "All"}
                       onChange={handleUpdate}
                       onDelete={() => handleDelete(f.id)}
+                      onBuildPrompt={canEdit ? () => openBuildPrompt(f) : undefined}
                     />
                   ))}
                 </div>
@@ -879,6 +936,13 @@ export default function WebDevSprints() {
         open={adding}
         onClose={() => setAdding(false)}
         onCreate={handleCreate}
+        onPreviewPrompt={(f) => setPromptFeature(f)}
+      />
+
+      <BuildPromptModal
+        open={!!promptFeature}
+        onClose={() => setPromptFeature(null)}
+        feature={promptFeature}
       />
     </div>
   );
