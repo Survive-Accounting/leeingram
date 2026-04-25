@@ -76,6 +76,8 @@ export default function StagingEmailPromptModal({
     }
   }, [open]);
 
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
@@ -92,6 +94,30 @@ export default function StagingEmailPromptModal({
 
     setSubmitting(true);
     try {
+      // Returning user check: any active paid access → magic link, skip pricing flow.
+      try {
+        const { data: purchases } = await supabase
+          .from("student_purchases")
+          .select("expires_at")
+          .eq("email", trimmed)
+          .limit(20);
+        const now = Date.now();
+        const hasActive = (purchases ?? []).some(
+          (p: any) => !p.expires_at || new Date(p.expires_at).getTime() > now,
+        );
+        if (hasActive) {
+          const { error: linkErr } = await supabase.functions.invoke("resend-login-link", {
+            body: { email: trimmed },
+          });
+          if (linkErr) throw linkErr;
+          setMagicLinkSent(true);
+          return;
+        }
+      } catch (err) {
+        // Non-fatal — fall through to pricing flow.
+        console.warn("pricing modal access check failed", err);
+      }
+
       const result = await onSubmit(trimmed);
       // If parent returns null, it has already navigated (e.g. Ole Miss skip).
       if (result) setCelebration(result);
