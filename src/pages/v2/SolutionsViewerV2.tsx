@@ -185,14 +185,17 @@ const REASON_OPTIONS: { value: FeedbackReason; label: string }[] = [
   { value: "unclear_steps", label: "Steps were unclear" },
   { value: "concept", label: "Didn't understand the concept" },
   { value: "too_long", label: "Too long / confusing" },
-  { value: "still_confused", label: "Still confused" },
+  { value: "still_confused", label: "Still confused overall" },
 ];
+
+const MAX_REASONS = 2;
 
 function ExplanationFeedback({ asset }: { asset: Asset }) {
   const [stage, setStage] = useState<"ask" | "negative" | "done">("ask");
-  const [reason, setReason] = useState<FeedbackReason | null>(null);
+  const [reasons, setReasons] = useState<FeedbackReason[]>([]);
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const noteRef = React.useRef<HTMLTextAreaElement>(null);
 
   const getEmail = () => {
     try {
@@ -202,7 +205,22 @@ function ExplanationFeedback({ asset }: { asset: Asset }) {
     }
   };
 
-  const submit = async (helpful: boolean, r: FeedbackReason | null = null, n: string = "") => {
+  const toggleReason = (value: FeedbackReason) => {
+    setReasons((prev) => {
+      if (prev.includes(value)) return prev.filter((v) => v !== value);
+      if (prev.length >= MAX_REASONS) {
+        toast.message(`Select up to ${MAX_REASONS}`);
+        return prev;
+      }
+      const next = [...prev, value];
+      if (value === "still_confused") {
+        setTimeout(() => noteRef.current?.focus(), 50);
+      }
+      return next;
+    });
+  };
+
+  const submit = async (helpful: boolean, rs: FeedbackReason[] = [], n: string = "") => {
     setSubmitting(true);
     try {
       await supabase.from("explanation_feedback").insert({
@@ -210,7 +228,7 @@ function ExplanationFeedback({ asset }: { asset: Asset }) {
         asset_name: asset.asset_name,
         user_email: getEmail(),
         helpful,
-        reason: r,
+        reason: rs.length ? rs : null,
         note: n.trim() || null,
       });
       setStage("done");
@@ -232,21 +250,30 @@ function ExplanationFeedback({ asset }: { asset: Asset }) {
   if (stage === "negative") {
     return (
       <div className="space-y-3">
-        <div className="text-sm font-medium">What didn't click?</div>
+        <div>
+          <div className="text-sm font-medium">What didn't click?</div>
+          <div className="text-xs text-muted-foreground mt-0.5">Select up to {MAX_REASONS}</div>
+        </div>
         <div className="flex flex-wrap gap-2">
-          {REASON_OPTIONS.map((opt) => (
-            <Button
-              key={opt.value}
-              size="sm"
-              variant={reason === opt.value ? "default" : "outline"}
-              className="text-xs h-8"
-              onClick={() => setReason(opt.value)}
-            >
-              {opt.label}
-            </Button>
-          ))}
+          {REASON_OPTIONS.map((opt) => {
+            const selected = reasons.includes(opt.value);
+            const atMax = !selected && reasons.length >= MAX_REASONS;
+            return (
+              <Button
+                key={opt.value}
+                size="sm"
+                variant={selected ? "default" : "outline"}
+                className="text-xs h-8"
+                disabled={atMax}
+                onClick={() => toggleReason(opt.value)}
+              >
+                {opt.label}
+              </Button>
+            );
+          })}
         </div>
         <Textarea
+          ref={noteRef}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Add a note (optional)"
@@ -256,8 +283,8 @@ function ExplanationFeedback({ asset }: { asset: Asset }) {
         <Button
           size="sm"
           className="w-full"
-          disabled={!reason || submitting}
-          onClick={() => submit(false, reason, note)}
+          disabled={reasons.length === 0 || submitting}
+          onClick={() => submit(false, reasons, note)}
         >
           {submitting ? "Sending…" : "Send feedback"}
         </Button>
