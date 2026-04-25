@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ShieldCheck, Users, Link2, Sparkles, Search, Plus } from "lucide-react";
+import { Check, ShieldCheck, Users, Link2, Sparkles, Search, Plus, Crown, UserRound, Copy, Flame } from "lucide-react";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { supabase } from "@/integrations/supabase/client";
