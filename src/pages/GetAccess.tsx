@@ -26,6 +26,7 @@ const VALID_PROMOS: Record<string, { type: "percent" | "flat"; value: number }> 
   STUDY10: { type: "percent", value: 10 },
   WELCOME20: { type: "percent", value: 20 },
   FRIEND25: { type: "flat", value: 25 },
+  SURVIVE50: { type: "flat", value: 50 },
 };
 
 function getShortSeasonLabel(stepsAhead: number): string {
