@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ShieldCheck, Users, Link2, Sparkles, Search, Plus, Crown, UserRound, Copy, Flame } from "lucide-react";
+import { Check, ShieldCheck, Users, Link2, Sparkles, Search, Plus, Crown, UserRound, Copy, Flame, Zap } from "lucide-react";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { supabase } from "@/integrations/supabase/client";
@@ -1706,36 +1706,36 @@ export default function GetOrgAccess() {
                 fontWeight: 400,
               }}
             >
-              What chapter access includes
+              What's included
             </h3>
             <p
               className="mt-1.5 text-[13px]"
               style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
             >
-              Everything members need for their accounting exams — funded once by the chapter.
+              Everything your members need — without the hassle.
             </p>
 
             <ul className="mt-4 space-y-3">
               {[
                 {
-                  icon: Users,
-                  title: "Seats for your members",
-                  body: "Each pass unlocks full course access for one member, all semester.",
+                  icon: Sparkles,
+                  title: "Full Survive Accounting library",
+                  body: "Practice problems, videos, and study tools for every chapter: Intro 1 & 2, Intermediate 1 & 2.",
                 },
                 {
                   icon: Link2,
                   title: "One shared signup link",
-                  body: "Members claim a seat with their school email. No codes to track.",
+                  body: "Share one link. Members sign up with their school email and claim access instantly — no codes, no tracking.",
                 },
                 {
-                  icon: Sparkles,
-                  title: "Full Survive Accounting library",
-                  body: "Every chapter, every problem, every walkthrough video — Intro & Intermediate.",
+                  icon: Zap,
+                  title: "No management required",
+                  body: "Once you share the link, everything runs automatically. No setup, no follow-ups, no admin work.",
                 },
                 {
                   icon: ShieldCheck,
                   title: "Unused seats roll over",
-                  body: "Anything you don't claim becomes a discount on your next semester.",
+                  body: "Any unused seats become a discount on your next semester.",
                 },
               ].map(({ icon: Icon, title, body }) => (
                 <li key={title} className="flex gap-3">
