@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -15,13 +15,21 @@ interface QuickEmailGateModalProps {
   courseSlug?: string | null;
 }
 
+type Step = "email" | "sent" | "courses";
+
+interface CourseRow {
+  id: string;
+  slug: string;
+  code: string | null;
+  course_name: string;
+  local_name?: string | null;
+  local_code?: string | null;
+}
+
 /**
- * Lightweight email capture step shown before /get-access.
- * - Accepts any email (low friction).
- * - .edu → resolve campus via HIPOLABS-backed `resolve-campus` edge fn,
- *   then redirect to /get-access?campus=...&email=...
- * - Non-.edu or detection failure → redirect to /get-access?campus=ole-miss&email=...
- *   (Ole Miss = home campus, highest pricing, used as the "general" tier.)
+ * Minimal email gateway used before /get-access.
+ * - Returning users with active paid access → magic login link.
+ * - New users → resolve campus, then pick a course → /get-access.
  */
 export default function QuickEmailGateModal({
   open,
@@ -32,12 +40,24 @@ export default function QuickEmailGateModal({
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [step, setStep] = useState<Step>("email");
+
+  const [campusSlug, setCampusSlug] = useState<string>("ole-miss");
+  const [campusName, setCampusName] = useState<string>("");
+  const [campusKnown, setCampusKnown] = useState<boolean>(false);
+  const [courses, setCourses] = useState<CourseRow[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
       setEmail("");
       setErr(null);
       setLoading(false);
+      setStep("email");
+      setCampusSlug("ole-miss");
+      setCampusName("");
+      setCampusKnown(false);
+      setCourses([]);
     }
   }, [open]);
 
@@ -46,15 +66,62 @@ export default function QuickEmailGateModal({
       localStorage.setItem("student_email", value);
       sessionStorage.setItem("student_email", value);
     } catch {
-      /* storage unavailable — ignore */
+      /* ignore */
     }
   };
 
-  const goTo = (campusSlug: string, emailValue: string) => {
-    persistEmail(emailValue);
-    const base = buildGetAccessUrl({ campus: campusSlug, course: courseSlug ?? null });
+  /** Load the course list for a resolved campus, or fall back to global courses. */
+  const loadCourses = async (slug: string) => {
+    setCoursesLoading(true);
+    try {
+      // Try campus-specific courses first.
+      const { data: campusRow } = await supabase
+        .from("campuses")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (campusRow?.id) {
+        const { data: cc } = await supabase
+          .from("campus_courses")
+          .select("local_course_code, local_course_name, display_order, courses:course_id(id, slug, code, course_name)")
+          .eq("campus_id", campusRow.id)
+          .eq("is_active", true)
+          .order("display_order", { ascending: true });
+
+        const mapped: CourseRow[] = (cc ?? [])
+          .map((row: any) => row.courses && {
+            id: row.courses.id,
+            slug: row.courses.slug,
+            code: row.courses.code,
+            course_name: row.courses.course_name,
+            local_code: row.local_course_code,
+            local_name: row.local_course_name,
+          })
+          .filter(Boolean) as CourseRow[];
+
+        if (mapped.length > 0) {
+          setCourses(mapped);
+          return;
+        }
+      }
+
+      // Fallback: global course list.
+      const { data: all } = await supabase
+        .from("courses")
+        .select("id, slug, code, course_name")
+        .order("course_name", { ascending: true });
+      setCourses((all ?? []) as CourseRow[]);
+    } finally {
+      setCoursesLoading(false);
+    }
+  };
+
+  const goToGetAccess = (slug: string) => {
+    persistEmail(email);
+    const base = buildGetAccessUrl({ campus: campusSlug, course: slug });
     const sep = base.includes("?") ? "&" : "?";
-    navigate(`${base}${sep}email=${encodeURIComponent(emailValue)}`);
+    navigate(`${base}${sep}email=${encodeURIComponent(email)}`);
     onClose();
   };
 
@@ -65,30 +132,70 @@ export default function QuickEmailGateModal({
       setErr("Enter a valid email address.");
       return;
     }
-
+    setEmail(trimmed);
     setLoading(true);
     setErr(null);
 
-    const isEdu = trimmed.endsWith(".edu");
-    if (!isEdu) {
-      // Non-.edu → general (Ole Miss) pricing.
-      goTo("ole-miss", trimmed);
-      return;
+    // 1. Check for active paid access. If found → send magic link.
+    try {
+      const { data: purchases } = await supabase
+        .from("student_purchases")
+        .select("expires_at")
+        .eq("email", trimmed)
+        .limit(20);
+
+      const now = Date.now();
+      const hasActive = (purchases ?? []).some(
+        (p: any) => !p.expires_at || new Date(p.expires_at).getTime() > now,
+      );
+
+      if (hasActive) {
+        const { error } = await supabase.functions.invoke("resend-login-link", {
+          body: { email: trimmed },
+        });
+        if (error) throw error;
+        setStep("sent");
+        setLoading(false);
+        return;
+      }
+    } catch (e) {
+      // Non-fatal — fall through to course selection so user isn't blocked.
+      console.warn("access check / magic link failed", e);
     }
 
+    // 2. No access → resolve campus, then show course list.
+    let resolvedSlug = "ole-miss";
+    let resolvedName = "";
+    let known = false;
     try {
       const { data, error } = await supabase.functions.invoke("resolve-campus", {
         body: { email: trimmed, course_slug: courseSlug ?? null },
       });
-      if (error) throw error;
-      const slug = (data?.campus_slug as string) || "ole-miss";
-      // Treat the "general" fallback the same as Ole Miss pricing.
-      goTo(slug === "general" ? "ole-miss" : slug, trimmed);
+      if (!error) {
+        const slug = (data?.campus_slug as string) || "";
+        const name = (data?.campus_name as string) || "";
+        if (slug && slug !== "general") {
+          resolvedSlug = slug;
+          resolvedName = name;
+          known = true;
+        }
+      }
     } catch {
-      // Detection failed → fall back to Ole Miss pricing.
-      goTo("ole-miss", trimmed);
+      /* ignore — fallback path */
     }
+
+    setCampusSlug(resolvedSlug);
+    setCampusName(resolvedName);
+    setCampusKnown(known);
+    await loadCourses(resolvedSlug);
+    setStep("courses");
+    setLoading(false);
   };
+
+  const subheader = useMemo(() => {
+    if (campusKnown && campusName) return `${campusName} courses`;
+    return "We're setting things up for your school.";
+  }, [campusKnown, campusName]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -104,72 +211,156 @@ export default function QuickEmailGateModal({
           <X className="w-4 h-4" style={{ color: "#6B7280" }} />
         </button>
 
-        <form onSubmit={handleSubmit} className="px-6 sm:px-8 pt-7 pb-7">
-          <h2
-            className="text-[22px] sm:text-[24px] leading-tight text-center"
-            style={{
-              color: NAVY,
-              fontFamily: "'DM Serif Display', serif",
-              fontWeight: 400,
-            }}
-          >
-            Get instant access to your accounting exam prep
-          </h2>
-          <p
-            className="mt-2 text-center text-[13px]"
-            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
-          >
-            Enter your school email — we'll look up your campus.
-          </p>
-
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (err) setErr(null);
-            }}
-            placeholder="your@university.edu"
-            disabled={loading}
-            autoFocus
-            maxLength={255}
-            required
-            className="mt-5 w-full rounded-lg border px-4 py-3 text-[14px] outline-none transition-colors focus:border-[#14213D]"
-            style={{
-              borderColor: err ? RED : "#E5E7EB",
-              fontFamily: "Inter, sans-serif",
-              color: NAVY,
-            }}
-          />
-          {err && (
-            <p
-              className="mt-1.5 text-[12px]"
-              style={{ color: RED, fontFamily: "Inter, sans-serif" }}
+        {step === "email" && (
+          <form onSubmit={handleSubmit} className="px-6 sm:px-8 pt-7 pb-7">
+            <h2
+              className="text-[22px] sm:text-[24px] leading-tight text-center"
+              style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
             >
-              {err}
+              Enter your email
+            </h2>
+            <p
+              className="mt-2 text-center text-[13px]"
+              style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
+            >
+              Access your study tools
             </p>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-5 w-full rounded-lg py-3 text-[14px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-80 disabled:cursor-wait flex items-center justify-center gap-2"
-            style={{
-              background: RED,
-              fontFamily: "Inter, sans-serif",
-              boxShadow: "0 4px 14px rgba(206,17,38,0.3)",
-            }}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Finding your campus…
-              </>
-            ) : (
-              "Continue →"
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (err) setErr(null);
+              }}
+              placeholder="your@school.edu"
+              disabled={loading}
+              autoFocus
+              maxLength={255}
+              required
+              className="mt-5 w-full rounded-lg border px-4 py-3 text-[14px] outline-none transition-colors focus:border-[#14213D]"
+              style={{
+                borderColor: err ? RED : "#E5E7EB",
+                fontFamily: "Inter, sans-serif",
+                color: NAVY,
+              }}
+            />
+            {err && (
+              <p className="mt-1.5 text-[12px]" style={{ color: RED, fontFamily: "Inter, sans-serif" }}>
+                {err}
+              </p>
             )}
-          </button>
-        </form>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-5 w-full rounded-lg py-3 text-[14px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-80 disabled:cursor-wait flex items-center justify-center gap-2"
+              style={{
+                background: RED,
+                fontFamily: "Inter, sans-serif",
+                boxShadow: "0 4px 14px rgba(206,17,38,0.3)",
+              }}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Checking…
+                </>
+              ) : (
+                "Continue →"
+              )}
+            </button>
+          </form>
+        )}
+
+        {step === "sent" && (
+          <div className="px-6 sm:px-8 pt-8 pb-8 text-center">
+            <h2
+              className="text-[22px] sm:text-[24px] leading-tight"
+              style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+            >
+              Check your email
+            </h2>
+            <p
+              className="mt-3 text-[14px]"
+              style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}
+            >
+              Check your email for your secure access link.
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="mt-6 w-full rounded-lg py-3 text-[14px] font-semibold text-white transition-all hover:brightness-110"
+              style={{ background: NAVY, fontFamily: "Inter, sans-serif" }}
+            >
+              Done
+            </button>
+          </div>
+        )}
+
+        {step === "courses" && (
+          <div className="px-6 sm:px-8 pt-7 pb-7">
+            <h2
+              className="text-[22px] sm:text-[24px] leading-tight text-center"
+              style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+            >
+              Select your course
+            </h2>
+            <p
+              className="mt-2 text-center text-[13px]"
+              style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
+            >
+              {subheader}
+            </p>
+
+            <div className="mt-5 flex flex-col gap-2">
+              {coursesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin" style={{ color: NAVY }} />
+                </div>
+              ) : courses.length === 0 ? (
+                <p
+                  className="text-center text-[13px] py-6"
+                  style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
+                >
+                  No courses available right now.
+                </p>
+              ) : (
+                courses.map((c) => {
+                  const label = c.local_name || c.course_name;
+                  const sub = c.local_code || c.code;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => goToGetAccess(c.slug)}
+                      className="w-full text-left rounded-lg border px-4 py-3 transition-colors hover:border-[#14213D] hover:bg-[#F8F9FA]"
+                      style={{ borderColor: "#E5E7EB", fontFamily: "Inter, sans-serif" }}
+                    >
+                      <div className="text-[14px] font-semibold" style={{ color: NAVY }}>
+                        {label}
+                      </div>
+                      {sub && (
+                        <div className="text-[12px]" style={{ color: "#6B7280" }}>
+                          {sub}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setStep("email")}
+              className="mt-4 w-full text-[12px]"
+              style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
+            >
+              ← Use a different email
+            </button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
