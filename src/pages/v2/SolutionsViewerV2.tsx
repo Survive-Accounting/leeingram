@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -274,6 +274,8 @@ function ExplanationPanel({
 export default function SolutionsViewerV2() {
   const { assetCode } = useParams<{ assetCode: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isPreview = searchParams.get("mode") === "preview";
 
   const [asset, setAsset] = useState<Asset | null>(null);
   const [chapter, setChapter] = useState<ChapterMeta | null>(null);
@@ -360,6 +362,12 @@ export default function SolutionsViewerV2() {
       <Helmet>
         <title>{asset?.problem_title || asset?.source_ref || "Problem"} · Survive Accounting</title>
       </Helmet>
+
+      {isPreview && (
+        <div className="fixed top-2 right-2 z-50 bg-destructive text-destructive-foreground text-[10px] font-mono px-2 py-1 rounded shadow-lg">
+          PREVIEW · {asset?.asset_name || assetCode}
+        </div>
+      )}
 
       {/* Top bar */}
       <header className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b">

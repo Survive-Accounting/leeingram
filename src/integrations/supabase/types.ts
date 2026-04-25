@@ -5983,6 +5983,8 @@ export type Database = {
           uses_financial_statements: boolean
           uses_t_accounts: boolean
           uses_tables: boolean
+          v2_embedded_at: string | null
+          v2_status: string
           video_production_status: string
           video_ready_at: string | null
           whiteboard_status: string
@@ -6093,6 +6095,8 @@ export type Database = {
           uses_financial_statements?: boolean
           uses_t_accounts?: boolean
           uses_tables?: boolean
+          v2_embedded_at?: string | null
+          v2_status?: string
           video_production_status?: string
           video_ready_at?: string | null
           whiteboard_status?: string
@@ -6203,6 +6207,8 @@ export type Database = {
           uses_financial_statements?: boolean
           uses_t_accounts?: boolean
           uses_tables?: boolean
+          v2_embedded_at?: string | null
+          v2_status?: string
           video_production_status?: string
           video_ready_at?: string | null
           whiteboard_status?: string
