@@ -1122,7 +1122,7 @@ export default function SolutionsViewerV2() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Helmet>
-        <title>{asset?.problem_title || asset?.source_ref || "Problem"} · Survive Accounting</title>
+        <title>{asset?.source_ref ? `Practice based on ${asset.source_ref}` : "Problem"} · Survive Accounting</title>
       </Helmet>
 
       {isPreview && (
