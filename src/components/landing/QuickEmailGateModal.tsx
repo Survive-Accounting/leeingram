@@ -194,8 +194,24 @@ export default function QuickEmailGateModal({
 
   const subheader = useMemo(() => {
     if (campusKnown && campusName) return `${campusName} courses`;
-    return "We're setting things up for your school.";
+    return "Choose the course you're studying";
   }, [campusKnown, campusName]);
+
+  /** Friendly display names for known global course slugs (no abbreviations). */
+  const FRIENDLY_NAMES: Record<string, { name: string; helper: string }> = {
+    "intro-accounting-1": { name: "Intro to Financial Accounting", helper: "First semester · the accounting equation, journal entries, financial statements" },
+    "intro-1": { name: "Intro to Financial Accounting", helper: "First semester · the accounting equation, journal entries, financial statements" },
+    "accy-201": { name: "Intro to Financial Accounting", helper: "First semester · the accounting equation, journal entries, financial statements" },
+    "intro-accounting-2": { name: "Intro to Managerial Accounting", helper: "Second semester · costs, budgeting, decision-making for managers" },
+    "intro-2": { name: "Intro to Managerial Accounting", helper: "Second semester · costs, budgeting, decision-making for managers" },
+    "accy-202": { name: "Intro to Managerial Accounting", helper: "Second semester · costs, budgeting, decision-making for managers" },
+    "intermediate-accounting-1": { name: "Intermediate Accounting I", helper: "Deep dive · cash, receivables, inventory, PP&E" },
+    "ia1": { name: "Intermediate Accounting I", helper: "Deep dive · cash, receivables, inventory, PP&E" },
+    "accy-303": { name: "Intermediate Accounting I", helper: "Deep dive · cash, receivables, inventory, PP&E" },
+    "intermediate-accounting-2": { name: "Intermediate Accounting II", helper: "Advanced · bonds, leases, pensions, EPS" },
+    "ia2": { name: "Intermediate Accounting II", helper: "Advanced · bonds, leases, pensions, EPS" },
+    "accy-304": { name: "Intermediate Accounting II", helper: "Advanced · bonds, leases, pensions, EPS" },
+  };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
