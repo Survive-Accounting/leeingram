@@ -252,6 +252,75 @@ export default function StudentDashboard() {
           </div>
         </section>
 
+        {/* Continue where you left off + Stuck on something? */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Continue where you left off */}
+          <div
+            className="rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+            style={{
+              background: "#fff",
+              border: "1px solid #E0E7F0",
+              boxShadow: "0 8px 24px rgba(20,33,61,0.06), 0 2px 6px rgba(20,33,61,0.04)",
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            <div className="min-w-0">
+              <h3 className="text-[15px] font-semibold" style={{ color: NAVY }}>
+                Continue where you left off
+              </h3>
+              <p className="text-[13px] mt-0.5 truncate" style={{ color: "#64748B" }}>
+                {chapters[0]
+                  ? `Ch ${chapters[0].chapter_number} — ${chapters[0].chapter_name}`
+                  : "Ch 1 — Accounting Basics"}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                const ch = chapters[0];
+                if (ch) {
+                  window.open(`/cram/${ch.id}`, "_blank", "noopener,noreferrer");
+                } else {
+                  toast("We're finalizing your chapters — check back soon.", { icon: "📚" });
+                }
+              }}
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98] shrink-0"
+              style={{
+                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+                boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
+              }}
+            >
+              Resume <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          {/* Stuck on something? */}
+          <div
+            className="rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+            style={{
+              background: "#fff",
+              border: "1px solid #E0E7F0",
+              boxShadow: "0 8px 24px rgba(20,33,61,0.06), 0 2px 6px rgba(20,33,61,0.04)",
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            <div className="min-w-0">
+              <h3 className="text-[15px] font-semibold" style={{ color: NAVY }}>
+                Stuck on something?
+              </h3>
+              <p className="text-[13px] mt-0.5" style={{ color: "#64748B" }}>
+                Lee usually replies within a day.
+              </p>
+            </div>
+            <a
+              href="mailto:lee@surviveaccounting.com"
+              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] font-semibold transition-colors hover:bg-slate-50 shrink-0"
+              style={{ borderColor: "rgba(20,33,61,0.2)", color: NAVY }}
+            >
+              Ask a question <ArrowRight className="h-3.5 w-3.5" />
+            </a>
+          </div>
+        </section>
+
         {/* Legacy Video Library — secondary, for existing LearnWorlds students */}
         <div
           className="rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
@@ -281,19 +350,6 @@ export default function StudentDashboard() {
           </a>
         </div>
 
-        {/* Support footer */}
-        <div className="pt-2 text-center">
-          <p className="text-[13px]" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-            Need help?{" "}
-            <a
-              href="mailto:lee@surviveaccounting.com"
-              className="font-semibold hover:underline"
-              style={{ color: RED }}
-            >
-              Contact Lee
-            </a>
-          </p>
-        </div>
       </main>
 
       <LandingFooter
