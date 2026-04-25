@@ -195,12 +195,21 @@ export default function GetOrgAccess() {
     let cancelled = false;
     setIntentSearching(true);
     const timer = setTimeout(async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("greek_orgs")
         .select("id, campus_id, org_name, council, org_type, aliases, status")
-        .ilike("org_name", `%${q}%`)
-        .order("org_name")
-        .limit(8);
+        .ilike("org_name", `%${q}%`);
+      // Filter by org type when known (case-insensitive match on common variants).
+      if (orgKind === "fraternity") {
+        query = query.ilike("org_type", "%fratern%");
+      } else if (orgKind === "sorority") {
+        query = query.ilike("org_type", "%soror%");
+      }
+      // Filter by campus when known (optional).
+      if (selectedCampusId) {
+        query = query.eq("campus_id", selectedCampusId);
+      }
+      const { data, error } = await query.order("org_name").limit(8);
       if (cancelled) return;
       if (error) {
         console.error("[get-org-access] chapter search", error);
