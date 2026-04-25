@@ -183,18 +183,22 @@ export default function StudentDashboard() {
 
         {/* Study Pass Summary */}
         <section
-          className="rounded-2xl bg-white p-6 shadow-sm border"
-          style={{ borderColor: "#E5E7EB", boxShadow: "0 1px 3px rgba(20,33,61,0.06)" }}
+          className="rounded-2xl p-6"
+          style={{
+            background: "#fff",
+            border: "1px solid #E0E7F0",
+            boxShadow: "0 24px 60px rgba(20,33,61,0.10), 0 2px 8px rgba(20,33,61,0.04)",
+          }}
         >
           <h2
-            className="text-xl mb-4"
-            style={{ color: NAVY, fontFamily: "'DM Serif Display', Georgia, serif" }}
+            className="text-[22px] mb-4 leading-tight"
+            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
           >
             Survive Study Pass
           </h2>
-          <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[14px]">
+          <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[14px]" style={{ fontFamily: "Inter, sans-serif" }}>
             <div>
-              <dt className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-1" style={{ color: "#94A3B8" }}>
                 Course
               </dt>
               <dd className="font-medium" style={{ color: NAVY }}>
@@ -202,7 +206,7 @@ export default function StudentDashboard() {
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-1" style={{ color: "#94A3B8" }}>
                 Access
               </dt>
               <dd className="font-medium" style={{ color: NAVY }}>
@@ -210,10 +214,10 @@ export default function StudentDashboard() {
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-1" style={{ color: "#94A3B8" }}>
                 Status
               </dt>
-              <dd className="flex items-center gap-1.5 font-medium" style={{ color: isActive ? "#16A34A" : "#9CA3AF" }}>
+              <dd className="flex items-center gap-1.5 font-medium" style={{ color: isActive ? "#16A34A" : "#94A3B8" }}>
                 <CheckCircle2 className="h-4 w-4" />
                 {isActive ? "Active" : "Expired"}
               </dd>
@@ -224,21 +228,25 @@ export default function StudentDashboard() {
         {/* Your Chapters */}
         <section>
           <h2
-            className="text-2xl"
-            style={{ color: NAVY, fontFamily: "'DM Serif Display', Georgia, serif" }}
+            className="text-[26px] leading-tight"
+            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
           >
             Your chapters
           </h2>
-          <p className="text-[14px] mt-1 mb-4" style={{ color: "#6B7280" }}>
+          <p className="text-[14px] mt-1 mb-4" style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}>
             Start with the chapter you're studying.
           </p>
 
           {chapters.length === 0 ? (
             <div
-              className="rounded-2xl bg-white p-6 text-center border"
-              style={{ borderColor: "#E5E7EB", boxShadow: "0 1px 3px rgba(20,33,61,0.06)" }}
+              className="rounded-2xl p-6 text-center"
+              style={{
+                background: "#fff",
+                border: "1px solid #E0E7F0",
+                boxShadow: "0 24px 60px rgba(20,33,61,0.10), 0 2px 8px rgba(20,33,61,0.04)",
+              }}
             >
-              <p className="text-[14px]" style={{ color: "#6B7280" }}>
+              <p className="text-[14px]" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
                 We're setting up your chapter list. Check back soon.
               </p>
             </div>
@@ -248,11 +256,16 @@ export default function StudentDashboard() {
                 <button
                   key={ch.id}
                   onClick={() => openChapter(ch)}
-                  className="text-left rounded-2xl bg-white p-5 border transition-all hover:-translate-y-0.5 hover:shadow-md group"
-                  style={{ borderColor: "#E5E7EB", boxShadow: "0 1px 3px rgba(20,33,61,0.06)" }}
+                  className="text-left rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-lg group"
+                  style={{
+                    background: "#fff",
+                    border: "1px solid #E0E7F0",
+                    boxShadow: "0 12px 32px rgba(20,33,61,0.08), 0 2px 6px rgba(20,33,61,0.04)",
+                    fontFamily: "Inter, sans-serif",
+                  }}
                 >
                   <div
-                    className="text-[11px] font-semibold uppercase tracking-wider mb-1"
+                    className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-1"
                     style={{ color: RED }}
                   >
                     Chapter {ch.chapter_number}
@@ -275,14 +288,18 @@ export default function StudentDashboard() {
 
         {/* Legacy Video Library — secondary, for existing LearnWorlds students */}
         <div
-          className="rounded-xl border p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-          style={{ borderColor: "rgba(20,33,61,0.12)", background: "rgba(20,33,61,0.02)" }}
+          className="rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+          style={{
+            background: "rgba(255,255,255,0.6)",
+            border: "1px solid #E0E7F0",
+            fontFamily: "Inter, sans-serif",
+          }}
         >
           <div className="min-w-0">
             <h3 className="text-[14px] font-semibold" style={{ color: NAVY }}>
               Legacy Video Library
             </h3>
-            <p className="text-[13px] mt-0.5" style={{ color: "#6B7280" }}>
+            <p className="text-[13px] mt-0.5" style={{ color: "#64748B" }}>
               Access the previous Survive Accounting video library.
             </p>
           </div>
@@ -299,8 +316,8 @@ export default function StudentDashboard() {
         </div>
 
         {/* Support footer */}
-        <div className="pt-4 text-center">
-          <p className="text-[13px]" style={{ color: "#6B7280" }}>
+        <div className="pt-2 text-center">
+          <p className="text-[13px]" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
             Need help?{" "}
             <a
               href="mailto:lee@surviveaccounting.com"
@@ -312,6 +329,11 @@ export default function StudentDashboard() {
           </p>
         </div>
       </main>
+
+      <LandingFooter
+        onScrollToCourses={() => navigate("/")}
+        onScrollToContact={() => navigate("/")}
+      />
 
       {/* Just-paid verifying overlay */}
       {verifying && (
