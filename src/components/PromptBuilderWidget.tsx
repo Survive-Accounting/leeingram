@@ -58,7 +58,9 @@ const WINDOW_SIZE = { w: 380, h: 520 };
 
 export function PromptBuilderWidget() {
   const { user } = useAuth();
-  const allowed = ALLOWED.includes((user?.email ?? "").trim().toLowerCase());
+  const isStaff = useIsStaff();
+  const flagOn = useDevToolFlag("promptBuilder");
+  const allowed = isStaff && flagOn;
   const isMobile = useIsMobile();
 
   const [hidden, setHidden] = useState<boolean>(() => {
