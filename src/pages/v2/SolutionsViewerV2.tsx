@@ -581,7 +581,34 @@ function InlineExplanation({
             );
           })}
         </div>
+        {hasJE && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setJeOpen(true)}
+            className="w-full justify-start gap-2 h-9 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            See journal entries
+          </Button>
+        )}
       </div>
+
+      {hasJE && (
+        <Dialog open={jeOpen} onOpenChange={setJeOpen}>
+          <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Journal Entries</DialogTitle>
+            </DialogHeader>
+            <div className="overflow-y-auto pr-1 -mr-1">
+              <StructuredJEDisplay
+                data={asset.journal_entry_completed_json}
+                showHeading={false}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Active section content */}
       {error && (
