@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, LayoutList, Wand2, Printer } from "lucide-react";
 import { generateSimplifiedPracticePdf } from "@/lib/generateSimplifiedPracticePdf";
@@ -1020,13 +1020,14 @@ export default function SolutionsViewerV2() {
       {/* Top bar */}
       <header className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between gap-3">
-          <button
-            onClick={() => navigate(-1)}
+          <Link
+            to="/my-dashboard"
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back
-          </button>
+            <span className="hidden sm:inline">Back to dashboard</span>
+            <span className="sm:hidden">Dashboard</span>
+          </Link>
           <div className="text-sm font-medium tracking-tight truncate">{headerLabel}</div>
           <Button
             size="sm"
