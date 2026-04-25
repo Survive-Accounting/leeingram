@@ -1,30 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Loader2, ArrowRight, X, Search } from "lucide-react";
 import { toast } from "sonner";
-import StagingNavbar from "@/components/landing/StagingNavbar";
-import LandingFooter from "@/components/landing/LandingFooter";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
 const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
+const LOGO_FONT = "'DM Serif Display', serif";
 
 interface Purchase {
   id: string;
   course_id: string;
-  chapter_id: string | null;
-  purchase_type: string;
   expires_at: string | null;
-  created_at: string;
-}
-
-interface Course {
-  id: string;
-  course_name: string;
-  code: string | null;
-  slug: string | null;
 }
 
 interface Chapter {
@@ -33,25 +22,201 @@ interface Chapter {
   chapter_name: string;
 }
 
-/**
- * Minimal MVP student dashboard.
- * Shows the student's active study pass and the chapters in the course
- * they purchased — pulled dynamically from the database.
- */
+interface LastViewed {
+  asset_name: string;
+  chapter_id: string | null;
+  chapter_number: number | null;
+  chapter_name: string | null;
+}
+
+/* ─── Helpers ─── */
+
+async function openFirstAssetForChapter(chapterId: string) {
+  const { data } = await supabase
+    .from("teaching_assets")
+    .select("asset_name, source_number")
+    .eq("chapter_id", chapterId)
+    .order("source_number", { ascending: true, nullsFirst: false })
+    .order("asset_name", { ascending: true })
+    .limit(1);
+  const first = data?.[0];
+  if (!first?.asset_name) {
+    toast("This chapter is being finalized — check back soon.", { icon: "📚" });
+    return;
+  }
+  window.open(`/v2/solutions/${encodeURIComponent(first.asset_name)}`, "_blank", "noopener,noreferrer");
+}
+
+/* ─── Navbar ─── */
+
+function DashNavbar({
+  onStart,
+  onSignOut,
+}: {
+  onStart: () => void;
+  onSignOut: () => void;
+}) {
+  const navigate = useNavigate();
+  return (
+    <header
+      className="sticky top-0 z-40 w-full"
+      style={{
+        background: "rgba(255,255,255,0.92)",
+        borderBottom: "1px solid rgba(20,33,61,0.08)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+      }}
+    >
+      <nav className="max-w-6xl mx-auto h-16 px-5 sm:px-8 flex items-center justify-between">
+        <button
+          onClick={() => navigate("/my-dashboard")}
+          className="text-[16px] sm:text-[18px] tracking-tight"
+          style={{ fontFamily: LOGO_FONT }}
+        >
+          <span style={{ color: RED, fontWeight: 800 }}>Survive</span>
+          <span style={{ color: NAVY, fontWeight: 400 }}> Accounting</span>
+        </button>
+        <div className="flex items-center gap-4 sm:gap-5">
+          <button
+            onClick={onSignOut}
+            className="text-[12px] font-medium hover:underline"
+            style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+          >
+            Sign out
+          </button>
+          <button
+            onClick={onStart}
+            className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98]"
+            style={{
+              background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+              boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            Start Studying <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </nav>
+    </header>
+  );
+}
+
+/* ─── Chapter Picker Modal ─── */
+
+function ChapterPickerModal({
+  open,
+  chapters,
+  onClose,
+}: {
+  open: boolean;
+  chapters: Chapter[];
+  onClose: () => void;
+}) {
+  const [q, setQ] = useState("");
+  useEffect(() => {
+    if (!open) setQ("");
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    const s = q.trim().toLowerCase();
+    if (!s) return chapters;
+    return chapters.filter(
+      (c) =>
+        c.chapter_name.toLowerCase().includes(s) ||
+        `ch ${c.chapter_number}`.includes(s) ||
+        String(c.chapter_number) === s,
+    );
+  }, [q, chapters]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 sm:p-6"
+      style={{ background: "rgba(15, 23, 42, 0.55)", backdropFilter: "blur(4px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden"
+        style={{ border: "1px solid #E0E7F0", fontFamily: "Inter, sans-serif" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 py-4 flex items-center justify-between border-b" style={{ borderColor: "#EEF2F7" }}>
+          <h2 className="text-[16px] font-semibold" style={{ color: NAVY }}>
+            Pick a chapter
+          </h2>
+          <button onClick={onClose} className="p-1 rounded hover:bg-slate-100">
+            <X className="h-4 w-4" style={{ color: "#64748B" }} />
+          </button>
+        </div>
+        <div className="px-5 pt-4">
+          <div
+            className="flex items-center gap-2 rounded-lg px-3 py-2"
+            style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}
+          >
+            <Search className="h-4 w-4" style={{ color: "#94A3B8" }} />
+            <input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search chapters…"
+              className="flex-1 bg-transparent text-[14px] outline-none"
+              style={{ color: NAVY }}
+            />
+          </div>
+        </div>
+        <div className="max-h-[60vh] overflow-y-auto p-3">
+          {filtered.length === 0 ? (
+            <p className="text-[13px] text-center py-8" style={{ color: "#94A3B8" }}>
+              No chapters match.
+            </p>
+          ) : (
+            <ul className="divide-y" style={{ borderColor: "#F1F5F9" }}>
+              {filtered.map((ch) => (
+                <li key={ch.id}>
+                  <button
+                    onClick={() => {
+                      onClose();
+                      openFirstAssetForChapter(ch.id);
+                    }}
+                    className="w-full flex items-center justify-between gap-3 px-3 py-3 rounded-lg hover:bg-slate-50 text-left"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-[12px] font-semibold" style={{ color: "#94A3B8" }}>
+                        Ch {ch.chapter_number}
+                      </div>
+                      <div className="text-[14px] font-medium truncate" style={{ color: NAVY }}>
+                        {ch.chapter_name}
+                      </div>
+                    </div>
+                    <ArrowRight className="h-4 w-4 shrink-0" style={{ color: "#CBD5E1" }} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main Page ─── */
+
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const [email, setEmail] = useState<string | null>(null);
   const [purchase, setPurchase] = useState<Purchase | null>(null);
-  const [course, setCourse] = useState<Course | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [lastViewed, setLastViewed] = useState<LastViewed | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [verifying, setVerifying] = useState<boolean>(() => {
     const p = new URLSearchParams(window.location.search);
     return p.get("just_paid") === "1" || p.get("checkout") === "success";
   });
 
   useEffect(() => {
-    // Clean ?just_paid / ?checkout from the URL after we read them
     const params = new URLSearchParams(window.location.search);
     if (params.get("checkout") === "success") {
       toast.success("You're in! Welcome to Survive Accounting 🎉");
@@ -77,7 +242,7 @@ export default function StudentDashboard() {
 
       const { data: rows } = await supabase
         .from("student_purchases")
-        .select("id, course_id, chapter_id, purchase_type, expires_at, created_at")
+        .select("id, course_id, expires_at, created_at")
         .eq("email", userEmail)
         .order("created_at", { ascending: false });
 
@@ -86,34 +251,42 @@ export default function StudentDashboard() {
         return;
       }
 
-      // Pick the most recent active pass (or just the most recent if all expired)
       const now = Date.now();
       const active = rows.find((r) => !r.expires_at || new Date(r.expires_at).getTime() > now);
       const chosen = active ?? rows[0];
       setPurchase(chosen as Purchase);
 
-      // Fetch course and chapters in parallel
-      const [{ data: courseRow }, { data: chapterRows }] = await Promise.all([
-        supabase
-          .from("courses")
-          .select("id, course_name, code, slug")
-          .eq("id", chosen.course_id)
-          .maybeSingle(),
-        supabase
-          .from("chapters")
-          .select("id, chapter_number, chapter_name")
-          .eq("course_id", chosen.course_id)
-          .order("chapter_number", { ascending: true }),
-      ]);
+      const { data: chapterRows } = await supabase
+        .from("chapters")
+        .select("id, chapter_number, chapter_name")
+        .eq("course_id", chosen.course_id)
+        .order("chapter_number", { ascending: true });
 
-      setCourse(courseRow as Course | null);
-      setChapters((chapterRows ?? []) as Chapter[]);
-      setLoading(false);
+      const chapterList = (chapterRows ?? []) as Chapter[];
+      setChapters(chapterList);
 
-      // Tiny verifying overlay if just paid
-      if (verifying) {
-        setTimeout(() => setVerifying(false), 600);
+      // Last viewed problem (most recent asset_event for this email)
+      const { data: events } = await supabase
+        .from("asset_events")
+        .select("asset_name, chapter_id, created_at")
+        .eq("lw_email", userEmail)
+        .not("asset_name", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      const ev = events?.[0];
+      if (ev?.asset_name) {
+        const ch = chapterList.find((c) => c.id === ev.chapter_id);
+        setLastViewed({
+          asset_name: ev.asset_name,
+          chapter_id: ev.chapter_id,
+          chapter_number: ch?.chapter_number ?? null,
+          chapter_name: ch?.chapter_name ?? null,
+        });
       }
+
+      setLoading(false);
+      if (verifying) setTimeout(() => setVerifying(false), 600);
     };
 
     init();
@@ -125,20 +298,13 @@ export default function StudentDashboard() {
     navigate("/login", { replace: true });
   };
 
-  const openChapter = (ch: Chapter & { isPlaceholder?: boolean }) => {
-    if (ch.isPlaceholder) {
-      toast("We're finalizing this chapter — check back soon.", { icon: "📚" });
+  const openStartStudying = () => {
+    if (chapters.length === 0) {
+      toast("No chapters available yet — check back soon.", { icon: "📚" });
       return;
     }
-    window.open(`/cram/${ch.id}`, "_blank", "noopener,noreferrer");
+    setPickerOpen(true);
   };
-
-  const PLACEHOLDER_CHAPTERS: Array<Chapter & { isPlaceholder: true }> = [
-    { id: "ph-1", chapter_number: 1, chapter_name: "Accounting Basics", isPlaceholder: true },
-    { id: "ph-2", chapter_number: 2, chapter_name: "Journal Entries", isPlaceholder: true },
-    { id: "ph-3", chapter_number: 3, chapter_name: "Adjusting Entries", isPlaceholder: true },
-    { id: "ph-4", chapter_number: 4, chapter_name: "Financial Statements", isPlaceholder: true },
-  ];
 
   if (loading) {
     return (
@@ -154,12 +320,8 @@ export default function StudentDashboard() {
         day: "numeric",
         year: "numeric",
       })
-    : "Through current semester";
+    : "the current semester";
 
-  const isActive = !purchase?.expires_at || new Date(purchase.expires_at).getTime() > Date.now();
-
-  // Derive a friendly first name from the email local-part
-  // e.g. "lee+test@x.com" -> "Lee", "jane.doe@x.com" -> "Jane"
   const firstName = (() => {
     if (!email) return "";
     const local = email.split("@")[0].split("+")[0];
@@ -169,93 +331,28 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: BG_GRADIENT }}>
-      <StagingNavbar
-        onCtaClick={() => navigate("/")}
-        onPricingClick={() => navigate("/")}
-      />
+      <DashNavbar onStart={openStartStudying} onSignOut={handleSignOut} />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-12 md:pt-16 pb-16 space-y-10">
         {/* Welcome */}
         <div className="text-center sm:text-left">
           <h1
             className="text-[34px] sm:text-[44px] md:text-[54px] leading-tight"
-            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+            style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
           >
             {firstName ? `Welcome back, ${firstName}` : "Welcome back"}
           </h1>
           <p
-            className="mt-3 text-[15px] sm:text-[16px]"
-            style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
-          >
-            {course?.course_name ?? "Your course"}
-          </p>
-          <p
-            className="mt-1 text-[14px] sm:text-[15px]"
+            className="mt-2 text-[13px] sm:text-[14px]"
             style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
           >
             Access through {expiresStr}
           </p>
-          <div className="mt-3 flex justify-center sm:justify-start">
-            <button
-              onClick={handleSignOut}
-              className="text-[12px] font-medium hover:underline"
-              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-            >
-              Sign out
-            </button>
-          </div>
         </div>
 
-        {/* Your Chapters */}
-        <section>
-          <h2
-            className="text-[26px] leading-tight"
-            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
-          >
-            Your chapters
-          </h2>
-          <p className="text-[14px] mt-1 mb-4" style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}>
-            Start with the chapter you're studying.
-          </p>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {(chapters.length > 0 ? chapters : PLACEHOLDER_CHAPTERS).map((ch) => (
-              <button
-                key={ch.id}
-                onClick={() => openChapter(ch as Chapter & { isPlaceholder?: boolean })}
-                className="text-left rounded-2xl p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl group"
-                style={{
-                  background: "#fff",
-                  border: "1px solid #E0E7F0",
-                  boxShadow: "0 8px 24px rgba(20,33,61,0.06), 0 2px 6px rgba(20,33,61,0.04)",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
-                <div
-                  className="text-[28px] sm:text-[32px] font-bold leading-none mb-2 transition-colors group-hover:text-[color:var(--accent-red)]"
-                  style={{
-                    color: NAVY,
-                    letterSpacing: "-0.02em",
-                    ["--accent-red" as any]: RED,
-                  }}
-                >
-                  Ch {ch.chapter_number}
-                </div>
-                <div
-                  className="text-[13px] leading-snug line-clamp-2"
-                  style={{ color: "#64748B" }}
-                >
-                  {ch.chapter_name}
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Continue where you left off + Stuck on something? */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Continue where you left off */}
-          <div
+        {/* Continue where you left off */}
+        {lastViewed && (
+          <section
             className="rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             style={{
               background: "#fff",
@@ -268,92 +365,88 @@ export default function StudentDashboard() {
               <h3 className="text-[15px] font-semibold" style={{ color: NAVY }}>
                 Continue where you left off
               </h3>
-              <p className="text-[13px] mt-0.5 truncate" style={{ color: "#64748B" }}>
-                {chapters[0]
-                  ? `Ch ${chapters[0].chapter_number} — ${chapters[0].chapter_name}`
-                  : "Ch 1 — Accounting Basics"}
-              </p>
+              {lastViewed.chapter_number != null && lastViewed.chapter_name && (
+                <p className="text-[13px] mt-0.5 truncate" style={{ color: "#64748B" }}>
+                  Ch {lastViewed.chapter_number} — {lastViewed.chapter_name}
+                </p>
+              )}
             </div>
             <button
-              onClick={() => {
-                const ch = chapters[0];
-                if (ch) {
-                  window.open(`/cram/${ch.id}`, "_blank", "noopener,noreferrer");
-                } else {
-                  toast("We're finalizing your chapters — check back soon.", { icon: "📚" });
-                }
-              }}
-              className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[13px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98] shrink-0"
+              onClick={() =>
+                window.open(
+                  `/v2/solutions/${encodeURIComponent(lastViewed.asset_name)}`,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
+              className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98] shrink-0"
               style={{
                 background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
                 boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
               }}
             >
-              Resume <ArrowRight className="h-3.5 w-3.5" />
+              Continue <ArrowRight className="h-3.5 w-3.5" />
             </button>
-          </div>
+          </section>
+        )}
 
-          {/* Stuck on something? */}
-          <div
-            className="rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-            style={{
-              background: "#fff",
-              border: "1px solid #E0E7F0",
-              boxShadow: "0 8px 24px rgba(20,33,61,0.06), 0 2px 6px rgba(20,33,61,0.04)",
-              fontFamily: "Inter, sans-serif",
-            }}
+        {/* All chapters grid */}
+        <section>
+          <h2
+            className="text-[22px] leading-tight mb-4"
+            style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
           >
-            <div className="min-w-0">
-              <h3 className="text-[15px] font-semibold" style={{ color: NAVY }}>
-                Stuck on something?
-              </h3>
-              <p className="text-[13px] mt-0.5" style={{ color: "#64748B" }}>
-                Lee usually replies within a day.
-              </p>
-            </div>
-            <a
-              href="mailto:lee@surviveaccounting.com"
-              className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] font-semibold transition-colors hover:bg-slate-50 shrink-0"
-              style={{ borderColor: "rgba(20,33,61,0.2)", color: NAVY }}
-            >
-              Ask a question <ArrowRight className="h-3.5 w-3.5" />
-            </a>
+            Chapters
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {chapters.map((ch) => (
+              <button
+                key={ch.id}
+                onClick={() => openFirstAssetForChapter(ch.id)}
+                className="text-left rounded-xl p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg group"
+                style={{
+                  background: "#fff",
+                  border: "1px solid #E0E7F0",
+                  boxShadow: "0 4px 12px rgba(20,33,61,0.04)",
+                  fontFamily: "Inter, sans-serif",
+                }}
+              >
+                <div
+                  className="text-[20px] font-bold leading-none mb-1.5 transition-colors"
+                  style={{ color: NAVY, letterSpacing: "-0.02em" }}
+                >
+                  Ch {ch.chapter_number}
+                </div>
+                <div className="text-[12px] leading-snug line-clamp-2" style={{ color: "#64748B" }}>
+                  {ch.chapter_name}
+                </div>
+              </button>
+            ))}
           </div>
         </section>
 
-        {/* Legacy Video Library — secondary, for existing LearnWorlds students */}
-        <div
-          className="mt-4 mx-auto max-w-md rounded-xl px-4 py-3 flex items-center justify-between gap-3"
-          style={{
-            background: "transparent",
-            border: "1px dashed rgba(20,33,61,0.15)",
-            fontFamily: "Inter, sans-serif",
-          }}
+        {/* Support */}
+        <p
+          className="text-center text-[13px]"
+          style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
         >
-          <div className="min-w-0">
-            <p className="text-[12px] font-medium" style={{ color: "#64748B" }}>
-              Legacy Video Library
-            </p>
-          </div>
+          Need help?{" "}
           <a
-            href="https://player.surviveaccounting.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[12px] font-medium hover:underline shrink-0"
+            href="mailto:lee@surviveaccounting.com"
+            className="underline hover:opacity-80"
             style={{ color: "#64748B" }}
           >
-            Open video library <ArrowRight className="h-3 w-3" />
+            Lee usually replies within 1–2 business days.
           </a>
-        </div>
-
+        </p>
       </main>
 
-      <LandingFooter
-        onScrollToCourses={() => navigate("/")}
-        onScrollToContact={() => navigate("/")}
+      <ChapterPickerModal
+        open={pickerOpen}
+        chapters={chapters}
+        onClose={() => setPickerOpen(false)}
       />
 
-      {/* Just-paid verifying overlay */}
       {verifying && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
