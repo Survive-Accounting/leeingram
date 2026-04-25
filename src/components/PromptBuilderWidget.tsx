@@ -440,13 +440,14 @@ export function PromptBuilderWidget() {
                 ref={textareaRef}
                 value={text + (interim ? (text && !text.endsWith(" ") ? " " : "") + interim : "")}
                 onChange={(e) => { setText(e.target.value); setInterim(""); baseTextRef.current = e.target.value; }}
+                onPaste={handlePaste}
                 onKeyDown={(e) => {
                   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                     e.preventDefault();
                     generate("build");
                   }
                 }}
-                placeholder={recording ? "Listening… speak naturally" : "Describe the change. Use Markup to point at things on the page. ⌘↵ to build."}
+                placeholder={recording ? "Listening… speak naturally" : "Describe the change. Paste screenshots here (⌘V). ⌘↵ to build."}
                 className="min-h-[90px] max-h-[200px] text-xs resize-none pr-7"
               />
               {recording && (
@@ -454,6 +455,57 @@ export function PromptBuilderWidget() {
                   <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />
                   REC
                 </span>
+              )}
+            </div>
+
+            {/* Screenshot tray */}
+            <div
+              className={cn(
+                "rounded-md border border-dashed transition-colors",
+                screenshots.length > 0 ? "border-border bg-muted/30 p-1.5" : "border-border/60 bg-muted/10 px-2 py-1.5"
+              )}
+            >
+              {screenshots.length === 0 ? (
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <ImageIcon className="h-3 w-3" />
+                  <span>Paste screenshots (⌘V) — up to {MAX_SCREENSHOTS}. They'll travel with this prompt.</span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-1 px-0.5">
+                    <span className="text-[10px] font-semibold text-foreground">
+                      {screenshots.length}/{MAX_SCREENSHOTS} screenshot{screenshots.length > 1 ? "s" : ""}
+                    </span>
+                    <button
+                      onClick={() => setScreenshots([])}
+                      className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                      title="Clear all"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {screenshots.map((url, i) => (
+                      <div key={i} className="relative group">
+                        <img
+                          src={url}
+                          alt={`Screenshot ${i + 1}`}
+                          className="h-12 w-16 object-cover rounded border border-border"
+                        />
+                        <button
+                          onClick={() => removeScreenshot(i)}
+                          className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                          title="Remove"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                        <span className="absolute bottom-0.5 left-0.5 text-[9px] font-bold text-white bg-black/60 rounded px-1 leading-tight">
+                          {i + 1}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 
