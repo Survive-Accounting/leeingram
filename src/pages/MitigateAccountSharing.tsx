@@ -82,6 +82,8 @@ const CATEGORIES: Category[] = [
     complexity: 3,
     technical:
       "Per-IP and per-account token-bucket throttles on /solutions/:assetCode renders, sized at 60 req/min and 600 req/hour respectively. Burst patterns inconsistent with human reading speed (e.g., 30 unique assets opened in < 2 min) trigger a CAPTCHA challenge served via Cloudflare Turnstile.",
+    halfTechy:
+      "We put rate limits on the solutions API — both per IP address and per account. If someone opens 30 different problems in two minutes, that's not a student studying, that's a script or a group download. We slow them down or pop a CAPTCHA (we'd use Cloudflare Turnstile) before serving the next page.",
     laymans:
       "A real student reads one problem at a time. A scraper or someone speed-downloading the whole library to share opens fifty pages in a minute. We notice that and slow them way down — or make them prove they're human.",
     mockup: [
