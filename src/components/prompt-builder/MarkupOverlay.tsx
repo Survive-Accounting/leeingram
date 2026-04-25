@@ -315,22 +315,12 @@ export function MarkupOverlay({ onClose }: Props) {
         })}
       </svg>
 
-      {/* Toolbar */}
+      {/* Minimal toolbar — just an exit affordance */}
       <div
         data-prompt-builder-ui="true"
         className="fixed top-3 left-1/2 -translate-x-1/2 z-[2147483647] flex items-center gap-1 rounded-full border border-border bg-background/95 backdrop-blur shadow-lg px-2 py-1"
       >
-        <span className="text-[10px] text-muted-foreground px-1.5">Drag to draw a circle</span>
-        <div className="w-px h-5 bg-border mx-1" />
-        <ToolButton onClick={undo} disabled={circles.length === 0} title="Undo">
-          <Undo2 className="h-3.5 w-3.5" />
-        </ToolButton>
-        <ToolButton onClick={clearAll} disabled={circles.length === 0} title="Clear all">
-          <Trash2 className="h-3.5 w-3.5" />
-        </ToolButton>
-        <div className="w-px h-5 bg-border mx-1" />
-        <span className="text-[10px] text-muted-foreground px-1.5">PrtScn to capture</span>
-        <ToolButton onClick={onClose} title="Close markup (Esc)">
+        <ToolButton onClick={onClose} title="Exit markup (Esc)">
           <X className="h-3.5 w-3.5" />
         </ToolButton>
       </div>
