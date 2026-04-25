@@ -69,6 +69,7 @@ export function PromptBuilderWidget() {
   const [recording, setRecording] = useState(false);
   const [cards, setCards] = useState<PromptCard[]>([]);
   const [markupOn, setMarkupOn] = useState(false);
+  const [screenshots, setScreenshots] = useState<string[]>([]);
 
   const { pos: winPos, dragHandlers } = useDraggable(
     "promptBuilder.windowPos.v2",
