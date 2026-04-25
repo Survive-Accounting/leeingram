@@ -357,7 +357,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 letterSpacing: "0.01em",
               }}
             >
-              Get Started <AnimatedArrow />
+              Start studying <AnimatedArrow />
             </button>
 
             <button
