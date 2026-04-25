@@ -700,8 +700,48 @@ function SimplifiedProblem({
   setSimplifiedText: (t: string | null) => void;
 }) {
   const [loading, setLoading] = useState(false);
+  const [printing, setPrinting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkedCache, setCheckedCache] = useState(false);
+
+  // Build the practice PDF from a simplified-markdown string
+  const buildAndDownloadPdf = (md: string) => {
+    const chapterLabel = chapter
+      ? `Ch ${chapter.chapter_number}: ${chapter.chapter_name}`
+      : null;
+    const doc = generateSimplifiedPracticePdf({
+      sourceRef: asset.source_ref,
+      problemTitle: asset.problem_title,
+      chapterLabel,
+      courseName: null,
+      simplifiedMarkdown: md,
+    });
+    const safeRef = (asset.source_ref || asset.asset_name).replace(/[^A-Za-z0-9._-]/g, "_");
+    doc.save(`${safeRef}-practice.pdf`);
+  };
+
+  // Print handler: ensure simplified text exists, then download PDF
+  const handlePrint = async () => {
+    setError(null);
+    if (simplifiedText) {
+      buildAndDownloadPdf(simplifiedText);
+      return;
+    }
+    setPrinting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("simplify-problem", {
+        body: { asset_id: asset.id },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Failed to prepare PDF");
+      setSimplifiedText(data.simplified_text);
+      buildAndDownloadPdf(data.simplified_text);
+    } catch (e: any) {
+      setError(e?.message || "Could not generate PDF");
+    } finally {
+      setPrinting(false);
+    }
+  };
 
   // Check cache on asset load
   useEffect(() => {
