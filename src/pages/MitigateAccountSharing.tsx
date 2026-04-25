@@ -195,7 +195,7 @@ function CategoryModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const [view, setView] = useState<ModalView>("laymans");
+  const [view, setView] = useState<ModalView>("halfTechy");
 
   if (!category) return null;
   const Icon = category.icon;
