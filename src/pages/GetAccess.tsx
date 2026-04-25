@@ -488,10 +488,10 @@ export default function GetAccess() {
                     ${totalPrice}
                   </div>
                   <div
-                    className="mt-1.5 text-[10px] font-medium uppercase tracking-wider"
+                    className="mt-1.5 text-[10px] font-medium uppercase tracking-wider text-center"
                     style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
                   >
-                    one-time payment
+                    One-time payment — no subscription
                   </div>
                   {autoRenewActive && (
                     <div
@@ -634,53 +634,55 @@ export default function GetAccess() {
                 className="text-[10px] font-semibold uppercase tracking-[0.08em]"
                 style={{ color: "#94A3B8" }}
               >
-                Access Period
+                Access
               </div>
-              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                <div
-                  className="text-[15px] font-semibold leading-none"
-                  style={{ color: NAVY }}
-                >
-                  {selectedSemesters.map((s) => s.label).join(" · ")}
-                </div>
-                <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={autoRenew}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setAutoRenew(checked);
-                      if (checked && extraCount === 0) {
-                        const id = Date.now() + Math.random();
-                        const amount = AUTO_RENEW_DISCOUNT_USD;
-                        setDiscountToasts((t) => [...t, { id, amount }]);
-                        setPulseKey((k) => k + 1);
-                        setTimeout(() => {
-                          setDiscountToasts((t) => t.filter((x) => x.id !== id));
-                        }, 800);
-                      } else if (!checked && extraCount === 0) {
-                        // Suppress the +$ toast when restoring price after uncheck
-                        skipNextToastRef.current = true;
-                      }
-                    }}
-                    className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[#14213D]"
-                  />
-                  <span className="text-[13px] leading-none" style={{ color: "#475569" }}>
-                    Auto-renew next semester —{" "}
-                    <span style={{ color: "#16A34A", fontWeight: 600 }}>
-                      save ${AUTO_RENEW_DISCOUNT_USD}
-                    </span>
+              <div
+                className="mt-1 text-[15px] font-semibold leading-tight"
+                style={{ color: NAVY }}
+              >
+                Full access through your Spring '26 exams
+              </div>
+              <div
+                className="mt-1 text-[12px] leading-snug"
+                style={{ color: "#64748B" }}
+              >
+                Use it as much as you want until your exams are over.
+              </div>
+              <label className="mt-3 inline-flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={autoRenew}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setAutoRenew(checked);
+                    if (checked && extraCount === 0) {
+                      const id = Date.now() + Math.random();
+                      const amount = AUTO_RENEW_DISCOUNT_USD;
+                      setDiscountToasts((t) => [...t, { id, amount }]);
+                      setPulseKey((k) => k + 1);
+                      setTimeout(() => {
+                        setDiscountToasts((t) => t.filter((x) => x.id !== id));
+                      }, 800);
+                    } else if (!checked && extraCount === 0) {
+                      // Suppress the +$ toast when restoring price after uncheck
+                      skipNextToastRef.current = true;
+                    }
+                  }}
+                  className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[#14213D]"
+                />
+                <span className="text-[13px] leading-none" style={{ color: "#475569" }}>
+                  Continue next semester{" "}
+                  <span style={{ color: "#16A34A", fontWeight: 600 }}>
+                    (save ${AUTO_RENEW_DISCOUNT_USD})
                   </span>
-                </label>
-              </div>
-              {autoRenew && (
-                <p
-                  className="mt-1 text-[11px] leading-tight"
-                  style={{ color: "#B4BFCC" }}
-                >
-                  We'll remind you before billing. Cancel anytime.
-                </p>
-              )}
+                </span>
+              </label>
+              <p
+                className="mt-1 text-[11px] leading-tight"
+                style={{ color: "#94A3B8" }}
+              >
+                We'll remind you before your next term begins.
+              </p>
             </div>
 
             {/* CTA */}
@@ -735,17 +737,11 @@ export default function GetAccess() {
 
             {/* Trust block */}
             <div
-              className="mt-4 flex flex-col items-center gap-1.5 text-[12px]"
+              className="mt-4 flex items-center justify-center gap-1.5 text-[12px]"
               style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
             >
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                7-day refund guarantee
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5" />
-                Instant access after purchase
-              </div>
+              <ShieldCheck className="w-3.5 h-3.5" />
+              7-day refund guarantee • Instant access
             </div>
           </div>
         </div>
