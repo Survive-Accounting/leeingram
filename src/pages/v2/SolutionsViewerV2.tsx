@@ -1115,6 +1115,82 @@ export default function SolutionsViewerV2() {
     };
   }, [assetCode]);
 
+  // Fetch / generate the simplified version (default view).
+  // Cache-first via simplified_problem_cache; falls back to simplify-problem edge fn.
+  useEffect(() => {
+    if (!asset) return;
+    let cancelled = false;
+    (async () => {
+      setSimplifyError(null);
+      // 1. Try cache
+      try {
+        const { data } = await supabase
+          .from("simplified_problem_cache")
+          .select("simplified_text")
+          .eq("asset_id", asset.id)
+          .maybeSingle();
+        if (cancelled) return;
+        if (data?.simplified_text) {
+          setSimplifiedText(data.simplified_text);
+          return;
+        }
+      } catch {
+        // ignore — fall through to generation
+      }
+
+      // 2. Generate via edge fn
+      setSimplifyLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("simplify-problem", {
+          body: { asset_id: asset.id },
+        });
+        if (cancelled) return;
+        if (error) throw error;
+        if (!data?.success) throw new Error(data?.error || "Failed to simplify");
+        setSimplifiedText(data.simplified_text);
+      } catch (e: any) {
+        if (cancelled) return;
+        console.error("[simplify-problem] failed:", e);
+        setSimplifyError("Couldn't load the simplified version. Showing the original problem text.");
+      } finally {
+        if (!cancelled) setSimplifyLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [asset?.id]);
+
+  // Fetch original textbook screenshot from chapter_problems via base_raw_problem_id
+  useEffect(() => {
+    if (!asset?.base_raw_problem_id) {
+      setOriginalImages([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("chapter_problems")
+          .select("problem_screenshot_url, problem_screenshot_urls")
+          .eq("id", asset.base_raw_problem_id)
+          .maybeSingle();
+        if (cancelled || !data) return;
+        const urls: string[] = Array.isArray(data.problem_screenshot_urls) && data.problem_screenshot_urls.length > 0
+          ? data.problem_screenshot_urls.filter(Boolean)
+          : data.problem_screenshot_url
+            ? [data.problem_screenshot_url]
+            : [];
+        setOriginalImages(urls);
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [asset?.base_raw_problem_id]);
+
   const { prev, next } = useMemo(() => {
     if (!asset || siblings.length === 0) return { prev: null, next: null };
     const idx = siblings.findIndex((s) => s.asset_name === asset.asset_name);
