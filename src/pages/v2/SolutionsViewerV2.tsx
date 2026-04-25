@@ -561,10 +561,10 @@ function InlineExplanation({
 
   return (
     <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-5">
-      {/* Top: "Try it yourself first!" + Print PDF */}
+      {/* Top: "Get Quick Help" + Print PDF */}
       <div className="flex items-center justify-between gap-3 pb-4 border-b border-border/60">
-        <span className="text-sm font-medium text-foreground/80">
-          Try it yourself first!
+        <span className="text-sm font-semibold text-foreground">
+          Get Quick Help
         </span>
         <Button
           size="sm"
@@ -584,7 +584,6 @@ function InlineExplanation({
 
       {/* Toolbox */}
       <div className="space-y-3">
-        <p className="text-sm font-medium text-foreground/80">Choose what you need</p>
         <div className="grid grid-cols-2 gap-2">
           {TOOLBOX_ORDER.map((k) => {
             const isActive = activeSection === k;
