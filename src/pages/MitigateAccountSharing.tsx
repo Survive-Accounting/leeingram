@@ -64,6 +64,8 @@ const CATEGORIES: Category[] = [
     complexity: 2,
     technical:
       "On render, the Solutions Viewer injects a low-opacity (alpha 0.04) repeating diagonal watermark containing SHA-256(email + asset_code + day) truncated to 12 chars. Screenshots leaked to forums can be reverse-mapped to the originating student via a lookup table. Detection is performed via OCR on inbound abuse reports.",
+    halfTechy:
+      "Every solutions page renders with a faint diagonal watermark in the background. It's a hashed code (so the email isn't sitting there in plain text) tied to the student + asset + date. We keep a lookup table on our side, so if a screenshot lands on Chegg or Reddit, we run it through OCR and trace it back to the original account.",
     laymans:
       "Every solutions page has the student's encrypted email lightly stamped across the background — too faint to notice while studying, but very visible if a screenshot ends up on Chegg or a group chat. We can trace it back to whoever leaked it.",
     mockup: [
