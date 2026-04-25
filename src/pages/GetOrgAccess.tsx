@@ -1367,16 +1367,60 @@ export default function GetOrgAccess() {
                   />
                   <div className="flex-1 min-w-0">
                     <div
-                      className="text-[14px] font-semibold"
+                      className="text-[14px] font-semibold flex items-center gap-2 flex-wrap"
                       style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
                     >
-                      Auto-add seats when members join
+                      Auto-add members as they join
+                      <span
+                        className="rounded-full px-1.5 py-0.5 text-[10px] font-bold"
+                        style={{ background: "#DCFCE7", color: "#15803D", fontFamily: "Inter, sans-serif" }}
+                      >
+                        save {AUTO_REUP_DISCOUNT_PCT}%
+                      </span>
                     </div>
                     <div
                       className="text-[12px] mt-0.5"
                       style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
                     >
-                      We'll summarize new seats weekly before billing.
+                      We'll add seats automatically as members join. You'll get a summary before billing.
+                    </div>
+
+                    {/* Smooth-reveal nested toggle */}
+                    <div
+                      className="overflow-hidden transition-all duration-300 ease-out"
+                      style={{
+                        maxHeight: autoReupEnabled ? 120 : 0,
+                        opacity: autoReupEnabled ? 1 : 0,
+                        marginTop: autoReupEnabled ? 12 : 0,
+                      }}
+                    >
+                      <label
+                        className="flex items-start gap-2.5 cursor-pointer rounded-lg p-2.5"
+                        style={{ background: "#fff", border: "1px solid #E0E7F0" }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={autoRenewEnabled}
+                          onChange={(e) => setAutoRenewEnabled(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 cursor-pointer"
+                          style={{ accentColor: NAVY }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div
+                            className="text-[13px] font-semibold flex items-center gap-2 flex-wrap"
+                            style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                          >
+                            Auto-renew next semester
+                            <span
+                              className="rounded-full px-1.5 py-0.5 text-[10px] font-bold"
+                              style={{ background: "#DCFCE7", color: "#15803D", fontFamily: "Inter, sans-serif" }}
+                            >
+                              save another {AUTO_RENEW_DISCOUNT_PCT}%
+                            </span>
+                          </div>
+                        </div>
+                      </label>
                     </div>
                   </div>
                 </label>
