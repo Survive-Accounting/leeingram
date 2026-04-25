@@ -48,8 +48,12 @@ export function PromptBuilderWidget() {
   const { user } = useAuth();
   const allowed = ALLOWED.includes((user?.email ?? "").trim().toLowerCase());
 
+  const HIDDEN_KEY = "promptBuilder.hidden.v1";
+  const [hidden, setHidden] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem(HIDDEN_KEY) === "1"; } catch { return false; }
+  });
   const [open, setOpen] = useState(false);
-  const [aboutOpen, setAboutOpen] = useState(false);
   const [text, setText] = useState("");
   const [mode, setMode] = useState<Mode>("new_feature");
   const [recording, setRecording] = useState(false);
