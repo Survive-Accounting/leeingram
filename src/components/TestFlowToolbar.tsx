@@ -62,6 +62,8 @@ export default function TestFlowToolbar() {
     }, 350);
   };
 
+  if (!allowed) return null;
+
   if (hidden) {
     return (
       <button
