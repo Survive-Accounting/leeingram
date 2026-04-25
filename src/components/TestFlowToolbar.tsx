@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { X } from "lucide-react";
 
 const HIDDEN_KEY = "testFlowToolbar.hidden.v1";
+const ALLOWED = ["lee@survivestudios.com"];
 
 /**
  * Top-of-page testing strip:
@@ -24,6 +26,8 @@ const STEPS = [
 
 export default function TestFlowToolbar() {
   const { pathname } = useLocation();
+  const { user } = useAuth();
+  const allowed = ALLOWED.includes((user?.email ?? "").trim().toLowerCase());
   const [hidden, setHidden] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try { return localStorage.getItem(HIDDEN_KEY) === "1"; } catch { return false; }
@@ -57,6 +61,8 @@ export default function TestFlowToolbar() {
       window.location.replace("/");
     }, 350);
   };
+
+  if (!allowed) return null;
 
   if (hidden) {
     return (
