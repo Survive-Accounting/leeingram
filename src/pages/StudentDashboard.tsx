@@ -125,9 +125,20 @@ export default function StudentDashboard() {
     navigate("/login", { replace: true });
   };
 
-  const openChapter = (ch: Chapter) => {
+  const openChapter = (ch: Chapter & { isPlaceholder?: boolean }) => {
+    if (ch.isPlaceholder) {
+      toast("We're finalizing this chapter — check back soon.", { icon: "📚" });
+      return;
+    }
     window.open(`/cram/${ch.id}`, "_blank", "noopener,noreferrer");
   };
+
+  const PLACEHOLDER_CHAPTERS: Array<Chapter & { isPlaceholder: true }> = [
+    { id: "ph-1", chapter_number: 1, chapter_name: "Accounting Basics", isPlaceholder: true },
+    { id: "ph-2", chapter_number: 2, chapter_name: "Journal Entries", isPlaceholder: true },
+    { id: "ph-3", chapter_number: 3, chapter_name: "Adjusting Entries", isPlaceholder: true },
+    { id: "ph-4", chapter_number: 4, chapter_name: "Financial Statements", isPlaceholder: true },
+  ];
 
   if (loading) {
     return (
@@ -207,53 +218,38 @@ export default function StudentDashboard() {
             Start with the chapter you're studying.
           </p>
 
-          {chapters.length === 0 ? (
-            <div
-              className="rounded-2xl p-6 text-center"
-              style={{
-                background: "#fff",
-                border: "1px solid #E0E7F0",
-                boxShadow: "0 24px 60px rgba(20,33,61,0.10), 0 2px 8px rgba(20,33,61,0.04)",
-              }}
-            >
-              <p className="text-[14px]" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-                We're setting up your chapter list. Check back soon.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {chapters.map((ch) => (
-                <button
-                  key={ch.id}
-                  onClick={() => openChapter(ch)}
-                  className="text-left rounded-2xl p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl group"
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {(chapters.length > 0 ? chapters : PLACEHOLDER_CHAPTERS).map((ch) => (
+              <button
+                key={ch.id}
+                onClick={() => openChapter(ch as Chapter & { isPlaceholder?: boolean })}
+                className="text-left rounded-2xl p-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl group"
+                style={{
+                  background: "#fff",
+                  border: "1px solid #E0E7F0",
+                  boxShadow: "0 8px 24px rgba(20,33,61,0.06), 0 2px 6px rgba(20,33,61,0.04)",
+                  fontFamily: "Inter, sans-serif",
+                }}
+              >
+                <div
+                  className="text-[28px] sm:text-[32px] font-bold leading-none mb-2 transition-colors group-hover:text-[color:var(--accent-red)]"
                   style={{
-                    background: "#fff",
-                    border: "1px solid #E0E7F0",
-                    boxShadow: "0 8px 24px rgba(20,33,61,0.06), 0 2px 6px rgba(20,33,61,0.04)",
-                    fontFamily: "Inter, sans-serif",
+                    color: NAVY,
+                    letterSpacing: "-0.02em",
+                    ["--accent-red" as any]: RED,
                   }}
                 >
-                  <div
-                    className="text-[28px] sm:text-[32px] font-bold leading-none mb-2 transition-colors group-hover:text-[color:var(--accent-red)]"
-                    style={{
-                      color: NAVY,
-                      letterSpacing: "-0.02em",
-                      ["--accent-red" as any]: RED,
-                    }}
-                  >
-                    Ch {ch.chapter_number}
-                  </div>
-                  <div
-                    className="text-[13px] leading-snug line-clamp-2"
-                    style={{ color: "#64748B" }}
-                  >
-                    {ch.chapter_name}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+                  Ch {ch.chapter_number}
+                </div>
+                <div
+                  className="text-[13px] leading-snug line-clamp-2"
+                  style={{ color: "#64748B" }}
+                >
+                  {ch.chapter_name}
+                </div>
+              </button>
+            ))}
+          </div>
         </section>
 
         {/* Legacy Video Library — secondary, for existing LearnWorlds students */}
