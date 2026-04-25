@@ -122,7 +122,7 @@ export function StyleExportToolbar() {
       <button
         data-export-ignore
         onClick={() => setHidden(false)}
-        className="fixed bottom-[72px] left-2 z-[9999] rounded-full bg-fuchsia-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-fuchsia-700 border border-fuchsia-700 shadow-md transition-colors"
+        className="fixed bottom-[72px] left-2 z-[9999] rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-accent-foreground hover:opacity-90 border border-border shadow-md transition-colors"
         title="Show Style Export toolbar"
         aria-label="Show Style Export toolbar"
       >
