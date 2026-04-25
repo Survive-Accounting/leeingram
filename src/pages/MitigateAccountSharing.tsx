@@ -100,6 +100,8 @@ const CATEGORIES: Category[] = [
     complexity: 4,
     technical:
       "Composite hash of canvas/WebGL renderer signatures, audio context output, installed font enumeration, screen dimensions, timezone, language, and hardware concurrency. Persisted as a 256-bit identifier per session and joined to student_purchases.user_id. A divergence threshold > 0.4 over a 7-day rolling window triggers a soft-lock event.",
+    halfTechy:
+      "Browsers leak a bunch of small signals — installed fonts, screen size, timezone, GPU info — that combine into a near-unique 'fingerprint.' We hash those into one ID and store it next to the account in our database. If the same login suddenly shows up under 4 totally different fingerprints in a week, that's a strong sharing signal and we soft-lock the account.",
     laymans:
       "Every browser leaves a unique 'thumbprint' — like a fingerprint at a crime scene. We quietly capture it the first time a student logs in. If the same account suddenly shows up on three or four very different thumbprints in the same week, we know the password is being passed around.",
     mockup: [
