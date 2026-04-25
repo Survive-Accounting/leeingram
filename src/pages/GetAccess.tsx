@@ -344,13 +344,13 @@ export default function GetAccess() {
           className="text-[34px] sm:text-[44px] md:text-[54px] leading-tight"
           style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
         >
-          Your next exam is coming up.
+          Your exam is coming up.
         </h1>
         <p
           className="mt-4 max-w-[640px] mx-auto text-[16px] sm:text-[18px]"
           style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
         >
-          Get ahead of the curve with a Study Pass.
+          Full access to cram through problems before your exam.
         </p>
       </section>
 
