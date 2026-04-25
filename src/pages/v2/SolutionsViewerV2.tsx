@@ -1072,21 +1072,12 @@ export default function SolutionsViewerV2() {
           <div className="grid lg:grid-cols-2 gap-6">
             {/* LEFT: Problem + What you need to solve */}
             <div className="space-y-4 min-w-0">
-              <div className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
-                <span aria-hidden>📘</span> Based on real textbook problems
-              </div>
-
               {/* Card 1: Problem */}
               <section className="rounded-2xl border bg-card p-6 shadow-sm">
                 {asset.source_ref && (
-                  <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                    {asset.source_ref}
+                  <div className="text-xs text-muted-foreground">
+                    Practice based on <span className="font-mono">{asset.source_ref}</span>
                   </div>
-                )}
-                {asset.problem_title && (
-                  <h1 className="mt-1 text-xl sm:text-2xl font-semibold leading-tight tracking-tight">
-                    {asset.problem_title}
-                  </h1>
                 )}
 
                 {/* Original view: problem text + (separate) instructions card below */}
