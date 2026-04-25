@@ -678,13 +678,29 @@ export function PromptBuilderWidget() {
             <div className="flex items-center gap-1.5">
               <Button
                 size="sm"
-                variant={recording ? "destructive" : "secondary"}
+                variant={recording && !paused ? "destructive" : "secondary"}
                 className="h-7 px-2 text-[11px]"
-                onClick={recording ? stopRecording : startRecording}
+                onClick={
+                  recording && !paused
+                    ? pauseRecording
+                    : (paused ? startRecording : startRecording)
+                }
               >
-                {recording ? <MicOff className="h-3 w-3 mr-1" /> : <Mic className="h-3 w-3 mr-1" />}
-                {recording ? "Stop" : "Talk"}
+                {recording && !paused
+                  ? <><MicOff className="h-3 w-3 mr-1" />Pause</>
+                  : <><Mic className="h-3 w-3 mr-1" />{paused ? "Resume" : "Talk"}</>}
               </Button>
+              {sessionAlive && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-[11px]"
+                  onClick={stopRecording}
+                  title="Stop recording"
+                >
+                  Stop
+                </Button>
+              )}
 
               <div className="ml-auto flex items-center gap-1">
                 <Button
