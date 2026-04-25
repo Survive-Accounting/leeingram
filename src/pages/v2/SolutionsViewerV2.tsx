@@ -73,25 +73,6 @@ function getInstructions(a: Asset): string[] {
   return [];
 }
 
-// ── Typing animation hook ──────────────────────────────────────────────
-function useTypewriter(text: string, speed = 14) {
-  const [out, setOut] = useState("");
-  const idxRef = useRef(0);
-  useEffect(() => {
-    setOut("");
-    idxRef.current = 0;
-    if (!text) return;
-    const id = window.setInterval(() => {
-      // Type a few chars per tick for snappy feel
-      const step = Math.max(2, Math.round(text.length / 400));
-      idxRef.current = Math.min(text.length, idxRef.current + step);
-      setOut(text.slice(0, idxRef.current));
-      if (idxRef.current >= text.length) window.clearInterval(id);
-    }, speed);
-    return () => window.clearInterval(id);
-  }, [text, speed]);
-  return out;
-}
 
 // ── Need Help modal ────────────────────────────────────────────────────
 function NeedHelpModal({
