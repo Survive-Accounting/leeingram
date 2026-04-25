@@ -1225,15 +1225,7 @@ export default function SolutionsViewerV2() {
                   </div>
                 )}
 
-                {/* Problem title (prominent) */}
-                {asset.problem_title && (
-                  <h1
-                    className="mt-2 text-[1.35rem] sm:text-[1.5rem] font-semibold leading-tight tracking-tight"
-                    style={{ color: "#FFFFFF", fontFamily: "'DM Serif Display', serif" }}
-                  >
-                    {asset.problem_title}
-                  </h1>
-                )}
+                {/* Textbook problem title intentionally hidden — keep focus on the prompt itself. */}
 
                 {/* Problem text */}
                 {asset.survive_problem_text && (
