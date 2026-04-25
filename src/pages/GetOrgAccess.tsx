@@ -1167,6 +1167,37 @@ export default function GetOrgAccess() {
                 4. Choose your pack
               </div>
 
+              {foundingEligible && (
+                <div
+                  className="mb-3 rounded-xl px-4 py-2.5 flex items-center justify-between gap-3"
+                  style={{
+                    background: "linear-gradient(90deg, #FFF7E6 0%, #FFFBF0 100%)",
+                    border: "1px solid #F5C77E",
+                  }}
+                >
+                  <div className="min-w-0">
+                    <div
+                      className="text-[13px] font-bold flex items-center gap-1.5"
+                      style={{ color: "#92400E", fontFamily: "Inter, sans-serif" }}
+                    >
+                      🎉 Founding Chapter Offer
+                    </div>
+                    <div
+                      className="text-[12px] mt-0.5"
+                      style={{ color: "#92400E", fontFamily: "Inter, sans-serif" }}
+                    >
+                      {foundingClaimed} / {FOUNDING_CAP} claimed — {FOUNDING_DISCOUNT_PCT}% off your first purchase
+                    </div>
+                  </div>
+                  <span
+                    className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                    style={{ background: "#92400E", color: "#FFF7E6", fontFamily: "Inter, sans-serif" }}
+                  >
+                    Auto-applied
+                  </span>
+                </div>
+              )}
+
               {(() => {
                 const PRESETS = [
                   { key: "house", name: "House", seats: 10, total: 750, badge: null as string | null, badgeColor: "" },
