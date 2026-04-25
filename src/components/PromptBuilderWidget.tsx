@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Zap, Mic, MicOff, X, Copy, Loader2, Sparkles,
   Wrench, Plus, TrendingUp, Send, Trash2, EyeOff, Minus, GripHorizontal,
-  Pencil, ListTodo, Hammer,
+  Pencil, ListTodo, Hammer, Image as ImageIcon, ClipboardCopy,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,9 +28,13 @@ interface PromptCard {
   kind: PromptKind;
   inputText: string;
   output: string;
+  /** Screenshots pasted into the input — preserved on the card for re-paste into Lovable. */
+  screenshots: string[];
   error?: string;
   createdAt: number;
 }
+
+const MAX_SCREENSHOTS = 10;
 
 const MODES: { key: Mode; label: string; icon: typeof Wrench }[] = [
   { key: "ui_fix", label: "UI Fix", icon: Wrench },
@@ -65,6 +69,7 @@ export function PromptBuilderWidget() {
   const [recording, setRecording] = useState(false);
   const [cards, setCards] = useState<PromptCard[]>([]);
   const [markupOn, setMarkupOn] = useState(false);
+  const [screenshots, setScreenshots] = useState<string[]>([]);
 
   const { pos: winPos, dragHandlers } = useDraggable(
     "promptBuilder.windowPos.v2",
@@ -213,6 +218,57 @@ export function PromptBuilderWidget() {
     setInterim("");
   };
 
+  // ---- Screenshots: paste / accumulate / copy back to clipboard ----
+  const fileToDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+
+  /** Capture pasted images from anywhere in the widget. */
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+    const items = Array.from(e.clipboardData?.items ?? []);
+    const imageItems = items.filter((it) => it.type.startsWith("image/"));
+    if (imageItems.length === 0) return; // let normal text paste through
+    e.preventDefault();
+    const remaining = MAX_SCREENSHOTS - screenshots.length;
+    if (remaining <= 0) {
+      toast.error(`Max ${MAX_SCREENSHOTS} screenshots — delete one first.`);
+      return;
+    }
+    const toAdd = imageItems.slice(0, remaining);
+    const urls: string[] = [];
+    for (const it of toAdd) {
+      const f = it.getAsFile();
+      if (!f) continue;
+      try { urls.push(await fileToDataUrl(f)); } catch { /* skip */ }
+    }
+    if (urls.length === 0) return;
+    setScreenshots((s) => [...s, ...urls]);
+    toast.success(`Added ${urls.length} screenshot${urls.length > 1 ? "s" : ""}`);
+  }, [screenshots.length]);
+
+  const removeScreenshot = (idx: number) =>
+    setScreenshots((s) => s.filter((_, i) => i !== idx));
+
+  /** Convert data URL → Blob and write to clipboard so user can paste into Lovable. */
+  const copyImageToClipboard = async (dataUrl: string, label: string) => {
+    try {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      // Some browsers only accept image/png in clipboard.
+      const item = new ClipboardItem({ [blob.type || "image/png"]: blob });
+      await navigator.clipboard.write([item]);
+      toast.success(`${label} copied — paste into Lovable`);
+    } catch (err) {
+      toast.error("Image copy not supported in this browser");
+      // eslint-disable-next-line no-console
+      console.warn("clipboard image write failed", err);
+    }
+  };
+
   // ---- AI ----
   const callAI = async (payload: { text: string; mode: Mode; promptKind: PromptKind }) => {
     const { data, error } = await supabase.functions.invoke("generate-lovable-prompt", { body: payload });
@@ -229,12 +285,15 @@ export function PromptBuilderWidget() {
     const id = crypto.randomUUID();
     const card: PromptCard = {
       id, status: "generating", mode, kind,
-      inputText: trimmed, output: "", createdAt: Date.now(),
+      inputText: trimmed, output: "",
+      screenshots: [...screenshots],
+      createdAt: Date.now(),
     };
     setCards((prev) => [card, ...prev]);
     setText("");
     setInterim("");
     baseTextRef.current = "";
+    setScreenshots([]);
 
     callAI({ text: trimmed, mode, promptKind: kind })
       .then((prompt) => setCards((prev) => prev.map((c) => c.id === id ? { ...c, status: "ready", output: prompt } : c)))
@@ -243,7 +302,7 @@ export function PromptBuilderWidget() {
         setCards((prev) => prev.map((c) => c.id === id ? { ...c, status: "error", error: msg } : c));
         toast.error(msg);
       });
-  }, [text, interim, mode, recording]);
+  }, [text, interim, mode, recording, screenshots]);
 
   const copyCard = async (card: PromptCard) => {
     const ok = await copyToClipboard(card.output);
@@ -381,13 +440,14 @@ export function PromptBuilderWidget() {
                 ref={textareaRef}
                 value={text + (interim ? (text && !text.endsWith(" ") ? " " : "") + interim : "")}
                 onChange={(e) => { setText(e.target.value); setInterim(""); baseTextRef.current = e.target.value; }}
+                onPaste={handlePaste}
                 onKeyDown={(e) => {
                   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                     e.preventDefault();
                     generate("build");
                   }
                 }}
-                placeholder={recording ? "Listening… speak naturally" : "Describe the change. Use Markup to point at things on the page. ⌘↵ to build."}
+                placeholder={recording ? "Listening… speak naturally" : "Describe the change. Paste screenshots here (⌘V). ⌘↵ to build."}
                 className="min-h-[90px] max-h-[200px] text-xs resize-none pr-7"
               />
               {recording && (
@@ -395,6 +455,57 @@ export function PromptBuilderWidget() {
                   <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />
                   REC
                 </span>
+              )}
+            </div>
+
+            {/* Screenshot tray */}
+            <div
+              className={cn(
+                "rounded-md border border-dashed transition-colors",
+                screenshots.length > 0 ? "border-border bg-muted/30 p-1.5" : "border-border/60 bg-muted/10 px-2 py-1.5"
+              )}
+            >
+              {screenshots.length === 0 ? (
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <ImageIcon className="h-3 w-3" />
+                  <span>Paste screenshots (⌘V) — up to {MAX_SCREENSHOTS}. They'll travel with this prompt.</span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-1 px-0.5">
+                    <span className="text-[10px] font-semibold text-foreground">
+                      {screenshots.length}/{MAX_SCREENSHOTS} screenshot{screenshots.length > 1 ? "s" : ""}
+                    </span>
+                    <button
+                      onClick={() => setScreenshots([])}
+                      className="text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                      title="Clear all"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {screenshots.map((url, i) => (
+                      <div key={i} className="relative group">
+                        <img
+                          src={url}
+                          alt={`Screenshot ${i + 1}`}
+                          className="h-12 w-16 object-cover rounded border border-border"
+                        />
+                        <button
+                          onClick={() => removeScreenshot(i)}
+                          className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                          title="Remove"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                        <span className="absolute bottom-0.5 left-0.5 text-[9px] font-bold text-white bg-black/60 rounded px-1 leading-tight">
+                          {i + 1}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 
@@ -450,6 +561,7 @@ export function PromptBuilderWidget() {
                   onCopy={() => copyCard(card)}
                   onSend={() => sendToLovable(card)}
                   onDelete={() => deleteCard(card.id)}
+                  onCopyImage={(url, label) => copyImageToClipboard(url, label)}
                 />
               ))
             )}
@@ -464,12 +576,13 @@ export function PromptBuilderWidget() {
 }
 
 function PromptCardView({
-  card, onCopy, onSend, onDelete,
+  card, onCopy, onSend, onDelete, onCopyImage,
 }: {
   card: PromptCard;
   onCopy: () => void;
   onSend: () => void;
   onDelete: () => void;
+  onCopyImage: (dataUrl: string, label: string) => void;
 }) {
   const modeLabel = MODES.find((m) => m.key === card.mode)?.label ?? "";
   const kindLabel = card.kind === "plan" ? "Plan" : "Build";
@@ -485,6 +598,12 @@ function PromptCardView({
         <span className="text-[9px] uppercase tracking-wide text-muted-foreground font-medium">
           {modeLabel}
         </span>
+        {card.screenshots.length > 0 && (
+          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-foreground bg-background/60 rounded px-1.5 py-0.5">
+            <ImageIcon className="h-2.5 w-2.5" />
+            {card.screenshots.length}
+          </span>
+        )}
         <Button size="sm" variant="ghost" className="h-6 w-6 p-0 ml-auto text-muted-foreground hover:text-destructive" onClick={onDelete} title="Delete">
           <Trash2 className="h-3 w-3" />
         </Button>
@@ -506,6 +625,33 @@ function PromptCardView({
           <pre className="whitespace-pre-wrap text-[11px] font-mono leading-snug text-foreground bg-background/60 rounded p-1.5 max-h-44 overflow-y-auto">
             {card.output}
           </pre>
+
+          {card.screenshots.length > 0 && (
+            <div className="rounded border border-border bg-background/60 p-1.5 space-y-1">
+              <div className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold">
+                Screenshots — copy each, then paste into Lovable
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {card.screenshots.map((url, i) => (
+                  <button
+                    key={i}
+                    onClick={() => onCopyImage(url, `Screenshot ${i + 1}`)}
+                    className="relative group rounded overflow-hidden border border-border hover:border-primary transition-colors"
+                    title={`Copy screenshot ${i + 1} to clipboard`}
+                  >
+                    <img src={url} alt={`Screenshot ${i + 1}`} className="h-12 w-16 object-cover" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+                      <ClipboardCopy className="h-3 w-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <span className="absolute bottom-0.5 left-0.5 text-[9px] font-bold text-white bg-black/60 rounded px-1 leading-tight">
+                      {i + 1}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-1">
             <Button size="sm" className="h-6 text-[10px] px-2" onClick={onSend}>
               <Send className="h-2.5 w-2.5 mr-1" /> Send to Lovable

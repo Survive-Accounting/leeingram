@@ -88,8 +88,8 @@ export function MarkupOverlay({ onClose }: Props) {
       <svg
         ref={svgRef}
         data-prompt-builder-ui="true"
-        className="fixed inset-0 z-[9998]"
-        style={{ touchAction: "none", cursor: "crosshair" }}
+        className="fixed inset-0 z-[2147483646]"
+        style={{ touchAction: "none", cursor: "crosshair", background: "rgba(0,0,0,0.001)" }}
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
@@ -101,7 +101,7 @@ export function MarkupOverlay({ onClose }: Props) {
       {/* Toolbar */}
       <div
         data-prompt-builder-ui="true"
-        className="fixed top-3 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-1 rounded-full border border-border bg-background/95 backdrop-blur shadow-lg px-1.5 py-1"
+        className="fixed top-3 left-1/2 -translate-x-1/2 z-[2147483647] flex items-center gap-1 rounded-full border border-border bg-background/95 backdrop-blur shadow-lg px-1.5 py-1"
       >
         <ToolButton active={tool === "rect"} onClick={() => setTool("rect")} title="Rectangle">
           <Square className="h-3.5 w-3.5" />
