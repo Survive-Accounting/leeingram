@@ -234,12 +234,15 @@ export function PromptBuilderWidget() {
     const id = crypto.randomUUID();
     const card: PromptCard = {
       id, status: "generating", mode, kind,
-      inputText: trimmed, output: "", createdAt: Date.now(),
+      inputText: trimmed, output: "",
+      screenshots: [...screenshots],
+      createdAt: Date.now(),
     };
     setCards((prev) => [card, ...prev]);
     setText("");
     setInterim("");
     baseTextRef.current = "";
+    setScreenshots([]);
 
     callAI({ text: trimmed, mode, promptKind: kind })
       .then((prompt) => setCards((prev) => prev.map((c) => c.id === id ? { ...c, status: "ready", output: prompt } : c)))
@@ -248,7 +251,7 @@ export function PromptBuilderWidget() {
         setCards((prev) => prev.map((c) => c.id === id ? { ...c, status: "error", error: msg } : c));
         toast.error(msg);
       });
-  }, [text, interim, mode, recording]);
+  }, [text, interim, mode, recording, screenshots]);
 
   const copyCard = async (card: PromptCard) => {
     const ok = await copyToClipboard(card.output);
