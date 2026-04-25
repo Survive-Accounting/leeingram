@@ -34,7 +34,7 @@ export default function CampusHeader({ campusName, courseName }: CampusHeaderPro
           }}
         >
           <button
-            onClick={() => navigate("/staging")}
+            onClick={() => navigate("/")}
             className="text-[16px] sm:text-[18px] font-bold tracking-tight"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
           >

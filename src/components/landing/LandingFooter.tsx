@@ -63,13 +63,18 @@ export default function LandingFooter({
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-8 sm:gap-12">
             {/* Brand */}
             <div className="sm:col-span-1">
-              <div className="text-[18px] tracking-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>
+              <button
+                type="button"
+                onClick={() => navigate("/")}
+                className="text-[18px] tracking-tight text-left hover:opacity-90 transition-opacity"
+                style={{ fontFamily: "'DM Serif Display', serif" }}
+              >
                 <span style={{ color: RED, fontWeight: 800 }}>Survive</span>
                 <span style={{ color: "#FFFFFF", fontWeight: 400 }}>
                   {" "}Accounting
                   <sup className="text-[9px] font-normal ml-0.5 opacity-70">™</sup>
                 </span>
-              </div>
+              </button>
               <p
                 className="text-[13px] mt-3 leading-relaxed"
                 style={{ color: "rgba(255,255,255,0.55)", fontFamily: "Inter, sans-serif" }}
