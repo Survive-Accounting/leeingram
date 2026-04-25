@@ -118,6 +118,8 @@ const CATEGORIES: Category[] = [
     complexity: 5,
     technical:
       "Supabase JWT refresh tokens are tracked in a sessions table with last_seen_at heartbeats every 60s. When N > 2 active sessions overlap by > 5 minutes, the oldest session is invalidated server-side and a re-auth challenge is pushed. We exempt LearnWorlds iframe sessions matched by their referrer-validated parent token.",
+    halfTechy:
+      "Supabase auth gives every login a refresh token. We log each one in a sessions table and ping it every minute so we know what's actually active. If more than 2 sessions overlap on the same account, we kill the oldest one from the server side and force a re-login. LearnWorlds iframes get a pass since those are the same student inside the course.",
     laymans:
       "You can have your laptop and phone open at the same time — that's normal. But if four devices are 'active' on one account at the same moment, somebody's sharing. We just sign the oldest one out automatically.",
     mockup: [
