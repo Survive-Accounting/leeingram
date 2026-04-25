@@ -336,7 +336,6 @@ export default function MitigateAccountSharing() {
         {/* Big buttons */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-8">
           {CATEGORIES.map((c) => {
-            const Icon = c.icon;
             return (
               <button
                 key={c.key}
@@ -345,19 +344,20 @@ export default function MitigateAccountSharing() {
               >
                 <div
                   className="h-11 w-11 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: "rgba(206,17,38,0.15)" }}
+                  style={{
+                    background: c.enabled
+                      ? "rgba(16,185,129,0.15)"
+                      : "rgba(244,63,94,0.15)",
+                  }}
                 >
-                  <Icon className="h-5 w-5" style={{ color: RED }} />
+                  {c.enabled ? (
+                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-rose-400" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-white font-medium text-sm truncate">{c.title}</p>
-                    {c.enabled ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-rose-400 shrink-0" />
-                    )}
-                  </div>
+                  <p className="text-white font-medium text-sm truncate">{c.title}</p>
                   <p className="text-[11px] uppercase tracking-wider text-white/45 mt-0.5">
                     Complexity {c.complexity} · {c.enabled ? "Live" : "Not built yet"}
                   </p>
