@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const model = "gpt-5";
+    const model = "gpt-5-mini";
     const userPrompt = buildUserPrompt(asset);
 
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -172,7 +172,9 @@ Deno.serve(async (req) => {
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
         ],
-        max_completion_tokens: 1200,
+        // gpt-5 family are reasoning models — most tokens go to internal reasoning.
+        // Need a high ceiling so the tool-call output isn't truncated to empty.
+        max_completion_tokens: 8000,
         tools: [
           {
             type: "function",
