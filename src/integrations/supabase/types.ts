@@ -3689,6 +3689,51 @@ export type Database = {
           },
         ]
       }
+      greek_waitlist: {
+        Row: {
+          campus_id: string | null
+          created_at: string
+          email: string
+          greek_org_id: string | null
+          id: string
+          org_name: string
+          source: string
+        }
+        Insert: {
+          campus_id?: string | null
+          created_at?: string
+          email: string
+          greek_org_id?: string | null
+          id?: string
+          org_name: string
+          source?: string
+        }
+        Update: {
+          campus_id?: string | null
+          created_at?: string
+          email?: string
+          greek_org_id?: string | null
+          id?: string
+          org_name?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "greek_waitlist_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "greek_waitlist_greek_org_id_fkey"
+            columns: ["greek_org_id"]
+            isOneToOne: false
+            referencedRelation: "greek_orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_page_leads: {
         Row: {
           campus_signup_number: number | null
