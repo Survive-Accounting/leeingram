@@ -4,6 +4,7 @@ import { Check, ShieldCheck, Users, Link2, Sparkles, Search, Plus, Crown, UserRo
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { z } from "zod";
 
