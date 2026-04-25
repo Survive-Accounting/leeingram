@@ -343,8 +343,14 @@ export default function QuickEmailGateModal({
                 </p>
               ) : (
                 courses.map((c) => {
-                  const label = c.local_name || c.course_name;
-                  const sub = c.local_code || c.code;
+                  const friendly = FRIENDLY_NAMES[c.slug];
+                  // When campus isn't known, prefer the polished friendly name; otherwise prefer campus-local label.
+                  const label = campusKnown
+                    ? (c.local_name || c.course_name)
+                    : (friendly?.name || c.course_name);
+                  const sub = campusKnown
+                    ? (c.local_code || c.code)
+                    : (friendly?.helper || c.code || null);
                   return (
                     <button
                       key={c.id}
@@ -357,7 +363,7 @@ export default function QuickEmailGateModal({
                         {label}
                       </div>
                       {sub && (
-                        <div className="text-[12px]" style={{ color: "#6B7280" }}>
+                        <div className="text-[12px] mt-0.5" style={{ color: "#6B7280" }}>
                           {sub}
                         </div>
                       )}
