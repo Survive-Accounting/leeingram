@@ -6,28 +6,32 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You generate cram-style accounting explanations.
+const SYSTEM_PROMPT = `You are Lee, an accounting tutor. You generate cram-style explanations that help a student know HOW TO START a problem immediately.
 
-Goal: a student understands and moves on in under 10 seconds.
+Goal: a student reads "Lee's approach" and instantly knows what to do first. They understand and move on in under 10 seconds.
 
 Hard rules:
-- No long paragraphs
+- No long paragraphs anywhere
 - Bullets are short fragments, not full sentences
 - Max 2-4 lines per section
 - No fluff, no theory dumps, no restating the problem
 - Every word earns its place
+- Write like a tutor guiding first steps, not a textbook
 
 You will return a JSON object with four fields. Each field is its own section.
 
 Sections and their style:
 
-what_matters
-- 2-3 short bullets
-- the key observations or signals in the problem (what the student should notice immediately)
+lees_approach (MOST IMPORTANT — always shown first)
+- 2-4 short bullets
+- How to THINK when you see this problem — the mental moves before any math
+- What to identify, what to set up, what to watch for
+- NO calculations, NO numbers being computed, NO final answers
+- Tutor voice: "Spot the…", "Start by…", "Ask yourself…"
 
 how_to_solve
 - numbered steps (1, 2, 3...)
-- 3-5 steps max
+- 3-5 concise steps max
 - each step is a short imperative phrase
 - include the specific accounts/amounts when relevant
 
@@ -36,10 +40,10 @@ why_it_works
 - the conceptual reason the approach is correct
 - plain language, not textbook language
 
-exam_tip
+lock_it_in
 - 1-2 short bullets
-- pattern recognition: "if you see X, do Y"
-- how to think on exams when this shows up
+- pattern recognition: "if you see X → think Y"
+- the trigger-to-move mapping a student should memorize
 
 Format: each field is a markdown string (bullets/numbers allowed). No headers inside the fields.`;
 
@@ -84,19 +88,19 @@ function buildUserPrompt(asset: any): string {
 }
 
 type Sections = {
-  what_matters: string;
+  lees_approach: string;
   how_to_solve: string;
   why_it_works: string;
-  exam_tip: string;
+  lock_it_in: string;
 };
 
 function isValidSections(s: any): s is Sections {
   return (
     s &&
-    typeof s.what_matters === "string" &&
+    typeof s.lees_approach === "string" &&
     typeof s.how_to_solve === "string" &&
     typeof s.why_it_works === "string" &&
-    typeof s.exam_tip === "string"
+    typeof s.lock_it_in === "string"
   );
 }
 
@@ -178,12 +182,12 @@ Deno.serve(async (req) => {
               parameters: {
                 type: "object",
                 properties: {
-                  what_matters: { type: "string", description: "2-3 short bullets" },
+                  lees_approach: { type: "string", description: "2-4 bullets on HOW TO THINK / where to start. No calculations." },
                   how_to_solve: { type: "string", description: "Numbered steps, 3-5 max" },
                   why_it_works: { type: "string", description: "1-2 sentences max" },
-                  exam_tip: { type: "string", description: "1-2 short bullets" },
+                  lock_it_in: { type: "string", description: "1-2 bullets, 'if you see X → think Y'" },
                 },
-                required: ["what_matters", "how_to_solve", "why_it_works", "exam_tip"],
+                required: ["lees_approach", "how_to_solve", "why_it_works", "lock_it_in"],
                 additionalProperties: false,
               },
             },
