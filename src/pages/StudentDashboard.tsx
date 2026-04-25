@@ -502,6 +502,66 @@ export default function StudentDashboard() {
           </a>
         </div>
       </main>
+
+      {/* Just-paid blurred overlay */}
+      {justPaidPhase !== "done" && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 transition-opacity"
+          style={{
+            background: "rgba(248, 249, 250, 0.55)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl p-7 text-center"
+            style={{
+              background: "#fff",
+              border: "1px solid rgba(20,33,61,0.08)",
+              boxShadow: "0 16px 48px rgba(20,33,61,0.18)",
+            }}
+          >
+            {justPaidPhase === "verifying" ? (
+              <>
+                <Loader2
+                  className="w-9 h-9 mx-auto mb-3 animate-spin"
+                  style={{ color: NAVY }}
+                />
+                <h2
+                  className="text-[20px] mb-1"
+                  style={{
+                    color: NAVY,
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontWeight: 400,
+                  }}
+                >
+                  Verifying your payment…
+                </h2>
+                <p className="text-[13px]" style={{ color: "#64748B" }}>
+                  Just a moment.
+                </p>
+              </>
+            ) : (
+              <>
+                <CheckCircle2
+                  className="w-10 h-10 mx-auto mb-3"
+                  style={{ color: "#16A34A" }}
+                />
+                <h2
+                  className="text-[20px]"
+                  style={{
+                    color: NAVY,
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontWeight: 400,
+                  }}
+                >
+                  You're in ✓
+                </h2>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
