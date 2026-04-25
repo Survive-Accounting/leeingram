@@ -54,6 +54,7 @@ const EmailFactory = lazy(() => import("./pages/EmailFactory"));
 const Marketing = lazy(() => import("./pages/Marketing"));
 const DomainSelect = lazy(() => import("./pages/DomainSelect"));
 const MitigateAccountSharing = lazy(() => import("./pages/MitigateAccountSharing"));
+const WebDevSprints = lazy(() => import("./pages/WebDevSprints"));
 const Writing = lazy(() => import("./pages/Writing"));
 const Leeingram = lazy(() => import("./pages/Leeingram"));
 const ProfIngram = lazy(() => import("./pages/ProfIngram"));
