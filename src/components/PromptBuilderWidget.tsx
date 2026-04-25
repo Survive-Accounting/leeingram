@@ -561,6 +561,7 @@ export function PromptBuilderWidget() {
                   onCopy={() => copyCard(card)}
                   onSend={() => sendToLovable(card)}
                   onDelete={() => deleteCard(card.id)}
+                  onCopyImage={(url, label) => copyImageToClipboard(url, label)}
                 />
               ))
             )}
