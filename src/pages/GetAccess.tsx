@@ -16,7 +16,7 @@ const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
 const PRICE = 150;
-const AUTO_RENEW_DISCOUNT_PCT = 20; // 20% off when auto-renew is enabled
+const AUTO_RENEW_DISCOUNT_USD = 25; // Flat $25 off when auto-renew is enabled
 const EXTEND_PRICE = 100;
 const LIFETIME_UPGRADE_PRICE = 150;
 const MAX_EXTRA_SEMESTERS = 3; // 4 total including base
@@ -94,10 +94,10 @@ export default function GetAccess() {
   const showLifetime = extraCount >= 3;
   const showSavingsHint = extraCount >= 2;
 
-  // Auto-renew gives 20% off the base price (only when no extra semesters added)
+  // Auto-renew gives a flat $25 off the base price (only when no extra semesters added)
   const autoRenewActive = autoRenew && extraCount === 0;
   const baseBeforeDiscount = PRICE + extraCount * EXTEND_PRICE;
-  const autoRenewSavings = autoRenewActive ? Math.round((baseBeforeDiscount * AUTO_RENEW_DISCOUNT_PCT) / 100) : 0;
+  const autoRenewSavings = autoRenewActive ? AUTO_RENEW_DISCOUNT_USD : 0;
   const baseTotal = baseBeforeDiscount - autoRenewSavings;
   const subtotal = baseTotal + (showLifetime && lifetimeUpgrade ? LIFETIME_UPGRADE_PRICE : 0);
 
@@ -498,7 +498,7 @@ export default function GetAccess() {
                       className="mt-0.5 text-[10px] font-medium animate-fade-in"
                       style={{ color: "#86EFAC", fontFamily: "Inter, sans-serif" }}
                     >
-                      {AUTO_RENEW_DISCOUNT_PCT}% applied
+                      ${AUTO_RENEW_DISCOUNT_USD} applied
                     </div>
                   )}
 
@@ -652,7 +652,7 @@ export default function GetAccess() {
                       setAutoRenew(checked);
                       if (checked && extraCount === 0) {
                         const id = Date.now() + Math.random();
-                        const amount = Math.round((PRICE * AUTO_RENEW_DISCOUNT_PCT) / 100);
+                        const amount = AUTO_RENEW_DISCOUNT_USD;
                         setDiscountToasts((t) => [...t, { id, amount }]);
                         setPulseKey((k) => k + 1);
                         setTimeout(() => {
@@ -668,7 +668,7 @@ export default function GetAccess() {
                   <span className="text-[13px] leading-none" style={{ color: "#475569" }}>
                     Auto-renew next semester —{" "}
                     <span style={{ color: "#16A34A", fontWeight: 600 }}>
-                      save {AUTO_RENEW_DISCOUNT_PCT}%
+                      save ${AUTO_RENEW_DISCOUNT_USD}
                     </span>
                   </span>
                 </label>
