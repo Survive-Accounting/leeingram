@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, LayoutList, Wand2, Printer, BookOpen, Share2, Copy, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, LayoutList, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp } from "lucide-react";
 import { StructuredJEDisplay } from "@/components/StructuredJEDisplay";
 import { generateSimplifiedPracticePdf } from "@/lib/generateSimplifiedPracticePdf";
 import ReactMarkdown from "react-markdown";
@@ -561,10 +561,10 @@ function InlineExplanation({
 
   return (
     <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-5">
-      {/* Top: "Try it yourself first!" + Print PDF */}
+      {/* Top: "Get Quick Help" + Print PDF */}
       <div className="flex items-center justify-between gap-3 pb-4 border-b border-border/60">
-        <span className="text-sm font-medium text-foreground/80">
-          Try it yourself first!
+        <span className="text-sm font-semibold text-foreground">
+          Get Quick Help
         </span>
         <Button
           size="sm"
@@ -584,7 +584,6 @@ function InlineExplanation({
 
       {/* Toolbox */}
       <div className="space-y-3">
-        <p className="text-sm font-medium text-foreground/80">Choose what you need</p>
         <div className="grid grid-cols-2 gap-2">
           {TOOLBOX_ORDER.map((k) => {
             const isActive = activeSection === k;
@@ -891,231 +890,6 @@ function highlightTerms(text: string): React.ReactNode {
 }
 
 
-// ── Simplified problem (AI-generated cleaner version) ─────────────────
-type SimplifyView = "original" | "simplified";
-
-function SimplifiedProblem({
-  asset,
-  chapter,
-  view,
-  onViewChange,
-  simplifiedText,
-  setSimplifiedText,
-}: {
-  asset: Asset;
-  chapter: ChapterMeta | null;
-  view: SimplifyView;
-  onViewChange: (v: SimplifyView) => void;
-  simplifiedText: string | null;
-  setSimplifiedText: (t: string | null) => void;
-}) {
-  const [loading, setLoading] = useState(false);
-  const [printing, setPrinting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [checkedCache, setCheckedCache] = useState(false);
-
-  // Build the practice PDF from a simplified-markdown string
-  const buildAndDownloadPdf = (md: string) => {
-    const chapterLabel = chapter
-      ? `Ch ${chapter.chapter_number}: ${chapter.chapter_name}`
-      : null;
-    const doc = generateSimplifiedPracticePdf({
-      sourceRef: asset.source_ref,
-      problemTitle: asset.problem_title,
-      chapterLabel,
-      courseName: null,
-      simplifiedMarkdown: md,
-    });
-    const safeRef = (asset.source_ref || asset.asset_name).replace(/[^A-Za-z0-9._-]/g, "_");
-    doc.save(`${safeRef}-practice.pdf`);
-  };
-
-  // Print handler: ensure simplified text exists, then download PDF
-  const handlePrint = async () => {
-    setError(null);
-    if (simplifiedText) {
-      buildAndDownloadPdf(simplifiedText);
-      return;
-    }
-    setPrinting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("simplify-problem", {
-        body: { asset_id: asset.id },
-      });
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || "Failed to prepare PDF");
-      setSimplifiedText(data.simplified_text);
-      buildAndDownloadPdf(data.simplified_text);
-    } catch (e: any) {
-      setError(e?.message || "Could not generate PDF");
-    } finally {
-      setPrinting(false);
-    }
-  };
-
-  // Check cache on asset load
-  useEffect(() => {
-    let cancelled = false;
-    setError(null);
-    setCheckedCache(false);
-    (async () => {
-      try {
-        const { data } = await supabase
-          .from("simplified_problem_cache")
-          .select("simplified_text")
-          .eq("asset_id", asset.id)
-          .maybeSingle();
-        if (cancelled) return;
-        if (data?.simplified_text) {
-          setSimplifiedText(data.simplified_text);
-        } else {
-          setSimplifiedText(null);
-        }
-      } catch {
-        // ignore
-      } finally {
-        if (!cancelled) setCheckedCache(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [asset.id]);
-
-  const generate = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("simplify-problem", {
-        body: { asset_id: asset.id },
-      });
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || "Failed to simplify");
-      setSimplifiedText(data.simplified_text);
-      onViewChange("simplified");
-    } catch (e: any) {
-      setError(e?.message || "Could not simplify");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // No simplified version yet → show CTA + Print
-  if (!simplifiedText) {
-    return (
-      <div className="mt-4 space-y-2">
-        {error && <div className="text-xs text-destructive">{error}</div>}
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-muted/20 p-3 flex-wrap">
-          <div className="text-xs text-muted-foreground min-w-0">
-            Dense textbook wording? Get a cleaner, scannable version — or print it for offline practice.
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={generate}
-              disabled={loading || printing || !checkedCache}
-              className="gap-1.5 h-8"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Simplifying…
-                </>
-              ) : (
-                <>
-                  <Wand2 className="h-3.5 w-3.5" />
-                  Simplify this problem
-                </>
-              )}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handlePrint}
-              disabled={loading || printing || !checkedCache}
-              className="gap-1.5 h-8"
-              title="Download a clean, printable version for offline practice"
-            >
-              {printing ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Preparing…
-                </>
-              ) : (
-                <>
-                  <Printer className="h-3.5 w-3.5" />
-                  Print this problem
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Has simplified version → toggle UI + Print
-  return (
-    <div className="mt-4 space-y-2">
-      {error && (
-        <div className="text-xs text-destructive">{error}</div>
-      )}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
-          <span aria-hidden>✨</span>
-          {view === "simplified"
-            ? "Simplified version (for clarity only)"
-            : "Original textbook version"}
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-md border border-border p-0.5 bg-muted/40">
-            <button
-              type="button"
-              onClick={() => onViewChange("original")}
-              className={cn(
-                "px-2.5 py-1 text-xs rounded transition-colors",
-                view === "original"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              Original
-            </button>
-            <button
-              type="button"
-              onClick={() => onViewChange("simplified")}
-              className={cn(
-                "px-2.5 py-1 text-xs rounded transition-colors",
-                view === "simplified"
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              Simplified
-            </button>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handlePrint}
-            disabled={printing}
-            className="gap-1.5 h-7 px-2.5 text-xs"
-            title="Download a clean, printable version for offline practice"
-          >
-            {printing ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Printer className="h-3.5 w-3.5" />
-            )}
-            Print
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ── Main page ──────────────────────────────────────────────────────────
 export default function SolutionsViewerV2() {
@@ -1166,9 +940,8 @@ export default function SolutionsViewerV2() {
     void captureRefFromUrl({ problemId: asset.id, problemCode: asset.asset_name });
   }, [asset?.id]);
 
-  // Simplify-this-problem state (keeps simplified text + active view per asset)
+  // Simplify-this-problem state (keeps simplified text per asset)
   const [simplifiedText, setSimplifiedText] = useState<string | null>(null);
-  const [simplifyView, setSimplifyView] = useState<SimplifyView>("simplified");
   const [simplifyLoading, setSimplifyLoading] = useState(false);
   const [simplifyError, setSimplifyError] = useState<string | null>(null);
 
@@ -1176,13 +949,16 @@ export default function SolutionsViewerV2() {
   const [originalImages, setOriginalImages] = useState<string[]>([]);
   const [originalOpen, setOriginalOpen] = useState(false);
 
+  // Instructions accordion (collapsed by default for fast cram mode)
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
+
   // Reset on asset change
   useEffect(() => {
-    setSimplifyView("simplified");
     setSimplifiedText(null);
     setSimplifyError(null);
     setOriginalImages([]);
     setOriginalOpen(false);
+    setInstructionsOpen(false);
   }, [assetCode]);
 
   useEffect(() => {
@@ -1445,121 +1221,122 @@ export default function SolutionsViewerV2() {
                   color: "rgba(255,255,255,0.92)",
                 }}
               >
-                {/* Simplified ↔ Original toggle */}
-                <div className="flex items-center gap-2 mb-4">
-                  <button
-                    type="button"
-                    onClick={() => setSimplifyView("simplified")}
-                    className={cn(
-                      "px-3 h-7 text-xs font-medium rounded-md border transition-colors",
-                    )}
-                    style={
-                      simplifyView === "simplified"
-                        ? { background: "rgba(255,255,255,0.95)", color: "#14213D", borderColor: "rgba(255,255,255,0.95)" }
-                        : { background: "transparent", color: "rgba(255,255,255,0.7)", borderColor: "rgba(255,255,255,0.18)" }
-                    }
-                  >
-                    Simplified
-                  </button>
+                {/* Top line: "Practice based on E1.4 🔍" */}
+                {asset.source_ref && (
                   <button
                     type="button"
                     onClick={() => {
-                      setSimplifyView("original");
                       if (originalImages.length > 0) setOriginalOpen(true);
                     }}
                     disabled={originalImages.length === 0}
-                    title={originalImages.length === 0 ? "Original textbook image not available" : "View original textbook problem"}
-                    className={cn(
-                      "px-3 h-7 text-xs font-medium rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
-                    )}
-                    style={
-                      simplifyView === "original"
-                        ? { background: "rgba(255,255,255,0.95)", color: "#14213D", borderColor: "rgba(255,255,255,0.95)" }
-                        : { background: "transparent", color: "rgba(255,255,255,0.7)", borderColor: "rgba(255,255,255,0.18)" }
+                    title={
+                      originalImages.length === 0
+                        ? "Original textbook image not available"
+                        : "View the original textbook problem"
                     }
+                    className="group inline-flex items-center gap-1.5 -ml-1 px-1 py-0.5 rounded-md transition-colors hover:bg-white/5 disabled:hover:bg-transparent disabled:cursor-default"
                   >
-                    Original
+                    <span
+                      className="text-[11px] font-medium uppercase tracking-[0.12em]"
+                      style={{ color: "rgba(255,255,255,0.55)" }}
+                    >
+                      Practice based on{" "}
+                      <span className="font-mono normal-case tracking-normal text-white/85">
+                        {asset.source_ref}
+                      </span>
+                    </span>
+                    {originalImages.length > 0 && (
+                      <Search
+                        className="h-3 w-3 transition-colors"
+                        style={{ color: "rgba(255,255,255,0.4)" }}
+                      />
+                    )}
                   </button>
-                </div>
-
-                {asset.source_ref && (
-                  <div
-                    className="text-[11px] font-medium uppercase tracking-[0.12em]"
-                    style={{ color: "rgba(255,255,255,0.5)" }}
-                  >
-                    Practice based on <span className="font-mono normal-case tracking-normal">{asset.source_ref}</span>
-                  </div>
                 )}
 
-                {/* Textbook problem title intentionally hidden — keep focus on the prompt itself. */}
-
-                {/* Problem text — simplified by default; falls back to raw on error or while loading */}
+                {/* Problem section (default open) */}
                 {asset.survive_problem_text && (
-                  <div className="mt-5">
+                  <div className="mt-4">
                     <div
                       className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2"
                       style={{ color: "rgba(255,255,255,0.45)" }}
                     >
                       Problem
                     </div>
-                    {simplifyView === "simplified" && simplifyLoading && !simplifiedText ? (
-                      <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Survive Accounting is thinking…
-                      </div>
-                    ) : simplifyView === "simplified" && simplifiedText ? (
+                    {simplifiedText ? (
                       <div
-                        className="prose prose-invert max-w-prose text-[0.9375rem] prose-p:my-2 prose-ul:my-2 prose-li:my-1 prose-headings:text-white/95 prose-headings:font-semibold prose-strong:text-white"
+                        className="prose prose-invert max-w-prose text-[14px] prose-p:my-2 prose-ul:my-1.5 prose-li:my-1 prose-headings:text-white/95 prose-headings:font-semibold prose-strong:text-white"
                         style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
                       >
                         <ReactMarkdown>{simplifiedText}</ReactMarkdown>
                       </div>
-                    ) : (
-                      <div
-                        className="whitespace-pre-wrap text-[0.9375rem] max-w-prose [&>p+p]:mt-3"
-                        style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
-                      >
-                        {asset.survive_problem_text}
-                      </div>
-                    )}
-                    {simplifyError && (
-                      <div className="mt-2 text-xs" style={{ color: "rgba(255,180,180,0.85)" }}>
-                        {simplifyError}
-                      </div>
-                    )}
+                    ) : simplifyError ? (
+                      // Fallback: show raw problem with a small notice
+                      <>
+                        <div
+                          className="mb-2 text-xs"
+                          style={{ color: "rgba(255,180,180,0.85)" }}
+                        >
+                          {simplifyError}
+                        </div>
+                        <div
+                          className="whitespace-pre-wrap text-[14px] max-w-prose [&>p+p]:mt-3"
+                          style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
+                        >
+                          {asset.survive_problem_text}
+                        </div>
+                      </>
+                    ) : null}
+                    {/* If no simplifiedText and no error → blocking modal below covers this state */}
                   </div>
                 )}
 
-                {/* Instructions — separated by divider for clarity */}
+                {/* Instructions — collapsed by default */}
                 {instructions.length > 0 && (
                   <div
                     className="mt-6 pt-5 border-t"
                     style={{ borderColor: "rgba(255,255,255,0.08)" }}
                   >
-                    <div
-                      className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2"
-                      style={{ color: "rgba(255,255,255,0.45)" }}
+                    <button
+                      type="button"
+                      onClick={() => setInstructionsOpen((v) => !v)}
+                      className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md text-xs font-medium transition-colors hover:bg-white/5"
+                      style={{
+                        color: "rgba(255,255,255,0.85)",
+                        border: "1px solid rgba(255,255,255,0.18)",
+                        background: "transparent",
+                      }}
                     >
-                      Instructions
-                    </div>
-                    <ul className="space-y-2 text-[0.9375rem]" style={{ lineHeight: 1.6 }}>
-                      {instructions.map((ins, i) => (
-                        <li key={i} className="flex gap-2.5">
-                          <span
-                            className="font-semibold shrink-0 mt-0.5"
-                            style={{ color: "rgba(255,255,255,0.7)" }}
-                          >
-                            {String.fromCharCode(97 + i)}.
-                          </span>
-                          <span
-                            className="whitespace-pre-wrap"
-                            style={{ color: "rgba(255,255,255,0.88)" }}
-                          >
-                            {highlightTerms(ins)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
+                      {instructionsOpen ? (
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      )}
+                      {instructionsOpen ? "Hide instructions" : "View instructions"}
+                    </button>
+                    {instructionsOpen && (
+                      <ul
+                        className="mt-4 space-y-2 text-[14px] animate-in fade-in slide-in-from-top-1 duration-150"
+                        style={{ lineHeight: 1.6 }}
+                      >
+                        {instructions.map((ins, i) => (
+                          <li key={i} className="flex gap-2.5">
+                            <span
+                              className="font-semibold shrink-0 mt-0.5"
+                              style={{ color: "rgba(255,255,255,0.7)" }}
+                            >
+                              {String.fromCharCode(97 + i)}.
+                            </span>
+                            <span
+                              className="whitespace-pre-wrap"
+                              style={{ color: "rgba(255,255,255,0.88)" }}
+                            >
+                              {highlightTerms(ins)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 )}
               </section>
@@ -1655,6 +1432,30 @@ export default function SolutionsViewerV2() {
         siblings={siblings}
         currentAssetName={asset?.asset_name}
       />
+
+      {/* Blocking modal while we generate the practice version on first open */}
+      <Dialog
+        open={!!asset && simplifyLoading && !simplifiedText && !simplifyError}
+        // Non-dismissable: no onOpenChange, no close X is rendered because we don't allow it to close
+      >
+        <DialogContent
+          className="sm:max-w-sm"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+          // Hide the default close button while generating
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-base">Getting this problem ready…</DialogTitle>
+            <DialogDescription>
+              We're putting together a clean, scannable version. Just a sec.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={originalOpen} onOpenChange={setOriginalOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
