@@ -162,7 +162,11 @@ export default function GetOrgAccess() {
 
   const [submitting, setSubmitting] = useState(false);
 
-  // --- Step 0: Role + chapter intent (gates the rest of the form) ---
+  // --- Step 0a: Org type (fraternity vs sorority) — gates Step 0b ---
+  type OrgKind = "fraternity" | "sorority";
+  const [orgKind, setOrgKind] = useState<OrgKind | null>(null);
+
+  // --- Step 0b: Role + chapter intent (gates the rest of the form) ---
   type Role = "member" | "exec";
   const [role, setRole] = useState<Role | null>(null);
   const [intentChapter, setIntentChapter] = useState("");
