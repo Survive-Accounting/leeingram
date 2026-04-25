@@ -135,6 +135,7 @@ export default function GetOrgAccess() {
   const [autoReupEnabled, setAutoReupEnabled] = useState(true);
   const [autoRenewEnabled, setAutoRenewEnabled] = useState(true);
   const [weeklySeatLimit, setWeeklySeatLimit] = useState<number>(20);
+  const [budgetEstimate, setBudgetEstimate] = useState<number | "">("");
   const AUTO_REUP_DISCOUNT_PCT = 5;
   const AUTO_RENEW_DISCOUNT_PCT = 5;
 
@@ -539,6 +540,7 @@ export default function GetOrgAccess() {
             auto_reup_enabled: autoReupEnabled,
             auto_renew_enabled: autoReupEnabled && autoRenewEnabled,
             weekly_seat_limit: autoReupEnabled ? weeklySeatLimit : null,
+            budget_estimate: autoReupEnabled && typeof budgetEstimate === "number" ? budgetEstimate : null,
             origin: window.location.origin,
             applied_discounts: activeDiscounts,
             base_total_cents: Math.round(baseTotal * 100),
@@ -1461,9 +1463,95 @@ export default function GetOrgAccess() {
                     style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
                   >
                     Caps weekly auto-additions so a sudden rush never surprises your treasurer.
+                </div>
+
+                {/* Budget estimate — reveals only when auto-add is enabled */}
+                <div
+                  className="overflow-hidden transition-all duration-300 ease-out"
+                  style={{
+                    maxHeight: autoReupEnabled ? 220 : 0,
+                    opacity: autoReupEnabled ? 1 : 0,
+                    marginTop: autoReupEnabled ? 16 : 0,
+                  }}
+                >
+                  <label
+                    className="block text-[12px] font-medium mb-1.5"
+                    style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                  >
+                    Max chapter budget this semester
+                  </label>
+                  <div className="relative" style={{ maxWidth: 220 }}>
+                    <span
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] font-semibold"
+                      style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                    >
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      step={50}
+                      placeholder="5000"
+                      value={budgetEstimate}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setBudgetEstimate(v === "" ? "" : Math.max(0, Number(v)));
+                      }}
+                      className="w-full rounded-lg pl-7 pr-3 py-2 text-[14px] font-semibold focus:outline-none"
+                      style={{
+                        color: NAVY,
+                        background: "#fff",
+                        border: "1.5px solid #E0E7F0",
+                        fontFamily: "Inter, sans-serif",
+                      }}
+                    />
                   </div>
+
+                  {(() => {
+                    if (!tier) return null;
+                    const baseTotal = applyDiscount(tier.total);
+                    const baseSeats = tier.seats;
+                    const perSeat = baseTotal / baseSeats;
+                    const budget = typeof budgetEstimate === "number" ? budgetEstimate : 0;
+                    const remaining = Math.max(0, budget - baseTotal);
+                    const extraSeats = perSeat > 0 ? Math.floor(remaining / perSeat) : 0;
+                    const totalSupported = baseSeats + extraSeats;
+                    const overBudget = budget > 0 && budget < baseTotal;
+
+                    return (
+                      <div
+                        className="mt-2.5 text-[13px] leading-relaxed"
+                        style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+                      >
+                        <div>
+                          Base plan:{" "}
+                          <span className="font-semibold">{baseSeats} members</span> →{" "}
+                          <span className="font-semibold">${baseTotal.toLocaleString()}</span>
+                        </div>
+                        {budget > 0 && !overBudget && (
+                          <div className="mt-0.5">
+                            Remaining budget:{" "}
+                            <span className="font-semibold">${remaining.toLocaleString()}</span>{" "}
+                            <span style={{ color: "#64748B" }}>
+                              → supports up to{" "}
+                              <span className="font-semibold" style={{ color: NAVY }}>
+                                {totalSupported} total members
+                              </span>
+                            </span>
+                          </div>
+                        )}
+                        {overBudget && (
+                          <div className="mt-0.5" style={{ color: "#B91C1C" }}>
+                            Budget is below the base plan total.
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
+            </div>
             </div>
 
             {/* Step 6 — Payment method */}
