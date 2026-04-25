@@ -138,6 +138,14 @@ export default function GetOrgAccess() {
   const AUTO_REUP_DISCOUNT_PCT = 5;
   const AUTO_RENEW_DISCOUNT_PCT = 5;
 
+  // Stack all active percent-off discounts (founding + auto-reup + auto-renew)
+  const activeDiscounts: Array<{ key: string; label: string; pct: number }> = [];
+  if (foundingEligible) activeDiscounts.push({ key: "founding", label: "Founding chapter", pct: FOUNDING_DISCOUNT_PCT });
+  if (autoReupEnabled) activeDiscounts.push({ key: "auto_reup", label: "Auto-add seats", pct: AUTO_REUP_DISCOUNT_PCT });
+  if (autoReupEnabled && autoRenewEnabled) activeDiscounts.push({ key: "auto_renew", label: "Auto-renew next semester", pct: AUTO_RENEW_DISCOUNT_PCT });
+  const totalDiscountPct = activeDiscounts.reduce((sum, d) => sum + d.pct, 0);
+  const applyDiscount = (amount: number) => Math.round(amount * (1 - totalDiscountPct / 100));
+
   // --- Payment method preference ---
   type PaymentMethod = "ach" | "card" | "manual";
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("ach");
