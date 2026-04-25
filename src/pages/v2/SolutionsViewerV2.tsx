@@ -791,37 +791,62 @@ function SimplifiedProblem({
     }
   };
 
-  // No simplified version yet → show CTA
+  // No simplified version yet → show CTA + Print
   if (!simplifiedText) {
     return (
-      <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-muted/20 p-3">
-        <div className="text-xs text-muted-foreground">
-          Dense textbook wording? Get a cleaner, scannable version.
+      <div className="mt-4 space-y-2">
+        {error && <div className="text-xs text-destructive">{error}</div>}
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-muted/20 p-3 flex-wrap">
+          <div className="text-xs text-muted-foreground min-w-0">
+            Dense textbook wording? Get a cleaner, scannable version — or print it for offline practice.
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={generate}
+              disabled={loading || printing || !checkedCache}
+              className="gap-1.5 h-8"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Simplifying…
+                </>
+              ) : (
+                <>
+                  <Wand2 className="h-3.5 w-3.5" />
+                  Simplify this problem
+                </>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handlePrint}
+              disabled={loading || printing || !checkedCache}
+              className="gap-1.5 h-8"
+              title="Download a clean, printable version for offline practice"
+            >
+              {printing ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Preparing…
+                </>
+              ) : (
+                <>
+                  <Printer className="h-3.5 w-3.5" />
+                  Print this problem
+                </>
+              )}
+            </Button>
+          </div>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={generate}
-          disabled={loading || !checkedCache}
-          className="gap-1.5 h-8 shrink-0"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Simplifying…
-            </>
-          ) : (
-            <>
-              <Wand2 className="h-3.5 w-3.5" />
-              Simplify this problem
-            </>
-          )}
-        </Button>
       </div>
     );
   }
 
-  // Has simplified version → toggle UI
+  // Has simplified version → toggle UI + Print
   return (
     <div className="mt-4 space-y-2">
       {error && (
@@ -834,31 +859,48 @@ function SimplifiedProblem({
             ? "Simplified version (for clarity only)"
             : "Original textbook version"}
         </div>
-        <div className="inline-flex rounded-md border border-border p-0.5 bg-muted/40">
-          <button
-            type="button"
-            onClick={() => onViewChange("original")}
-            className={cn(
-              "px-2.5 py-1 text-xs rounded transition-colors",
-              view === "original"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-md border border-border p-0.5 bg-muted/40">
+            <button
+              type="button"
+              onClick={() => onViewChange("original")}
+              className={cn(
+                "px-2.5 py-1 text-xs rounded transition-colors",
+                view === "original"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Original
+            </button>
+            <button
+              type="button"
+              onClick={() => onViewChange("simplified")}
+              className={cn(
+                "px-2.5 py-1 text-xs rounded transition-colors",
+                view === "simplified"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Simplified
+            </button>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handlePrint}
+            disabled={printing}
+            className="gap-1.5 h-7 px-2.5 text-xs"
+            title="Download a clean, printable version for offline practice"
           >
-            Original
-          </button>
-          <button
-            type="button"
-            onClick={() => onViewChange("simplified")}
-            className={cn(
-              "px-2.5 py-1 text-xs rounded transition-colors",
-              view === "simplified"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
+            {printing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Printer className="h-3.5 w-3.5" />
             )}
-          >
-            Simplified
-          </button>
+            Print
+          </Button>
         </div>
       </div>
     </div>
