@@ -693,9 +693,9 @@ export default function SolutionsViewerV2() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  const [explainOpen, setExplainOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [jumpOpen, setJumpOpen] = useState(false);
 
   useEffect(() => {
     if (!assetCode) return;
