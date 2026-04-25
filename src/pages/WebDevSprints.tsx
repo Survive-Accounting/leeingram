@@ -495,6 +495,7 @@ export default function WebDevSprints() {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<Status | "All">("All");
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
