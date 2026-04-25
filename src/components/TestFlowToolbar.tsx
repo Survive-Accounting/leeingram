@@ -26,8 +26,9 @@ const STEPS = [
 
 export default function TestFlowToolbar() {
   const { pathname } = useLocation();
-  const { user } = useAuth();
-  const allowed = ALLOWED.includes((user?.email ?? "").trim().toLowerCase());
+  const isStaff = useIsStaff();
+  const flagOn = useDevToolFlag("testBar");
+  const allowed = isStaff && flagOn;
   const [hidden, setHidden] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try { return localStorage.getItem(HIDDEN_KEY) === "1"; } catch { return false; }
