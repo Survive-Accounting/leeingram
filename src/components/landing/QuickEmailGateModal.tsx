@@ -27,6 +27,25 @@ interface CourseRow {
 }
 
 /**
+ * Canonical course order shown in every course picker on the landing flow.
+ * Intro 1 (Financial) → Intro 2 (Managerial) → Intermediate 1 → Intermediate 2.
+ */
+const CANONICAL_COURSE_ORDER = [
+  "intro-accounting-1",
+  "intro-accounting-2",
+  "intermediate-accounting-1",
+  "intermediate-accounting-2",
+];
+
+function sortByCanonicalOrder<T extends { slug: string }>(rows: T[]): T[] {
+  return rows.slice().sort((a, b) => {
+    const ai = CANONICAL_COURSE_ORDER.indexOf(a.slug);
+    const bi = CANONICAL_COURSE_ORDER.indexOf(b.slug);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+}
+
+/**
  * Minimal email gateway used before /get-access.
  * - Returning users with active paid access → magic login link.
  * - New users → resolve campus, then pick a course → /get-access.
@@ -108,7 +127,7 @@ export default function QuickEmailGateModal({
             .filter(Boolean) as CourseRow[];
 
           if (mapped.length > 0) {
-            setCourses(mapped);
+            setCourses(sortByCanonicalOrder(mapped));
             return;
           }
         }
@@ -118,19 +137,7 @@ export default function QuickEmailGateModal({
       const { data: all } = await supabase
         .from("courses")
         .select("id, slug, code, course_name");
-      // Stable order: Intro 1, Intro 2, Intermediate 1, Intermediate 2.
-      const ORDER = [
-        "intro-accounting-1",
-        "intro-accounting-2",
-        "intermediate-accounting-1",
-        "intermediate-accounting-2",
-      ];
-      const sorted = (all ?? []).slice().sort((a: any, b: any) => {
-        const ai = ORDER.indexOf(a.slug);
-        const bi = ORDER.indexOf(b.slug);
-        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-      });
-      setCourses(sorted as CourseRow[]);
+      setCourses(sortByCanonicalOrder((all ?? []) as CourseRow[]));
     } finally {
       setCoursesLoading(false);
     }
