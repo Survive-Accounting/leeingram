@@ -540,6 +540,7 @@ export default function GetOrgAccess() {
             auto_reup_enabled: autoReupEnabled,
             auto_renew_enabled: autoReupEnabled && autoRenewEnabled,
             weekly_seat_limit: autoReupEnabled ? weeklySeatLimit : null,
+            budget_estimate: autoReupEnabled && typeof budgetEstimate === "number" ? budgetEstimate : null,
             origin: window.location.origin,
             applied_discounts: activeDiscounts,
             base_total_cents: Math.round(baseTotal * 100),
