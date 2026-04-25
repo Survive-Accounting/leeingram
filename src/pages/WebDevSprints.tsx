@@ -11,7 +11,25 @@ import {
   Image as ImageIcon,
   ExternalLink,
   Link as LinkIcon,
+  GripVertical,
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -79,11 +97,13 @@ function FeatureCard({
   canEdit,
   onChange,
   onDelete,
+  dragHandle,
 }: {
   feature: Feature;
   canEdit: boolean;
   onChange: (next: Feature) => Promise<void>;
   onDelete: () => Promise<void>;
+  dragHandle?: React.ReactNode;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Feature>(feature);
@@ -109,7 +129,9 @@ function FeatureCard({
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-6">
       <div className="flex items-start justify-between gap-4 mb-3">
-        <div className="flex-1 min-w-0">
+        <div className="flex items-start gap-2 flex-1 min-w-0">
+          {dragHandle}
+          <div className="flex-1 min-w-0">
           {editing ? (
             <Input
               value={draft.title}
@@ -119,6 +141,7 @@ function FeatureCard({
           ) : (
             <h3 className="text-lg font-semibold text-slate-900">{feature.title}</h3>
           )}
+          </div>
         </div>
         {editing ? (
           <Select
@@ -418,6 +441,52 @@ function AddFeatureModal({
   );
 }
 
+function SortableFeatureCard({
+  feature,
+  canEdit,
+  onChange,
+  onDelete,
+}: {
+  feature: Feature;
+  canEdit: boolean;
+  onChange: (next: Feature) => Promise<void>;
+  onDelete: () => Promise<void>;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: feature.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.7 : 1,
+    zIndex: isDragging ? 10 : "auto",
+  };
+
+  const handle = canEdit ? (
+    <button
+      type="button"
+      {...attributes}
+      {...listeners}
+      aria-label="Drag to reorder"
+      className="mt-1 -ml-1 p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 cursor-grab active:cursor-grabbing touch-none"
+    >
+      <GripVertical className="h-4 w-4" />
+    </button>
+  ) : null;
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <FeatureCard
+        feature={feature}
+        canEdit={canEdit}
+        onChange={onChange}
+        onDelete={onDelete}
+        dragHandle={handle}
+      />
+    </div>
+  );
+}
+
 export default function WebDevSprints() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -426,6 +495,35 @@ export default function WebDevSprints() {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = features.findIndex((f) => f.id === active.id);
+    const newIndex = features.findIndex((f) => f.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const reordered = arrayMove(features, oldIndex, newIndex).map((f, i) => ({
+      ...f,
+      sort_order: i + 1,
+    }));
+    setFeatures(reordered); // optimistic
+
+    const results = await Promise.all(
+      reordered.map((f) =>
+        supabase.from("web_dev_features").update({ sort_order: f.sort_order }).eq("id", f.id),
+      ),
+    );
+    if (results.some((r) => r.error)) {
+      toast.error("Failed to save order");
+      await load();
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -517,17 +615,28 @@ export default function WebDevSprints() {
             No features yet.
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5">
-            {features.map((f) => (
-              <FeatureCard
-                key={f.id}
-                feature={f}
-                canEdit={canEdit}
-                onChange={handleUpdate}
-                onDelete={() => handleDelete(f.id)}
-              />
-            ))}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={features.map((f) => f.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="grid grid-cols-1 gap-5">
+                {features.map((f) => (
+                  <SortableFeatureCard
+                    key={f.id}
+                    feature={f}
+                    canEdit={canEdit}
+                    onChange={handleUpdate}
+                    onDelete={() => handleDelete(f.id)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 
