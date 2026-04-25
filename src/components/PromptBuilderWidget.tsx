@@ -348,11 +348,24 @@ export function PromptBuilderWidget() {
 
   if (!allowed) return null;
 
+  if (hidden) {
+    return (
+      <button
+        onClick={() => setHidden(false)}
+        className="fixed bottom-3 left-3 z-[9999] rounded-full bg-background/80 backdrop-blur px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border shadow-sm transition-colors"
+        title="Show Prompt Builder (Shift+⌘K)"
+        aria-label="Show Prompt Builder"
+      >
+        ⚡
+      </button>
+    );
+  }
+
   return (
     <>
       <div
         style={{ left: pos.x, top: pos.y }}
-        className="fixed z-[9999] flex items-center gap-1.5"
+        className="fixed z-[9999] flex items-center gap-1.5 group"
       >
         <button
           onPointerDown={onLauncherPointerDown}
@@ -361,34 +374,23 @@ export function PromptBuilderWidget() {
           style={{ touchAction: "none" }}
           className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-foreground/20"
           aria-label="Open Prompt Builder (Cmd+K) — drag to move"
-          title="Click to open · Drag to move · ⌘K"
+          title="Click to open · Drag to move · ⌘K · Shift+⌘K to hide"
         >
           <Zap className="h-4 w-4" />
           Build Prompt
         </button>
         <button
-          onClick={() => setAboutOpen(true)}
-          className="rounded-full bg-background/90 backdrop-blur px-2.5 py-1 text-[10px] font-medium tracking-wide text-muted-foreground hover:text-foreground border border-border shadow-sm transition-colors"
-          aria-label="About HumanSent"
-          title="About HumanSent"
+          onClick={() => setHidden(true)}
+          className="opacity-0 group-hover:opacity-100 rounded-full bg-background/90 backdrop-blur p-1.5 text-muted-foreground hover:text-foreground border border-border shadow-sm transition-opacity"
+          aria-label="Hide Prompt Builder"
+          title="Hide (Shift+⌘K to toggle)"
         >
-          HumanSent
+          <EyeOff className="h-3 w-3" />
         </button>
       </div>
 
-      <HumanSentModal open={aboutOpen} onOpenChange={setAboutOpen} />
-
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col gap-3 overflow-hidden p-0 relative">
-          {/* Subtle brand signature — opens the about modal */}
-          <button
-            onClick={() => setAboutOpen(true)}
-            className="absolute bottom-3 right-3 z-50 rounded-full bg-background/80 backdrop-blur px-2.5 py-1 text-[10px] font-medium tracking-wide text-muted-foreground/80 border border-border/60 shadow-sm hover:text-foreground hover:bg-background transition-colors animate-fade-in select-none"
-            aria-label="About HumanSent"
-            title="HumanSent.com"
-          >
-            Built with <span className="text-foreground/90">HumanSent.com</span>
-          </button>
           <div className="flex flex-col gap-3 p-6 pb-3 border-b border-border">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
