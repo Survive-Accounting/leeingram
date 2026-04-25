@@ -123,6 +123,8 @@ export default function StagingGetStartedModal({
         source: "non_edu_fallback",
       });
       if (error) throw error;
+      // Also register as a campus lead (will resolve to "general" if no .edu match).
+      await registerLead(trimmed, preselectedCourseSlug);
       setView("non_edu_success");
     } catch {
       toast.error("Something went wrong. Try again.");
