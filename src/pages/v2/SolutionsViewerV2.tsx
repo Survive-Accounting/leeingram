@@ -1121,12 +1121,13 @@ export default function SolutionsViewerV2() {
             <span className="hidden sm:inline">Back to dashboard</span>
             <span className="sm:hidden">Dashboard</span>
           </Link>
-          <div
-            className="text-sm font-medium tracking-tight truncate"
-            style={{ color: "rgba(255,255,255,0.92)" }}
+          <Link
+            to="/my-dashboard"
+            className="text-sm font-semibold tracking-tight truncate"
+            style={{ color: "rgba(255,255,255,0.95)", letterSpacing: "-0.01em" }}
           >
-            {headerLabel}
-          </div>
+            Survive Accounting
+          </Link>
           <button
             type="button"
             onClick={() => setJumpOpen(true)}
