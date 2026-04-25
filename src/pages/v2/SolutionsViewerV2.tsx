@@ -1446,121 +1446,122 @@ export default function SolutionsViewerV2() {
                   color: "rgba(255,255,255,0.92)",
                 }}
               >
-                {/* Simplified ↔ Original toggle */}
-                <div className="flex items-center gap-2 mb-4">
-                  <button
-                    type="button"
-                    onClick={() => setSimplifyView("simplified")}
-                    className={cn(
-                      "px-3 h-7 text-xs font-medium rounded-md border transition-colors",
-                    )}
-                    style={
-                      simplifyView === "simplified"
-                        ? { background: "rgba(255,255,255,0.95)", color: "#14213D", borderColor: "rgba(255,255,255,0.95)" }
-                        : { background: "transparent", color: "rgba(255,255,255,0.7)", borderColor: "rgba(255,255,255,0.18)" }
-                    }
-                  >
-                    Simplified
-                  </button>
+                {/* Top line: "Practice based on E1.4 🔍" */}
+                {asset.source_ref && (
                   <button
                     type="button"
                     onClick={() => {
-                      setSimplifyView("original");
                       if (originalImages.length > 0) setOriginalOpen(true);
                     }}
                     disabled={originalImages.length === 0}
-                    title={originalImages.length === 0 ? "Original textbook image not available" : "View original textbook problem"}
-                    className={cn(
-                      "px-3 h-7 text-xs font-medium rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
-                    )}
-                    style={
-                      simplifyView === "original"
-                        ? { background: "rgba(255,255,255,0.95)", color: "#14213D", borderColor: "rgba(255,255,255,0.95)" }
-                        : { background: "transparent", color: "rgba(255,255,255,0.7)", borderColor: "rgba(255,255,255,0.18)" }
+                    title={
+                      originalImages.length === 0
+                        ? "Original textbook image not available"
+                        : "View the original textbook problem"
                     }
+                    className="group inline-flex items-center gap-1.5 -ml-1 px-1 py-0.5 rounded-md transition-colors hover:bg-white/5 disabled:hover:bg-transparent disabled:cursor-default"
                   >
-                    Original
+                    <span
+                      className="text-[11px] font-medium uppercase tracking-[0.12em]"
+                      style={{ color: "rgba(255,255,255,0.55)" }}
+                    >
+                      Practice based on{" "}
+                      <span className="font-mono normal-case tracking-normal text-white/85">
+                        {asset.source_ref}
+                      </span>
+                    </span>
+                    {originalImages.length > 0 && (
+                      <Search
+                        className="h-3 w-3 transition-colors"
+                        style={{ color: "rgba(255,255,255,0.4)" }}
+                      />
+                    )}
                   </button>
-                </div>
-
-                {asset.source_ref && (
-                  <div
-                    className="text-[11px] font-medium uppercase tracking-[0.12em]"
-                    style={{ color: "rgba(255,255,255,0.5)" }}
-                  >
-                    Practice based on <span className="font-mono normal-case tracking-normal">{asset.source_ref}</span>
-                  </div>
                 )}
 
-                {/* Textbook problem title intentionally hidden — keep focus on the prompt itself. */}
-
-                {/* Problem text — simplified by default; falls back to raw on error or while loading */}
+                {/* Problem section (default open) */}
                 {asset.survive_problem_text && (
-                  <div className="mt-5">
+                  <div className="mt-4">
                     <div
                       className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2"
                       style={{ color: "rgba(255,255,255,0.45)" }}
                     >
                       Problem
                     </div>
-                    {simplifyView === "simplified" && simplifyLoading && !simplifiedText ? (
-                      <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Survive Accounting is thinking…
-                      </div>
-                    ) : simplifyView === "simplified" && simplifiedText ? (
+                    {simplifiedText ? (
                       <div
-                        className="prose prose-invert max-w-prose text-[0.9375rem] prose-p:my-2 prose-ul:my-2 prose-li:my-1 prose-headings:text-white/95 prose-headings:font-semibold prose-strong:text-white"
+                        className="prose prose-invert max-w-prose text-[14px] prose-p:my-2 prose-ul:my-1.5 prose-li:my-1 prose-headings:text-white/95 prose-headings:font-semibold prose-strong:text-white"
                         style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
                       >
                         <ReactMarkdown>{simplifiedText}</ReactMarkdown>
                       </div>
-                    ) : (
-                      <div
-                        className="whitespace-pre-wrap text-[0.9375rem] max-w-prose [&>p+p]:mt-3"
-                        style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
-                      >
-                        {asset.survive_problem_text}
-                      </div>
-                    )}
-                    {simplifyError && (
-                      <div className="mt-2 text-xs" style={{ color: "rgba(255,180,180,0.85)" }}>
-                        {simplifyError}
-                      </div>
-                    )}
+                    ) : simplifyError ? (
+                      // Fallback: show raw problem with a small notice
+                      <>
+                        <div
+                          className="mb-2 text-xs"
+                          style={{ color: "rgba(255,180,180,0.85)" }}
+                        >
+                          {simplifyError}
+                        </div>
+                        <div
+                          className="whitespace-pre-wrap text-[14px] max-w-prose [&>p+p]:mt-3"
+                          style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
+                        >
+                          {asset.survive_problem_text}
+                        </div>
+                      </>
+                    ) : null}
+                    {/* If no simplifiedText and no error → blocking modal below covers this state */}
                   </div>
                 )}
 
-                {/* Instructions — separated by divider for clarity */}
+                {/* Instructions — collapsed by default */}
                 {instructions.length > 0 && (
                   <div
                     className="mt-6 pt-5 border-t"
                     style={{ borderColor: "rgba(255,255,255,0.08)" }}
                   >
-                    <div
-                      className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2"
-                      style={{ color: "rgba(255,255,255,0.45)" }}
+                    <button
+                      type="button"
+                      onClick={() => setInstructionsOpen((v) => !v)}
+                      className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md text-xs font-medium transition-colors hover:bg-white/5"
+                      style={{
+                        color: "rgba(255,255,255,0.85)",
+                        border: "1px solid rgba(255,255,255,0.18)",
+                        background: "transparent",
+                      }}
                     >
-                      Instructions
-                    </div>
-                    <ul className="space-y-2 text-[0.9375rem]" style={{ lineHeight: 1.6 }}>
-                      {instructions.map((ins, i) => (
-                        <li key={i} className="flex gap-2.5">
-                          <span
-                            className="font-semibold shrink-0 mt-0.5"
-                            style={{ color: "rgba(255,255,255,0.7)" }}
-                          >
-                            {String.fromCharCode(97 + i)}.
-                          </span>
-                          <span
-                            className="whitespace-pre-wrap"
-                            style={{ color: "rgba(255,255,255,0.88)" }}
-                          >
-                            {highlightTerms(ins)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
+                      {instructionsOpen ? (
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      )}
+                      {instructionsOpen ? "Hide instructions" : "View instructions"}
+                    </button>
+                    {instructionsOpen && (
+                      <ul
+                        className="mt-4 space-y-2 text-[14px] animate-in fade-in slide-in-from-top-1 duration-150"
+                        style={{ lineHeight: 1.6 }}
+                      >
+                        {instructions.map((ins, i) => (
+                          <li key={i} className="flex gap-2.5">
+                            <span
+                              className="font-semibold shrink-0 mt-0.5"
+                              style={{ color: "rgba(255,255,255,0.7)" }}
+                            >
+                              {String.fromCharCode(97 + i)}.
+                            </span>
+                            <span
+                              className="whitespace-pre-wrap"
+                              style={{ color: "rgba(255,255,255,0.88)" }}
+                            >
+                              {highlightTerms(ins)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 )}
               </section>
