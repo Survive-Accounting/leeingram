@@ -3036,7 +3036,7 @@ export type Database = {
           helpful: boolean
           id: string
           note: string | null
-          reason: string | null
+          reason: string[] | null
           user_email: string | null
         }
         Insert: {
@@ -3046,7 +3046,7 @@ export type Database = {
           helpful: boolean
           id?: string
           note?: string | null
-          reason?: string | null
+          reason?: string[] | null
           user_email?: string | null
         }
         Update: {
@@ -3056,7 +3056,7 @@ export type Database = {
           helpful?: boolean
           id?: string
           note?: string | null
-          reason?: string | null
+          reason?: string[] | null
           user_email?: string | null
         }
         Relationships: []
