@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,11 +19,28 @@ const HIDDEN_KEY = "styleExport.hidden.v1";
 export function StyleExportToolbar() {
   const { user } = useAuth();
   const allowed = ALLOWED.includes((user?.email ?? "").trim().toLowerCase());
+  const POS_KEY = "styleExport.launcherPos.v1";
 
   const [hidden, setHidden] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try { return localStorage.getItem(HIDDEN_KEY) === "1"; } catch { return false; }
   });
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    if (typeof window === "undefined") return { x: 16, y: 152 };
+    try {
+      const raw = localStorage.getItem(POS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          x: Math.min(Math.max(8, parsed.x ?? 16), window.innerWidth - 60),
+          y: Math.min(Math.max(8, parsed.y ?? 152), window.innerHeight - 60),
+        };
+      }
+    } catch { /* noop */ }
+    return { x: 16, y: Math.max(152, window.innerHeight - 84) };
+  });
+  const dragRef = useRef<{ dx: number; dy: number; moved: boolean } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [sections, setSections] = useState<ExportableSection[]>([]);
 
@@ -31,8 +48,63 @@ export function StyleExportToolbar() {
     try { localStorage.setItem(HIDDEN_KEY, hidden ? "1" : "0"); } catch { /* noop */ }
   }, [hidden]);
 
+  useEffect(() => {
+    try { localStorage.setItem(POS_KEY, JSON.stringify(pos)); } catch { /* noop */ }
+  }, [pos]);
+
+  useEffect(() => {
+    const onResize = () => {
+      setPos((p) => ({
+        x: Math.min(Math.max(8, p.x), window.innerWidth - 60),
+        y: Math.min(Math.max(8, p.y), window.innerHeight - 60),
+      }));
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   // Refresh detected sections every time the popover opens
   const refreshSections = () => setSections(findExportableSections());
+
+  const onLauncherPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    dragRef.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top, moved: false };
+  };
+
+  const onLauncherPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const nx = e.clientX - d.dx;
+    const ny = e.clientY - d.dy;
+    const movedNow = Math.abs(nx - pos.x) > 3 || Math.abs(ny - pos.y) > 3;
+    if (movedNow && !d.moved) {
+      d.moved = true;
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* noop */ }
+    }
+    if (!d.moved) return;
+    const w = e.currentTarget.offsetWidth;
+    const h = e.currentTarget.offsetHeight;
+    setPos({
+      x: Math.min(Math.max(8, nx), window.innerWidth - w - 8),
+      y: Math.min(Math.max(8, ny), window.innerHeight - h - 8),
+    });
+  };
+
+  const onLauncherPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = dragRef.current;
+    if (d?.moved) {
+      try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    }
+    setTimeout(() => { dragRef.current = null; }, 0);
+  };
+
+  const onLauncherClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (dragRef.current?.moved) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
 
   if (!allowed) return null;
 
@@ -49,7 +121,7 @@ export function StyleExportToolbar() {
       <button
         data-export-ignore
         onClick={() => setHidden(false)}
-        className="fixed bottom-3 right-3 z-[9998] rounded-full bg-background/80 backdrop-blur px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border shadow-sm transition-colors"
+        className="fixed bottom-3 left-16 z-[9998] rounded-full bg-background/80 backdrop-blur px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border shadow-sm transition-colors"
         title="Show Style Export toolbar"
         aria-label="Show Style Export toolbar"
       >
@@ -61,23 +133,34 @@ export function StyleExportToolbar() {
   return (
     <div
       data-export-ignore
-      className="fixed bottom-3 right-3 z-[9998] flex items-center gap-1.5 group"
+      style={{ left: pos.x, top: pos.y }}
+      className="fixed z-[9998] flex items-center gap-1.5 group"
     >
-      <Popover onOpenChange={(o) => o && refreshSections()}>
+      <Popover open={open} onOpenChange={(o) => {
+        setOpen(o);
+        if (o) refreshSections();
+      }}>
         <PopoverTrigger asChild>
           <Button
             size="sm"
             variant="secondary"
-            className="rounded-full shadow-lg gap-1.5 pl-3 pr-2.5"
+            onPointerDown={onLauncherPointerDown}
+            onPointerMove={onLauncherPointerMove}
+            onPointerUp={onLauncherPointerUp}
+            onClick={onLauncherClick}
+            style={{ touchAction: "none" }}
+            className="rounded-full shadow-lg gap-2 px-4 py-2.5 h-auto cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-foreground/20 hover:scale-105 transition-transform"
+            aria-label="Open Style Export — drag to move"
+            title="Click to open · Drag to move"
           >
-            <Palette className="h-3.5 w-3.5" />
+            <Palette className="h-4 w-4" />
             Style Export
-            <ChevronDown className="h-3 w-3 opacity-60" />
+            <ChevronDown className="h-3.5 w-3.5 opacity-60" />
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          align="end"
-          side="top"
+          align="start"
+          side="right"
           className="w-72 p-2 space-y-1"
           data-export-ignore
         >
@@ -154,7 +237,10 @@ export function StyleExportToolbar() {
               Lee-only · landing routes
             </span>
             <button
-              onClick={() => setHidden(true)}
+              onClick={() => {
+                setOpen(false);
+                setHidden(true);
+              }}
               className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
             >
               <EyeOff className="h-3 w-3" /> Hide
