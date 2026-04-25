@@ -626,7 +626,7 @@ function InlineExplanation({
           {loading && !sections ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Lee is thinking…
+              Survive Accounting is thinking…
             </div>
           ) : sections ? (
             <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
@@ -1122,7 +1122,7 @@ export default function SolutionsViewerV2() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Helmet>
-        <title>{asset?.problem_title || asset?.source_ref || "Problem"} · Survive Accounting</title>
+        <title>{asset?.source_ref ? `Practice based on ${asset.source_ref}` : "Problem"} · Survive Accounting</title>
       </Helmet>
 
       {isPreview && (
@@ -1225,15 +1225,7 @@ export default function SolutionsViewerV2() {
                   </div>
                 )}
 
-                {/* Problem title (prominent) */}
-                {asset.problem_title && (
-                  <h1
-                    className="mt-2 text-[1.35rem] sm:text-[1.5rem] font-semibold leading-tight tracking-tight"
-                    style={{ color: "#FFFFFF", fontFamily: "'DM Serif Display', serif" }}
-                  >
-                    {asset.problem_title}
-                  </h1>
-                )}
+                {/* Textbook problem title intentionally hidden — keep focus on the prompt itself. */}
 
                 {/* Problem text */}
                 {asset.survive_problem_text && (
