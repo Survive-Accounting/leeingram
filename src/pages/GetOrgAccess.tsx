@@ -1127,7 +1127,7 @@ export default function GetOrgAccess() {
               )}
             </div>
 
-            {/* Step 4 — Tier */}
+            {/* Step 4 — Tier (fixed 3-pack presentation) */}
             <div className="mt-7">
               <div
                 className="text-[13px] font-semibold uppercase tracking-wider mb-2"
@@ -1136,105 +1136,125 @@ export default function GetOrgAccess() {
                 4. Choose your pack
               </div>
 
-              {tiersLoading ? (
-                <div
-                  className="rounded-lg px-3 py-4 text-[13px]"
-                  style={{
-                    border: "1px dashed #E0E7F0",
-                    background: "#FAFBFC",
-                    color: "#94A3B8",
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                >
-                  Loading pricing…
-                </div>
-              ) : tiers.length === 0 ? (
-                <div
-                  className="rounded-lg px-3 py-4 text-[13px]"
-                  style={{
-                    border: "1px dashed #E0E7F0",
-                    background: "#FAFBFC",
-                    color: "#64748B",
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                >
-                  No active pricing tiers. Reach out to lee@surviveaccounting.com.
-                </div>
-              ) : (
-                <div
-                  className={`grid gap-2 grid-cols-2 ${
-                    tiers.length >= 5 ? "sm:grid-cols-5" : `sm:grid-cols-${Math.min(tiers.length, 4)}`
-                  }`}
-                >
-                  {tiers.map((t) => {
-                    const selected = t.id === selectedTierId;
-                    const badge = t.badge || (t.recommended ? "Popular" : null);
-                    const badgeColor = t.is_promo ? "#15803D" : RED;
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setSelectedTierId(t.id)}
-                        className="relative rounded-xl p-3 text-left transition-all"
-                        style={{
-                          background: selected ? "#F0F6FF" : "#fff",
-                          border: `1.5px solid ${selected ? NAVY : "#E0E7F0"}`,
-                          boxShadow: selected ? "0 4px 12px rgba(20,33,61,0.08)" : "none",
-                        }}
-                      >
-                        {badge && (
-                          <span
-                            className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
-                            style={{
-                              background: badgeColor,
-                              color: "#fff",
-                              fontFamily: "Inter, sans-serif",
-                            }}
-                          >
-                            {badge}
-                          </span>
-                        )}
-                        <div
-                          className="text-[20px] font-bold leading-none"
+              {(() => {
+                const PRESETS = [
+                  { key: "house", name: "House", seats: 10, total: 750, badge: null as string | null, badgeColor: "" },
+                  { key: "chapter", name: "Chapter", seats: 20, total: 1250, badge: "MOST POPULAR", badgeColor: RED },
+                  { key: "gpa", name: "GPA Booster", seats: 30, total: 1500, badge: "BEST VALUE", badgeColor: "#15803D" },
+                ];
+
+                // Map preset to a real tier (by seats) so submission still works
+                const findTier = (seats: number) =>
+                  tiers.find((t) => t.seats === seats) || null;
+
+                if (tiersLoading) {
+                  return (
+                    <div
+                      className="rounded-lg px-3 py-4 text-[13px]"
+                      style={{
+                        border: "1px dashed #E0E7F0",
+                        background: "#FAFBFC",
+                        color: "#94A3B8",
+                        fontFamily: "Inter, sans-serif",
+                      }}
+                    >
+                      Loading pricing…
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {PRESETS.map((p) => {
+                      const matchedTier = findTier(p.seats);
+                      const selected = matchedTier ? matchedTier.id === selectedTierId : false;
+                      const perMember = Math.round(p.total / p.seats);
+                      const isPopular = p.key === "chapter";
+                      return (
+                        <button
+                          key={p.key}
+                          type="button"
+                          disabled={!matchedTier}
+                          onClick={() => matchedTier && setSelectedTierId(matchedTier.id)}
+                          className="relative rounded-2xl p-5 text-left transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{
-                            color: NAVY,
-                            fontFamily: "Inter, sans-serif",
-                            letterSpacing: "-0.02em",
+                            background: "#fff",
+                            border: `2px solid ${
+                              selected ? NAVY : isPopular ? `${NAVY}33` : "#E0E7F0"
+                            }`,
+                            boxShadow: selected
+                              ? `0 0 0 4px ${NAVY}1A, 0 8px 24px rgba(20,33,61,0.12)`
+                              : isPopular
+                                ? "0 4px 14px rgba(20,33,61,0.08)"
+                                : "0 1px 3px rgba(0,0,0,0.04)",
+                            transform: selected ? "translateY(-2px)" : "none",
                           }}
                         >
-                          {t.seats}
-                        </div>
-                        <div
-                          className="text-[11px] mt-0.5"
-                          style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
-                        >
-                          passes
-                        </div>
-                        <div
-                          className="text-[13px] font-semibold mt-2"
-                          style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-                        >
-                          ${t.total.toLocaleString()}
-                        </div>
-                        <div
-                          className="text-[10px]"
-                          style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                        >
-                          ${Math.round(t.total / t.seats)}/seat
-                        </div>
-                        {t.label && (
+                          {p.badge && (
+                            <span
+                              className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
+                              style={{
+                                background: p.badgeColor,
+                                color: "#fff",
+                                fontFamily: "Inter, sans-serif",
+                                boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                              }}
+                            >
+                              {p.badge}
+                            </span>
+                          )}
+
                           <div
-                            className="text-[10px] mt-1 font-medium leading-tight"
-                            style={{ color: "#15803D", fontFamily: "Inter, sans-serif" }}
+                            className="text-[14px] font-bold uppercase tracking-wider"
+                            style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
                           >
-                            {t.label}
+                            {p.name}
                           </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+                          <div
+                            className="text-[12px] mt-1"
+                            style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+                          >
+                            {p.seats} members
+                          </div>
+
+                          <div
+                            className="mt-4 text-[32px] font-bold leading-none"
+                            style={{
+                              color: NAVY,
+                              fontFamily: "Inter, sans-serif",
+                              letterSpacing: "-0.03em",
+                            }}
+                          >
+                            ${p.total.toLocaleString()}
+                          </div>
+                          <div
+                            className="text-[12px] mt-1.5"
+                            style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                          >
+                            ${perMember}/member
+                          </div>
+
+                          {!matchedTier && (
+                            <div
+                              className="mt-3 text-[11px] italic"
+                              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                            >
+                              Not yet available
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
+              <div
+                className="mt-3 text-[12px]"
+                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+              >
+                Used by 2 chapters at Ole Miss
+              </div>
             </div>
 
             {/* Step 5 — Auto re-up */}
