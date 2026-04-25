@@ -1067,7 +1067,16 @@ export default function SolutionsViewerV2() {
             {/* LEFT: Problem + What you need to solve */}
             <div className="space-y-4 min-w-0">
               {/* Card 1: Problem */}
-              <section className="rounded-2xl border bg-card p-6 shadow-sm">
+              <section
+                className="rounded-2xl p-8"
+                style={{
+                  background: "#1A2B5C",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  boxShadow:
+                    "0 1px 0 rgba(255,255,255,0.04) inset, 0 20px 40px -20px rgba(0,0,0,0.5), 0 0 60px -20px rgba(99,52,180,0.25)",
+                  color: "rgba(255,255,255,0.92)",
+                }}
+              >
                 {asset.source_ref && (
                   <div className="text-xs text-muted-foreground">
                     Practice based on <span className="font-mono">{asset.source_ref}</span>
