@@ -264,6 +264,8 @@ export function PromptBuilderWidget() {
     }
   };
 
+  if (!allowed) return null;
+
   return (
     <>
       <button
