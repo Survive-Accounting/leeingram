@@ -900,6 +900,7 @@ export default function WebDevSprints() {
                       canEdit={canEdit && statusFilter === "All"}
                       onChange={handleUpdate}
                       onDelete={() => handleDelete(f.id)}
+                      onBuildPrompt={canEdit ? () => openBuildPrompt(f) : undefined}
                     />
                   ))}
                 </div>
