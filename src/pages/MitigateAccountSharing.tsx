@@ -136,6 +136,8 @@ const CATEGORIES: Category[] = [
     complexity: 6,
     technical:
       "Embedded viewer URLs include {{USER_ID}}, {{USER_EMAIL}}, and {{COURSE_ID}} injected by LearnWorlds at render time. We validate document.referrer against an LW domain whitelist and persist the bound identity in sessionStorage['sa-lw-verified']. Mismatches between the embed identity and the active Supabase session trigger a binding_violation event.",
+    halfTechy:
+      "LearnWorlds is the platform our courses run on. When a student opens a problem inside their course, LW passes us their user ID and email through the embed URL. We check that the request actually came from a LearnWorlds domain (via referrer) and compare it to whoever's logged into our app. If the IDs don't match, we flag it — that usually means a borrowed login.",
     laymans:
       "When a student opens a problem from inside their course, LearnWorlds tells us exactly who they are. If that ID doesn't match the email on the account, we know someone is logged into the wrong place — usually a sign of a borrowed login.",
     mockup: [
