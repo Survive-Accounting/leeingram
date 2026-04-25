@@ -1305,7 +1305,7 @@ export default function GetOrgAccess() {
                             }}
                           >
                             ${discountedTotal.toLocaleString()}
-                            {foundingEligible && (
+                            {totalDiscountPct > 0 && (
                               <span
                                 className="text-[14px] font-medium line-through"
                                 style={{ color: "#94A3B8", letterSpacing: 0 }}
