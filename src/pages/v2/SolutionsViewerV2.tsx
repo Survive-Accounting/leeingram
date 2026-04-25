@@ -1106,6 +1106,7 @@ export default function SolutionsViewerV2() {
                 {/* Simplify trigger / toggle */}
                 <SimplifiedProblem
                   asset={asset}
+                  chapter={chapter}
                   view={simplifyView}
                   onViewChange={setSimplifyView}
                   simplifiedText={simplifiedText}
