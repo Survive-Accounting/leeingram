@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { X } from "lucide-react";
 
 const HIDDEN_KEY = "testFlowToolbar.hidden.v1";
+const ALLOWED = ["lee@survivestudios.com"];
 
 /**
  * Top-of-page testing strip:
