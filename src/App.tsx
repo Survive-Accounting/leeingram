@@ -103,6 +103,7 @@ const QACosts = lazy(() => import("./pages/QACosts"));
 const JEDebug = lazy(() => import("./pages/JEDebug"));
 const AssetStatsDashboard = lazy(() => import("./pages/AssetStatsDashboard"));
 const SolutionsViewerStaging = lazy(() => import("./pages/SolutionsViewerStaging"));
+const SolutionsViewerV2 = lazy(() => import("./pages/v2/SolutionsViewerV2"));
 const ChapterCramTool = lazy(() => import("./pages/ChapterCramTool"));
 const ChapterPreviewPage = lazy(() => import("./pages/ChapterPreviewPage"));
 const CampusChapterPage = lazy(() => import("./pages/CampusChapterPage"));
@@ -202,6 +203,7 @@ const AppRoutes = () => {
         {/* Public tools */}
         <Route path="/solutions/:assetCode" element={<SolutionsViewer />} />
         <Route path="/solutions-staging/:assetCode" element={<ProtectedRoute><SolutionsViewerStaging /></ProtectedRoute>} />
+        <Route path="/v2/solutions/:assetCode" element={<SolutionsViewerV2 />} />
         <Route path="/practice/:assetCode" element={<PracticeViewer />} />
         <Route path="/cram/:chapterId" element={<ChapterCramTool />} />
         <Route path="/cram" element={<ChapterCramTool />} />

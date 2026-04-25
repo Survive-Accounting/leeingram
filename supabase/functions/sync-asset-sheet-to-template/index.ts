@@ -10,7 +10,7 @@ const SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.goo
 
 // ── Google Auth helpers ──────────────────────────────────────────────
 
-function base64url(buf: ArrayBuffer): string {
+function base64url(buf: ArrayBuffer | Uint8Array): string {
   return btoa(String.fromCharCode(...new Uint8Array(buf)))
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
