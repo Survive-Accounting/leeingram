@@ -21,7 +21,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const LOVABLE_URL = "https://lovable.dev/projects/51843e0a-bf2a-4413-bab2-a6c4ea7a1395";
 
-type Mode = "ui_fix" | "new_feature" | "conversion";
+type Mode = "ui_fix" | "conversion";
 type PromptKind = "build" | "plan";
 type CardStatus = "generating" | "ready" | "sent" | "error";
 
@@ -41,9 +41,8 @@ interface PromptCard {
 const MAX_SCREENSHOTS = 10;
 
 const MODES: { key: Mode; label: string; icon: typeof Wrench }[] = [
-  { key: "ui_fix", label: "UI Fix", icon: Wrench },
-  { key: "new_feature", label: "Feature", icon: Plus },
-  { key: "conversion", label: "Convert", icon: TrendingUp },
+  { key: "ui_fix", label: "Fix UI", icon: Wrench },
+  { key: "conversion", label: "Improve Conversion", icon: TrendingUp },
 ];
 
 const STATUS_STYLES: Record<CardStatus, string> = {
@@ -72,7 +71,7 @@ export function PromptBuilderWidget() {
   const [minimized, setMinimized] = useState(false);
   const [text, setText] = useState("");
   const [interim, setInterim] = useState("");
-  const [mode, setMode] = useState<Mode>("new_feature");
+  const [mode, setMode] = useState<Mode>("ui_fix");
   const [recording, setRecording] = useState(false);
   /** Whether the user paused — recording bar stays visible, mic is off, timer stops. */
   const [paused, setPaused] = useState(false);
