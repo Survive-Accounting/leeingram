@@ -479,8 +479,8 @@ export function PromptBuilderWidget() {
             className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-foreground/20"
             title="Click to open · Drag to move · ⌘K"
           >
-            <Zap className="h-4 w-4" />
-            Build Prompt
+            <Sparkles className="h-4 w-4" />
+            Prompt Builder
           </button>
           <button
             onClick={() => setHidden(true)}
