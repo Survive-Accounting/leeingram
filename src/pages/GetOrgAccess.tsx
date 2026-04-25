@@ -1657,29 +1657,33 @@ export default function GetOrgAccess() {
               type="button"
               disabled={!canSubmit}
               onClick={handleCheckout}
-              className="mt-7 w-full rounded-xl px-5 py-3.5 text-[15px] font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:scale-[1.01] active:enabled:scale-[0.99]"
+              className="mt-7 w-full rounded-xl px-5 py-4 text-[16px] font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:scale-[1.01] active:enabled:scale-[0.99]"
               style={{
                 background: RED,
                 fontFamily: "Inter, sans-serif",
-                boxShadow: "0 6px 16px rgba(206,17,38,0.25)",
+                boxShadow:
+                  "0 12px 28px rgba(206,17,38,0.32), 0 2px 6px rgba(206,17,38,0.18)",
+                letterSpacing: 0.2,
               }}
             >
-              {(() => {
-                if (submitting) return "Working…";
-                if (!tier) return "Continue";
-                const ctaTotal = applyDiscount(tier.total);
-                const verb = paymentMethod === "manual" ? "Request invoice" : "Continue";
-                return `${verb} → ${tier.seats} passes · $${ctaTotal.toLocaleString()}`;
-              })()}
+              {submitting
+                ? "Working…"
+                : paymentMethod === "manual"
+                  ? "Request invoice →"
+                  : "Start Chapter Access →"}
             </button>
 
-            <div
-              className="mt-3 flex items-center justify-center gap-1.5 text-[12px]"
-              style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+            <ul
+              className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[12px]"
+              style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
             >
-              <ShieldCheck size={14} />
-              Secure checkout · No upfront commitment from members
-            </div>
+              <li className="flex items-center gap-1.5">
+                <ShieldCheck size={13} style={{ color: "#94A3B8" }} />
+                No contracts
+              </li>
+              <li>· Cancel anytime</li>
+              <li>· Members can join instantly</li>
+            </ul>
               </>
             )}
           </div>
