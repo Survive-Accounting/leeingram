@@ -88,8 +88,8 @@ export function MarkupOverlay({ onClose }: Props) {
       <svg
         ref={svgRef}
         data-prompt-builder-ui="true"
-        className="fixed inset-0 z-[9998]"
-        style={{ touchAction: "none", cursor: "crosshair" }}
+        className="fixed inset-0 z-[2147483646]"
+        style={{ touchAction: "none", cursor: "crosshair", background: "rgba(0,0,0,0.001)" }}
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
