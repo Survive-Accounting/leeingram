@@ -31,6 +31,7 @@ type Category = {
   enabled: boolean;
   complexity: number; // 1 = simplest
   technical: string;
+  halfTechy: string;
   laymans: string;
   mockup: { metric: string; value: string; hint: string }[];
 };
