@@ -422,164 +422,194 @@ function ExplanationFeedback({ asset }: { asset: Asset }) {
   );
 }
 
-function InlineExplanation({ asset }: { asset: Asset }) {
-  const [started, setStarted] = useState(false);
+// Section keys for the "Get unstuck fast" toolbox.
+// `lees_approach` is reused for the "How to start" button.
+type ToolboxKey = "lees_approach" | "how_to_solve" | "why_it_works" | "lock_it_in";
+
+const TOOLBOX_META: Record<ToolboxKey, { label: string; emoji: string }> = {
+  lees_approach: { label: "How to start", emoji: "🧭" },
+  how_to_solve: { label: "Steps to solve", emoji: "📌" },
+  why_it_works: { label: "Why it works", emoji: "⚖️" },
+  lock_it_in: { label: "Lock this in", emoji: "🔒" },
+};
+
+const TOOLBOX_ORDER: ToolboxKey[] = ["lees_approach", "how_to_solve", "why_it_works", "lock_it_in"];
+
+function InlineExplanation({
+  asset,
+  chapter,
+  simplifiedText,
+  setSimplifiedText,
+}: {
+  asset: Asset;
+  chapter: ChapterMeta | null;
+  simplifiedText: string | null;
+  setSimplifiedText: (t: string | null) => void;
+}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sections, setSections] = useState<ExplanationSections | null>(null);
-  const [openSections, setOpenSections] = useState<Set<SectionKey>>(new Set());
+  const [activeSection, setActiveSection] = useState<ToolboxKey | null>(null);
+  const [printing, setPrinting] = useState(false);
 
   // Reset on asset change
   useEffect(() => {
-    setStarted(false);
     setSections(null);
+    setActiveSection(null);
     setError(null);
-    setOpenSections(new Set());
   }, [asset.asset_name]);
 
-  useEffect(() => {
-    if (!started) return;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const { data, error } = await supabase.functions.invoke("explain-this-solution", {
-          body: { asset_code: asset.asset_name },
-        });
-        if (cancelled) return;
-        if (error) throw error;
-        if (!data?.success) throw new Error(data?.error || "Failed to load explanation");
-        setSections(data.sections);
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || "Something went wrong");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [started, asset.asset_name]);
-
-  const toggleSection = (key: SectionKey) => {
-    setOpenSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  const ensureSections = async (): Promise<ExplanationSections | null> => {
+    if (sections) return sections;
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("explain-this-solution", {
+        body: { asset_code: asset.asset_name },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Failed to load explanation");
+      setSections(data.sections);
+      return data.sections as ExplanationSections;
+    } catch (e: any) {
+      setError(e?.message || "Something went wrong");
+      return null;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (!started) {
-    return (
-      <div
-        className="rounded-2xl p-10 flex flex-col items-center justify-center text-center min-h-[260px]"
-        style={{
-          background:
-            "radial-gradient(ellipse 90% 70% at 50% 35%, rgba(80,130,255,0.18) 0%, transparent 65%), linear-gradient(180deg, #1A2B5C 0%, #14213D 100%)",
-          border: "1px solid rgba(255,255,255,0.06)",
-          boxShadow:
-            "0 1px 0 rgba(255,255,255,0.04) inset, 0 20px 40px -20px rgba(0,0,0,0.5), 0 0 60px -20px rgba(80,130,255,0.3)",
-        }}
-      >
-        <p className="text-[15px] mb-6 max-w-sm" style={{ color: "rgba(255,255,255,0.75)" }}>
-          Try it first. When you're ready, get a quick walkthrough.
-        </p>
-        <button
-          type="button"
-          onClick={() => setStarted(true)}
-          className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-[15px] font-semibold text-white transition-transform hover:scale-[1.02] active:scale-[0.99]"
-          style={{
-            background: "linear-gradient(180deg, #E63950 0%, #CE1126 50%, #A30E1F 100%)",
-            boxShadow:
-              "0 1px 0 rgba(255,255,255,0.18) inset, 0 10px 24px -8px rgba(206,17,38,0.55), 0 2px 6px rgba(0,0,0,0.25)",
-          }}
-        >
-          <Sparkles className="h-4 w-4" />
-          Explain this
-        </button>
-      </div>
-    );
-  }
+  const handleToolboxClick = async (key: ToolboxKey) => {
+    // Toggle off if same button clicked
+    if (activeSection === key) {
+      setActiveSection(null);
+      return;
+    }
+    setActiveSection(key);
+    if (!sections) await ensureSections();
+  };
+
+  // Print PDF — reuses simplify-problem cache + generateSimplifiedPracticePdf
+  const handlePrintPdf = async () => {
+    setError(null);
+    const buildPdf = (md: string) => {
+      const chapterLabel = chapter
+        ? `Ch ${chapter.chapter_number}: ${chapter.chapter_name}`
+        : null;
+      const doc = generateSimplifiedPracticePdf({
+        sourceRef: asset.source_ref,
+        problemTitle: asset.problem_title,
+        chapterLabel,
+        courseName: null,
+        simplifiedMarkdown: md,
+      });
+      const safeRef = (asset.source_ref || asset.asset_name).replace(/[^A-Za-z0-9._-]/g, "_");
+      doc.save(`${safeRef}-practice.pdf`);
+    };
+
+    if (simplifiedText) {
+      buildPdf(simplifiedText);
+      return;
+    }
+    setPrinting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("simplify-problem", {
+        body: { asset_id: asset.id },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Failed to prepare PDF");
+      setSimplifiedText(data.simplified_text);
+      buildPdf(data.simplified_text);
+    } catch (e: any) {
+      setError(e?.message || "Could not generate PDF");
+    } finally {
+      setPrinting(false);
+    }
+  };
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-2 text-sm font-semibold">
-        <Sparkles className="h-4 w-4 text-primary" />
-        Explanation
+    <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-5">
+      {/* Header */}
+      <div>
+        <h2 className="text-lg font-semibold tracking-tight">Get unstuck fast</h2>
       </div>
 
-      {loading && !sections && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Lee is thinking…
-          </div>
-          <Skeleton className="h-4 w-3/4" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-5/6" />
-        </div>
-      )}
+      {/* Top: subtle "Try it yourself" + Print PDF */}
+      <div className="flex items-center justify-between gap-3 pb-4 border-b border-border/60">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          Try it yourself
+        </span>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={handlePrintPdf}
+          disabled={printing}
+          className="gap-1.5 h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+        >
+          {printing ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Printer className="h-3.5 w-3.5" />
+          )}
+          Print PDF
+        </Button>
+      </div>
 
+      {/* Toolbox */}
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-foreground/80">Choose what you need:</p>
+        <div className="grid grid-cols-2 gap-2">
+          {TOOLBOX_ORDER.map((k) => {
+            const isActive = activeSection === k;
+            return (
+              <Button
+                key={k}
+                variant={isActive ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleToolboxClick(k)}
+                className="justify-start gap-2 h-9 text-xs sm:text-sm font-medium"
+              >
+                <span aria-hidden>{TOOLBOX_META[k].emoji}</span>
+                {TOOLBOX_META[k].label}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Active section content */}
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
-      {sections && (
-        <>
-          <section className="rounded-lg border border-border bg-card p-4">
-            <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-              <span aria-hidden>🧭</span> Lee's approach
-            </h3>
-            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
-              <ReactMarkdown>{sections.lees_approach}</ReactMarkdown>
+      {activeSection && (
+        <section
+          key={activeSection}
+          className="rounded-lg border border-border bg-muted/30 p-4 animate-in fade-in slide-in-from-top-1 duration-200"
+        >
+          <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+            <span aria-hidden>{TOOLBOX_META[activeSection].emoji}</span>
+            {TOOLBOX_META[activeSection].label}
+          </h3>
+          {loading && !sections ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Lee is thinking…
             </div>
-          </section>
+          ) : sections ? (
+            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
+              <ReactMarkdown>{sections[activeSection]}</ReactMarkdown>
+            </div>
+          ) : null}
+        </section>
+      )}
 
-          <div className="flex flex-wrap gap-2">
-            {(Object.keys(SECTION_META) as SectionKey[]).map((k) => {
-              const isOpen = openSections.has(k);
-              return (
-                <Button
-                  key={k}
-                  size="sm"
-                  variant={isOpen ? "default" : "outline"}
-                  className="text-xs h-8"
-                  onClick={() => toggleSection(k)}
-                >
-                  <span className="mr-1.5" aria-hidden>{SECTION_META[k].emoji}</span>
-                  {SECTION_META[k].label}
-                </Button>
-              );
-            })}
-          </div>
-
-          <div className="space-y-3">
-            {(Object.keys(SECTION_META) as SectionKey[]).map((k) => {
-              if (!openSections.has(k)) return null;
-              return (
-                <section
-                  key={k}
-                  className="rounded-lg border border-border bg-muted/30 p-4 animate-in fade-in slide-in-from-top-1 duration-200"
-                >
-                  <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                    <span aria-hidden>{SECTION_META[k].emoji}</span> {SECTION_META[k].label}
-                  </h3>
-                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
-                    <ReactMarkdown>{sections[k]}</ReactMarkdown>
-                  </div>
-                </section>
-              );
-            })}
-          </div>
-
-          <div className="pt-4 border-t border-border">
-            <ExplanationFeedback asset={asset} />
-          </div>
-        </>
+      {sections && activeSection && (
+        <div className="pt-3 border-t border-border">
+          <ExplanationFeedback asset={asset} />
+        </div>
       )}
     </div>
   );
