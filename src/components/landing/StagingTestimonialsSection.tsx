@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useEffect, useRef, useState } from "react";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -64,7 +63,6 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const counterRef = useRef<HTMLSpanElement>(null);
   const [animate, setAnimate] = useState(false);
-  const countdownText = useMemo(() => getFinalsCountdownText(), []);
 
   useEffect(() => {
     const scriptId = "testimonialto-resizer";
@@ -122,38 +120,21 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
         }}
       />
       <div className="mx-auto max-w-[800px]" style={{ paddingTop: 16 }}>
-        <TooltipProvider delayDuration={150}>
-          <p
-            className="text-center mb-8 text-[22px] sm:text-[28px] md:text-[34px] leading-tight"
+        <p
+          className="text-center mb-8 text-[22px] sm:text-[28px] md:text-[34px] leading-tight"
+          style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+        >
+          Trusted by{" "}
+          <span
+            ref={counterRef}
+            className="inline-block align-baseline"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 700 }}
           >
-            <span style={{ fontWeight: 400 }}>Join{" "}</span>
-            <span
-              ref={counterRef}
-              className="inline-block align-baseline"
-              style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
-            >
-              <Counter target={TARGET_COUNT} active={animate} />
-              <span>+</span>
-            </span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <sup className="cursor-help" style={{ color: NAVY, fontSize: "0.45em", marginLeft: 2, fontWeight: 400 }}>*</sup>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-[260px] text-xs">
-                Includes students tutored by Lee since 2015 and Survive Accounting users since 2020.
-              </TooltipContent>
-            </Tooltip>
-            {" "}<span style={{ fontWeight: 400 }}>students who went from{" "}</span>
-            <span style={{ color: "#888888", opacity: 0.5, fontStyle: "italic", textDecoration: "line-through", fontWeight: 400 }}>
-              surviving
-            </span>{" "}
-            <span style={{ fontWeight: 400 }}>to{" "}</span>
-            <span style={{ color: RED, fontWeight: 700, fontSize: "1.08em" }}>
-              thriving
-            </span>
-          </p>
-        </TooltipProvider>
+            <Counter target={TARGET_COUNT} active={animate} />
+            <span>+</span>
+          </span>
+          {" "}accounting students preparing for exams.
+        </p>
 
         <iframe
           ref={iframeRef}
