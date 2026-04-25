@@ -626,7 +626,7 @@ function InlineExplanation({
           {loading && !sections ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Lee is thinking…
+              Survive Accounting is thinking…
             </div>
           ) : sections ? (
             <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
