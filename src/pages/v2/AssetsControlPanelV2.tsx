@@ -132,15 +132,25 @@ export default function AssetsControlPanelV2() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50">
       <Helmet><title>V2 Assets Control Panel</title></Helmet>
 
       {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto max-w-[1400px] px-4 py-3 flex items-center justify-between gap-4">
+      <header className="max-w-[1400px] mx-auto px-6 pt-10 pb-6">
+        <button
+          onClick={() => navigate("/domains")}
+          className="inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs uppercase tracking-widest mb-6 transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Home
+        </button>
+
+        <div className="flex items-end justify-between mb-2 gap-4 flex-wrap">
           <div>
-            <h1 className="text-base font-semibold">Teaching Assets V2 — Control Panel</h1>
-            <p className="text-xs text-muted-foreground">
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 mb-1">
+              Teaching Assets V2 — Control Panel
+            </h1>
+            <p className="text-slate-500 text-sm">
               LearnWorlds embed workflow · {counts?.total ?? "—"} total
             </p>
           </div>
