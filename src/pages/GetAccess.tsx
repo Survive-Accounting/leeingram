@@ -677,12 +677,14 @@ export default function GetAccess() {
                   </span>
                 </span>
               </label>
-              <p
-                className="mt-1 text-[11px] leading-tight"
-                style={{ color: "#94A3B8" }}
-              >
-                We'll remind you before your next term begins.
-              </p>
+              {autoRenew && (
+                <p
+                  className="mt-1 text-[11px] leading-tight"
+                  style={{ color: "#94A3B8" }}
+                >
+                  We'll remind you before your next term begins.
+                </p>
+              )}
             </div>
 
             {/* CTA */}
