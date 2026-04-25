@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Undo2, Trash2, X } from "lucide-react";
 
 interface Circle {
@@ -206,8 +207,9 @@ export function MarkupOverlay({ onClose }: Props) {
     }
   };
 
-  return (
+  return createPortal(
     <>
+
       <svg
         ref={svgRef}
         data-prompt-builder-ui="true"
@@ -327,7 +329,8 @@ export function MarkupOverlay({ onClose }: Props) {
           <X className="h-3.5 w-3.5" />
         </ToolButton>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 
