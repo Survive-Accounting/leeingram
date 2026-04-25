@@ -686,12 +686,14 @@ type SimplifyView = "original" | "simplified";
 
 function SimplifiedProblem({
   asset,
+  chapter,
   view,
   onViewChange,
   simplifiedText,
   setSimplifiedText,
 }: {
   asset: Asset;
+  chapter: ChapterMeta | null;
   view: SimplifyView;
   onViewChange: (v: SimplifyView) => void;
   simplifiedText: string | null;
