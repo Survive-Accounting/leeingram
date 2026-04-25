@@ -4854,6 +4854,51 @@ export type Database = {
           },
         ]
       }
+      problem_referrals: {
+        Row: {
+          converted: boolean
+          converted_at: string | null
+          created_at: string
+          event_type: string
+          id: string
+          problem_code: string | null
+          problem_id: string | null
+          referrer_id: string
+          referrer_url: string | null
+          user_agent: string | null
+          visitor_email: string | null
+          visitor_id: string | null
+        }
+        Insert: {
+          converted?: boolean
+          converted_at?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          problem_code?: string | null
+          problem_id?: string | null
+          referrer_id: string
+          referrer_url?: string | null
+          user_agent?: string | null
+          visitor_email?: string | null
+          visitor_id?: string | null
+        }
+        Update: {
+          converted?: boolean
+          converted_at?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          problem_code?: string | null
+          problem_id?: string | null
+          referrer_id?: string
+          referrer_url?: string | null
+          user_agent?: string | null
+          visitor_email?: string | null
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
       problem_variants: {
         Row: {
           answer_parts_json: Json | null

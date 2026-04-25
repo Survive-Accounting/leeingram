@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { buildShareUrl, captureRefFromUrl, logShareClick, attachReferrerOnConversion } from "@/lib/referralTracking";
 
 type Asset = {
   id: string;
@@ -232,6 +233,8 @@ function NeedHelpModal({
       try {
         localStorage.setItem("v2_student_email", email.trim().toLowerCase());
       } catch {}
+      // Attribute the referral (no-op if no ?ref= was captured for this visitor).
+      void attachReferrerOnConversion(email);
       toast.success("Sent. Lee will reply by email.");
       setQuestion("");
       onOpenChange(false);
@@ -677,11 +680,13 @@ function ShareModal({
   onCopy: () => void;
 }) {
   const [copied, setCopied] = useState(false);
-  const url = typeof window !== "undefined" ? window.location.href : "";
-
-  // Reset copied state when reopened
+  // Recompute every time the modal opens so we always include the latest ?ref=<referrer_id>.
+  const [url, setUrl] = useState("");
   useEffect(() => {
-    if (open) setCopied(false);
+    if (open) {
+      setUrl(buildShareUrl());
+      setCopied(false);
+    }
   }, [open]);
 
   const handleCopy = async () => {
@@ -1130,7 +1135,7 @@ export default function SolutionsViewerV2() {
   const [jumpOpen, setJumpOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
-  // Track share interactions (asset_share_events)
+  // Track generic share funnel (asset_share_events) — used for both anonymous + identified shares.
   const trackShareEvent = async (eventType: "share_click" | "copy_link") => {
     if (!asset) return;
     try {
@@ -1148,8 +1153,18 @@ export default function SolutionsViewerV2() {
 
   const openShareModal = () => {
     trackShareEvent("share_click");
+    // Referral attribution row (only writes when we have a referrer_id / signed-in student email).
+    if (asset) {
+      void logShareClick({ problemId: asset.id, problemCode: asset.asset_name });
+    }
     setShareOpen(true);
   };
+
+  // On every asset load, check for ?ref= and capture it (persists in localStorage + logs visit).
+  useEffect(() => {
+    if (!asset) return;
+    void captureRefFromUrl({ problemId: asset.id, problemCode: asset.asset_name });
+  }, [asset?.id]);
 
   // Simplify-this-problem state (keeps simplified text + active view per asset)
   const [simplifiedText, setSimplifiedText] = useState<string | null>(null);
