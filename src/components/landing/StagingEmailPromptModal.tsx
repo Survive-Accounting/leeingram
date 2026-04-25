@@ -143,7 +143,27 @@ export default function StagingEmailPromptModal({
           <X className="w-4 h-4" style={{ color: "#6B7280" }} />
         </button>
 
-        {celebration ? (
+        {magicLinkSent ? (
+          <div className="text-center space-y-4 py-4">
+            <h2
+              className="text-[22px] leading-tight"
+              style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+            >
+              Check your email
+            </h2>
+            <p className="text-[14px]" style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}>
+              Check your email for your secure access link.
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full rounded-lg text-white text-[15px] font-semibold transition-opacity hover:opacity-90"
+              style={{ minHeight: 48, background: NAVY, fontFamily: "Inter, sans-serif" }}
+            >
+              Done
+            </button>
+          </div>
+        ) : celebration ? (
           <div className="text-center space-y-5 py-2">
             <div className="text-5xl leading-none" aria-hidden="true">🎉</div>
             <h2
