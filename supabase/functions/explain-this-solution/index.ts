@@ -209,7 +209,8 @@ Deno.serve(async (req) => {
     }
 
     const data = await res.json();
-    const toolCall = data?.choices?.[0]?.message?.tool_calls?.[0];
+    const choice = data?.choices?.[0];
+    const toolCall = choice?.message?.tool_calls?.[0];
     let sections: Sections | null = null;
     try {
       const args = toolCall?.function?.arguments;
@@ -219,6 +220,12 @@ Deno.serve(async (req) => {
     }
 
     if (!sections || !isValidSections(sections)) {
+      console.error("Invalid AI response shape", {
+        finish_reason: choice?.finish_reason,
+        usage: data?.usage,
+        had_tool_call: !!toolCall,
+        args_preview: String(toolCall?.function?.arguments || "").slice(0, 200),
+      });
       return new Response(JSON.stringify({ success: false, error: "Invalid AI response shape" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
