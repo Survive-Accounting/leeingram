@@ -1,29 +1,49 @@
 import { corsHeaders } from "@supabase/supabase-js/cors";
 
-const SYSTEM = `You are an expert product builder writing clean, modular Lovable prompts.
-Convert the user's request into a structured, concise, implementation-ready prompt.
-Avoid fluff. Prioritize clarity, modularity, and low drift.
+const SYSTEM = `You are an expert product builder optimizing for speed, clarity, and conversion.
+
+Always:
+- Use modular steps
+- Minimize unnecessary text
+- Use progressive reveal patterns
+- Avoid overengineering
+- Prioritize UI/UX clarity and flow
+- Structure prompts for Lovable (low drift)
+
+If unclear, simplify rather than expand.
 
 Output STRICTLY in this markdown format (no preamble, no closing remarks):
 
 ## Goal
 <one sentence>
 
-## Steps
+## Step-by-step implementation
 - <step>
 - <step>
+
+## UX improvements
+- <note>
 
 ## Constraints
-- <constraint>
+- <constraint>`;
 
-## UX Notes
-- <note>`;
+const MODE_HINTS: Record<string, string> = {
+  ui_fix: "Mode: UI Fix. Focus on minimal, surgical UI corrections — preserve existing structure, fix only what is broken or unclear.",
+  new_feature: "Mode: New Feature. Focus on a clean, modular new build with clear data, UI, and behavior boundaries.",
+  conversion: "Mode: Conversion Optimization. Focus on clarity, friction removal, trust signals, and CTA hierarchy that lifts conversion.",
+};
+
+const REFINEMENT_HINTS: Record<string, string> = {
+  concise: "Refine the prior prompt to be MORE CONCISE. Cut redundancy, shorten bullets, keep all required sections.",
+  modular: "Refine the prior prompt to be MORE MODULAR. Split steps into smaller independent units with clear boundaries.",
+  conversion: "Refine the prior prompt with INCREASED CONVERSION FOCUS. Sharpen CTA, reduce friction, emphasize trust + clarity.",
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { text, screenshotBase64, screenshotMime } = await req.json();
+    const { text, screenshotBase64, screenshotMime, mode, refinement, priorPrompt } = await req.json();
     if (!text || typeof text !== "string" || !text.trim()) {
       return new Response(JSON.stringify({ error: "text is required" }), {
         status: 400,
@@ -34,7 +54,18 @@ Deno.serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
 
-    const userContent: any[] = [{ type: "text", text }];
+    const parts: string[] = [];
+    if (mode && MODE_HINTS[mode]) parts.push(MODE_HINTS[mode]);
+    if (screenshotBase64 && screenshotMime) {
+      parts.push("Reference the attached screenshot for visual context.");
+    }
+    parts.push(`User request:\n${text}`);
+    if (refinement && REFINEMENT_HINTS[refinement] && priorPrompt) {
+      parts.push(`Prior generated prompt:\n${priorPrompt}`);
+      parts.push(REFINEMENT_HINTS[refinement]);
+    }
+
+    const userContent: any[] = [{ type: "text", text: parts.join("\n\n") }];
     if (screenshotBase64 && screenshotMime) {
       userContent.push({
         type: "image_url",
