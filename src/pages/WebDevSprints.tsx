@@ -339,6 +339,15 @@ function AddFeatureModal({
   const [status, setStatus] = useState<Status>("Not Started");
   const [saving, setSaving] = useState(false);
 
+  const [generating, setGenerating] = useState(false);
+  const [buildSteps, setBuildSteps] = useState<string[]>([]);
+  const [testingSteps, setTestingSteps] = useState<string[]>([]);
+  const [buildOpen, setBuildOpen] = useState(false);
+  const [testOpen, setTestOpen] = useState(false);
+
+  const [descTouched, setDescTouched] = useState(false);
+  const [bulletsTouched, setBulletsTouched] = useState(false);
+
   const reset = () => {
     setTitle("");
     setDescription("");
@@ -347,6 +356,57 @@ function AddFeatureModal({
     setImageUrl("");
     setPageUrl("");
     setStatus("Not Started");
+    setBuildSteps([]);
+    setTestingSteps([]);
+    setBuildOpen(false);
+    setTestOpen(false);
+    setDescTouched(false);
+    setBulletsTouched(false);
+  };
+
+  const handleGenerate = async () => {
+    if (!title.trim()) {
+      toast.error("Enter a title first");
+      return;
+    }
+    const willOverwriteDesc = descTouched && description.trim().length > 0;
+    const willOverwriteBullets = bulletsTouched && bullets.trim().length > 0;
+    if (
+      (willOverwriteDesc || willOverwriteBullets) &&
+      !confirm("You've edited Description or Bullets. Overwrite with AI output?")
+    ) {
+      return;
+    }
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-feature-details", {
+        body: { title: title.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      if (typeof data.description === "string") {
+        setDescription(data.description);
+        setDescTouched(false);
+      }
+      if (Array.isArray(data.bullet_points)) {
+        setBullets(data.bullet_points.join("\n"));
+        setBulletsTouched(false);
+      }
+      if (Array.isArray(data.build_steps)) {
+        setBuildSteps(data.build_steps);
+        setBuildOpen(true);
+      }
+      if (Array.isArray(data.testing_steps)) {
+        setTestingSteps(data.testing_steps);
+        setTestOpen(true);
+      }
+      toast.success("Details generated");
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to generate");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const handleCreate = async () => {
@@ -356,10 +416,17 @@ function AddFeatureModal({
     }
     setSaving(true);
     try {
+      const allBullets = [
+        ...bullets.split("\n").map((s) => s.trim()).filter(Boolean),
+        ...(buildSteps.length ? ["", "Build Steps:"] : []),
+        ...buildSteps.map((s) => `• ${s}`),
+        ...(testingSteps.length ? ["", "Testing Steps:"] : []),
+        ...testingSteps.map((s) => `• ${s}`),
+      ];
       await onCreate({
         title: title.trim(),
         description: description.trim(),
-        bullet_points: bullets.split("\n").map((s) => s.trim()).filter(Boolean),
+        bullet_points: allBullets,
         video_url: videoUrl.trim() || null,
         image_url: imageUrl.trim() || null,
         page_url: pageUrl.trim() || null,
@@ -377,27 +444,120 @@ function AddFeatureModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Feature</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
             <Label>Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+            <div className="flex gap-2">
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} className="flex-1" />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleGenerate}
+                disabled={generating || !title.trim()}
+                className="shrink-0"
+              >
+                {generating ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-1.5" />
+                )}
+                Generate Details
+              </Button>
+            </div>
+            <p className="text-xs text-slate-400 mt-1">
+              AI fills description, bullets, build & testing steps from your title.
+            </p>
           </div>
           <div>
             <Label>Description</Label>
             <Textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                setDescTouched(true);
+              }}
               rows={2}
             />
           </div>
           <div>
             <Label>Bullet points (one per line)</Label>
-            <Textarea value={bullets} onChange={(e) => setBullets(e.target.value)} rows={4} />
+            <Textarea
+              value={bullets}
+              onChange={(e) => {
+                setBullets(e.target.value);
+                setBulletsTouched(true);
+              }}
+              rows={4}
+            />
           </div>
+
+          {(buildSteps.length > 0 || testingSteps.length > 0) && (
+            <div className="space-y-2 border-t border-slate-100 pt-3">
+              {buildSteps.length > 0 && (
+                <div className="rounded-lg border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setBuildOpen((v) => !v)}
+                    className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    <span>Build Steps ({buildSteps.length})</span>
+                    {buildOpen ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
+                  {buildOpen && (
+                    <div className="px-3 pb-3">
+                      <Textarea
+                        value={buildSteps.join("\n")}
+                        onChange={(e) =>
+                          setBuildSteps(e.target.value.split("\n").map((s) => s.trim()).filter(Boolean))
+                        }
+                        rows={Math.min(10, Math.max(4, buildSteps.length))}
+                        className="text-sm"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+              {testingSteps.length > 0 && (
+                <div className="rounded-lg border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setTestOpen((v) => !v)}
+                    className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    <span>Testing Steps ({testingSteps.length})</span>
+                    {testOpen ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
+                  {testOpen && (
+                    <div className="px-3 pb-3">
+                      <Textarea
+                        value={testingSteps.join("\n")}
+                        onChange={(e) =>
+                          setTestingSteps(
+                            e.target.value.split("\n").map((s) => s.trim()).filter(Boolean),
+                          )
+                        }
+                        rows={Math.min(10, Math.max(4, testingSteps.length))}
+                        className="text-sm"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Video URL</Label>
