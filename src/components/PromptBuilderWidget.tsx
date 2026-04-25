@@ -61,6 +61,62 @@ export function PromptBuilderWidget() {
   const baseTextRef = useRef("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Draggable launcher button — persisted position
+  const POS_KEY = "promptBuilder.launcherPos.v1";
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    if (typeof window === "undefined") return { x: 16, y: 80 };
+    try {
+      const raw = localStorage.getItem(POS_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch { /* noop */ }
+    // Default: bottom-left, lifted above test flow toolbar
+    return { x: 16, y: Math.max(80, window.innerHeight - 140) };
+  });
+  const dragRef = useRef<{ dx: number; dy: number; moved: boolean } | null>(null);
+
+  useEffect(() => {
+    try { localStorage.setItem(POS_KEY, JSON.stringify(pos)); } catch { /* noop */ }
+  }, [pos]);
+
+  // Keep button in viewport on resize
+  useEffect(() => {
+    const onResize = () => {
+      setPos((p) => ({
+        x: Math.min(Math.max(8, p.x), window.innerWidth - 60),
+        y: Math.min(Math.max(8, p.y), window.innerHeight - 60),
+      }));
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const onLauncherPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return;
+    const target = e.currentTarget;
+    const rect = target.getBoundingClientRect();
+    dragRef.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top, moved: false };
+    target.setPointerCapture(e.pointerId);
+  };
+  const onLauncherPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const nx = e.clientX - d.dx;
+    const ny = e.clientY - d.dy;
+    if (Math.abs(nx - pos.x) > 3 || Math.abs(ny - pos.y) > 3) d.moved = true;
+    const w = e.currentTarget.offsetWidth;
+    const h = e.currentTarget.offsetHeight;
+    setPos({
+      x: Math.min(Math.max(8, nx), window.innerWidth - w - 8),
+      y: Math.min(Math.max(8, ny), window.innerHeight - h - 8),
+    });
+  };
+  const onLauncherPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    if (!d?.moved) setOpen(true);
+  };
+
   // Hotkey: Cmd/Ctrl+K to open widget (global)
   useEffect(() => {
     if (!allowed) return;
@@ -269,10 +325,13 @@ export function PromptBuilderWidget() {
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
-        className="fixed bottom-4 left-4 z-[60] flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform"
-        aria-label="Open Prompt Builder (Cmd+K)"
-        title="Cmd+K"
+        onPointerDown={onLauncherPointerDown}
+        onPointerMove={onLauncherPointerMove}
+        onPointerUp={onLauncherPointerUp}
+        style={{ left: pos.x, top: pos.y, touchAction: "none" }}
+        className="fixed z-[60] flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg shadow-primary/30 hover:scale-105 transition-transform cursor-grab active:cursor-grabbing select-none"
+        aria-label="Open Prompt Builder (Cmd+K) — drag to move"
+        title="Click to open · Drag to move · ⌘K"
       >
         <Zap className="h-4 w-4" />
         Build Prompt
