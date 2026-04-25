@@ -61,9 +61,11 @@ export default function GetAccess() {
   const [searchParams] = useSearchParams();
   const emailParam = searchParams.get("email") || "";
   const campusParam = searchParams.get("campus") || "";
+  const courseParam = searchParams.get("course") || "";
   const studentNumberParam = searchParams.get("n");
   const studentNumber = studentNumberParam ? parseInt(studentNumberParam, 10) : null;
   const [campusName, setCampusName] = useState<string | null>(null);
+  const [problemCount, setProblemCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!campusParam) {
@@ -83,6 +85,39 @@ export default function GetAccess() {
       cancelled = true;
     };
   }, [campusParam]);
+
+  useEffect(() => {
+    if (!courseParam) {
+      setProblemCount(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data: course } = await supabase
+        .from("courses")
+        .select("id")
+        .eq("slug", courseParam)
+        .maybeSingle();
+      if (!course?.id || cancelled) return;
+      const { count } = await supabase
+        .from("teaching_assets")
+        .select("id", { count: "exact", head: true })
+        .eq("course_id", course.id);
+      if (!cancelled && typeof count === "number") setProblemCount(count);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [courseParam]);
+
+  const problemCountLabel = useMemo(() => {
+    const n = problemCount ?? 0;
+    if (n < 50) return "200+";
+    // Round DOWN to nearest 25 below 200, nearest 50 above
+    const step = n >= 200 ? 100 : n >= 100 ? 50 : 25;
+    const rounded = Math.floor(n / step) * step;
+    return `${rounded}+`;
+  }, [problemCount]);
 
   const [extraCount, setExtraCount] = useState(0);
   const [lifetimeUpgrade, setLifetimeUpgrade] = useState(false);
@@ -350,7 +385,7 @@ export default function GetAccess() {
           className="mt-4 max-w-[640px] mx-auto text-[16px] sm:text-[18px]"
           style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
         >
-          Full access to cram through problems before your exam.
+          Cram through {problemCountLabel} exam-style problems before your exam.
         </p>
       </section>
 
