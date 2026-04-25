@@ -1041,12 +1041,21 @@ export default function SolutionsViewerV2() {
 
   // Simplify-this-problem state (keeps simplified text + active view per asset)
   const [simplifiedText, setSimplifiedText] = useState<string | null>(null);
-  const [simplifyView, setSimplifyView] = useState<SimplifyView>("original");
+  const [simplifyView, setSimplifyView] = useState<SimplifyView>("simplified");
+  const [simplifyLoading, setSimplifyLoading] = useState(false);
+  const [simplifyError, setSimplifyError] = useState<string | null>(null);
 
-  // Reset simplify view when asset changes
+  // Original textbook screenshot
+  const [originalImages, setOriginalImages] = useState<string[]>([]);
+  const [originalOpen, setOriginalOpen] = useState(false);
+
+  // Reset on asset change
   useEffect(() => {
-    setSimplifyView("original");
+    setSimplifyView("simplified");
     setSimplifiedText(null);
+    setSimplifyError(null);
+    setOriginalImages([]);
+    setOriginalOpen(false);
   }, [assetCode]);
 
   useEffect(() => {
