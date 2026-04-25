@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Zap, Mic, MicOff, X, Copy, Loader2, Sparkles,
-  Wrench, Plus, TrendingUp, Send, Trash2, EyeOff, Minus, GripHorizontal,
+  Wrench, TrendingUp, Send, Trash2, EyeOff, Minus, GripHorizontal,
   Pencil, ListTodo, Hammer, Image as ImageIcon, ClipboardCopy,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,7 +21,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const LOVABLE_URL = "https://lovable.dev/projects/51843e0a-bf2a-4413-bab2-a6c4ea7a1395";
 
-type Mode = "ui_fix" | "new_feature" | "conversion";
+type Mode = "ui_fix" | "conversion";
 type PromptKind = "build" | "plan";
 type CardStatus = "generating" | "ready" | "sent" | "error";
 
@@ -41,9 +41,8 @@ interface PromptCard {
 const MAX_SCREENSHOTS = 10;
 
 const MODES: { key: Mode; label: string; icon: typeof Wrench }[] = [
-  { key: "ui_fix", label: "UI Fix", icon: Wrench },
-  { key: "new_feature", label: "Feature", icon: Plus },
-  { key: "conversion", label: "Convert", icon: TrendingUp },
+  { key: "ui_fix", label: "Fix UI", icon: Wrench },
+  { key: "conversion", label: "Improve Conversion", icon: TrendingUp },
 ];
 
 const STATUS_STYLES: Record<CardStatus, string> = {
@@ -72,7 +71,7 @@ export function PromptBuilderWidget() {
   const [minimized, setMinimized] = useState(false);
   const [text, setText] = useState("");
   const [interim, setInterim] = useState("");
-  const [mode, setMode] = useState<Mode>("new_feature");
+  const [mode, setMode] = useState<Mode>("ui_fix");
   const [recording, setRecording] = useState(false);
   /** Whether the user paused — recording bar stays visible, mic is off, timer stops. */
   const [paused, setPaused] = useState(false);
@@ -596,12 +595,15 @@ export function PromptBuilderWidget() {
               <Button
                 size="sm"
                 variant={markupOn ? "default" : "outline"}
-                className="h-7 px-2 text-[11px]"
+                className={cn(
+                  "h-7 px-2 text-[11px] transition-all",
+                  markupOn && "ring-2 ring-primary/40 shadow-sm"
+                )}
                 onClick={() => setMarkupOn((v) => !v)}
-                title="Toggle on-page markup overlay"
+                title={markupOn ? "Exit markup & clear circles" : "Toggle on-page markup overlay"}
               >
                 <Pencil className="h-3 w-3 mr-1" />
-                Markup
+                {markupOn ? "Markup: On" : "Markup"}
               </Button>
             </div>
 
