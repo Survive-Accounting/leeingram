@@ -276,7 +276,7 @@ export default function QuickEmailGateModal({
               className="mt-2 text-center text-[13px]"
               style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
             >
-              We'll personalize your study tools for your course
+              Start cramming problems for your course.
             </p>
 
             <input
