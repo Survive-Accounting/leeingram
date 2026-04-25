@@ -624,11 +624,13 @@ function SortableFeatureCard({
   canEdit,
   onChange,
   onDelete,
+  onBuildPrompt,
 }: {
   feature: Feature;
   canEdit: boolean;
   onChange: (next: Feature) => Promise<void>;
   onDelete: () => Promise<void>;
+  onBuildPrompt?: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: feature.id });
@@ -659,6 +661,7 @@ function SortableFeatureCard({
         canEdit={canEdit}
         onChange={onChange}
         onDelete={onDelete}
+        onBuildPrompt={onBuildPrompt}
         dragHandle={handle}
       />
     </div>
