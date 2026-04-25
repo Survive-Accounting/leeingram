@@ -133,7 +133,10 @@ export default function GetOrgAccess() {
   // --- Auto re-up settings (prototype: stored only, no auto billing) ---
   const WEEKLY_LIMIT_OPTIONS = [10, 20, 30, 50] as const;
   const [autoReupEnabled, setAutoReupEnabled] = useState(true);
+  const [autoRenewEnabled, setAutoRenewEnabled] = useState(true);
   const [weeklySeatLimit, setWeeklySeatLimit] = useState<number>(20);
+  const AUTO_REUP_DISCOUNT_PCT = 5;
+  const AUTO_RENEW_DISCOUNT_PCT = 5;
 
   // --- Payment method preference ---
   type PaymentMethod = "ach" | "card" | "manual";
