@@ -677,6 +677,19 @@ export default function WebDevSprints() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [statusFilter, setStatusFilter] = useState<Status | "All">("All");
+  const [promptFeature, setPromptFeature] = useState<BuildPromptFeature | null>(null);
+
+  const openBuildPrompt = (f: Feature) => {
+    const split = splitFeatureSections(f.bullet_points);
+    setPromptFeature({
+      title: f.title,
+      description: f.description,
+      bullet_points: split.bullets,
+      build_steps: split.build_steps,
+      testing_steps: split.testing_steps,
+      status: f.status,
+    });
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
