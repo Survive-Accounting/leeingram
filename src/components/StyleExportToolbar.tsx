@@ -121,7 +121,7 @@ export function StyleExportToolbar() {
       <button
         data-export-ignore
         onClick={() => setHidden(false)}
-        className="fixed bottom-3 right-3 z-[9998] rounded-full bg-background/80 backdrop-blur px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border shadow-sm transition-colors"
+        className="fixed bottom-3 left-16 z-[9998] rounded-full bg-background/80 backdrop-blur px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border shadow-sm transition-colors"
         title="Show Style Export toolbar"
         aria-label="Show Style Export toolbar"
       >
@@ -133,23 +133,34 @@ export function StyleExportToolbar() {
   return (
     <div
       data-export-ignore
-      className="fixed bottom-3 right-3 z-[9998] flex items-center gap-1.5 group"
+      style={{ left: pos.x, top: pos.y }}
+      className="fixed z-[9998] flex items-center gap-1.5 group"
     >
-      <Popover onOpenChange={(o) => o && refreshSections()}>
+      <Popover open={open} onOpenChange={(o) => {
+        setOpen(o);
+        if (o) refreshSections();
+      }}>
         <PopoverTrigger asChild>
           <Button
             size="sm"
             variant="secondary"
-            className="rounded-full shadow-lg gap-1.5 pl-3 pr-2.5"
+            onPointerDown={onLauncherPointerDown}
+            onPointerMove={onLauncherPointerMove}
+            onPointerUp={onLauncherPointerUp}
+            onClick={onLauncherClick}
+            style={{ touchAction: "none" }}
+            className="rounded-full shadow-lg gap-2 px-4 py-2.5 h-auto cursor-grab active:cursor-grabbing select-none ring-2 ring-primary-foreground/20 hover:scale-105 transition-transform"
+            aria-label="Open Style Export — drag to move"
+            title="Click to open · Drag to move"
           >
-            <Palette className="h-3.5 w-3.5" />
+            <Palette className="h-4 w-4" />
             Style Export
-            <ChevronDown className="h-3 w-3 opacity-60" />
+            <ChevronDown className="h-3.5 w-3.5 opacity-60" />
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          align="end"
-          side="top"
+          align="start"
+          side="right"
           className="w-72 p-2 space-y-1"
           data-export-ignore
         >
@@ -226,7 +237,10 @@ export function StyleExportToolbar() {
               Lee-only · landing routes
             </span>
             <button
-              onClick={() => setHidden(true)}
+              onClick={() => {
+                setOpen(false);
+                setHidden(true);
+              }}
               className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
             >
               <EyeOff className="h-3 w-3" /> Hide
