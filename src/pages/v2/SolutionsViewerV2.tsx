@@ -1156,9 +1156,6 @@ export default function SolutionsViewerV2() {
     setShareOpen(true);
   };
 
-  // Simplify-this-problem state (keeps simplified text + active view per asset)
-  const [simplifiedText, setSimplifiedText] = useState<string | null>(null);
-  const [simplifyView, setSimplifyView] = useState<SimplifyView>("simplified");
   // On every asset load, check for ?ref= and capture it (persists in localStorage + logs visit).
   useEffect(() => {
     if (!asset) return;
