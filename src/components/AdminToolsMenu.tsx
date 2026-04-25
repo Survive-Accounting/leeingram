@@ -75,8 +75,14 @@ export function AdminToolsMenu() {
               <ToggleRow key={item.key} item={item} />
             ))}
           </div>
-          <div className="mt-2 border-t border-border pt-1.5 px-2 text-[10px] text-muted-foreground">
-            Per-browser. Toggle anytime.
+          <div className="mt-2 border-t border-border pt-1.5 px-2 text-[10px] text-muted-foreground space-y-0.5">
+            <div>Per-browser. Toggle anytime.</div>
+            <div>
+              Hide / show this bar:{" "}
+              <kbd className="inline-flex items-center rounded border border-border bg-muted px-1 py-[1px] font-mono text-[9px] text-foreground">
+                Ctrl + Alt + A
+              </kbd>
+            </div>
           </div>
         </PopoverContent>
       </Popover>
