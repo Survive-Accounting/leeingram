@@ -1,6 +1,7 @@
 import { X, ArrowRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import leeStadium from "@/assets/lee-stadium.png";
+import { useEmailGate } from "@/contexts/EmailGateContext";
 
 interface AboutLeeModalProps {
   open: boolean;
@@ -8,6 +9,8 @@ interface AboutLeeModalProps {
 }
 
 export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
+  const { requestAccess } = useEmailGate();
+
   const handleReachOut = () => {
     onOpenChange(false);
     setTimeout(() => {
@@ -18,12 +21,8 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
 
   const handleGetAccess = () => {
     onOpenChange(false);
-    setTimeout(() => {
-      const el =
-        document.getElementById("explore-demo") ||
-        document.getElementById("courses");
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 150);
+    // Open the lightweight email gate (same flow as all landing CTAs)
+    setTimeout(() => requestAccess({}), 150);
   };
 
   return (

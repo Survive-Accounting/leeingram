@@ -19,7 +19,7 @@ import StagingEmailPromptModal, { type CelebrationData } from "@/components/land
 import StagingGetStartedModal from "@/components/landing/StagingGetStartedModal";
 import StagingFinalCtaSection from "@/components/landing/StagingFinalCtaSection";
 import type { CtaCourse } from "@/components/landing/StagingCtaModal";
-// (EmailGate context kept available globally for other surfaces)
+import { useEmailGate } from "@/contexts/EmailGateContext";
 
 const COURSES: CtaCourse[] = [
   {
@@ -60,6 +60,7 @@ const COURSES: CtaCourse[] = [
 
 export default function StagingLandingPage() {
   const navigate = useNavigate();
+  const { requestAccess } = useEmailGate();
   // Founding-student / non-edu flow handled by StagingEmailPromptModal directly.
   const contactRef = useRef<HTMLDivElement>(null);
   const coursesRef = useRef<HTMLDivElement>(null);
@@ -278,7 +279,7 @@ export default function StagingLandingPage() {
       <div data-export-id="navbar" data-export-label="Navbar">
         <StagingNavbar
           transparentOnTop
-          onCtaClick={() => handleGetAccessClick(defaultCourse)}
+          onCtaClick={() => requestAccess({ course: defaultCourse.slug })}
           onPricingClick={() => handleGetAccessClick(defaultCourse)}
           onCoursesClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
         />
@@ -288,9 +289,9 @@ export default function StagingLandingPage() {
         <StagingHero
           liveCourse={defaultCourse}
           futureCourses={[]}
-          onLiveCourseClick={() => handleGetAccessClick(defaultCourse)}
+          onLiveCourseClick={() => requestAccess({ course: defaultCourse.slug })}
           onNotifyClick={() => handleCardClick(defaultCourse)}
-          onGetStartedClick={() => handleGetAccessClick(defaultCourse)}
+          onGetStartedClick={() => requestAccess({ course: defaultCourse.slug })}
         />
       </div>
 
@@ -299,7 +300,7 @@ export default function StagingLandingPage() {
       </div>
 
       <div data-export-id="testimonials" data-export-label="Testimonials">
-        <StagingTestimonialsSection onCtaClick={() => handleGetAccessClick(defaultCourse)} />
+        <StagingTestimonialsSection onCtaClick={() => requestAccess({ course: defaultCourse.slug })} />
       </div>
 
       <div ref={coursesRef} id="demo-section" data-export-id="courses" data-export-label="Courses Grid">
@@ -326,7 +327,7 @@ export default function StagingLandingPage() {
 
       <div data-export-id="final-cta" data-export-label="Final CTA">
         <StagingFinalCtaSection
-          onGetAccessClick={() => handleGetAccessClick(defaultCourse)}
+          onGetAccessClick={() => requestAccess({ course: defaultCourse.slug })}
           onTryDemoClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
         />
       </div>

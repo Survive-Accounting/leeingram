@@ -65,6 +65,7 @@ export default function StagingEmailPromptModal({
   const [celebration, setCelebration] = useState<CelebrationData | null>(null);
   const [view, setView] = useState<"edu" | "non_edu" | "non_edu_success">("edu");
   const [fallbackEmail, setFallbackEmail] = useState("");
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -73,6 +74,7 @@ export default function StagingEmailPromptModal({
       setSubmitting(false);
       setView("edu");
       setFallbackEmail("");
+      setMagicLinkSent(false);
     }
   }, [open]);
 
@@ -92,6 +94,30 @@ export default function StagingEmailPromptModal({
 
     setSubmitting(true);
     try {
+      // Returning user check: any active paid access → magic link, skip pricing flow.
+      try {
+        const { data: purchases } = await supabase
+          .from("student_purchases")
+          .select("expires_at")
+          .eq("email", trimmed)
+          .limit(20);
+        const now = Date.now();
+        const hasActive = (purchases ?? []).some(
+          (p: any) => !p.expires_at || new Date(p.expires_at).getTime() > now,
+        );
+        if (hasActive) {
+          const { error: linkErr } = await supabase.functions.invoke("resend-login-link", {
+            body: { email: trimmed },
+          });
+          if (linkErr) throw linkErr;
+          setMagicLinkSent(true);
+          return;
+        }
+      } catch (err) {
+        // Non-fatal — fall through to pricing flow.
+        console.warn("pricing modal access check failed", err);
+      }
+
       const result = await onSubmit(trimmed);
       // If parent returns null, it has already navigated (e.g. Ole Miss skip).
       if (result) setCelebration(result);
@@ -117,7 +143,27 @@ export default function StagingEmailPromptModal({
           <X className="w-4 h-4" style={{ color: "#6B7280" }} />
         </button>
 
-        {celebration ? (
+        {magicLinkSent ? (
+          <div className="text-center space-y-4 py-4">
+            <h2
+              className="text-[22px] leading-tight"
+              style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
+            >
+              Check your email
+            </h2>
+            <p className="text-[14px]" style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}>
+              Check your email for your secure access link.
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full rounded-lg text-white text-[15px] font-semibold transition-opacity hover:opacity-90"
+              style={{ minHeight: 48, background: NAVY, fontFamily: "Inter, sans-serif" }}
+            >
+              Done
+            </button>
+          </div>
+        ) : celebration ? (
           <div className="text-center space-y-5 py-2">
             <div className="text-5xl leading-none" aria-hidden="true">🎉</div>
             <h2
