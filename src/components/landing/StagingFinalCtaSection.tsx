@@ -88,7 +88,7 @@ export default function StagingFinalCtaSection({
           className="mt-6 text-[12px]"
           style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif" }}
         >
-          7-day refund guarantee · Semester pass · Active through May 31
+          7-day refund guarantee • Full access through your exams
         </p>
       </div>
     </section>
