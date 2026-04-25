@@ -412,6 +412,12 @@ function ExplanationPanel({
                   );
                 })}
               </div>
+              {/* Feedback */}
+              {asset && (
+                <div className="pt-4 mt-2 border-t border-border">
+                  <ExplanationFeedback asset={asset} />
+                </div>
+              )}
             </>
           )}
         </div>
