@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -179,6 +178,12 @@ export function PromptBuilderWidget() {
       try { recognitionRef.current?.stop?.(); } catch { /* noop */ }
     };
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const t = window.setTimeout(() => textareaRef.current?.focus(), 50);
+    return () => window.clearTimeout(t);
+  }, [open]);
 
   // Strip "isNew" highlight after animation settles
   useEffect(() => {
@@ -408,17 +413,41 @@ export function PromptBuilderWidget() {
         </button>
       </div>
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col gap-3 overflow-hidden p-0 relative">
+      {open && (
+        <>
+          <div
+            className="fixed inset-0 z-[9998] bg-background/75 backdrop-blur-sm"
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="prompt-builder-title"
+            aria-describedby="prompt-builder-description"
+            className="fixed inset-y-0 right-0 z-[9999] flex w-full max-w-xl flex-col gap-3 overflow-hidden border-l border-border bg-background shadow-2xl"
+          >
           <div className="flex flex-col gap-3 p-6 pb-3 border-b border-border">
-            <SheetHeader>
-              <SheetTitle className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <h2 id="prompt-builder-title" className="flex items-center gap-2 text-lg font-semibold text-foreground">
                 <Sparkles className="h-4 w-4" /> Lovable Prompt Builder
+                <span id="prompt-builder-description" className="sr-only">
+                  Build, refine, copy, and send prompt drafts for the current project.
+                </span>
                 <span className="ml-auto text-[10px] font-normal text-muted-foreground tracking-wide uppercase">
                   ⌘K · ⌘↵ Generate
                 </span>
-              </SheetTitle>
-            </SheetHeader>
+              </h2>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="ml-auto h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => setOpen(false)}
+                aria-label="Close Prompt Builder"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
 
             {/* Mode selector */}
             <div className="flex gap-1.5 rounded-lg bg-muted p-1">
@@ -523,8 +552,9 @@ export function PromptBuilderWidget() {
               ))
             )}
           </div>
-        </SheetContent>
-      </Sheet>
+          </aside>
+        </>
+      )}
     </>
   );
 }
