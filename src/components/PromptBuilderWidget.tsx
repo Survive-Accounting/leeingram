@@ -218,6 +218,57 @@ export function PromptBuilderWidget() {
     setInterim("");
   };
 
+  // ---- Screenshots: paste / accumulate / copy back to clipboard ----
+  const fileToDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+
+  /** Capture pasted images from anywhere in the widget. */
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+    const items = Array.from(e.clipboardData?.items ?? []);
+    const imageItems = items.filter((it) => it.type.startsWith("image/"));
+    if (imageItems.length === 0) return; // let normal text paste through
+    e.preventDefault();
+    const remaining = MAX_SCREENSHOTS - screenshots.length;
+    if (remaining <= 0) {
+      toast.error(`Max ${MAX_SCREENSHOTS} screenshots — delete one first.`);
+      return;
+    }
+    const toAdd = imageItems.slice(0, remaining);
+    const urls: string[] = [];
+    for (const it of toAdd) {
+      const f = it.getAsFile();
+      if (!f) continue;
+      try { urls.push(await fileToDataUrl(f)); } catch { /* skip */ }
+    }
+    if (urls.length === 0) return;
+    setScreenshots((s) => [...s, ...urls]);
+    toast.success(`Added ${urls.length} screenshot${urls.length > 1 ? "s" : ""}`);
+  }, [screenshots.length]);
+
+  const removeScreenshot = (idx: number) =>
+    setScreenshots((s) => s.filter((_, i) => i !== idx));
+
+  /** Convert data URL → Blob and write to clipboard so user can paste into Lovable. */
+  const copyImageToClipboard = async (dataUrl: string, label: string) => {
+    try {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      // Some browsers only accept image/png in clipboard.
+      const item = new ClipboardItem({ [blob.type || "image/png"]: blob });
+      await navigator.clipboard.write([item]);
+      toast.success(`${label} copied — paste into Lovable`);
+    } catch (err) {
+      toast.error("Image copy not supported in this browser");
+      // eslint-disable-next-line no-console
+      console.warn("clipboard image write failed", err);
+    }
+  };
+
   // ---- AI ----
   const callAI = async (payload: { text: string; mode: Mode; promptKind: PromptKind }) => {
     const { data, error } = await supabase.functions.invoke("generate-lovable-prompt", { body: payload });
