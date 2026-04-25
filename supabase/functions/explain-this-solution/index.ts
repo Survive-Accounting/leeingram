@@ -6,30 +6,42 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `When a student clicks Explain this, generate the explanation as if you are a professor thinking out loud while solving the problem.
+const SYSTEM_PROMPT = `You generate cram-style accounting explanations.
 
-Style rules:
-- Keep it short, clear, and conversational
-- Use a chat-like tone, not formal textbook language
-- Structure the explanation into 5–6 short sections
-- Each section should start with a simple emoji + short header
-- Sound like a professor explaining their thought process step-by-step
-- Focus only on what is relevant to this specific problem
-- Avoid long paragraphs
-- Avoid unnecessary theory unless it directly helps the answer
-- Make it feel like: "here's exactly what I'm thinking while solving this"
+Goal: a student understands and moves on in under 10 seconds.
 
-Required structure (use these exact headers as markdown ## headings):
-## 💡 What I notice first
-## 🧠 My thought process
-## 📌 What I do
-## 🔍 What's happening behind the scenes
-## ⚖️ Why this makes sense
-## 🚨 Exam mindset
+Hard rules:
+- No long paragraphs
+- Bullets are short fragments, not full sentences
+- Max 2-4 lines per section
+- No fluff, no theory dumps, no restating the problem
+- Every word earns its place
 
-Tone: natural, slightly informal, confident, no fluff, no generic textbook explanations. Prioritize clarity + speed for exam prep.
+You will return a JSON object with four fields. Each field is its own section.
 
-Output: pure markdown only. No preamble, no closing remarks.`;
+Sections and their style:
+
+what_matters
+- 2-3 short bullets
+- the key observations or signals in the problem (what the student should notice immediately)
+
+how_to_solve
+- numbered steps (1, 2, 3...)
+- 3-5 steps max
+- each step is a short imperative phrase
+- include the specific accounts/amounts when relevant
+
+why_it_works
+- 1-2 sentences max
+- the conceptual reason the approach is correct
+- plain language, not textbook language
+
+exam_tip
+- 1-2 short bullets
+- pattern recognition: "if you see X, do Y"
+- how to think on exams when this shows up
+
+Format: each field is a markdown string (bullets/numbers allowed). No headers inside the fields.`;
 
 function buildUserPrompt(asset: any): string {
   const parts: string[] = [];
@@ -58,7 +70,7 @@ function buildUserPrompt(asset: any): string {
 
   if (asset.survive_solution_text) {
     parts.push("");
-    parts.push("Reference solution (use this as the truth — explain how to arrive at it):");
+    parts.push("Reference solution (truth — explain how to reach it):");
     parts.push(asset.survive_solution_text);
   }
 
@@ -69,6 +81,23 @@ function buildUserPrompt(asset: any): string {
   }
 
   return parts.join("\n");
+}
+
+type Sections = {
+  what_matters: string;
+  how_to_solve: string;
+  why_it_works: string;
+  exam_tip: string;
+};
+
+function isValidSections(s: any): s is Sections {
+  return (
+    s &&
+    typeof s.what_matters === "string" &&
+    typeof s.how_to_solve === "string" &&
+    typeof s.why_it_works === "string" &&
+    typeof s.exam_tip === "string"
+  );
 }
 
 Deno.serve(async (req) => {
@@ -87,7 +116,7 @@ Deno.serve(async (req) => {
     }
 
     const sb = createClient(supabaseUrl, serviceKey);
-    const { asset_code } = await req.json();
+    const { asset_code, force } = await req.json();
     if (!asset_code) {
       return new Response(JSON.stringify({ success: false, error: "Missing asset_code" }), {
         status: 400,
@@ -110,21 +139,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check cache
+    // Cache (new structured shape only)
     const cache = asset.survive_solution_explanation_cache as any;
-    if (cache?.markdown) {
+    if (!force && cache?.sections && isValidSections(cache.sections)) {
       return new Response(
         JSON.stringify({
           success: true,
           cached: true,
-          markdown: cache.markdown,
+          sections: cache.sections,
           model_used: cache.model_used || "cached",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Call OpenAI
     const model = "gpt-5";
     const userPrompt = buildUserPrompt(asset);
 
@@ -141,6 +169,27 @@ Deno.serve(async (req) => {
           { role: "user", content: userPrompt },
         ],
         max_completion_tokens: 1200,
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "return_explanation",
+              description: "Return the four explanation sections.",
+              parameters: {
+                type: "object",
+                properties: {
+                  what_matters: { type: "string", description: "2-3 short bullets" },
+                  how_to_solve: { type: "string", description: "Numbered steps, 3-5 max" },
+                  why_it_works: { type: "string", description: "1-2 sentences max" },
+                  exam_tip: { type: "string", description: "1-2 short bullets" },
+                },
+                required: ["what_matters", "how_to_solve", "why_it_works", "exam_tip"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "return_explanation" } },
       }),
     });
 
@@ -154,9 +203,17 @@ Deno.serve(async (req) => {
     }
 
     const data = await res.json();
-    const markdown = data?.choices?.[0]?.message?.content?.trim() || "";
-    if (!markdown) {
-      return new Response(JSON.stringify({ success: false, error: "Empty response from OpenAI" }), {
+    const toolCall = data?.choices?.[0]?.message?.tool_calls?.[0];
+    let sections: Sections | null = null;
+    try {
+      const args = toolCall?.function?.arguments;
+      if (args) sections = JSON.parse(args);
+    } catch (e) {
+      console.error("Failed to parse tool args:", e);
+    }
+
+    if (!sections || !isValidSections(sections)) {
+      return new Response(JSON.stringify({ success: false, error: "Invalid AI response shape" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -168,7 +225,7 @@ Deno.serve(async (req) => {
         .from("teaching_assets")
         .update({
           survive_solution_explanation_cache: {
-            markdown,
+            sections,
             model_used: model,
             generated_at: new Date().toISOString(),
           },
@@ -179,7 +236,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, cached: false, markdown, model_used: model }),
+      JSON.stringify({ success: true, cached: false, sections, model_used: model }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e: any) {
