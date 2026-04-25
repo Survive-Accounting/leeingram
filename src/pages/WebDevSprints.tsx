@@ -12,6 +12,10 @@ import {
   ExternalLink,
   Link as LinkIcon,
   GripVertical,
+  Sparkles,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
 } from "lucide-react";
 import {
   DndContext,
