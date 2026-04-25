@@ -327,7 +327,7 @@ export default function StagingLandingPage() {
 
       <div data-export-id="final-cta" data-export-label="Final CTA">
         <StagingFinalCtaSection
-          onGetAccessClick={() => handleGetAccessClick(defaultCourse)}
+          onGetAccessClick={() => requestAccess({ course: defaultCourse.slug })}
           onTryDemoClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
         />
       </div>
