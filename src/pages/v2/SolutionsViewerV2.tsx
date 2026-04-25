@@ -233,6 +233,8 @@ function NeedHelpModal({
       try {
         localStorage.setItem("v2_student_email", email.trim().toLowerCase());
       } catch {}
+      // Attribute the referral (no-op if no ?ref= was captured for this visitor).
+      void attachReferrerOnConversion(email);
       toast.success("Sent. Lee will reply by email.");
       setQuestion("");
       onOpenChange(false);
