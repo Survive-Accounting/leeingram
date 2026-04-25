@@ -148,6 +148,15 @@ export default function StudentDashboard() {
 
   const isActive = !purchase?.expires_at || new Date(purchase.expires_at).getTime() > Date.now();
 
+  // Derive a friendly first name from the email local-part
+  // e.g. "lee+test@x.com" -> "Lee", "jane.doe@x.com" -> "Jane"
+  const firstName = (() => {
+    if (!email) return "";
+    const local = email.split("@")[0].split("+")[0];
+    const raw = local.split(/[._-]/)[0] || local;
+    return raw ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase() : "";
+  })();
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: BG_GRADIENT }}>
       <StagingNavbar
@@ -162,13 +171,19 @@ export default function StudentDashboard() {
             className="text-[34px] sm:text-[44px] md:text-[54px] leading-tight"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
           >
-            Welcome back
+            {firstName ? `Welcome back, ${firstName}` : "Welcome back"}
           </h1>
           <p
             className="mt-3 text-[15px] sm:text-[16px]"
             style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
           >
-            {email}
+            {course?.course_name ?? "Your course"}
+          </p>
+          <p
+            className="mt-1 text-[14px] sm:text-[15px]"
+            style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+          >
+            Access through {expiresStr}
           </p>
           <div className="mt-3 flex justify-center sm:justify-start">
             <button
@@ -180,50 +195,6 @@ export default function StudentDashboard() {
             </button>
           </div>
         </div>
-
-        {/* Study Pass Summary */}
-        <section
-          className="rounded-2xl p-6"
-          style={{
-            background: "#fff",
-            border: "1px solid #E0E7F0",
-            boxShadow: "0 24px 60px rgba(20,33,61,0.10), 0 2px 8px rgba(20,33,61,0.04)",
-          }}
-        >
-          <h2
-            className="text-[22px] mb-4 leading-tight"
-            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
-          >
-            Survive Study Pass
-          </h2>
-          <dl className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[14px]" style={{ fontFamily: "Inter, sans-serif" }}>
-            <div>
-              <dt className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-1" style={{ color: "#94A3B8" }}>
-                Course
-              </dt>
-              <dd className="font-medium" style={{ color: NAVY }}>
-                {course?.course_name ?? "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-1" style={{ color: "#94A3B8" }}>
-                Access
-              </dt>
-              <dd className="font-medium" style={{ color: NAVY }}>
-                {expiresStr}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-[10px] font-semibold uppercase tracking-[0.08em] mb-1" style={{ color: "#94A3B8" }}>
-                Status
-              </dt>
-              <dd className="flex items-center gap-1.5 font-medium" style={{ color: isActive ? "#16A34A" : "#94A3B8" }}>
-                <CheckCircle2 className="h-4 w-4" />
-                {isActive ? "Active" : "Expired"}
-              </dd>
-            </div>
-          </dl>
-        </section>
 
         {/* Your Chapters */}
         <section>
