@@ -4777,6 +4777,36 @@ export type Database = {
           },
         ]
       }
+      problem_issue_reports: {
+        Row: {
+          asset_id: string
+          asset_name: string | null
+          created_at: string
+          id: string
+          issue_types: string[]
+          note: string | null
+          user_email: string | null
+        }
+        Insert: {
+          asset_id: string
+          asset_name?: string | null
+          created_at?: string
+          id?: string
+          issue_types?: string[]
+          note?: string | null
+          user_email?: string | null
+        }
+        Update: {
+          asset_id?: string
+          asset_name?: string | null
+          created_at?: string
+          id?: string
+          issue_types?: string[]
+          note?: string | null
+          user_email?: string | null
+        }
+        Relationships: []
+      }
       problem_pairs: {
         Row: {
           chapter_id: string
