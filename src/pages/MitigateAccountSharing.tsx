@@ -249,12 +249,17 @@ function CategoryModal({
 
           <div className="flex items-center gap-1 p-1 rounded-lg bg-white/5 border border-white/10 mb-4 w-fit">
             {tabBtn("laymans", "Plain English")}
-            {tabBtn("technical", "Technical")}
+            {tabBtn("halfTechy", "Half Tech-y")}
+            {tabBtn("technical", "Full Tech-y")}
             {tabBtn("dashboard", "Preview Dashboard")}
           </div>
 
           {view === "laymans" && (
             <p className="text-white/85 text-sm leading-relaxed">{category.laymans}</p>
+          )}
+
+          {view === "halfTechy" && (
+            <p className="text-white/85 text-sm leading-relaxed">{category.halfTechy}</p>
           )}
 
           {view === "technical" && (
