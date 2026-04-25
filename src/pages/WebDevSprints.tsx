@@ -342,12 +342,14 @@ function AddFeatureModal({
   open,
   onClose,
   onCreate,
+  onPreviewPrompt,
 }: {
   open: boolean;
   onClose: () => void;
   onCreate: (
     f: Omit<Feature, "id" | "created_at" | "updated_at" | "sort_order">,
   ) => Promise<void>;
+  onPreviewPrompt?: (f: BuildPromptFeature) => void;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
