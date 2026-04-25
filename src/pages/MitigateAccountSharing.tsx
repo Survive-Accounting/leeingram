@@ -325,17 +325,21 @@ function CategoryModal({
           </div>
 
           {view === "laymans" && (
-            <p className="text-white/85 text-sm leading-relaxed">{category.laymans}</p>
+            <ul className="space-y-1.5 text-white/85 text-sm leading-relaxed list-disc pl-5">
+              {category.laymans.map((b, i) => <li key={i}>{b}</li>)}
+            </ul>
           )}
 
           {view === "halfTechy" && (
-            <p className="text-white/85 text-sm leading-relaxed">{category.halfTechy}</p>
+            <ul className="space-y-1.5 text-white/85 text-sm leading-relaxed list-disc pl-5">
+              {category.halfTechy.map((b, i) => <li key={i}>{b}</li>)}
+            </ul>
           )}
 
           {view === "technical" && (
-            <p className="text-white/85 text-sm leading-relaxed font-mono">
-              {category.technical}
-            </p>
+            <ul className="space-y-1.5 text-white/85 text-sm leading-relaxed font-mono list-disc pl-5">
+              {category.technical.map((b, i) => <li key={i}>{b}</li>)}
+            </ul>
           )}
 
           {view === "dashboard" && (
