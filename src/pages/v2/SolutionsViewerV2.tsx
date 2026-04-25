@@ -279,18 +279,18 @@ function NeedHelpModal({
 
 // ── Explanation panel (Sheet from right, full-screen on mobile) ────────
 type ExplanationSections = {
-  what_matters: string;
+  lees_approach: string;
   how_to_solve: string;
   why_it_works: string;
-  exam_tip: string;
+  lock_it_in: string;
 };
 
-type SectionKey = "how_to_solve" | "why_it_works" | "exam_tip";
+type SectionKey = "how_to_solve" | "why_it_works" | "lock_it_in";
 
 const SECTION_META: Record<SectionKey, { label: string; emoji: string }> = {
   how_to_solve: { label: "How to solve", emoji: "📌" },
   why_it_works: { label: "Why it works", emoji: "⚖️" },
-  exam_tip: { label: "Exam tip", emoji: "🚨" },
+  lock_it_in: { label: "Lock it in", emoji: "🔒" },
 };
 
 type FeedbackReason = "unclear_steps" | "concept" | "too_long" | "still_confused";
@@ -513,10 +513,10 @@ function InlineExplanation({ asset }: { asset: Asset }) {
         <>
           <section className="rounded-lg border border-border bg-card p-4">
             <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-              <span aria-hidden>💡</span> What matters
+              <span aria-hidden>🧭</span> Lee's approach
             </h3>
             <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
-              <ReactMarkdown>{sections.what_matters}</ReactMarkdown>
+              <ReactMarkdown>{sections.lees_approach}</ReactMarkdown>
             </div>
           </section>
 
