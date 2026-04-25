@@ -518,9 +518,7 @@ export default function GetOrgAccess() {
         "";
 
       const baseTotal = tier.total;
-      const discountedTotal = foundingEligible
-        ? Math.round(baseTotal * (1 - FOUNDING_DISCOUNT_PCT / 100))
-        : baseTotal;
+      const discountedTotal = applyDiscount(baseTotal);
       const pricePerSeatCents = Math.round((discountedTotal / tier.seats) * 100);
       const totalCents = Math.round(discountedTotal * 100);
 
@@ -535,15 +533,15 @@ export default function GetOrgAccess() {
             seats: tier.seats,
             price_per_seat_cents: pricePerSeatCents,
             total_cents: totalCents,
-            is_promo: tier.is_promo || foundingEligible,
+            is_promo: tier.is_promo || totalDiscountPct > 0,
             tier_id: tier.id,
             payment_method: paymentMethod,
             auto_reup_enabled: autoReupEnabled,
+            auto_renew_enabled: autoReupEnabled && autoRenewEnabled,
             weekly_seat_limit: autoReupEnabled ? weeklySeatLimit : null,
             origin: window.location.origin,
-            founding_discount: foundingEligible
-              ? { percent: FOUNDING_DISCOUNT_PCT, base_total_cents: Math.round(baseTotal * 100) }
-              : null,
+            applied_discounts: activeDiscounts,
+            base_total_cents: Math.round(baseTotal * 100),
           },
         },
       );
