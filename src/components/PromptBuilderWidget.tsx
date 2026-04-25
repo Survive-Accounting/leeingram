@@ -3,15 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Zap, Mic, MicOff, Image as ImageIcon, X, Copy, Loader2, Sparkles,
-  Wrench, Plus, TrendingUp, Send, Check, Trash2, EyeOff,
+  Wrench, Plus, TrendingUp, Send, Check, Trash2, EyeOff, Minus, GripHorizontal,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { toPng } from "html-to-image";
+import { useDraggable } from "./prompt-builder/useDraggable";
+import { ScreenshotGrid } from "./prompt-builder/ScreenshotGrid";
+import { ScreenshotMarkup } from "./prompt-builder/ScreenshotMarkup";
 
 const ALLOWED = ["lee@survivestudios.com", "jking.cim@gmail.com"];
+
 const LOVABLE_URL = "https://lovable.dev/projects/51843e0a-bf2a-4413-bab2-a6c4ea7a1395";
 
 type Mode = "ui_fix" | "new_feature" | "conversion";
