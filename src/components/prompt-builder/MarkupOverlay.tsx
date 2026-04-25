@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Undo2, Trash2, X } from "lucide-react";
+import { X } from "lucide-react";
 
 interface Circle {
   id: string;
