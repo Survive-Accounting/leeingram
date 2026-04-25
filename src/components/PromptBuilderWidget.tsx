@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Zap, Mic, MicOff, X, Copy, Loader2, Sparkles,
   Wrench, Plus, TrendingUp, Send, Trash2, EyeOff, Minus, GripHorizontal,
-  Pencil, ListTodo, Hammer,
+  Pencil, ListTodo, Hammer, Image as ImageIcon, ClipboardCopy,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
