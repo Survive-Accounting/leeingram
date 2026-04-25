@@ -70,48 +70,67 @@ export default function QuickEmailGateModal({
     }
   };
 
-  /** Load the course list for a resolved campus, or fall back to global courses. */
-  const loadCourses = async (slug: string) => {
+  /**
+   * Load courses for the modal.
+   *
+   * Campus-specific course lists (with local codes/names) are ONLY shown once
+   * the campus has been approved by an admin (`campuses.status = 'approved'`).
+   * Until then, every visitor — even a recognized .edu domain — sees the
+   * generic 4-course list so we don't expose unverified school branding.
+   */
+  const loadCourses = async (slug: string, useCampusOverrides: boolean) => {
     setCoursesLoading(true);
     try {
-      // Try campus-specific courses first.
-      const { data: campusRow } = await supabase
-        .from("campuses")
-        .select("id")
-        .eq("slug", slug)
-        .maybeSingle();
+      if (useCampusOverrides) {
+        const { data: campusRow } = await supabase
+          .from("campuses")
+          .select("id")
+          .eq("slug", slug)
+          .maybeSingle();
 
-      if (campusRow?.id) {
-        const { data: cc } = await supabase
-          .from("campus_courses")
-          .select("local_course_code, local_course_name, display_order, courses:course_id(id, slug, code, course_name)")
-          .eq("campus_id", campusRow.id)
-          .eq("is_active", true)
-          .order("display_order", { ascending: true });
+        if (campusRow?.id) {
+          const { data: cc } = await supabase
+            .from("campus_courses")
+            .select("local_course_code, local_course_name, display_order, courses:course_id(id, slug, code, course_name)")
+            .eq("campus_id", campusRow.id)
+            .eq("is_active", true)
+            .order("display_order", { ascending: true });
 
-        const mapped: CourseRow[] = (cc ?? [])
-          .map((row: any) => row.courses && {
-            id: row.courses.id,
-            slug: row.courses.slug,
-            code: row.courses.code,
-            course_name: row.courses.course_name,
-            local_code: row.local_course_code,
-            local_name: row.local_course_name,
-          })
-          .filter(Boolean) as CourseRow[];
+          const mapped: CourseRow[] = (cc ?? [])
+            .map((row: any) => row.courses && {
+              id: row.courses.id,
+              slug: row.courses.slug,
+              code: row.courses.code,
+              course_name: row.courses.course_name,
+              local_code: row.local_course_code,
+              local_name: row.local_course_name,
+            })
+            .filter(Boolean) as CourseRow[];
 
-        if (mapped.length > 0) {
-          setCourses(mapped);
-          return;
+          if (mapped.length > 0) {
+            setCourses(mapped);
+            return;
+          }
         }
       }
 
-      // Fallback: global course list.
+      // Generic global course list (always 4 courses, no local codes).
       const { data: all } = await supabase
         .from("courses")
-        .select("id, slug, code, course_name")
-        .order("course_name", { ascending: true });
-      setCourses((all ?? []) as CourseRow[]);
+        .select("id, slug, code, course_name");
+      // Stable order: Intro 1, Intro 2, Intermediate 1, Intermediate 2.
+      const ORDER = [
+        "intro-accounting-1",
+        "intro-accounting-2",
+        "intermediate-accounting-1",
+        "intermediate-accounting-2",
+      ];
+      const sorted = (all ?? []).slice().sort((a: any, b: any) => {
+        const ai = ORDER.indexOf(a.slug);
+        const bi = ORDER.indexOf(b.slug);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      });
+      setCourses(sorted as CourseRow[]);
     } finally {
       setCoursesLoading(false);
     }
@@ -164,6 +183,9 @@ export default function QuickEmailGateModal({
     }
 
     // 2. No access → resolve campus, then show course list.
+    //    A campus is only "known" (and may show local branding/courses)
+    //    once an admin has flipped its `status` to 'approved'. Until then,
+    //    we show the generic 4-course list with no campus name.
     let resolvedSlug = "ole-miss";
     let resolvedName = "";
     let known = false;
@@ -175,9 +197,17 @@ export default function QuickEmailGateModal({
         const slug = (data?.campus_slug as string) || "";
         const name = (data?.campus_name as string) || "";
         if (slug && slug !== "general") {
-          resolvedSlug = slug;
-          resolvedName = name;
-          known = true;
+          // Verify approval status before exposing campus-specific UI.
+          const { data: campusStatusRow } = await supabase
+            .from("campuses")
+            .select("status")
+            .eq("slug", slug)
+            .maybeSingle();
+          if (campusStatusRow?.status === "approved") {
+            resolvedSlug = slug;
+            resolvedName = name;
+            known = true;
+          }
         }
       }
     } catch {
@@ -187,7 +217,7 @@ export default function QuickEmailGateModal({
     setCampusSlug(resolvedSlug);
     setCampusName(resolvedName);
     setCampusKnown(known);
-    await loadCourses(resolvedSlug);
+    await loadCourses(resolvedSlug, known);
     setStep("courses");
     setLoading(false);
   };
