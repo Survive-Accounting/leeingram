@@ -1283,14 +1283,22 @@ export default function GetOrgAccess() {
                           </div>
 
                           <div
-                            className="mt-4 text-[32px] font-bold leading-none"
+                            className="mt-4 text-[32px] font-bold leading-none flex items-baseline gap-2"
                             style={{
                               color: NAVY,
                               fontFamily: "Inter, sans-serif",
                               letterSpacing: "-0.03em",
                             }}
                           >
-                            ${p.total.toLocaleString()}
+                            ${discountedTotal.toLocaleString()}
+                            {foundingEligible && (
+                              <span
+                                className="text-[14px] font-medium line-through"
+                                style={{ color: "#94A3B8", letterSpacing: 0 }}
+                              >
+                                ${p.total.toLocaleString()}
+                              </span>
+                            )}
                           </div>
                           <div
                             className="text-[12px] mt-1.5"
