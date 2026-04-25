@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,11 +19,28 @@ const HIDDEN_KEY = "styleExport.hidden.v1";
 export function StyleExportToolbar() {
   const { user } = useAuth();
   const allowed = ALLOWED.includes((user?.email ?? "").trim().toLowerCase());
+  const POS_KEY = "styleExport.launcherPos.v1";
 
   const [hidden, setHidden] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try { return localStorage.getItem(HIDDEN_KEY) === "1"; } catch { return false; }
   });
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    if (typeof window === "undefined") return { x: 16, y: 152 };
+    try {
+      const raw = localStorage.getItem(POS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          x: Math.min(Math.max(8, parsed.x ?? 16), window.innerWidth - 60),
+          y: Math.min(Math.max(8, parsed.y ?? 152), window.innerHeight - 60),
+        };
+      }
+    } catch { /* noop */ }
+    return { x: 16, y: Math.max(152, window.innerHeight - 84) };
+  });
+  const dragRef = useRef<{ dx: number; dy: number; moved: boolean } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [sections, setSections] = useState<ExportableSection[]>([]);
 
@@ -31,8 +48,63 @@ export function StyleExportToolbar() {
     try { localStorage.setItem(HIDDEN_KEY, hidden ? "1" : "0"); } catch { /* noop */ }
   }, [hidden]);
 
+  useEffect(() => {
+    try { localStorage.setItem(POS_KEY, JSON.stringify(pos)); } catch { /* noop */ }
+  }, [pos]);
+
+  useEffect(() => {
+    const onResize = () => {
+      setPos((p) => ({
+        x: Math.min(Math.max(8, p.x), window.innerWidth - 60),
+        y: Math.min(Math.max(8, p.y), window.innerHeight - 60),
+      }));
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   // Refresh detected sections every time the popover opens
   const refreshSections = () => setSections(findExportableSections());
+
+  const onLauncherPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    dragRef.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top, moved: false };
+  };
+
+  const onLauncherPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const nx = e.clientX - d.dx;
+    const ny = e.clientY - d.dy;
+    const movedNow = Math.abs(nx - pos.x) > 3 || Math.abs(ny - pos.y) > 3;
+    if (movedNow && !d.moved) {
+      d.moved = true;
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* noop */ }
+    }
+    if (!d.moved) return;
+    const w = e.currentTarget.offsetWidth;
+    const h = e.currentTarget.offsetHeight;
+    setPos({
+      x: Math.min(Math.max(8, nx), window.innerWidth - w - 8),
+      y: Math.min(Math.max(8, ny), window.innerHeight - h - 8),
+    });
+  };
+
+  const onLauncherPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = dragRef.current;
+    if (d?.moved) {
+      try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    }
+    setTimeout(() => { dragRef.current = null; }, 0);
+  };
+
+  const onLauncherClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (dragRef.current?.moved) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
 
   if (!allowed) return null;
 
