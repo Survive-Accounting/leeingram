@@ -821,6 +821,33 @@ export default function WebDevSprints() {
                 No features with status "{statusFilter}".
               </div>
             );
+          if (statusFilter === "Ready to Demo") {
+            return (
+              <ul className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 overflow-hidden">
+                {visible.map((f) => (
+                  <li
+                    key={f.id}
+                    className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-slate-50 transition-colors"
+                  >
+                    <span className="font-medium text-slate-900 truncate">{f.title}</span>
+                    {f.page_url ? (
+                      <a
+                        href={f.page_url}
+                        target={f.page_url.startsWith("http") ? "_blank" : undefined}
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline shrink-0"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        View page
+                      </a>
+                    ) : (
+                      <span className="text-xs text-slate-400 shrink-0">No page URL</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            );
+          }
           return (
             <DndContext
               sensors={sensors}
