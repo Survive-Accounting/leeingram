@@ -32,6 +32,12 @@ const cards = [
     icon: Shield,
     route: "/admin/mitigate-sharing",
   },
+  {
+    title: "Web Dev Sprints",
+    subtitle: "Active build sprints, scope, and progress",
+    icon: Code2,
+    route: "/admin/web-dev-sprints",
+  },
 ];
 
 export default function DomainSelect() {
