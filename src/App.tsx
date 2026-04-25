@@ -14,6 +14,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SprintTimerBar } from "@/components/SprintTimerBar";
 import { RoleRouteGuard } from "@/components/RoleRouteGuard";
 import { PromptBuilderWidget } from "@/components/PromptBuilderWidget";
+import { StyleExportToolbar } from "@/components/StyleExportToolbar";
 
 // ── Lazy-loaded pages ────────────────────────────────────────────────
 const Landing = lazy(() => import("./pages/Landing"));
