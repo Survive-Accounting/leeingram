@@ -104,13 +104,34 @@ export default function MagicLinkModal({ open, onClose }: MagicLinkModalProps) {
         </p>
 
         {sent ? (
-          <div className="mt-5 text-center py-3">
-            <div className="text-3xl mb-2">📬</div>
-            <p className="text-[15px] font-semibold" style={{ color: NAVY }}>
-              Check your email for your secure login link.
+          <div className="mt-5 text-center py-2">
+            <div className="text-3xl mb-3">📬</div>
+            <h3
+              className="text-[18px]"
+              style={{
+                color: NAVY,
+                fontFamily: "'DM Serif Display', serif",
+                fontWeight: 400,
+              }}
+            >
+              Check your email
+            </h3>
+            <p className="mt-2 text-[13px] leading-relaxed" style={{ color: "#64748B" }}>
+              We sent a secure login link to your inbox. Click it to open your dashboard.
             </p>
-            <p className="mt-2 text-[12px]" style={{ color: "#94A3B8" }}>
-              Sent to {email}. Check your spam folder if you don't see it.
+            <button
+              type="button"
+              onClick={onClose}
+              className="mt-5 w-full rounded-xl py-3 text-[15px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.99]"
+              style={{
+                background: NAVY,
+                boxShadow: "0 4px 14px rgba(20,33,61,0.25)",
+              }}
+            >
+              Got it
+            </button>
+            <p className="mt-3 text-[12px]" style={{ color: "#94A3B8" }}>
+              Didn't see it? Check spam or try again in a minute.
             </p>
           </div>
         ) : (
