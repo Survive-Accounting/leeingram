@@ -52,13 +52,14 @@ import { toast } from "sonner";
 
 const ADMIN_EMAIL = "lee@survivestudios.com";
 
-const STATUSES = ["Not Started", "In Progress", "Testing", "Live"] as const;
+const STATUSES = ["Not Started", "In Progress", "Testing", "Ready to Demo", "Live"] as const;
 type Status = (typeof STATUSES)[number];
 
 const STATUS_STYLES: Record<Status, { bg: string; text: string; dot: string }> = {
   "Not Started": { bg: "bg-slate-100", text: "text-slate-700", dot: "bg-slate-400" },
   "In Progress": { bg: "bg-amber-100", text: "text-amber-800", dot: "bg-amber-500" },
   Testing: { bg: "bg-blue-100", text: "text-blue-800", dot: "bg-blue-500" },
+  "Ready to Demo": { bg: "bg-violet-100", text: "text-violet-800", dot: "bg-violet-500" },
   Live: { bg: "bg-emerald-100", text: "text-emerald-800", dot: "bg-emerald-500" },
 };
 
@@ -820,6 +821,33 @@ export default function WebDevSprints() {
                 No features with status "{statusFilter}".
               </div>
             );
+          if (statusFilter === "Ready to Demo") {
+            return (
+              <ul className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 overflow-hidden">
+                {visible.map((f) => (
+                  <li
+                    key={f.id}
+                    className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-slate-50 transition-colors"
+                  >
+                    <span className="font-medium text-slate-900 truncate">{f.title}</span>
+                    {f.page_url ? (
+                      <a
+                        href={f.page_url}
+                        target={f.page_url.startsWith("http") ? "_blank" : undefined}
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline shrink-0"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        View page
+                      </a>
+                    ) : (
+                      <span className="text-xs text-slate-400 shrink-0">No page URL</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            );
+          }
           return (
             <DndContext
               sensors={sensors}
