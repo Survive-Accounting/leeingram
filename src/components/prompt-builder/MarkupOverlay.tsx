@@ -1,13 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { Square, Circle, Pencil, Undo2, Trash2, X } from "lucide-react";
+import { Undo2, Trash2, X } from "lucide-react";
 
-type Tool = "rect" | "circle" | "free";
-interface Shape {
-  tool: Tool;
-  /** For rect/circle: bbox; for free: ignored (uses points) */
-  x1: number; y1: number; x2: number; y2: number;
-  points?: { x: number; y: number }[];
+interface Circle {
+  id: string;
+  cx: number;
+  cy: number;
+  rx: number;
+  ry: number;
 }
+
+type HandlePos = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+
+type Interaction =
+  | { mode: "create"; startX: number; startY: number; id: string }
+  | { mode: "move"; startX: number; startY: number; startCircle: Circle; id: string }
+  | { mode: "resize"; startX: number; startY: number; startCircle: Circle; id: string; handle: HandlePos };
 
 interface Props {
   onClose: () => void;
@@ -15,108 +22,303 @@ interface Props {
 
 const STROKE = "#CE1126";
 const STROKE_WIDTH = 3;
+const HANDLES: HandlePos[] = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+
+let _idCounter = 0;
+const newId = () => `c_${Date.now()}_${++_idCounter}`;
 
 /**
- * Full-screen transparent overlay. Lets the user draw red rectangles, circles,
- * or freehand strokes directly on top of the live page (purely visual — used
- * to point at things while talking through a prompt). Click PrtScn to capture.
+ * Minimal markup overlay: draggable, resizable red circles only.
+ * Drag empty space to create. Click ring to select. Drag body to move,
+ * drag handles to resize, ✕ to delete. Esc to close. PrtScn to capture.
  */
 export function MarkupOverlay({ onClose }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [tool, setTool] = useState<Tool>("rect");
-  const [shapes, setShapes] = useState<Shape[]>([]);
-  const [draft, setDraft] = useState<Shape | null>(null);
+  const [circles, setCircles] = useState<Circle[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [interaction, setInteraction] = useState<Interaction | null>(null);
 
-  // Esc to close
+  // Esc closes overlay; Delete/Backspace removes selected circle
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedId) {
+        const target = e.target as HTMLElement | null;
+        if (target && target.matches("input, textarea, [contenteditable='true']")) return;
+        e.preventDefault();
+        setCircles((cs) => cs.filter((c) => c.id !== selectedId));
+        setSelectedId(null);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, selectedId]);
 
-  const point = (e: React.PointerEvent) => ({ x: e.clientX, y: e.clientY });
+  const getPoint = (e: React.PointerEvent) => {
+    const rect = svgRef.current!.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
 
-  const onDown = (e: React.PointerEvent) => {
+  const onSurfacePointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
-    (e.currentTarget as Element).setPointerCapture(e.pointerId);
-    const p = point(e);
-    if (tool === "free") {
-      setDraft({ tool, x1: p.x, y1: p.y, x2: p.x, y2: p.y, points: [p] });
-    } else {
-      setDraft({ tool, x1: p.x, y1: p.y, x2: p.x, y2: p.y });
-    }
-  };
-  const onMove = (e: React.PointerEvent) => {
-    if (!draft) return;
-    const p = point(e);
-    if (draft.tool === "free") {
-      setDraft({ ...draft, x2: p.x, y2: p.y, points: [...(draft.points ?? []), p] });
-    } else {
-      setDraft({ ...draft, x2: p.x, y2: p.y });
-    }
-  };
-  const onUp = () => {
-    if (!draft) return;
-    const tiny = Math.abs(draft.x2 - draft.x1) < 4 && Math.abs(draft.y2 - draft.y1) < 4 && draft.tool !== "free";
-    if (!tiny) setShapes((s) => [...s, draft]);
-    setDraft(null);
+    // Only handle if user clicked the bare SVG (not a circle/handle/button)
+    if (e.target !== svgRef.current) return;
+    const p = getPoint(e);
+    setSelectedId(null);
+    const id = newId();
+    const newCircle: Circle = { id, cx: p.x, cy: p.y, rx: 0, ry: 0 };
+    setCircles((cs) => [...cs, newCircle]);
+    setInteraction({ mode: "create", startX: p.x, startY: p.y, id });
+    (svgRef.current as Element).setPointerCapture(e.pointerId);
   };
 
-  const undo = () => setShapes((s) => s.slice(0, -1));
-  const clear = () => setShapes([]);
+  const onCirclePointerDown = (e: React.PointerEvent, c: Circle) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    const p = getPoint(e);
+    setSelectedId(c.id);
+    setInteraction({ mode: "move", startX: p.x, startY: p.y, startCircle: c, id: c.id });
+    (svgRef.current as Element).setPointerCapture(e.pointerId);
+  };
 
-  const renderShape = (s: Shape, key: string | number) => {
-    if (s.tool === "free") {
-      const d = (s.points ?? []).map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
-      return <path key={key} d={d} fill="none" stroke={STROKE} strokeWidth={STROKE_WIDTH} strokeLinecap="round" strokeLinejoin="round" />;
+  const onHandlePointerDown = (e: React.PointerEvent, c: Circle, handle: HandlePos) => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    const p = getPoint(e);
+    setSelectedId(c.id);
+    setInteraction({ mode: "resize", startX: p.x, startY: p.y, startCircle: c, id: c.id, handle });
+    (svgRef.current as Element).setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!interaction) return;
+    const p = getPoint(e);
+    const dx = p.x - interaction.startX;
+    const dy = p.y - interaction.startY;
+
+    setCircles((cs) =>
+      cs.map((c) => {
+        if (c.id !== interaction.id) return c;
+
+        if (interaction.mode === "create") {
+          // Build a bbox from start point to current point
+          const x1 = interaction.startX, y1 = interaction.startY, x2 = p.x, y2 = p.y;
+          return {
+            ...c,
+            cx: (x1 + x2) / 2,
+            cy: (y1 + y2) / 2,
+            rx: Math.abs(x2 - x1) / 2,
+            ry: Math.abs(y2 - y1) / 2,
+          };
+        }
+
+        if (interaction.mode === "move") {
+          return {
+            ...c,
+            cx: interaction.startCircle.cx + dx,
+            cy: interaction.startCircle.cy + dy,
+          };
+        }
+
+        // resize: compute new bbox from original bbox + handle offset
+        const sc = interaction.startCircle;
+        let x1 = sc.cx - sc.rx;
+        let y1 = sc.cy - sc.ry;
+        let x2 = sc.cx + sc.rx;
+        let y2 = sc.cy + sc.ry;
+        const h = interaction.handle;
+        if (h.includes("w")) x1 += dx;
+        if (h.includes("e")) x2 += dx;
+        if (h.includes("n")) y1 += dy;
+        if (h.includes("s")) y2 += dy;
+        const nx1 = Math.min(x1, x2);
+        const nx2 = Math.max(x1, x2);
+        const ny1 = Math.min(y1, y2);
+        const ny2 = Math.max(y1, y2);
+        return {
+          ...c,
+          cx: (nx1 + nx2) / 2,
+          cy: (ny1 + ny2) / 2,
+          rx: (nx2 - nx1) / 2,
+          ry: (ny2 - ny1) / 2,
+        };
+      })
+    );
+  };
+
+  const onPointerUp = () => {
+    if (!interaction) return;
+    if (interaction.mode === "create") {
+      // Drop tiny accidental circles
+      setCircles((cs) => {
+        const c = cs.find((x) => x.id === interaction.id);
+        if (c && (c.rx < 6 || c.ry < 6)) {
+          return cs.filter((x) => x.id !== interaction.id);
+        }
+        // Auto-select the freshly created circle
+        if (c) setSelectedId(c.id);
+        return cs;
+      });
     }
-    const x = Math.min(s.x1, s.x2);
-    const y = Math.min(s.y1, s.y2);
-    const w = Math.abs(s.x2 - s.x1);
-    const h = Math.abs(s.y2 - s.y1);
-    if (s.tool === "rect") {
-      return <rect key={key} x={x} y={y} width={w} height={h} fill="none" stroke={STROKE} strokeWidth={STROKE_WIDTH} rx={4} />;
+    setInteraction(null);
+  };
+
+  const undo = () => {
+    setCircles((cs) => {
+      const next = cs.slice(0, -1);
+      if (selectedId && !next.some((c) => c.id === selectedId)) setSelectedId(null);
+      return next;
+    });
+  };
+  const clearAll = () => {
+    setCircles([]);
+    setSelectedId(null);
+  };
+  const deleteCircle = (id: string) => {
+    setCircles((cs) => cs.filter((c) => c.id !== id));
+    if (selectedId === id) setSelectedId(null);
+  };
+
+  const handleCursor = (h: HandlePos): string => {
+    switch (h) {
+      case "n": case "s": return "ns-resize";
+      case "e": case "w": return "ew-resize";
+      case "ne": case "sw": return "nesw-resize";
+      case "nw": case "se": return "nwse-resize";
     }
-    return <ellipse key={key} cx={x + w / 2} cy={y + h / 2} rx={w / 2} ry={h / 2} fill="none" stroke={STROKE} strokeWidth={STROKE_WIDTH} />;
+  };
+
+  const handlePoint = (c: Circle, h: HandlePos) => {
+    const x1 = c.cx - c.rx, y1 = c.cy - c.ry, x2 = c.cx + c.rx, y2 = c.cy + c.ry;
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    switch (h) {
+      case "nw": return { x: x1, y: y1 };
+      case "n":  return { x: mx, y: y1 };
+      case "ne": return { x: x2, y: y1 };
+      case "e":  return { x: x2, y: my };
+      case "se": return { x: x2, y: y2 };
+      case "s":  return { x: mx, y: y2 };
+      case "sw": return { x: x1, y: y2 };
+      case "w":  return { x: x1, y: my };
+    }
   };
 
   return (
     <>
-      {/* Drawing surface */}
       <svg
         ref={svgRef}
         data-prompt-builder-ui="true"
         className="fixed inset-0 z-[2147483646]"
         style={{ touchAction: "none", cursor: "crosshair", background: "rgba(0,0,0,0.001)" }}
-        onPointerDown={onDown}
-        onPointerMove={onMove}
-        onPointerUp={onUp}
+        onPointerDown={onSurfacePointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
       >
-        {shapes.map((s, i) => renderShape(s, i))}
-        {draft && renderShape(draft, "draft")}
+        {circles.map((c) => {
+          const isSelected = c.id === selectedId;
+          return (
+            <g key={c.id}>
+              {/* The visible ring — only the stroke is grabbable */}
+              <ellipse
+                cx={c.cx}
+                cy={c.cy}
+                rx={Math.max(c.rx, 0.1)}
+                ry={Math.max(c.ry, 0.1)}
+                fill="none"
+                stroke={STROKE}
+                strokeWidth={STROKE_WIDTH}
+                style={{ pointerEvents: "stroke", cursor: "move" }}
+                onPointerDown={(e) => onCirclePointerDown(e, c)}
+              />
+              {isSelected && (
+                <>
+                  {/* Selection bbox */}
+                  <rect
+                    x={c.cx - c.rx}
+                    y={c.cy - c.ry}
+                    width={c.rx * 2}
+                    height={c.ry * 2}
+                    fill="none"
+                    stroke={STROKE}
+                    strokeOpacity={0.5}
+                    strokeWidth={1}
+                    strokeDasharray="4 3"
+                    style={{ pointerEvents: "none" }}
+                  />
+                  {/* Resize handles */}
+                  {HANDLES.map((h) => {
+                    const p = handlePoint(c, h);
+                    return (
+                      <rect
+                        key={h}
+                        x={p.x - 5}
+                        y={p.y - 5}
+                        width={10}
+                        height={10}
+                        fill="#fff"
+                        stroke={STROKE}
+                        strokeWidth={1.5}
+                        style={{ cursor: handleCursor(h) }}
+                        onPointerDown={(e) => onHandlePointerDown(e, c, h)}
+                      />
+                    );
+                  })}
+                  {/* Delete button — small red ✕ at top-right of bbox */}
+                  <g
+                    style={{ cursor: "pointer" }}
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      deleteCircle(c.id);
+                    }}
+                  >
+                    <circle
+                      cx={c.cx + c.rx + 12}
+                      cy={c.cy - c.ry - 12}
+                      r={9}
+                      fill={STROKE}
+                      stroke="#fff"
+                      strokeWidth={1.5}
+                    />
+                    <line
+                      x1={c.cx + c.rx + 12 - 4}
+                      y1={c.cy - c.ry - 12 - 4}
+                      x2={c.cx + c.rx + 12 + 4}
+                      y2={c.cy - c.ry - 12 + 4}
+                      stroke="#fff"
+                      strokeWidth={1.5}
+                      strokeLinecap="round"
+                    />
+                    <line
+                      x1={c.cx + c.rx + 12 + 4}
+                      y1={c.cy - c.ry - 12 - 4}
+                      x2={c.cx + c.rx + 12 - 4}
+                      y2={c.cy - c.ry - 12 + 4}
+                      stroke="#fff"
+                      strokeWidth={1.5}
+                      strokeLinecap="round"
+                    />
+                  </g>
+                </>
+              )}
+            </g>
+          );
+        })}
       </svg>
 
       {/* Toolbar */}
       <div
         data-prompt-builder-ui="true"
-        className="fixed top-3 left-1/2 -translate-x-1/2 z-[2147483647] flex items-center gap-1 rounded-full border border-border bg-background/95 backdrop-blur shadow-lg px-1.5 py-1"
+        className="fixed top-3 left-1/2 -translate-x-1/2 z-[2147483647] flex items-center gap-1 rounded-full border border-border bg-background/95 backdrop-blur shadow-lg px-2 py-1"
       >
-        <ToolButton active={tool === "rect"} onClick={() => setTool("rect")} title="Rectangle">
-          <Square className="h-3.5 w-3.5" />
-        </ToolButton>
-        <ToolButton active={tool === "circle"} onClick={() => setTool("circle")} title="Circle">
-          <Circle className="h-3.5 w-3.5" />
-        </ToolButton>
-        <ToolButton active={tool === "free"} onClick={() => setTool("free")} title="Freehand">
-          <Pencil className="h-3.5 w-3.5" />
-        </ToolButton>
+        <span className="text-[10px] text-muted-foreground px-1.5">Drag to draw a circle</span>
         <div className="w-px h-5 bg-border mx-1" />
-        <ToolButton onClick={undo} disabled={shapes.length === 0} title="Undo">
+        <ToolButton onClick={undo} disabled={circles.length === 0} title="Undo">
           <Undo2 className="h-3.5 w-3.5" />
         </ToolButton>
-        <ToolButton onClick={clear} disabled={shapes.length === 0} title="Clear all">
+        <ToolButton onClick={clearAll} disabled={circles.length === 0} title="Clear all">
           <Trash2 className="h-3.5 w-3.5" />
         </ToolButton>
         <div className="w-px h-5 bg-border mx-1" />
@@ -130,21 +332,16 @@ export function MarkupOverlay({ onClose }: Props) {
 }
 
 function ToolButton({
-  children, active, onClick, disabled, title,
+  children, onClick, disabled, title,
 }: {
-  children: React.ReactNode; active?: boolean; onClick: () => void; disabled?: boolean; title: string;
+  children: React.ReactNode; onClick: () => void; disabled?: boolean; title: string;
 }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={
-        "h-7 w-7 inline-flex items-center justify-center rounded-full transition-colors " +
-        (active
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground")
-      }
+      className="h-7 w-7 inline-flex items-center justify-center rounded-full transition-colors text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
     >
       {children}
     </button>
