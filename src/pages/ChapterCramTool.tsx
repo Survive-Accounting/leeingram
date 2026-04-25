@@ -1013,7 +1013,13 @@ export default function ChapterCramTool({ overrideChapterId, campusContext }: Ch
   const drawerTitle = openDrawer ? TOOL_CARDS.find(c => c.key === openDrawer)?.title || "" : "";
 
   return (
-    <div className="min-h-screen" style={{ background: "#f5f5f5" }}>
+    <div
+      className="min-h-screen relative"
+      style={{
+        background:
+          "radial-gradient(ellipse 80% 60% at 50% 30%, rgba(206,17,38,0.10) 0%, transparent 55%), radial-gradient(ellipse 70% 50% at 50% 70%, rgba(99,52,180,0.14) 0%, transparent 60%), linear-gradient(180deg, #0B1530 0%, #14213D 35%, #1A2B5C 60%, #0F1A38 100%)",
+      }}
+    >
       {/* ── Simple Nav Bar ── */}
       <header style={{ background: theme.navy, height: 56 }}>
         <div className="mx-auto flex h-full max-w-[1200px] items-center justify-between px-4 sm:px-6">
