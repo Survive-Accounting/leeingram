@@ -7,6 +7,8 @@ import {
   Pencil, ListTodo, Hammer, Image as ImageIcon, ClipboardCopy,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsStaff } from "@/hooks/useIsStaff";
+import { useDevToolFlag } from "@/lib/devToolFlags";
 import { supabase } from "@/integrations/supabase/client";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 import { toast } from "sonner";
@@ -16,7 +18,6 @@ import { MarkupOverlay } from "./prompt-builder/MarkupOverlay";
 import { RecordingBar } from "./prompt-builder/RecordingBar";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const ALLOWED = ["lee@survivestudios.com", "jking.cim@gmail.com"];
 const LOVABLE_URL = "https://lovable.dev/projects/51843e0a-bf2a-4413-bab2-a6c4ea7a1395";
 
 type Mode = "ui_fix" | "new_feature" | "conversion";
@@ -57,7 +58,9 @@ const WINDOW_SIZE = { w: 380, h: 520 };
 
 export function PromptBuilderWidget() {
   const { user } = useAuth();
-  const allowed = ALLOWED.includes((user?.email ?? "").trim().toLowerCase());
+  const isStaff = useIsStaff();
+  const flagOn = useDevToolFlag("promptBuilder");
+  const allowed = isStaff && flagOn;
   const isMobile = useIsMobile();
 
   const [hidden, setHidden] = useState<boolean>(() => {
