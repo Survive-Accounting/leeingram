@@ -78,63 +78,69 @@ Deno.serve(async (req) => {
 
     const cleanEmail = customer_email.toLowerCase();
 
-    // Idempotently get-or-create the auth user
+    // Idempotently get-or-create the auth user.
+    // Fast path: look up user_id from profiles by email (indexed). Fallback to
+    // createUser, which returns the existing user gracefully on conflict.
     let userId: string | null = null;
     try {
-      // Look up existing user by listing (admin API has no direct getByEmail)
-      const { data: list } = await admin.auth.admin.listUsers({
-        page: 1,
-        perPage: 200,
-      });
-      const found = list?.users?.find(
-        (u) => (u.email || "").toLowerCase() === cleanEmail,
-      );
-      if (found) {
-        userId = found.id;
+      const { data: profileRow } = await admin
+        .from("profiles")
+        .select("user_id")
+        .eq("email", cleanEmail)
+        .maybeSingle();
+      if (profileRow?.user_id) {
+        userId = profileRow.user_id as string;
       } else {
         const { data: created, error: createErr } =
           await admin.auth.admin.createUser({
             email: cleanEmail,
             email_confirm: true,
           });
-        if (createErr) throw createErr;
-        userId = created.user?.id ?? null;
+        if (createErr) {
+          // If user already exists (race / no profile row yet), try generateLink
+          // to surface the user id.
+          const { data: linkProbe } = await admin.auth.admin.generateLink({
+            type: "magiclink",
+            email: cleanEmail,
+          });
+          userId = linkProbe?.user?.id ?? null;
+          if (!userId) throw createErr;
+        } else {
+          userId = created.user?.id ?? null;
+        }
       }
     } catch (err) {
       console.error("[verify-get-access-checkout] user provisioning:", err);
       return bad("Could not provision user account", 500);
     }
 
-    // Generate a magiclink the client can immediately consume to sign in
-    let actionLink: string | null = null;
-    try {
-      const { data: linkData, error: linkErr } =
-        await admin.auth.admin.generateLink({
-          type: "magiclink",
-          email: cleanEmail,
-        });
-      if (linkErr) throw linkErr;
-      actionLink = linkData?.properties?.action_link ?? null;
-    } catch (err) {
-      console.error("[verify-get-access-checkout] magic link:", err);
-      // Non-fatal; client can fallback to /login
-    }
+    // Generate a magiclink the client can immediately consume to sign in.
+    // Run in parallel with the profile upsert below.
+    const ua = req.headers.get("user-agent") ?? null;
+    const fwd = req.headers.get("x-forwarded-for") ?? "";
+    const ip = fwd.split(",")[0]?.trim() || null;
 
-    // Update last-login + sharing fields on profile (non-fatal on failure)
-    if (userId) {
-      const ua = req.headers.get("user-agent") ?? null;
-      const fwd = req.headers.get("x-forwarded-for") ?? "";
-      const ip = fwd.split(",")[0]?.trim() || null;
-      await admin.from("profiles").upsert(
-        {
-          user_id: userId,
-          email: cleanEmail,
-          last_login_at: new Date().toISOString(),
-          last_login_ip: ip,
-          last_user_agent: ua,
-        },
-        { onConflict: "user_id" },
-      );
+    const [linkResult] = await Promise.all([
+      admin.auth.admin.generateLink({ type: "magiclink", email: cleanEmail }),
+      userId
+        ? admin.from("profiles").upsert(
+            {
+              user_id: userId,
+              email: cleanEmail,
+              last_login_at: new Date().toISOString(),
+              last_login_ip: ip,
+              last_user_agent: ua,
+            },
+            { onConflict: "user_id" },
+          )
+        : Promise.resolve(),
+    ]);
+
+    let actionLink: string | null = null;
+    if (linkResult.error) {
+      console.error("[verify-get-access-checkout] magic link:", linkResult.error);
+    } else {
+      actionLink = linkResult.data?.properties?.action_link ?? null;
     }
 
     // ── Idempotently record the purchase ──
