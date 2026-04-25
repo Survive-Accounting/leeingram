@@ -270,29 +270,37 @@ export default function StagingLandingPage() {
     COURSES.find((c) => c.slug === "intermediate-accounting-2") || COURSES[0];
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8FAFC" }}>
+    <div data-export-page className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "#F8FAFC" }}>
       <TestFlowToolbar />
 
-      <StagingNavbar
-        transparentOnTop
-        onCtaClick={() => handleGetAccessClick(defaultCourse)}
-        onPricingClick={() => handleGetAccessClick(defaultCourse)}
-        onCoursesClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-      />
+      <div data-export-id="navbar" data-export-label="Navbar">
+        <StagingNavbar
+          transparentOnTop
+          onCtaClick={() => handleGetAccessClick(defaultCourse)}
+          onPricingClick={() => handleGetAccessClick(defaultCourse)}
+          onCoursesClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+        />
+      </div>
 
-      <StagingHero
-        liveCourse={defaultCourse}
-        futureCourses={[]}
-        onLiveCourseClick={() => handleGetAccessClick(defaultCourse)}
-        onNotifyClick={() => handleCardClick(defaultCourse)}
-        onGetStartedClick={() => handleGetAccessClick(defaultCourse)}
-      />
+      <div data-export-id="hero" data-export-label="Hero">
+        <StagingHero
+          liveCourse={defaultCourse}
+          futureCourses={[]}
+          onLiveCourseClick={() => handleGetAccessClick(defaultCourse)}
+          onNotifyClick={() => handleCardClick(defaultCourse)}
+          onGetStartedClick={() => handleGetAccessClick(defaultCourse)}
+        />
+      </div>
 
-      <SocialProofStrip />
+      <div data-export-id="social-proof" data-export-label="Social Proof Strip">
+        <SocialProofStrip />
+      </div>
 
-      <StagingTestimonialsSection onCtaClick={() => handleGetAccessClick(defaultCourse)} />
+      <div data-export-id="testimonials" data-export-label="Testimonials">
+        <StagingTestimonialsSection onCtaClick={() => handleGetAccessClick(defaultCourse)} />
+      </div>
 
-      <div ref={coursesRef} id="demo-section">
+      <div ref={coursesRef} id="demo-section" data-export-id="courses" data-export-label="Courses Grid">
         <StagingCoursesSection
           courses={COURSES}
           onCardClick={handleCardClick}
@@ -314,20 +322,24 @@ export default function StagingLandingPage() {
         }}
       />
 
-      <StagingFinalCtaSection
-        onGetAccessClick={() => handleGetAccessClick(defaultCourse)}
-        onTryDemoClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-      />
+      <div data-export-id="final-cta" data-export-label="Final CTA">
+        <StagingFinalCtaSection
+          onGetAccessClick={() => handleGetAccessClick(defaultCourse)}
+          onTryDemoClick={() => coursesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+        />
+      </div>
 
-      <div ref={contactRef} id="contact-form">
+      <div ref={contactRef} id="contact-form" data-export-id="contact" data-export-label="Contact Form">
         <ContactForm />
       </div>
 
-      <LandingFooter
-        onScrollToCourses={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })}
-        onScrollToContact={() => contactRef.current?.scrollIntoView({ behavior: "smooth" })}
-        onPricingClick={() => handleCardClick(defaultCourse)}
-      />
+      <div data-export-id="footer" data-export-label="Footer">
+        <LandingFooter
+          onScrollToCourses={() => coursesRef.current?.scrollIntoView({ behavior: "smooth" })}
+          onScrollToContact={() => contactRef.current?.scrollIntoView({ behavior: "smooth" })}
+          onPricingClick={() => handleCardClick(defaultCourse)}
+        />
+      </div>
 
       <StagingEmailPromptModal
         open={emailPromptOpen}
