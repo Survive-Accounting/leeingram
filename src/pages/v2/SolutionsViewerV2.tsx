@@ -659,7 +659,7 @@ function InlineExplanation({
 
       {sections && activeSection && (
         <div className="pt-3 border-t border-border">
-          <ExplanationFeedback asset={asset} />
+          <ExplanationFeedback asset={asset} onShareClick={onShareClick} />
         </div>
       )}
     </div>
