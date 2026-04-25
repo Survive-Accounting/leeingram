@@ -491,7 +491,7 @@ export default function GetAccess() {
                     className="mt-1.5 text-[10px] font-medium uppercase tracking-wider text-center"
                     style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
                   >
-                    One-time payment — no subscription
+                    One-time payment
                   </div>
                   {autoRenewActive && (
                     <div
