@@ -1078,21 +1078,21 @@ export default function SolutionsViewerV2() {
                 }}
               >
                 {asset.source_ref && (
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>
                     Practice based on <span className="font-mono">{asset.source_ref}</span>
                   </div>
                 )}
 
                 {/* Original view: problem text + (separate) instructions card below */}
                 {simplifyView === "original" && asset.survive_problem_text && (
-                  <div className="mt-4 whitespace-pre-wrap text-[0.95rem] leading-[1.7] text-foreground/90 max-w-prose">
+                  <div className="mt-4 whitespace-pre-wrap text-[0.95rem] leading-[1.7] max-w-prose" style={{ color: "rgba(255,255,255,0.92)" }}>
                     {asset.survive_problem_text}
                   </div>
                 )}
 
                 {/* Simplified view: combined block of cleaned-up problem + instructions */}
                 {simplifyView === "simplified" && simplifiedText && (
-                  <div className="mt-4 prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-li:my-1 prose-headings:mt-4 prose-headings:mb-2 prose-headings:text-base text-[0.95rem] leading-relaxed">
+                  <div className="mt-4 prose prose-sm prose-invert max-w-none prose-p:my-2 prose-ul:my-2 prose-li:my-1 prose-headings:mt-4 prose-headings:mb-2 prose-headings:text-base text-[0.95rem] leading-relaxed">
                     <ReactMarkdown>{simplifiedText}</ReactMarkdown>
                   </div>
                 )}
