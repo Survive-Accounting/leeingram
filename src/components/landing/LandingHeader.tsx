@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
 
 const NAVY = "#14213D";
@@ -10,6 +11,7 @@ interface LandingHeaderProps {
 }
 
 export default function LandingHeader({ onPricingClick, onCoursesClick }: LandingHeaderProps) {
+  const navigate = useNavigate();
   const [aboutOpen, setAboutOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -23,6 +25,7 @@ export default function LandingHeader({ onPricingClick, onCoursesClick }: Landin
   const navLinks = [
     { label: "About Lee", onClick: () => { setAboutOpen(true); setMenuOpen(false); } },
     { label: "Pricing", onClick: () => { onPricingClick(); setMenuOpen(false); } },
+    { label: "For Greek Orgs", onClick: () => { navigate("/get-org-access"); setMenuOpen(false); } },
   ];
 
   return (
