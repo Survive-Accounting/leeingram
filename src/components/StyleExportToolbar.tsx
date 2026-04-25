@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useIsStaff } from "@/hooks/useIsStaff";
+import { useDevToolFlag } from "@/lib/devToolFlags";
 import { Button } from "@/components/ui/button";
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -14,12 +15,12 @@ import {
 } from "@/lib/styleExport";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 
-const ALLOWED = ["lee@survivestudios.com", "jking.cim@gmail.com"];
 const HIDDEN_KEY = "styleExport.hidden.v1";
 
 export function StyleExportToolbar() {
-  const { user } = useAuth();
-  const allowed = ALLOWED.includes((user?.email ?? "").trim().toLowerCase());
+  const isStaff = useIsStaff();
+  const flagOn = useDevToolFlag("styleExport");
+  const allowed = isStaff && flagOn;
   const POS_KEY = "styleExport.launcherPos.v1";
 
   const [hidden, setHidden] = useState<boolean>(() => {
