@@ -1535,9 +1535,7 @@ export default function GetOrgAccess() {
               {(() => {
                 if (submitting) return "Working…";
                 if (!tier) return "Continue";
-                const ctaTotal = foundingEligible
-                  ? Math.round(tier.total * (1 - FOUNDING_DISCOUNT_PCT / 100))
-                  : tier.total;
+                const ctaTotal = applyDiscount(tier.total);
                 const verb = paymentMethod === "manual" ? "Request invoice" : "Continue";
                 return `${verb} → ${tier.seats} passes · $${ctaTotal.toLocaleString()}`;
               })()}
