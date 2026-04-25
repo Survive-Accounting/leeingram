@@ -782,7 +782,7 @@ export default function SolutionsViewerV2() {
 
       {/* Top bar */}
       <header className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b">
-        <div className="max-w-3xl mx-auto px-4 h-12 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 h-12 flex items-center justify-between gap-3">
           <button
             onClick={() => navigate(-1)}
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -790,21 +790,30 @@ export default function SolutionsViewerV2() {
             <ChevronLeft className="h-4 w-4" />
             Back
           </button>
-          <div className="text-sm font-medium tracking-tight">{headerLabel}</div>
-          <div className="w-12" />
+          <div className="text-sm font-medium tracking-tight truncate">{headerLabel}</div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setJumpOpen(true)}
+            disabled={siblings.length === 0}
+            className="gap-1.5 h-8"
+          >
+            <LayoutList className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Jump</span>
+          </Button>
         </div>
       </header>
 
       {/* Improvement banner */}
       <div className="border-b bg-muted/40">
-        <div className="max-w-3xl mx-auto px-4 py-2 text-center text-xs text-muted-foreground">
+        <div className="max-w-6xl mx-auto px-4 py-2 text-center text-xs text-muted-foreground">
           ✨ We're improving this in real-time — your feedback helps
         </div>
       </div>
 
-      <main className="max-w-3xl mx-auto px-4 pt-6 pb-32">
+      <main className="max-w-6xl mx-auto px-4 pt-6 pb-32">
         {loading && (
-          <div className="space-y-3">
+          <div className="space-y-3 max-w-3xl">
             <Skeleton className="h-6 w-2/3" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-full" />
@@ -823,78 +832,75 @@ export default function SolutionsViewerV2() {
         )}
 
         {!loading && asset && (
-          <article className="space-y-6">
-            {/* Problem card */}
-            <section className="rounded-2xl border bg-card p-6 sm:p-8 shadow-sm">
-              {asset.source_ref && (
-                <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                  {asset.source_ref}
-                </div>
-              )}
-              {asset.problem_title && (
-                <h1 className="mt-1 text-xl sm:text-2xl font-semibold leading-tight tracking-tight">
-                  {asset.problem_title}
-                </h1>
-              )}
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* LEFT: Problem + What you need to solve */}
+            <div className="space-y-4 min-w-0">
+              <div className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+                <span aria-hidden>📘</span> Based on real textbook problems
+              </div>
 
-              {asset.survive_problem_text && (
-                <div className="mt-4 whitespace-pre-wrap text-[0.95rem] leading-relaxed text-foreground/90">
-                  {asset.survive_problem_text}
-                </div>
-              )}
-
-              {instructions.length > 0 && (
-                <div className="mt-5 pt-5 border-t">
-                  <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">
-                    Instructions
+              {/* Card 1: Problem */}
+              <section className="rounded-2xl border bg-card p-6 shadow-sm">
+                {asset.source_ref && (
+                  <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                    {asset.source_ref}
                   </div>
-                  <ol className="space-y-2 text-[0.95rem] leading-relaxed">
+                )}
+                {asset.problem_title && (
+                  <h1 className="mt-1 text-xl sm:text-2xl font-semibold leading-tight tracking-tight">
+                    {asset.problem_title}
+                  </h1>
+                )}
+                {asset.survive_problem_text && (
+                  <div className="mt-4 whitespace-pre-wrap text-[0.95rem] leading-[1.7] text-foreground/90 max-w-prose">
+                    {asset.survive_problem_text}
+                  </div>
+                )}
+              </section>
+
+              {/* Card 2: What you need to solve */}
+              {instructions.length > 0 && (
+                <section className="rounded-2xl border bg-card p-6 shadow-sm">
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                    What you need to solve
+                  </h2>
+                  <ul className="space-y-2.5 text-[0.95rem] leading-relaxed">
                     {instructions.map((ins, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="font-semibold text-primary shrink-0">
+                      <li key={i} className="flex gap-2.5">
+                        <span className="font-semibold text-primary shrink-0 mt-0.5">
                           {String.fromCharCode(97 + i)}.
                         </span>
-                        <span className="whitespace-pre-wrap">{ins}</span>
+                        <span className="whitespace-pre-wrap">{highlightTerms(ins)}</span>
                       </li>
                     ))}
-                  </ol>
-                </div>
+                  </ul>
+                </section>
               )}
-            </section>
 
-            {/* Report issue link */}
-            <div className="flex justify-end -mt-3">
-              <button
-                onClick={() => setReportOpen(true)}
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <AlertTriangle className="h-3 w-3" />
-                Report issue
-              </button>
+              {/* Report issue link */}
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setReportOpen(true)}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <AlertTriangle className="h-3 w-3" />
+                  Report issue
+                </button>
+              </div>
             </div>
 
-            {/* Try it nudge + Explain button */}
-            <div className="rounded-2xl border-2 border-dashed border-border p-5 sm:p-6 text-center bg-muted/30">
-              <p className="text-sm text-muted-foreground mb-3">
-                Try it first. When you're ready, get a quick walkthrough.
-              </p>
-              <Button
-                size="lg"
-                onClick={() => setExplainOpen(true)}
-                className="gap-2"
-              >
-                <Sparkles className="h-4 w-4" />
-                Explain this
-              </Button>
+            {/* RIGHT: Explain */}
+            <div className="lg:sticky lg:top-20 lg:self-start min-w-0">
+              <InlineExplanation asset={asset} />
             </div>
-          </article>
+          </div>
         )}
       </main>
 
       {/* Sticky bottom nav */}
       {!loading && asset && (
         <nav className="fixed bottom-0 inset-x-0 z-20 bg-background/95 backdrop-blur border-t">
-          <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
+          <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -944,9 +950,14 @@ export default function SolutionsViewerV2() {
         </button>
       )}
 
-      <ExplanationPanel open={explainOpen} onOpenChange={setExplainOpen} asset={asset} />
       <NeedHelpModal open={helpOpen} onOpenChange={setHelpOpen} asset={asset} />
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
+      <JumpModal
+        open={jumpOpen}
+        onOpenChange={setJumpOpen}
+        siblings={siblings}
+        currentAssetName={asset?.asset_name}
+      />
     </div>
   );
 }
