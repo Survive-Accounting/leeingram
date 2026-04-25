@@ -172,6 +172,8 @@ const CATEGORIES: Category[] = [
     complexity: 8,
     technical:
       "We model each account's typical access cadence: hour-of-day distribution, average session length, scroll depth percentiles, and accordion-open sequence. A per-account isolation forest scores deviation; anomaly score > 0.85 over a 5-event window opens an internal review ticket. Features are recomputed nightly.",
+    halfTechy:
+      "For each account, we build a behavior profile from the event log — what hours they log in, how long sessions last, how fast they scroll, which sections they open first. A nightly job (basic anomaly-detection model) compares new activity against that profile. If the pattern flips overnight — like a 2am studier suddenly active at 8am, opening every section in 30 seconds — it gets queued for human review.",
     laymans:
       "Every student has a study rhythm — when they log in, how fast they click, what sections they open first. If an account's behavior suddenly changes overnight (a night-owl becomes an early bird, a slow scroller starts speed-clicking), it usually means a different person is using it.",
     mockup: [
