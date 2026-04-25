@@ -135,13 +135,94 @@ Deno.serve(async (req) => {
         },
         { onConflict: "user_id" },
       );
+    }
 
-      // Link any existing student_purchases for this email to the user
-      await admin
+    // ── Idempotently record the purchase ──
+    // The Stripe webhook (`stripe-webhook`) is the canonical writer of
+    // student_purchases, but in test mode and during webhook hiccups it can
+    // miss. Without a row here, AuthCallback bounces the user back to /login
+    // with "no_purchase". So we defensively insert/upsert from the verified
+    // Checkout session — keyed on stripe_session_id to stay idempotent.
+    try {
+      const md = (session.metadata ?? {}) as Record<string, string>;
+      const productType =
+        md.purchase_type || md.selectedPlan || "semester_pass";
+
+      // Resolve campus_id from slug if metadata included it.
+      let campusId: string | null = null;
+      if (md.campus) {
+        const { data: campusRow } = await admin
+          .from("campuses")
+          .select("id")
+          .eq("slug", md.campus)
+          .maybeSingle();
+        campusId = campusRow?.id ?? null;
+      }
+
+      // Resolve course_id from slug if metadata included it.
+      let courseId: string | null = null;
+      const courseSlug = md.selectedCourse || md.course;
+      if (courseSlug) {
+        const { data: courseRow } = await admin
+          .from("courses")
+          .select("id")
+          .eq("slug", courseSlug)
+          .maybeSingle();
+        courseId = courseRow?.id ?? null;
+      }
+
+      // Skip insert if a row for this session already exists.
+      const { data: existing } = await admin
         .from("student_purchases")
-        .update({ user_id: userId })
-        .eq("email", cleanEmail)
-        .is("user_id", null);
+        .select("id, user_id")
+        .eq("stripe_session_id", sessionId)
+        .maybeSingle();
+
+      if (!existing) {
+        const pricePaidCents =
+          typeof session.amount_total === "number"
+            ? session.amount_total
+            : null;
+
+        const { error: insertErr } = await admin
+          .from("student_purchases")
+          .insert({
+            email: cleanEmail,
+            user_id: userId,
+            course_id: courseId,
+            chapter_id: null,
+            purchase_type: productType,
+            stripe_customer_id: (session.customer as string) || null,
+            stripe_session_id: sessionId,
+            campus_id: campusId,
+            price_paid_cents: pricePaidCents,
+            lw_enrollment_status: "pending",
+          });
+        if (insertErr) {
+          console.error(
+            "[verify-get-access-checkout] purchase insert failed:",
+            insertErr,
+          );
+        }
+      } else if (userId && !existing.user_id) {
+        // Backfill user_id on the row the webhook already wrote.
+        await admin
+          .from("student_purchases")
+          .update({ user_id: userId })
+          .eq("id", existing.id);
+      }
+
+      // Link any other purchases for this email to the user.
+      if (userId) {
+        await admin
+          .from("student_purchases")
+          .update({ user_id: userId })
+          .eq("email", cleanEmail)
+          .is("user_id", null);
+      }
+    } catch (err) {
+      console.error("[verify-get-access-checkout] purchase upsert:", err);
+      // Non-fatal — user can still sign in; the webhook may catch up.
     }
 
     return new Response(
