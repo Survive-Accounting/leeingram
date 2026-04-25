@@ -81,43 +81,34 @@ export default function AuthCallback() {
         // Honor explicit "next" param from magic link (post-checkout flow)
         const url = new URL(window.location.href);
         const nextParam = url.searchParams.get("next");
+        const cleanEmail = email.toLowerCase();
 
-        // Check for an active purchase
-        const { data: purchases } = await supabase
-          .from("student_purchases")
-          .select("id")
-          .eq("email", email.toLowerCase())
-          .limit(1);
+        // Instant redirect — gating happens on the destination via useAccessControl.
+        navigate(nextParam || "/my-dashboard", { replace: true });
 
-        // Register device in background (non-blocking)
-        const { data: student } = await supabase
-          .from("students")
-          .select("id")
-          .eq("email", email.toLowerCase())
-          .maybeSingle();
+        // Fire-and-forget side effects (no await before navigate above).
+        void (async () => {
+          try {
+            const { data: student } = await supabase
+              .from("students")
+              .select("id")
+              .eq("email", cleanEmail)
+              .maybeSingle();
+            if (student) registerDevice(student.id, cleanEmail);
+          } catch { /* noop */ }
 
-        if (student) {
-          registerDevice(student.id, email.toLowerCase());
-        }
-
-        // Update profile last_login fields (non-blocking)
-        try {
-          await supabase.from("profiles").upsert(
-            {
-              user_id: session.user.id,
-              email: email.toLowerCase(),
-              last_login_at: new Date().toISOString(),
-              last_user_agent: navigator.userAgent,
-            },
-            { onConflict: "user_id" },
-          );
-        } catch { /* non-fatal */ }
-
-        if (purchases && purchases.length > 0) {
-          navigate(nextParam || "/dashboard", { replace: true });
-        } else {
-          navigate("/login?message=no_purchase", { replace: true });
-        }
+          try {
+            await supabase.from("profiles").upsert(
+              {
+                user_id: session.user.id,
+                email: cleanEmail,
+                last_login_at: new Date().toISOString(),
+                last_user_agent: navigator.userAgent,
+              },
+              { onConflict: "user_id" },
+            );
+          } catch { /* noop */ }
+        })();
       } catch {
         setStatus("error");
       }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const NAVY = "#14213D";
@@ -8,10 +8,7 @@ const RED = "#CE1126";
 const BG_GRADIENT =
   "radial-gradient(ellipse at 50% 0%, #DBEAFE 0%, #EFF6FF 35%, #F8FAFC 70%, #F8FAFC 100%)";
 
-type State =
-  | { phase: "loading" }
-  | { phase: "verified"; email: string | null }
-  | { phase: "failed"; reason: string };
+type State = { phase: "loading" } | { phase: "failed"; reason: string };
 
 export default function PostCheckout() {
   const [searchParams] = useSearchParams();
@@ -46,11 +43,11 @@ export default function PostCheckout() {
           amount_total?: number | null;
           metadata?: Record<string, string> | null;
           action_link?: string | null;
-          user_id?: string | null;
         } | null;
 
         if (result?.verified) {
-          const email = (result.customer_email ?? result.email ?? "").toLowerCase() || null;
+          const email =
+            (result.customer_email ?? result.email ?? "").toLowerCase() || null;
           const md = result.metadata ?? {};
           const includedCourses = (md.includedCourses ?? "")
             .split(",")
@@ -74,29 +71,23 @@ export default function PostCheckout() {
           try {
             localStorage.setItem("sa_purchase_context", JSON.stringify(purchase));
           } catch {
-            // storage may be full or disabled — non-fatal
+            // non-fatal
           }
-          setState({ phase: "verified", email });
 
-          // Auto-login: hand the action_link to Supabase auth.
-          // The magic link contains the access token in the URL hash;
-          // navigating to it lets supabase-js pick up the session.
+          // Immediately consume the magic link — no intermediate success screen.
           if (result.action_link) {
-            // Redirect immediately — magic link establishes session, then lands on /my-dashboard.
-            if (cancelled) return;
             try {
-              const u = new URL(result.action_link!);
+              const u = new URL(result.action_link);
               u.searchParams.set(
                 "redirect_to",
-                `${window.location.origin}/auth/callback?next=/my-dashboard`,
+                `${window.location.origin}/auth/callback?next=${encodeURIComponent("/my-dashboard?just_paid=1")}`,
               );
               window.location.replace(u.toString());
             } catch {
-              window.location.replace(result.action_link!);
+              window.location.replace(result.action_link);
             }
           } else {
-            // Fallback: send them to login if action_link missing
-            if (!cancelled) navigate("/login", { replace: true });
+            navigate("/login", { replace: true });
           }
         } else {
           setState({
@@ -154,34 +145,6 @@ export default function PostCheckout() {
             </h1>
             <p className="text-[14px]" style={{ color: "#64748B" }}>
               Hang tight — this only takes a moment.
-            </p>
-          </>
-        )}
-
-        {state.phase === "verified" && (
-          <>
-            <CheckCircle2
-              className="w-12 h-12 mx-auto mb-4"
-              style={{ color: "#16A34A" }}
-            />
-            <h1
-              className="text-[24px] mb-2"
-              style={{
-                color: NAVY,
-                fontFamily: "'DM Serif Display', serif",
-                fontWeight: 400,
-              }}
-            >
-              You're in!
-            </h1>
-            <p className="text-[14px]" style={{ color: "#64748B" }}>
-              Redirecting to your dashboard...
-            </p>
-            <p
-              className="mt-4 text-[11px] leading-snug"
-              style={{ color: "#94A3B8" }}
-            >
-              Individual access only. Account activity is monitored to prevent sharing.
             </p>
           </>
         )}

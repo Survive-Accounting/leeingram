@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ExternalLink } from "lucide-react";
+import { Loader2, ExternalLink, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 const NAVY = "#14213D";
@@ -195,13 +195,24 @@ export default function StudentDashboard() {
   const [email, setEmail] = useState<string | null>(null);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [justPaidPhase, setJustPaidPhase] = useState<"verifying" | "success" | "done">(
+    () => {
+      const p = new URLSearchParams(window.location.search);
+      return p.get("just_paid") === "1" || p.get("checkout") === "success"
+        ? "verifying"
+        : "done";
+    },
+  );
 
   useEffect(() => {
-    // Detect ?checkout=success and show success toast
+    // Detect ?checkout=success and show success toast (legacy)
     const params = new URLSearchParams(window.location.search);
     if (params.get("checkout") === "success") {
       toast.success("You're in! Welcome to Survive Accounting 🎉");
+    }
+    if (params.get("just_paid") === "1" || params.get("checkout") === "success") {
       params.delete("checkout");
+      params.delete("just_paid");
       const newSearch = params.toString();
       const newUrl =
         window.location.pathname + (newSearch ? `?${newSearch}` : "") + window.location.hash;
@@ -241,6 +252,19 @@ export default function StudentDashboard() {
 
     init();
   }, [navigate]);
+
+  // Drive the just-paid overlay: verifying → success → done
+  useEffect(() => {
+    if (justPaidPhase === "done") return;
+    if (justPaidPhase === "verifying" && !loading && purchases.length > 0) {
+      const t = setTimeout(() => setJustPaidPhase("success"), 400);
+      return () => clearTimeout(t);
+    }
+    if (justPaidPhase === "success") {
+      const t = setTimeout(() => setJustPaidPhase("done"), 700);
+      return () => clearTimeout(t);
+    }
+  }, [justPaidPhase, loading, purchases.length]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -478,6 +502,66 @@ export default function StudentDashboard() {
           </a>
         </div>
       </main>
+
+      {/* Just-paid blurred overlay */}
+      {justPaidPhase !== "done" && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 transition-opacity"
+          style={{
+            background: "rgba(248, 249, 250, 0.55)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl p-7 text-center"
+            style={{
+              background: "#fff",
+              border: "1px solid rgba(20,33,61,0.08)",
+              boxShadow: "0 16px 48px rgba(20,33,61,0.18)",
+            }}
+          >
+            {justPaidPhase === "verifying" ? (
+              <>
+                <Loader2
+                  className="w-9 h-9 mx-auto mb-3 animate-spin"
+                  style={{ color: NAVY }}
+                />
+                <h2
+                  className="text-[20px] mb-1"
+                  style={{
+                    color: NAVY,
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontWeight: 400,
+                  }}
+                >
+                  Verifying your payment…
+                </h2>
+                <p className="text-[13px]" style={{ color: "#64748B" }}>
+                  Just a moment.
+                </p>
+              </>
+            ) : (
+              <>
+                <CheckCircle2
+                  className="w-10 h-10 mx-auto mb-3"
+                  style={{ color: "#16A34A" }}
+                />
+                <h2
+                  className="text-[20px]"
+                  style={{
+                    color: NAVY,
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontWeight: 400,
+                  }}
+                >
+                  You're in ✓
+                </h2>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
