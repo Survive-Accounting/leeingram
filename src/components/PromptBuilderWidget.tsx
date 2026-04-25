@@ -67,9 +67,14 @@ export function PromptBuilderWidget() {
     if (typeof window === "undefined") return { x: 16, y: 80 };
     try {
       const raw = localStorage.getItem(POS_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // Clamp any stale offscreen position
+        const x = Math.min(Math.max(8, parsed.x ?? 16), window.innerWidth - 60);
+        const y = Math.min(Math.max(8, parsed.y ?? 80), window.innerHeight - 60);
+        return { x, y };
+      }
     } catch { /* noop */ }
-    // Default: bottom-left, lifted above test flow toolbar
     return { x: 16, y: Math.max(80, window.innerHeight - 140) };
   });
   const dragRef = useRef<{ dx: number; dy: number; moved: boolean } | null>(null);
