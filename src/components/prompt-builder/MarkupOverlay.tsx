@@ -329,7 +329,8 @@ export function MarkupOverlay({ onClose }: Props) {
           <X className="h-3.5 w-3.5" />
         </ToolButton>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 
