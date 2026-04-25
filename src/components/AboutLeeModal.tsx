@@ -127,90 +127,10 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
               className="text-[14px] sm:text-[15px]"
               style={{ color: "rgba(255,255,255,0.9)", lineHeight: 1.65 }}
             >
-              {/* Intro — always visible */}
-              <p>
-                I loved learning accounting so much at Ole Miss (Hotty Toddy!) that I started tutoring my classmates right away. Ten years later, I'm still loving it.
-              </p>
-
-              {/* Subtle divider */}
-              <div
-                className="my-5"
-                style={{ height: 1, background: "rgba(255,255,255,0.08)" }}
-              />
-
-              {/* Two collapsible toggles */}
-              <Accordion type="multiple" className="w-full space-y-1">
-                <AccordionItem
-                  value="how-it-started"
-                  className="border-b-0"
-                >
-                  <AccordionTrigger
-                    className="py-2.5 text-[14px] sm:text-[15px] font-semibold text-white hover:no-underline hover:text-white/90 [&[data-state=open]>svg]:text-white"
-                    style={{ color: "#fff" }}
-                  >
-                    How it started
-                  </AccordionTrigger>
-                  <AccordionContent className="pt-1 pb-3">
-                    <div className="space-y-3" style={{ color: "rgba(255,255,255,0.85)", lineHeight: 1.65 }}>
-                      <p>During the pandemic, I built SurviveAccounting.com to help students who were stuck learning accounting on Zoom.</p>
-                      <p>News flash: they hated it.</p>
-                      <p>Learning accounting is hard enough in person—doing it online made it even tougher. I was in the perfect position to fill that gap.</p>
-                      <p>I took my stimulus check, bought high-end recording gear, and started making tutoring videos.</p>
-                      <p>The rest is history—over 1,200 students (and growing) have now used it to ace exams with confidence.</p>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem
-                  value="where-headed"
-                  className="border-b-0"
-                >
-                  <AccordionTrigger
-                    className="py-2.5 text-[14px] sm:text-[15px] font-semibold text-white hover:no-underline hover:text-white/90 [&[data-state=open]>svg]:text-white"
-                    style={{ color: "#fff" }}
-                  >
-                    Where we're headed
-                  </AccordionTrigger>
-                  <AccordionContent className="pt-1 pb-3">
-                    <div className="space-y-3" style={{ color: "rgba(255,255,255,0.85)", lineHeight: 1.65 }}>
-                      <p>Now, we're evolving.</p>
-                      <p>I've built a team in the Philippines, and together we're creating AI-powered tools to take Survive Accounting to the next level—helping students around the world do more than just survive accounting, but truly master it.</p>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-
-              {/* Subtle divider */}
-              <div
-                className="my-5"
-                style={{ height: 1, background: "rgba(255,255,255,0.08)" }}
-              />
-
-              {/* Closing — always visible */}
-              <div className="space-y-3">
-                <p>
-                  If you've made it this far, we're building this for you.{" "}
-                  <button
-                    type="button"
-                    onClick={handleReachOut}
-                    className="underline decoration-[1px] underline-offset-[3px] decoration-white/40 hover:decoration-white transition-colors"
-                    style={{
-                      color: "#fff",
-                      background: "none",
-                      border: "none",
-                      padding: 0,
-                      font: "inherit",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Reach out
-                  </button>{" "}
-                  anytime.
-                </p>
-                <p>Wishing you all the best,</p>
-                <p className="font-medium text-white">Lee</p>
-                <p className="text-[12px]" style={{ color: "rgba(255,255,255,0.55)" }}>April 20, 2026</p>
-              </div>
+              <p>I loved learning accounting so much at Ole Miss (Hotty Toddy!) that I started tutoring my classmates right away.</p>
+              <p className="mt-4">During the pandemic, I built SurviveAccounting.com to help students who were stuck learning accounting online—and it took off from there.</p>
+              <p className="mt-4">Today, we're growing fast, with a global team and new AI-powered tools helping students everywhere move faster, understand more, and pass with confidence.</p>
+              <p className="mt-4 font-medium text-white">— Lee</p>
             </div>
           </div>
         </div>
