@@ -30,6 +30,7 @@ type Asset = {
   instruction_5: string | null;
   instruction_list: string | null;
   chapter_id: string;
+  base_raw_problem_id: string | null;
   journal_entry_completed_json: any | null;
 };
 
