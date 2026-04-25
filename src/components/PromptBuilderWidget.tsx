@@ -265,10 +265,10 @@ export function PromptBuilderWidget() {
       <button
         data-prompt-builder-ui="true"
         onClick={() => setHidden(false)}
-        className="fixed bottom-3 left-3 z-[9999] rounded-full bg-background/80 backdrop-blur px-2 py-1 text-[10px] font-medium text-muted-foreground hover:text-foreground border border-border shadow-sm transition-colors"
+        className="fixed bottom-3 left-28 z-[9999] rounded-full bg-primary/90 backdrop-blur px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary border border-primary shadow-md transition-colors"
         title="Show Prompt Builder (Shift+⌘K)"
       >
-        ⚡
+        ⚡ Build Prompt
       </button>
     );
   }
