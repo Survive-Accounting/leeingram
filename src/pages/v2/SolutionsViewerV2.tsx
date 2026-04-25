@@ -30,6 +30,7 @@ type Asset = {
   instruction_5: string | null;
   instruction_list: string | null;
   chapter_id: string;
+  base_raw_problem_id: string | null;
   journal_entry_completed_json: any | null;
 };
 
@@ -1040,12 +1041,21 @@ export default function SolutionsViewerV2() {
 
   // Simplify-this-problem state (keeps simplified text + active view per asset)
   const [simplifiedText, setSimplifiedText] = useState<string | null>(null);
-  const [simplifyView, setSimplifyView] = useState<SimplifyView>("original");
+  const [simplifyView, setSimplifyView] = useState<SimplifyView>("simplified");
+  const [simplifyLoading, setSimplifyLoading] = useState(false);
+  const [simplifyError, setSimplifyError] = useState<string | null>(null);
 
-  // Reset simplify view when asset changes
+  // Original textbook screenshot
+  const [originalImages, setOriginalImages] = useState<string[]>([]);
+  const [originalOpen, setOriginalOpen] = useState(false);
+
+  // Reset on asset change
   useEffect(() => {
-    setSimplifyView("original");
+    setSimplifyView("simplified");
     setSimplifiedText(null);
+    setSimplifyError(null);
+    setOriginalImages([]);
+    setOriginalOpen(false);
   }, [assetCode]);
 
   useEffect(() => {
@@ -1061,7 +1071,7 @@ export default function SolutionsViewerV2() {
         const { data: a, error: aErr } = await supabase
           .from("teaching_assets")
           .select(
-            "id, asset_name, problem_title, source_ref, survive_problem_text, instruction_1, instruction_2, instruction_3, instruction_4, instruction_5, instruction_list, chapter_id, journal_entry_completed_json",
+            "id, asset_name, problem_title, source_ref, survive_problem_text, instruction_1, instruction_2, instruction_3, instruction_4, instruction_5, instruction_list, chapter_id, base_raw_problem_id, journal_entry_completed_json",
           )
           .eq("asset_name", assetCode)
           .maybeSingle();
@@ -1104,6 +1114,82 @@ export default function SolutionsViewerV2() {
       cancelled = true;
     };
   }, [assetCode]);
+
+  // Fetch / generate the simplified version (default view).
+  // Cache-first via simplified_problem_cache; falls back to simplify-problem edge fn.
+  useEffect(() => {
+    if (!asset) return;
+    let cancelled = false;
+    (async () => {
+      setSimplifyError(null);
+      // 1. Try cache
+      try {
+        const { data } = await supabase
+          .from("simplified_problem_cache")
+          .select("simplified_text")
+          .eq("asset_id", asset.id)
+          .maybeSingle();
+        if (cancelled) return;
+        if (data?.simplified_text) {
+          setSimplifiedText(data.simplified_text);
+          return;
+        }
+      } catch {
+        // ignore — fall through to generation
+      }
+
+      // 2. Generate via edge fn
+      setSimplifyLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("simplify-problem", {
+          body: { asset_id: asset.id },
+        });
+        if (cancelled) return;
+        if (error) throw error;
+        if (!data?.success) throw new Error(data?.error || "Failed to simplify");
+        setSimplifiedText(data.simplified_text);
+      } catch (e: any) {
+        if (cancelled) return;
+        console.error("[simplify-problem] failed:", e);
+        setSimplifyError("Couldn't load the simplified version. Showing the original problem text.");
+      } finally {
+        if (!cancelled) setSimplifyLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [asset?.id]);
+
+  // Fetch original textbook screenshot from chapter_problems via base_raw_problem_id
+  useEffect(() => {
+    if (!asset?.base_raw_problem_id) {
+      setOriginalImages([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("chapter_problems")
+          .select("problem_screenshot_url, problem_screenshot_urls")
+          .eq("id", asset.base_raw_problem_id)
+          .maybeSingle();
+        if (cancelled || !data) return;
+        const urls: string[] = Array.isArray(data.problem_screenshot_urls) && data.problem_screenshot_urls.length > 0
+          ? data.problem_screenshot_urls.filter(Boolean)
+          : data.problem_screenshot_url
+            ? [data.problem_screenshot_url]
+            : [];
+        setOriginalImages(urls);
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [asset?.base_raw_problem_id]);
 
   const { prev, next } = useMemo(() => {
     if (!asset || siblings.length === 0) return { prev: null, next: null };
@@ -1216,6 +1302,43 @@ export default function SolutionsViewerV2() {
                   color: "rgba(255,255,255,0.92)",
                 }}
               >
+                {/* Simplified ↔ Original toggle */}
+                <div className="flex items-center gap-2 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setSimplifyView("simplified")}
+                    className={cn(
+                      "px-3 h-7 text-xs font-medium rounded-md border transition-colors",
+                    )}
+                    style={
+                      simplifyView === "simplified"
+                        ? { background: "rgba(255,255,255,0.95)", color: "#14213D", borderColor: "rgba(255,255,255,0.95)" }
+                        : { background: "transparent", color: "rgba(255,255,255,0.7)", borderColor: "rgba(255,255,255,0.18)" }
+                    }
+                  >
+                    Simplified
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSimplifyView("original");
+                      if (originalImages.length > 0) setOriginalOpen(true);
+                    }}
+                    disabled={originalImages.length === 0}
+                    title={originalImages.length === 0 ? "Original textbook image not available" : "View original textbook problem"}
+                    className={cn(
+                      "px-3 h-7 text-xs font-medium rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
+                    )}
+                    style={
+                      simplifyView === "original"
+                        ? { background: "rgba(255,255,255,0.95)", color: "#14213D", borderColor: "rgba(255,255,255,0.95)" }
+                        : { background: "transparent", color: "rgba(255,255,255,0.7)", borderColor: "rgba(255,255,255,0.18)" }
+                    }
+                  >
+                    Original
+                  </button>
+                </div>
+
                 {asset.source_ref && (
                   <div
                     className="text-[11px] font-medium uppercase tracking-[0.12em]"
@@ -1227,7 +1350,7 @@ export default function SolutionsViewerV2() {
 
                 {/* Textbook problem title intentionally hidden — keep focus on the prompt itself. */}
 
-                {/* Problem text */}
+                {/* Problem text — simplified by default; falls back to raw on error or while loading */}
                 {asset.survive_problem_text && (
                   <div className="mt-5">
                     <div
@@ -1236,12 +1359,31 @@ export default function SolutionsViewerV2() {
                     >
                       Problem
                     </div>
-                    <div
-                      className="whitespace-pre-wrap text-[0.9375rem] max-w-prose [&>p+p]:mt-3"
-                      style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
-                    >
-                      {asset.survive_problem_text}
-                    </div>
+                    {simplifyView === "simplified" && simplifyLoading && !simplifiedText ? (
+                      <div className="flex items-center gap-2 text-sm" style={{ color: "rgba(255,255,255,0.6)" }}>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Survive Accounting is thinking…
+                      </div>
+                    ) : simplifyView === "simplified" && simplifiedText ? (
+                      <div
+                        className="prose prose-invert max-w-prose text-[0.9375rem] prose-p:my-2 prose-ul:my-2 prose-li:my-1 prose-headings:text-white/95 prose-headings:font-semibold prose-strong:text-white"
+                        style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
+                      >
+                        <ReactMarkdown>{simplifiedText}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <div
+                        className="whitespace-pre-wrap text-[0.9375rem] max-w-prose [&>p+p]:mt-3"
+                        style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
+                      >
+                        {asset.survive_problem_text}
+                      </div>
+                    )}
+                    {simplifyError && (
+                      <div className="mt-2 text-xs" style={{ color: "rgba(255,180,180,0.85)" }}>
+                        {simplifyError}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1369,6 +1511,31 @@ export default function SolutionsViewerV2() {
         siblings={siblings}
         currentAssetName={asset?.asset_name}
       />
+
+      <Dialog open={originalOpen} onOpenChange={setOriginalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Original textbook problem</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto -mr-1 pr-1 space-y-3">
+            {originalImages.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-8 text-center">
+                Original textbook image isn't available for this problem yet.
+              </div>
+            ) : (
+              originalImages.map((url, i) => (
+                <img
+                  key={i}
+                  src={url}
+                  alt={`Original textbook problem${originalImages.length > 1 ? ` (page ${i + 1})` : ""}`}
+                  className="w-full h-auto rounded-md border border-border bg-white"
+                  loading="lazy"
+                />
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
