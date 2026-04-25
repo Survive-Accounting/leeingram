@@ -506,8 +506,12 @@ export default function GetOrgAccess() {
         (selectedOrg as any)?.org_name_manual?.trim?.() ||
         "";
 
-      const pricePerSeatCents = Math.round((tier.total / tier.seats) * 100);
-      const totalCents = Math.round(tier.total * 100);
+      const baseTotal = tier.total;
+      const discountedTotal = foundingEligible
+        ? Math.round(baseTotal * (1 - FOUNDING_DISCOUNT_PCT / 100))
+        : baseTotal;
+      const pricePerSeatCents = Math.round((discountedTotal / tier.seats) * 100);
+      const totalCents = Math.round(discountedTotal * 100);
 
       const { data, error } = await supabase.functions.invoke(
         "create-org-access-checkout",
@@ -520,12 +524,15 @@ export default function GetOrgAccess() {
             seats: tier.seats,
             price_per_seat_cents: pricePerSeatCents,
             total_cents: totalCents,
-            is_promo: tier.is_promo,
+            is_promo: tier.is_promo || foundingEligible,
             tier_id: tier.id,
             payment_method: paymentMethod,
             auto_reup_enabled: autoReupEnabled,
             weekly_seat_limit: autoReupEnabled ? weeklySeatLimit : null,
             origin: window.location.origin,
+            founding_discount: foundingEligible
+              ? { percent: FOUNDING_DISCOUNT_PCT, base_total_cents: Math.round(baseTotal * 100) }
+              : null,
           },
         },
       );
