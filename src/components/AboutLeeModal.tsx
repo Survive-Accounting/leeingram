@@ -1,6 +1,6 @@
 import { X, ArrowRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
 import leeStadium from "@/assets/lee-stadium.png";
 import { useEmailGate } from "@/contexts/EmailGateContext";
 
