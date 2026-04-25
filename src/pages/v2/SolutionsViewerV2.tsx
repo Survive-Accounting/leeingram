@@ -1206,17 +1206,21 @@ export default function SolutionsViewerV2() {
                 : ""}
             </div>
 
-            <Button
-              variant="default"
-              size="sm"
+            <button
+              type="button"
               disabled={!next}
               onClick={() => next && navigate(`/v2/solutions/${next.asset_name}`)}
-              className="gap-1"
+              className="inline-flex items-center gap-1.5 rounded-lg px-4 h-9 text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.99] disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
+              style={{
+                background: "linear-gradient(180deg, #E63950 0%, #CE1126 50%, #A30E1F 100%)",
+                boxShadow:
+                  "0 1px 0 rgba(255,255,255,0.18) inset, 0 6px 16px -6px rgba(206,17,38,0.5), 0 2px 4px rgba(0,0,0,0.2)",
+              }}
             >
-              {next?.source_ref && <span className="font-mono text-xs hidden md:inline">{next.source_ref}</span>}
+              {next?.source_ref && <span className="font-mono text-xs hidden md:inline opacity-90">{next.source_ref}</span>}
               <span className="hidden sm:inline">Next</span>
               <ArrowRight className="h-4 w-4" />
-            </Button>
+            </button>
           </div>
         </nav>
       )}
