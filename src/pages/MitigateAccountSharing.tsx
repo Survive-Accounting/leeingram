@@ -184,7 +184,7 @@ const CATEGORIES: Category[] = [
   },
 ];
 
-type ModalView = "laymans" | "technical" | "dashboard";
+type ModalView = "laymans" | "halfTechy" | "technical" | "dashboard";
 
 function CategoryModal({
   category,
