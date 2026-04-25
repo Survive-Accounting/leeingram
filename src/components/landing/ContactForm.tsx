@@ -113,7 +113,7 @@ export default function ContactForm() {
           className="text-center text-[24px] sm:text-[30px] text-white mb-3"
           style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 8px rgba(0,0,0,0.4)" }}
         >
-          Have a question? I've got you.
+          Stuck on something? I've got you.
         </h2>
         <div className="mb-10" />
 
