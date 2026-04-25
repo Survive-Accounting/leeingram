@@ -24,6 +24,14 @@ const STEPS = [
 
 export default function TestFlowToolbar() {
   const { pathname } = useLocation();
+  const [hidden, setHidden] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try { return localStorage.getItem(HIDDEN_KEY) === "1"; } catch { return false; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(HIDDEN_KEY, hidden ? "1" : "0"); } catch { /* noop */ }
+  }, [hidden]);
 
   const activeIdx = (() => {
     for (let i = STEPS.length - 1; i >= 0; i--) {
