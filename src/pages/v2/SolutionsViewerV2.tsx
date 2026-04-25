@@ -339,17 +339,18 @@ function ExplanationFeedback({ asset, onShareClick }: { asset: Asset; onShareCli
     });
   };
 
-  const submit = async (helpful: boolean, rs: FeedbackReason[] = [], n: string = "") => {
+  const submit = async (isHelpful: boolean, rs: FeedbackReason[] = [], n: string = "") => {
     setSubmitting(true);
     try {
       await supabase.from("explanation_feedback").insert({
         asset_id: asset.id,
         asset_name: asset.asset_name,
         user_email: getEmail(),
-        helpful,
+        helpful: isHelpful,
         reason: rs.length ? rs : null,
         note: n.trim() || null,
       });
+      setHelpful(isHelpful);
       setStage("done");
     } catch (e: any) {
       toast.error("Could not send feedback");
