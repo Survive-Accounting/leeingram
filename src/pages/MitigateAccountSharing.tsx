@@ -30,9 +30,9 @@ type Category = {
   icon: typeof Shield;
   enabled: boolean;
   complexity: number; // 1 = simplest
-  technical: string;
-  halfTechy: string;
-  laymans: string;
+  technical: string[];
+  halfTechy: string[];
+  laymans: string[];
   mockup: { metric: string; value: string; hint: string }[];
 };
 
@@ -44,12 +44,21 @@ const CATEGORIES: Category[] = [
     icon: Mail,
     enabled: true,
     complexity: 1,
-    technical:
-      "Signups are gated by a regex match on /\\.edu$/ and a domain MX-record lookup to confirm the school is real. The domain is then resolved against the campuses table to bind the account to a specific campus_id. Non-.edu signups are routed through the email_campus_overrides table for manual approval.",
-    halfTechy:
-      "Sign-up only accepts a .edu email, and we double-check the domain is a real school (not just a string ending in .edu). Then we look up the domain in our campuses table and tag the account to that school. If someone signs up with gmail.com, it lands in a manual-approval queue instead.",
-    laymans:
-      "You can't sign up without a real school email. That alone stops most casual sharing — students don't want to hand out their university login. And it ties every account to a specific school so we know who belongs where.",
+    technical: [
+      "Signups gated by /\\.edu$/ regex + MX-record lookup to confirm real school.",
+      "Domain resolved against `campuses` table → binds account to a `campus_id`.",
+      "Non-.edu signups routed through `email_campus_overrides` for manual approval.",
+    ],
+    halfTechy: [
+      "Sign-up only accepts a .edu email — and we verify the domain is a real school.",
+      "Domain is matched to our campuses table to tag the account to that school.",
+      "Gmail / non-.edu signups land in a manual-approval queue.",
+    ],
+    laymans: [
+      "No real school email = no signup.",
+      "Stops casual sharing — students won't hand out their university login.",
+      "Every account is tied to a specific school.",
+    ],
     mockup: [
       { metric: ".edu signups (lifetime)", value: "—", hint: "Data coming soon" },
       { metric: "Non-.edu attempts blocked", value: "—", hint: "Data coming soon" },
@@ -62,12 +71,21 @@ const CATEGORIES: Category[] = [
     icon: Eye,
     enabled: true,
     complexity: 2,
-    technical:
-      "On render, the Solutions Viewer injects a low-opacity (alpha 0.04) repeating diagonal watermark containing SHA-256(email + asset_code + day) truncated to 12 chars. Screenshots leaked to forums can be reverse-mapped to the originating student via a lookup table. Detection is performed via OCR on inbound abuse reports.",
-    halfTechy:
-      "Every solutions page renders with a faint diagonal watermark in the background. It's a hashed code (so the email isn't sitting there in plain text) tied to the student + asset + date. We keep a lookup table on our side, so if a screenshot lands on Chegg or Reddit, we run it through OCR and trace it back to the original account.",
-    laymans:
-      "Every solutions page has the student's encrypted email lightly stamped across the background — too faint to notice while studying, but very visible if a screenshot ends up on Chegg or a group chat. We can trace it back to whoever leaked it.",
+    technical: [
+      "Repeating diagonal watermark at alpha 0.04 injected on render.",
+      "Payload: SHA-256(email + asset_code + day) truncated to 12 chars.",
+      "Inbound abuse reports run through OCR and reverse-mapped to originating student.",
+    ],
+    halfTechy: [
+      "Faint diagonal watermark on every solutions page.",
+      "Hashed code tied to student + asset + date (email never in plain text).",
+      "If a screenshot leaks to Chegg/Reddit, OCR traces it back to the source account.",
+    ],
+    laymans: [
+      "Every page is lightly stamped with the student's encrypted email.",
+      "Invisible while studying, obvious in a screenshot.",
+      "Lets us trace any leaked screenshot back to whoever shared it.",
+    ],
     mockup: [
       { metric: "Pages watermarked", value: "100%", hint: "All paid views" },
       { metric: "Leaks traced (lifetime)", value: "—", hint: "Data coming soon" },
@@ -80,12 +98,21 @@ const CATEGORIES: Category[] = [
     icon: AlertTriangle,
     enabled: false,
     complexity: 3,
-    technical:
-      "Per-IP and per-account token-bucket throttles on /solutions/:assetCode renders, sized at 60 req/min and 600 req/hour respectively. Burst patterns inconsistent with human reading speed (e.g., 30 unique assets opened in < 2 min) trigger a CAPTCHA challenge served via Cloudflare Turnstile.",
-    halfTechy:
-      "We put rate limits on the solutions API — both per IP address and per account. If someone opens 30 different problems in two minutes, that's not a student studying, that's a script or a group download. We slow them down or pop a CAPTCHA (we'd use Cloudflare Turnstile) before serving the next page.",
-    laymans:
-      "A real student reads one problem at a time. A scraper or someone speed-downloading the whole library to share opens fifty pages in a minute. We notice that and slow them way down — or make them prove they're human.",
+    technical: [
+      "Per-IP + per-account token-bucket throttles: 60 req/min, 600 req/hour.",
+      "Burst pattern (e.g., 30 unique assets in <2 min) flagged as non-human.",
+      "Triggers Cloudflare Turnstile CAPTCHA before next render.",
+    ],
+    halfTechy: [
+      "Rate limits on the solutions API — per IP and per account.",
+      "30 problems opened in 2 minutes = a script, not a student.",
+      "We slow them down or pop a Cloudflare CAPTCHA.",
+    ],
+    laymans: [
+      "Real students read one problem at a time.",
+      "Scrapers open 50 pages a minute.",
+      "We slow them down or make them prove they're human.",
+    ],
     mockup: [
       { metric: "Throttle events (24h)", value: "—", hint: "Data coming soon" },
       { metric: "CAPTCHA challenges", value: "—", hint: "Data coming soon" },
@@ -98,12 +125,21 @@ const CATEGORIES: Category[] = [
     icon: Fingerprint,
     enabled: true,
     complexity: 4,
-    technical:
-      "Composite hash of canvas/WebGL renderer signatures, audio context output, installed font enumeration, screen dimensions, timezone, language, and hardware concurrency. Persisted as a 256-bit identifier per session and joined to student_purchases.user_id. A divergence threshold > 0.4 over a 7-day rolling window triggers a soft-lock event.",
-    halfTechy:
-      "Browsers leak a bunch of small signals — installed fonts, screen size, timezone, GPU info — that combine into a near-unique 'fingerprint.' We hash those into one ID and store it next to the account in our database. If the same login suddenly shows up under 4 totally different fingerprints in a week, that's a strong sharing signal and we soft-lock the account.",
-    laymans:
-      "Every browser leaves a unique 'thumbprint' — like a fingerprint at a crime scene. We quietly capture it the first time a student logs in. If the same account suddenly shows up on three or four very different thumbprints in the same week, we know the password is being passed around.",
+    technical: [
+      "Composite hash: canvas/WebGL, audio context, fonts, screen, timezone, hw concurrency.",
+      "256-bit identifier joined to `student_purchases.user_id`.",
+      "Divergence > 0.4 over 7-day rolling window → soft-lock event.",
+    ],
+    halfTechy: [
+      "Browsers leak signals (fonts, screen, timezone, GPU) → combined into a unique ID.",
+      "We hash and store that ID alongside the account.",
+      "Same login on 4 wildly different fingerprints in a week = soft-lock.",
+    ],
+    laymans: [
+      "Every browser leaves a unique 'thumbprint.'",
+      "We capture it quietly on first login.",
+      "Same account on 3–4 different thumbprints = password being shared.",
+    ],
     mockup: [
       { metric: "Unique fingerprints per student (7d)", value: "1.2 avg", hint: "Healthy: < 2.0" },
       { metric: "Accounts flagged for sharing", value: "—", hint: "Data coming soon" },
@@ -116,12 +152,21 @@ const CATEGORIES: Category[] = [
     icon: MonitorSmartphone,
     enabled: false,
     complexity: 5,
-    technical:
-      "Supabase JWT refresh tokens are tracked in a sessions table with last_seen_at heartbeats every 60s. When N > 2 active sessions overlap by > 5 minutes, the oldest session is invalidated server-side and a re-auth challenge is pushed. We exempt LearnWorlds iframe sessions matched by their referrer-validated parent token.",
-    halfTechy:
-      "Supabase auth gives every login a refresh token. We log each one in a sessions table and ping it every minute so we know what's actually active. If more than 2 sessions overlap on the same account, we kill the oldest one from the server side and force a re-login. LearnWorlds iframes get a pass since those are the same student inside the course.",
-    laymans:
-      "You can have your laptop and phone open at the same time — that's normal. But if four devices are 'active' on one account at the same moment, somebody's sharing. We just sign the oldest one out automatically.",
+    technical: [
+      "Supabase JWT refresh tokens tracked in `sessions` with 60s heartbeats.",
+      "N > 2 active sessions overlapping > 5 min → oldest invalidated server-side.",
+      "LearnWorlds iframe sessions exempted via referrer-validated parent token.",
+    ],
+    halfTechy: [
+      "Each Supabase login logged in a sessions table, pinged every minute.",
+      ">2 sessions overlapping → oldest is killed and re-auth forced.",
+      "LearnWorlds iframes get a pass (same student, inside the course).",
+    ],
+    laymans: [
+      "Laptop + phone = fine.",
+      "Four devices active at once = sharing.",
+      "We auto-sign out the oldest one.",
+    ],
     mockup: [
       { metric: "Median concurrent devices", value: "1.4", hint: "Healthy: 1–2" },
       { metric: "Auto-revocations (30d)", value: "—", hint: "Data coming soon" },
@@ -134,12 +179,20 @@ const CATEGORIES: Category[] = [
     icon: KeyRound,
     enabled: true,
     complexity: 6,
-    technical:
-      "Embedded viewer URLs include {{USER_ID}}, {{USER_EMAIL}}, and {{COURSE_ID}} injected by LearnWorlds at render time. We validate document.referrer against an LW domain whitelist and persist the bound identity in sessionStorage['sa-lw-verified']. Mismatches between the embed identity and the active Supabase session trigger a binding_violation event.",
-    halfTechy:
-      "LearnWorlds is the platform our courses run on. When a student opens a problem inside their course, LW passes us their user ID and email through the embed URL. We check that the request actually came from a LearnWorlds domain (via referrer) and compare it to whoever's logged into our app. If the IDs don't match, we flag it — that usually means a borrowed login.",
-    laymans:
-      "When a student opens a problem from inside their course, LearnWorlds tells us exactly who they are. If that ID doesn't match the email on the account, we know someone is logged into the wrong place — usually a sign of a borrowed login.",
+    technical: [
+      "Embed URLs include {{USER_ID}}, {{USER_EMAIL}}, {{COURSE_ID}} from LW.",
+      "`document.referrer` validated against LW domain whitelist; identity persisted in sessionStorage.",
+      "Embed identity ≠ active Supabase session → `binding_violation` event.",
+    ],
+    halfTechy: [
+      "LearnWorlds passes us the student's user ID + email via the embed URL.",
+      "We verify the request came from a LW domain (referrer check).",
+      "If the LW identity ≠ the logged-in account → flag (likely borrowed login).",
+    ],
+    laymans: [
+      "LearnWorlds tells us exactly who's opening a problem from inside their course.",
+      "If that ID doesn't match the logged-in email, the login is borrowed.",
+    ],
     mockup: [
       { metric: "Binding violations (7d)", value: "—", hint: "Data coming soon" },
       { metric: "LW-verified sessions", value: "—", hint: "Data coming soon" },
@@ -152,12 +205,21 @@ const CATEGORIES: Category[] = [
     icon: Globe2,
     enabled: false,
     complexity: 7,
-    technical:
-      "Each viewer event in asset_events is enriched with IP→ASN→geo (city, region, country) at ingest. We compute the great-circle distance between consecutive sessions and divide by elapsed time. Velocities exceeding ~900 km/h ('impossible travel') flag the account. We also score IP entropy: H = -Σp(i)·log₂p(i) over the trailing 30 days.",
-    halfTechy:
-      "We log the IP address on every page view and run it through a geo-IP lookup (city, state, country). For each account, we compare back-to-back sessions: if you went from Mississippi to Texas in 30 minutes, that's physically impossible. We also count how many different IPs an account uses — one student should be 1–3, not 12.",
-    laymans:
-      "If your account is logged in from Mississippi at 2pm and Texas at 2:30pm, that's not possible — unless you're in a teleporter. We track those 'impossible trips.' We also notice if one account is suddenly being used from 12 different cities in a month.",
+    technical: [
+      "`asset_events` enriched with IP→ASN→geo (city/region/country) at ingest.",
+      "Great-circle distance ÷ elapsed time → flag if > ~900 km/h ('impossible travel').",
+      "IP entropy scored: H = -Σp(i)·log₂p(i) over trailing 30 days.",
+    ],
+    halfTechy: [
+      "Every page view's IP is geo-located (city/state/country).",
+      "Back-to-back sessions checked for 'impossible travel' (e.g., MS → TX in 30 min).",
+      "Count distinct IPs per account — healthy is 1–3, not 12.",
+    ],
+    laymans: [
+      "Mississippi at 2pm + Texas at 2:30pm = physically impossible.",
+      "We catch those 'teleport' events.",
+      "12 cities in a month = account being passed around.",
+    ],
     mockup: [
       { metric: "Impossible-travel events (30d)", value: "—", hint: "Data coming soon" },
       { metric: "Avg IPs per account", value: "—", hint: "Healthy: 1–3" },
@@ -170,12 +232,20 @@ const CATEGORIES: Category[] = [
     icon: Activity,
     enabled: false,
     complexity: 8,
-    technical:
-      "We model each account's typical access cadence: hour-of-day distribution, average session length, scroll depth percentiles, and accordion-open sequence. A per-account isolation forest scores deviation; anomaly score > 0.85 over a 5-event window opens an internal review ticket. Features are recomputed nightly.",
-    halfTechy:
-      "For each account, we build a behavior profile from the event log — what hours they log in, how long sessions last, how fast they scroll, which sections they open first. A nightly job (basic anomaly-detection model) compares new activity against that profile. If the pattern flips overnight — like a 2am studier suddenly active at 8am, opening every section in 30 seconds — it gets queued for human review.",
-    laymans:
-      "Every student has a study rhythm — when they log in, how fast they click, what sections they open first. If an account's behavior suddenly changes overnight (a night-owl becomes an early bird, a slow scroller starts speed-clicking), it usually means a different person is using it.",
+    technical: [
+      "Per-account features: hour-of-day dist, session length, scroll depth, accordion sequence.",
+      "Isolation forest scores deviation; > 0.85 over a 5-event window opens a review ticket.",
+      "Features recomputed nightly.",
+    ],
+    halfTechy: [
+      "Per-account behavior profile built from event log (hours, scroll, click cadence).",
+      "Nightly anomaly-detection job compares new activity vs. profile.",
+      "Sudden flip (2am studier → 8am speed-clicker) → human-review queue.",
+    ],
+    laymans: [
+      "Every student has a study rhythm — when, how fast, what they open first.",
+      "Sudden behavior change usually = a different person on the account.",
+    ],
     mockup: [
       { metric: "Behavior models trained", value: "—", hint: "Data coming soon" },
       { metric: "Accounts under review", value: "—", hint: "Data coming soon" },
@@ -255,17 +325,21 @@ function CategoryModal({
           </div>
 
           {view === "laymans" && (
-            <p className="text-white/85 text-sm leading-relaxed">{category.laymans}</p>
+            <ul className="space-y-1.5 text-white/85 text-sm leading-relaxed list-disc pl-5">
+              {category.laymans.map((b, i) => <li key={i}>{b}</li>)}
+            </ul>
           )}
 
           {view === "halfTechy" && (
-            <p className="text-white/85 text-sm leading-relaxed">{category.halfTechy}</p>
+            <ul className="space-y-1.5 text-white/85 text-sm leading-relaxed list-disc pl-5">
+              {category.halfTechy.map((b, i) => <li key={i}>{b}</li>)}
+            </ul>
           )}
 
           {view === "technical" && (
-            <p className="text-white/85 text-sm leading-relaxed font-mono">
-              {category.technical}
-            </p>
+            <ul className="space-y-1.5 text-white/85 text-sm leading-relaxed font-mono list-disc pl-5">
+              {category.technical.map((b, i) => <li key={i}>{b}</li>)}
+            </ul>
           )}
 
           {view === "dashboard" && (
