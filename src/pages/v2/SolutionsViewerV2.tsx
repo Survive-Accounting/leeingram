@@ -1159,6 +1159,15 @@ export default function SolutionsViewerV2() {
   // Simplify-this-problem state (keeps simplified text + active view per asset)
   const [simplifiedText, setSimplifiedText] = useState<string | null>(null);
   const [simplifyView, setSimplifyView] = useState<SimplifyView>("simplified");
+  // On every asset load, check for ?ref= and capture it (persists in localStorage + logs visit).
+  useEffect(() => {
+    if (!asset) return;
+    void captureRefFromUrl({ problemId: asset.id, problemCode: asset.asset_name });
+  }, [asset?.id]);
+
+  // Simplify-this-problem state (keeps simplified text + active view per asset)
+  const [simplifiedText, setSimplifiedText] = useState<string | null>(null);
+  const [simplifyView, setSimplifyView] = useState<SimplifyView>("simplified");
   const [simplifyLoading, setSimplifyLoading] = useState(false);
   const [simplifyError, setSimplifyError] = useState<string | null>(null);
 
