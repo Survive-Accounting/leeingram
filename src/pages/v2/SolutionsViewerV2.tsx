@@ -363,6 +363,12 @@ export default function SolutionsViewerV2() {
         <title>{asset?.problem_title || asset?.source_ref || "Problem"} · Survive Accounting</title>
       </Helmet>
 
+      {isPreview && (
+        <div className="fixed top-2 right-2 z-50 bg-amber-500 text-amber-950 text-[10px] font-mono px-2 py-1 rounded shadow-lg border border-amber-600">
+          PREVIEW · {asset?.asset_name || assetCode}
+        </div>
+      )}
+
       {/* Top bar */}
       <header className="sticky top-0 z-20 bg-background/90 backdrop-blur border-b">
         <div className="max-w-3xl mx-auto px-4 h-12 flex items-center justify-between">
