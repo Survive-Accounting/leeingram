@@ -350,19 +350,6 @@ export default function StudentDashboard() {
           </a>
         </div>
 
-        {/* Support footer */}
-        <div className="pt-2 text-center">
-          <p className="text-[13px]" style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}>
-            Need help?{" "}
-            <a
-              href="mailto:lee@surviveaccounting.com"
-              className="font-semibold hover:underline"
-              style={{ color: RED }}
-            >
-              Contact Lee
-            </a>
-          </p>
-        </div>
       </main>
 
       <LandingFooter
