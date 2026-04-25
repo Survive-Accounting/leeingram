@@ -225,14 +225,6 @@ const AppRoutes = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/my-dashboard" element={<StudentDashboard />} />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedDashboardRoute>
-              <Dashboard />
-            </ProtectedDashboardRoute>
-          }
-        />
         <Route path="/tools/flashcards" element={<FlashcardTool />} />
         <Route path="/tools/formula-recall" element={<FormulaRecallTool />} />
         <Route path="/tools/entry-builder" element={<EntryBuilderTool />} />

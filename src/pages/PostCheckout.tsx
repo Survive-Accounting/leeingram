@@ -82,26 +82,21 @@ export default function PostCheckout() {
           // The magic link contains the access token in the URL hash;
           // navigating to it lets supabase-js pick up the session.
           if (result.action_link) {
-            // Tiny delay so user sees the success flash, then redirect.
-            setTimeout(() => {
-              if (cancelled) return;
-              // Replace destination of magic link with /dashboard via redirect_to param.
-              try {
-                const u = new URL(result.action_link!);
-                u.searchParams.set(
-                  "redirect_to",
-                  `${window.location.origin}/auth/callback?next=/dashboard`,
-                );
-                window.location.replace(u.toString());
-              } catch {
-                window.location.replace(result.action_link!);
-              }
-            }, 900);
+            // Redirect immediately — magic link establishes session, then lands on /my-dashboard.
+            if (cancelled) return;
+            try {
+              const u = new URL(result.action_link!);
+              u.searchParams.set(
+                "redirect_to",
+                `${window.location.origin}/auth/callback?next=/my-dashboard`,
+              );
+              window.location.replace(u.toString());
+            } catch {
+              window.location.replace(result.action_link!);
+            }
           } else {
             // Fallback: send them to login if action_link missing
-            setTimeout(() => {
-              if (!cancelled) navigate("/login", { replace: true });
-            }, 1200);
+            if (!cancelled) navigate("/login", { replace: true });
           }
         } else {
           setState({
