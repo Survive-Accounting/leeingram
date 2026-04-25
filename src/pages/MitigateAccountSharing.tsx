@@ -225,7 +225,7 @@ function CategoryModal({
                 )}
               </div>
               <p className="text-white/50 text-xs">
-                Complexity {category.complexity} of {CATEGORIES.length}
+                Rank {category.complexity} of {CATEGORIES.length}
               </p>
             </div>
           </div>
@@ -328,7 +328,7 @@ export default function MitigateAccountSharing() {
               How We Mitigate Account Sharing at Survive
             </h1>
             <p className="text-white/60 text-sm">
-              Eight layered defenses, ordered from least to most complex. Click any layer for plain-English, technical, or a dashboard preview.
+              Eight layered defenses, ordered from least to most complex. Click for deeper dive.
             </p>
           </div>
         </div>
@@ -359,7 +359,7 @@ export default function MitigateAccountSharing() {
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-medium text-sm truncate">{c.title}</p>
                   <p className="text-[11px] uppercase tracking-wider text-white/45 mt-0.5">
-                    Complexity {c.complexity} · {c.enabled ? "Live" : "Not built yet"}
+                    Rank {c.complexity}
                   </p>
                 </div>
               </button>
@@ -367,13 +367,6 @@ export default function MitigateAccountSharing() {
           })}
         </div>
 
-        {/* Footer */}
-        <div
-          className="mt-8 rounded-lg p-4 text-xs text-white/55"
-          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-        >
-          <strong className="text-white/75">Defense in depth.</strong> No single signal proves abuse — we score across all eight and only act when multiple flags align. False positives stay rare; persistent sharers can't dodge every layer.
-        </div>
       </div>
 
       <CategoryModal
