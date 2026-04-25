@@ -682,6 +682,13 @@ export default function SolutionsViewerV2() {
         </div>
       </header>
 
+      {/* Improvement banner */}
+      <div className="border-b bg-muted/40">
+        <div className="max-w-3xl mx-auto px-4 py-2 text-center text-xs text-muted-foreground">
+          ✨ We're improving this in real-time — your feedback helps
+        </div>
+      </div>
+
       <main className="max-w-3xl mx-auto px-4 pt-6 pb-32">
         {loading && (
           <div className="space-y-3">
