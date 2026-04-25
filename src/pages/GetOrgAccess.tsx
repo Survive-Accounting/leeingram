@@ -949,6 +949,7 @@ export default function GetOrgAccess() {
                 </div>
               )}
             </div>
+            )}
 
             {role === "exec" && intentLocked && (
               <>
