@@ -97,12 +97,41 @@ function FeatureCard({
   canEdit,
   onChange,
   onDelete,
+  dragHandle,
 }: {
   feature: Feature;
   canEdit: boolean;
   onChange: (next: Feature) => Promise<void>;
   onDelete: () => Promise<void>;
+  dragHandle?: React.ReactNode;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<Feature>(feature);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => setDraft(feature), [feature]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onChange(draft);
+      setEditing(false);
+      toast.success("Saved");
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const embed = feature.video_url ? getYouTubeEmbed(feature.video_url) : null;
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-6">
+      <div className="flex items-start justify-between gap-4 mb-3">
+        <div className="flex items-start gap-2 flex-1 min-w-0">
+          {dragHandle}
+          <div className="flex-1 min-w-0">
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<Feature>(feature);
   const [saving, setSaving] = useState(false);
