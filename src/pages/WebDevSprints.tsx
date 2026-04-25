@@ -301,6 +301,16 @@ function FeatureCard({
             </>
           ) : (
             <>
+              {onBuildPrompt && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onBuildPrompt}
+                  className="text-amber-700 border-amber-200 hover:bg-amber-50"
+                >
+                  <Zap className="h-4 w-4 mr-1" /> Build Prompt
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
