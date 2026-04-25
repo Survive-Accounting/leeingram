@@ -441,6 +441,52 @@ function AddFeatureModal({
   );
 }
 
+function SortableFeatureCard({
+  feature,
+  canEdit,
+  onChange,
+  onDelete,
+}: {
+  feature: Feature;
+  canEdit: boolean;
+  onChange: (next: Feature) => Promise<void>;
+  onDelete: () => Promise<void>;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: feature.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.7 : 1,
+    zIndex: isDragging ? 10 : "auto",
+  };
+
+  const handle = canEdit ? (
+    <button
+      type="button"
+      {...attributes}
+      {...listeners}
+      aria-label="Drag to reorder"
+      className="mt-1 -ml-1 p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 cursor-grab active:cursor-grabbing touch-none"
+    >
+      <GripVertical className="h-4 w-4" />
+    </button>
+  ) : null;
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <FeatureCard
+        feature={feature}
+        canEdit={canEdit}
+        onChange={onChange}
+        onDelete={onDelete}
+        dragHandle={handle}
+      />
+    </div>
+  );
+}
+
 export default function WebDevSprints() {
   const navigate = useNavigate();
   const { user } = useAuth();
