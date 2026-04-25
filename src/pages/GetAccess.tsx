@@ -61,9 +61,11 @@ export default function GetAccess() {
   const [searchParams] = useSearchParams();
   const emailParam = searchParams.get("email") || "";
   const campusParam = searchParams.get("campus") || "";
+  const courseParam = searchParams.get("course") || "";
   const studentNumberParam = searchParams.get("n");
   const studentNumber = studentNumberParam ? parseInt(studentNumberParam, 10) : null;
   const [campusName, setCampusName] = useState<string | null>(null);
+  const [problemCount, setProblemCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!campusParam) {
