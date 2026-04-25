@@ -343,7 +343,18 @@ export function PromptBuilderWidget() {
       </button>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col gap-3 overflow-hidden p-0">
+        <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col gap-3 overflow-hidden p-0 relative">
+          {/* Subtle brand signature — visible during recordings/demos */}
+          <a
+            href="https://humansent.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute bottom-3 right-3 z-50 rounded-full bg-background/80 backdrop-blur px-2.5 py-1 text-[10px] font-medium tracking-wide text-muted-foreground/80 border border-border/60 shadow-sm hover:text-foreground hover:bg-background transition-colors animate-fade-in select-none"
+            aria-label="Built with HumanSent.com"
+            title="HumanSent.com"
+          >
+            Built with <span className="text-foreground/90">HumanSent.com</span>
+          </a>
           <div className="flex flex-col gap-3 p-6 pb-3 border-b border-border">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
