@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { buildShareUrl, captureRefFromUrl, logShareClick } from "@/lib/referralTracking";
 
 type Asset = {
   id: string;
