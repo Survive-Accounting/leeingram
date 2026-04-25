@@ -359,7 +359,7 @@ export default function MitigateAccountSharing() {
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-medium text-sm truncate">{c.title}</p>
                   <p className="text-[11px] uppercase tracking-wider text-white/45 mt-0.5">
-                    Complexity {c.complexity} · {c.enabled ? "Live" : "Not built yet"}
+                    Rank {c.complexity}
                   </p>
                 </div>
               </button>
