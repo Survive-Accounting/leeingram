@@ -699,7 +699,163 @@ function InlineExplanation({
   );
 }
 
-// ── Share modal ───────────────────────────────────────────────────────
+// ── Magic Wand feedback widget (slide-up, once per browser) ───────────
+const WAND_KEY_SHOWN = "sa_wand_shown";
+const WAND_KEY_DISMISSED = "sa_wand_dismissed";
+const WAND_KEY_VIEWS = "sa_problem_views";
+const WAND_KEY_HELP_CLICKS = "sa_help_clicks";
+const WAND_KEY_FIRST_TS = "sa_first_visit_ts";
+
+function bumpWandCounter(key: string) {
+  try {
+    const cur = parseInt(localStorage.getItem(key) || "0", 10) || 0;
+    localStorage.setItem(key, String(cur + 1));
+    window.dispatchEvent(new Event("sa-wand-tick"));
+  } catch {}
+}
+
+function MagicWandFeedback() {
+  const [open, setOpen] = useState(false);
+  const [rating, setRating] = useState<number>(0);
+  const [hoverRating, setHoverRating] = useState<number>(0);
+  const [wish, setWish] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem(WAND_KEY_FIRST_TS)) {
+        localStorage.setItem(WAND_KEY_FIRST_TS, String(Date.now()));
+      }
+    } catch {}
+
+    const check = () => {
+      try {
+        if (localStorage.getItem(WAND_KEY_SHOWN) || localStorage.getItem(WAND_KEY_DISMISSED)) return;
+        const views = parseInt(localStorage.getItem(WAND_KEY_VIEWS) || "0", 10) || 0;
+        const clicks = parseInt(localStorage.getItem(WAND_KEY_HELP_CLICKS) || "0", 10) || 0;
+        const firstTs = parseInt(localStorage.getItem(WAND_KEY_FIRST_TS) || "0", 10) || Date.now();
+        const minutes = (Date.now() - firstTs) / 60000;
+        if (views >= 5 || clicks >= 2 || minutes >= 8) {
+          setOpen(true);
+          localStorage.setItem(WAND_KEY_SHOWN, "1");
+        }
+      } catch {}
+    };
+
+    check();
+    const onTick = () => check();
+    window.addEventListener("sa-wand-tick", onTick);
+    const interval = window.setInterval(check, 30_000); // re-check every 30s for the time-based trigger
+    return () => {
+      window.removeEventListener("sa-wand-tick", onTick);
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  const dismiss = () => {
+    try { localStorage.setItem(WAND_KEY_DISMISSED, "1"); } catch {}
+    setOpen(false);
+  };
+
+  const send = async () => {
+    if (!wish.trim() && rating === 0) {
+      toast.message("Add a rating or a quick note first 🙂");
+      return;
+    }
+    setSubmitting(true);
+    let userEmail: string | null = null;
+    try {
+      userEmail = localStorage.getItem("v2_student_email") || localStorage.getItem("sa_free_user_email") || null;
+    } catch {}
+    try {
+      // Reuse explanation_feedback table — no migration needed for tonight.
+      // asset_id is required, so we use a fixed sentinel UUID for "wand" feedback (00…01)
+      // and tag the reason array so we can filter later.
+      await supabase.from("explanation_feedback").insert({
+        asset_id: "00000000-0000-0000-0000-000000000001",
+        asset_name: "__magic_wand__",
+        user_email: userEmail,
+        helpful: rating >= 4, // 4-5 stars = helpful
+        reason: ["wand_prompt", `rating_${rating || 0}`],
+        note: wish.trim() || null,
+      });
+      toast.success("Saved — we'll use this to make it better 🙏");
+    } catch (e) {
+      // Even on insert failure, treat as dismissed so we don't nag.
+      console.warn("wand feedback insert failed", e);
+      toast.success("Got it — thanks!");
+    } finally {
+      setSubmitting(false);
+      try { localStorage.setItem(WAND_KEY_DISMISSED, "1"); } catch {}
+      setOpen(false);
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed bottom-20 right-4 z-40 w-[min(360px,calc(100vw-2rem))] rounded-2xl border bg-card shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300"
+      role="dialog"
+      aria-label="Quick feedback"
+    >
+      <div className="p-4 space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <Wand2 className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold">Quick favor?</span>
+          </div>
+          <button
+            onClick={dismiss}
+            className="text-muted-foreground hover:text-foreground text-xs"
+            aria-label="Dismiss"
+          >
+            Not now
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground leading-snug">
+          If we could wave a magic wand and make this the perfect study tool for you, what would it do?
+        </p>
+        <div className="flex items-center gap-1" role="radiogroup" aria-label="Rating">
+          {[1, 2, 3, 4, 5].map((n) => {
+            const filled = (hoverRating || rating) >= n;
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setRating(n)}
+                onMouseEnter={() => setHoverRating(n)}
+                onMouseLeave={() => setHoverRating(0)}
+                className="text-xl leading-none transition-transform hover:scale-110"
+                aria-label={`${n} star${n === 1 ? "" : "s"}`}
+                role="radio"
+                aria-checked={rating === n}
+              >
+                <span className={filled ? "text-amber-400" : "text-muted-foreground/40"}>★</span>
+              </button>
+            );
+          })}
+        </div>
+        <Textarea
+          value={wish}
+          onChange={(e) => setWish(e.target.value)}
+          placeholder="Tell us anything — what's confusing, what's missing, what would help you cram faster…"
+          rows={3}
+          className="text-sm resize-none"
+        />
+        <div className="flex items-center justify-end gap-2 pt-1">
+          <Button size="sm" variant="ghost" onClick={dismiss} disabled={submitting}>
+            Skip
+          </Button>
+          <Button size="sm" onClick={send} disabled={submitting}>
+            {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ShareModal({
   open,
   onOpenChange,
