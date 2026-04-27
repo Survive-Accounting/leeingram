@@ -430,32 +430,11 @@ function AskAnythingSection() {
   const RED = "#CE1126";
   const questions = [
     "Why did we debit this?",
-    "How do I know which formula to use?",
-    "Can you walk me through this like I’m cramming?",
+    "How do I know which account to use?",
+    "What should I study for this chapter?",
     "What would this look like on an exam?",
   ];
-  return (
-    <section
-      className="relative px-4 sm:px-6"
-      style={{
-        background: "#FFFFFF",
-        borderTop: "1px solid #E5E7EB",
-        paddingTop: 72,
-        paddingBottom: 72,
-      }}
-    >
-      <div className="mx-auto" style={{ maxWidth: 880 }}>
-        <div className="text-center" style={{ maxWidth: 640, margin: "0 auto" }}>
-          <h2
-            className="text-[26px] sm:text-[34px] leading-tight"
-            style={{
-              fontFamily: "'DM Serif Display', serif",
-              fontWeight: 400,
-              color: NAVY,
-            }}
-          >
-            Every question helps us make this better.
-          </h2>
+...
           <p
             className="mt-3 sm:mt-4 text-[15px] sm:text-[16px]"
             style={{
@@ -465,7 +444,7 @@ function AskAnythingSection() {
             }}
           >
             When students ask great questions, we use them to improve explanations,
-            create new walkthroughs, and build better study tools.
+            create new video walkthroughs, and build better study tools.
           </p>
         </div>
 
