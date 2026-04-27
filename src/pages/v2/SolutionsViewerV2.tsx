@@ -563,17 +563,22 @@ function InlineExplanation({
 
   return (
     <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-5">
-      {/* Top: "Get Quick Help" + Print PDF */}
-      <div className="flex items-center justify-between gap-3 pb-4 border-b border-border/60">
-        <span className="text-sm font-semibold text-foreground">
-          Get Quick Help
-        </span>
+      {/* Top: heading + Print PDF */}
+      <div className="flex items-start justify-between gap-3 pb-4 border-b border-border/60">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-foreground">
+            Choose how you want help
+          </div>
+          <div className="text-xs text-muted-foreground mt-0.5">
+            Get a hint, see the setup, or walk through the full solution.
+          </div>
+        </div>
         <Button
           size="sm"
           variant="outline"
           onClick={handlePrintPdf}
           disabled={printing}
-          className="gap-1.5 h-8 px-3 text-xs font-medium"
+          className="gap-1.5 h-8 px-3 text-xs font-medium shrink-0"
         >
           {printing ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -586,6 +591,25 @@ function InlineExplanation({
 
       {/* Toolbox */}
       <div className="space-y-3">
+        {/* PRIMARY: Walk me through it — big red CTA */}
+        <button
+          type="button"
+          onClick={() => handleToolboxClick("how_to_solve")}
+          className={cn(
+            "w-full inline-flex items-center justify-center gap-2 rounded-lg h-12 px-4 text-sm font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99]",
+            activeSection === "how_to_solve" && "ring-2 ring-offset-2 ring-[#CE1126]/40"
+          )}
+          style={{
+            background: "linear-gradient(180deg, #E63950 0%, #CE1126 50%, #A30E1F 100%)",
+            boxShadow:
+              "0 1px 0 rgba(255,255,255,0.18) inset, 0 6px 16px -6px rgba(206,17,38,0.5), 0 2px 4px rgba(0,0,0,0.2)",
+          }}
+        >
+          <span aria-hidden>📌</span>
+          Walk me through this problem
+        </button>
+
+        {/* Secondary buttons */}
         <div className="grid grid-cols-2 gap-2">
           {TOOLBOX_ORDER.map((k) => {
             const isActive = activeSection === k;
@@ -596,6 +620,7 @@ function InlineExplanation({
                 size="sm"
                 onClick={() => handleToolboxClick(k)}
                 className="justify-start gap-2 h-9 text-xs sm:text-sm font-medium"
+                title={TOOLBOX_META[k].subtitle}
               >
                 <span aria-hidden>{TOOLBOX_META[k].emoji}</span>
                 {TOOLBOX_META[k].label}
