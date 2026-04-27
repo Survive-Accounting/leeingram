@@ -129,7 +129,7 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
           className="text-center mb-8 text-[22px] sm:text-[28px] md:text-[34px] leading-tight"
           style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
         >
-          Built on a decade of one-on-one tutoring.
+          Built on a decade of tutoring accounting students.
         </p>
 
         <iframe

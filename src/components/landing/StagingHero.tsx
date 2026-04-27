@@ -352,7 +352,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               textShadow: "0 2px 20px rgba(0,0,0,0.3)",
             }}
           >
-            Help us build the fastest way to cram accounting problems.
+            Help us build the fastest way to cram for accounting exams.
           </h1>
 
           {/* Subtext */}
@@ -367,7 +367,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               textShadow: "0 2px 20px rgba(0,0,0,0.3)",
             }}
           >
-            Try the new Survive Accounting cram tool free during beta. Practice textbook-style problems, get quick tutor-style help when you’re stuck, and tell us what would make studying easier before your exam.
+            Try the new Survive Accounting cram tools for free during beta. Give us your feedback, and we'll make updates in real-time. Available through final exams.
           </p>
 
           {/* CTA */}
