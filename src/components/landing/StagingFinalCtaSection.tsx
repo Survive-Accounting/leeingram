@@ -93,7 +93,7 @@ export default function StagingFinalCtaSection({
           className="mt-4 text-[16px]"
           style={{ color: "rgba(255,255,255,0.9)", opacity: 0.9, fontFamily: "Inter, sans-serif" }}
         >
-          We’re opening the beta so students can test the tool, ask questions, and help us make it better before the next exam.
+          We’re opening the beta so students can test our new tools, ask questions, and help us make Survive Accounting better before next semester.
         </p>
 
         <div className="mt-8 flex flex-col items-center gap-4">
