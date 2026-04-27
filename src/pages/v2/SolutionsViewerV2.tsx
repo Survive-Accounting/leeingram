@@ -1324,31 +1324,12 @@ export default function SolutionsViewerV2() {
                     >
                       Problem
                     </div>
-                    {simplifiedText ? (
-                      <div
-                        className="prose prose-invert max-w-prose text-[14px] prose-p:my-2 prose-ul:my-1.5 prose-li:my-1 prose-headings:text-white/95 prose-headings:font-semibold prose-strong:text-white"
-                        style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
-                      >
-                        <ReactMarkdown>{simplifiedText}</ReactMarkdown>
-                      </div>
-                    ) : simplifyError ? (
-                      // Fallback: show raw problem with a small notice
-                      <>
-                        <div
-                          className="mb-2 text-xs"
-                          style={{ color: "rgba(255,180,180,0.85)" }}
-                        >
-                          {simplifyError}
-                        </div>
-                        <div
-                          className="whitespace-pre-wrap text-[14px] max-w-prose [&>p+p]:mt-3"
-                          style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
-                        >
-                          {asset.survive_problem_text}
-                        </div>
-                      </>
-                    ) : null}
-                    {/* If no simplifiedText and no error → blocking modal below covers this state */}
+                    <div
+                      className="whitespace-pre-wrap text-[14px] max-w-prose [&>p+p]:mt-3"
+                      style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
+                    >
+                      {asset.survive_problem_text}
+                    </div>
                   </div>
                 )}
 
