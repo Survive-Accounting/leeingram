@@ -295,31 +295,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
             </div>
           </button>
 
-          {/* Free Beta pill */}
-          <div
-            className="hero-anim-eyebrow mb-4 inline-flex items-center gap-2"
-            style={{
-              padding: "6px 14px",
-              borderRadius: 999,
-              background: "rgba(255,255,255,0.12)",
-              border: "1px solid rgba(255,255,255,0.25)",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
-              fontFamily: "Inter, sans-serif",
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-              color: "#FFFFFF",
-            }}
-          >
-            <span style={{
-              width: 7, height: 7, borderRadius: 999,
-              background: "#34D399",
-              boxShadow: "0 0 8px rgba(52,211,153,0.8)",
-            }} />
-            Free Beta · Now Open
-          </div>
+
 
           {/* Identity — entire line is the About link */}
           <button
