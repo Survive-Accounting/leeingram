@@ -283,6 +283,60 @@ export default function StagingCoursesSection({
         onReveal={() => setRevealed(true)}
         onGetStarted={handleGetStarted}
       />
+
+      {/* Benefit cards */}
+      <div className="mx-auto mt-12 sm:mt-16" style={{ maxWidth: 1100 }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+          {[
+            {
+              title: "Practice by chapter",
+              body: "Jump straight to the topics showing up on your exam.",
+            },
+            {
+              title: "Ask when you’re stuck",
+              body: "Get hints, setups, walkthroughs, and simple explanations.",
+            },
+            {
+              title: "Shape the tool",
+              body: "Your questions help us decide what videos, examples, and features to build next.",
+            },
+          ].map((c) => (
+            <div
+              key={c.title}
+              className="rounded-xl p-5 sm:p-6 transition-transform hover:-translate-y-0.5"
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid #E5E7EB",
+                boxShadow: "0 1px 2px rgba(20,33,61,0.04)",
+                fontFamily: "Inter, sans-serif",
+              }}
+            >
+              <div
+                aria-hidden
+                style={{
+                  width: 28,
+                  height: 3,
+                  borderRadius: 2,
+                  background: RED,
+                  marginBottom: 12,
+                }}
+              />
+              <h3
+                className="text-[16px] sm:text-[17px] font-bold mb-1.5"
+                style={{ color: NAVY, letterSpacing: "-0.005em" }}
+              >
+                {c.title}
+              </h3>
+              <p
+                className="text-[14px]"
+                style={{ color: "#6B7280", lineHeight: 1.55 }}
+              >
+                {c.body}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
