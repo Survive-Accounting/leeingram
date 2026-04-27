@@ -1133,9 +1133,12 @@ export default function SolutionsViewerV2() {
   useEffect(() => {
     if (!asset?.base_raw_problem_id) {
       setOriginalImages([]);
+      setOriginalLoading(false);
       return;
     }
     let cancelled = false;
+    setOriginalLoading(true);
+    setOriginalImagesLoaded({});
     (async () => {
       try {
         const { data } = await supabase
@@ -1152,6 +1155,8 @@ export default function SolutionsViewerV2() {
         setOriginalImages(urls);
       } catch {
         // ignore
+      } finally {
+        if (!cancelled) setOriginalLoading(false);
       }
     })();
     return () => {
