@@ -172,16 +172,20 @@ export default function YouFormatAdmin() {
         <div>
           <h1 className="text-3xl font-bold">You-Format Admin</h1>
           <p className="text-muted-foreground mt-1">
-            Phase A: curate the business library and map chapters to allowed business domains.
-            Generation runs in Phase B.
+            Curate the business library, map chapters to domains, then generate &amp; QA you-format rewrites.
           </p>
         </div>
 
-        <Tabs defaultValue="businesses">
+        <Tabs defaultValue="qa">
           <TabsList>
+            <TabsTrigger value="qa">Generation &amp; QA</TabsTrigger>
             <TabsTrigger value="businesses">Business Library ({businesses.length})</TabsTrigger>
             <TabsTrigger value="mapping">Chapter → Domain Mapping</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="qa">
+            <YouFormatQA chapters={introChapters} chapterDomains={chapterDomains} />
+          </TabsContent>
 
           <TabsContent value="businesses" className="space-y-4">
             <Card>
