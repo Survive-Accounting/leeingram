@@ -38,7 +38,7 @@ export default function ContactForm() {
       toast.success("Message sent! I'll get back to you soon.");
       setName("");
       setEmail("");
-      setSubject("I'm stuck on something");
+      setSubject("I’m stuck on a problem");
       setMessage("");
     } catch {
       toast.error("Failed to send — please try again");
