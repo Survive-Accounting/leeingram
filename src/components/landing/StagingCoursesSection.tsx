@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import BetaPaywallModal from "./BetaPaywallModal";
+import { useIsStaff } from "@/hooks/useIsStaff";
+import leeHeadshot from "@/assets/lee-headshot-original.png";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -84,9 +86,11 @@ export default function StagingCoursesSection({
   const [detail, setDetail] = useState<ProblemDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const isStaff = useIsStaff();
 
-  // Listen for paywall trigger from the embedded V2 viewer iframe
+  // Listen for paywall trigger from the embedded V2 viewer iframe (skipped for staff)
   useEffect(() => {
+    if (isStaff) return;
     const onMessage = (e: MessageEvent) => {
       const data = e.data;
       if (data && typeof data === "object" && data.type === "sa-embed-paywall") {
@@ -95,7 +99,7 @@ export default function StagingCoursesSection({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, []);
+  }, [isStaff]);
 
   // Load chapters when course changes
   useEffect(() => {
@@ -294,6 +298,7 @@ export default function StagingCoursesSection({
         detail={detail}
         loading={loading}
         onPaywall={() => setPaywallOpen(true)}
+        isStaff={isStaff}
       />
 
       <BetaPaywallModal
@@ -367,9 +372,10 @@ interface LaptopViewerProps {
   detail: ProblemDetail | null;
   loading: boolean;
   onPaywall: () => void;
+  isStaff?: boolean;
 }
 
-function LaptopViewer({ detail, loading, onPaywall }: LaptopViewerProps) {
+function LaptopViewer({ detail, loading, onPaywall, isStaff }: LaptopViewerProps) {
   return (
     <div className="mx-auto w-full" style={{ maxWidth: 1100 }}>
       {/* Lid */}
@@ -415,7 +421,7 @@ function LaptopViewer({ detail, loading, onPaywall }: LaptopViewerProps) {
               borderRadius: 3,
             }}
           >
-            <ScreenContent detail={detail} loading={loading} onPaywall={onPaywall} />
+            <ScreenContent detail={detail} loading={loading} onPaywall={onPaywall} isStaff={isStaff} />
           </div>
         </div>
       </div>
@@ -434,44 +440,114 @@ function LaptopViewer({ detail, loading, onPaywall }: LaptopViewerProps) {
   );
 }
 
-function ScreenContent({ detail, loading, onPaywall }: LaptopViewerProps) {
+function BrandedLoader({ label }: { label: string }) {
+  return (
+    <div
+      className="absolute inset-0 flex flex-col items-center justify-center z-10 overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(135deg, #14213D 0%, #1a2d5a 55%, #CE1126 145%)",
+      }}
+    >
+      <style>{`
+        @keyframes saLoaderFloat {
+          0%, 100% { transform: translateY(0); }
+          50%      { transform: translateY(-3px); }
+        }
+        @keyframes saLoaderDot {
+          0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+          40%           { opacity: 1;    transform: translateY(-3px); }
+        }
+        .sa-loader-headshot { animation: saLoaderFloat 4s ease-in-out infinite; }
+        .sa-loader-dot      { animation: saLoaderDot 1.4s ease-in-out infinite; }
+        .sa-loader-dot:nth-child(2) { animation-delay: 0.18s; }
+        .sa-loader-dot:nth-child(3) { animation-delay: 0.36s; }
+        @media (prefers-reduced-motion: reduce) {
+          .sa-loader-headshot, .sa-loader-dot { animation: none !important; }
+        }
+      `}</style>
+
+      {/* Headshot */}
+      <div
+        className="sa-loader-headshot rounded-full overflow-hidden"
+        style={{
+          width: 72,
+          height: 72,
+          border: "2px solid #FFFFFF",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+          background: "linear-gradient(135deg, #DDE7F5 0%, #C8D6EC 100%)",
+        }}
+      >
+        <img
+          src={leeHeadshot}
+          alt="Lee Ingram"
+          className="w-full h-full object-cover"
+          style={{ objectPosition: "center 15%" }}
+          loading="eager"
+          decoding="async"
+        />
+      </div>
+
+      {/* Wordmark */}
+      <div
+        className="mt-4 tracking-tight"
+        style={{ fontFamily: "'DM Serif Display', serif", fontSize: 20 }}
+      >
+        <span style={{ color: RED, fontWeight: 800 }}>Survive</span>
+        <span style={{ color: "#FFFFFF", fontWeight: 400 }}> Accounting</span>
+      </div>
+
+      {/* Sub-line */}
+      <div
+        className="mt-1.5 text-[13px]"
+        style={{
+          fontFamily: "Inter, sans-serif",
+          color: "rgba(255,255,255,0.7)",
+        }}
+      >
+        {label}
+      </div>
+
+      {/* Pulsing dots */}
+      <div className="mt-4 flex items-center gap-1.5">
+        <span
+          className="sa-loader-dot block rounded-full"
+          style={{ width: 5, height: 5, background: "rgba(255,255,255,0.55)" }}
+        />
+        <span
+          className="sa-loader-dot block rounded-full"
+          style={{ width: 5, height: 5, background: "rgba(255,255,255,0.55)" }}
+        />
+        <span
+          className="sa-loader-dot block rounded-full"
+          style={{ width: 5, height: 5, background: "rgba(255,255,255,0.55)" }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ScreenContent({ detail, loading, onPaywall, isStaff }: LaptopViewerProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const [iframeReady, setIframeReady] = useState(false);
 
-  // Reset ready state whenever the asset changes so the spinner shows on swap.
+  // Reset ready state whenever the asset changes so the loader shows on swap.
   useEffect(() => {
     setIframeReady(false);
   }, [detail?.asset_name]);
 
   if (loading || !detail) {
-    return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="demo-spin" />
-        <div
-          className="mt-3 text-[12px]"
-          style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
-        >
-          Loading problem...
-        </div>
-      </div>
-    );
+    return <BrandedLoader label="Loading your preview…" />;
   }
 
-  const src = `/v2/solutions/${detail.asset_name}?embed=1`;
+  // Admins get the full, unrestricted viewer (no embed click-interception).
+  const src = isStaff
+    ? `/v2/solutions/${detail.asset_name}`
+    : `/v2/solutions/${detail.asset_name}?embed=1`;
 
   return (
     <div className="absolute inset-0">
-      {!iframeReady && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-white">
-          <div className="demo-spin" />
-          <div
-            className="mt-3 text-[12px]"
-            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
-          >
-            Loading preview...
-          </div>
-        </div>
-      )}
+      {!iframeReady && <BrandedLoader label="Loading your preview…" />}
       <iframe
         key={detail.asset_name}
         ref={iframeRef}
@@ -482,20 +558,35 @@ function ScreenContent({ detail, loading, onPaywall }: LaptopViewerProps) {
         style={{ border: 0, background: "#FFFFFF" }}
         sandbox="allow-scripts allow-same-origin allow-forms"
       />
-      {/* Demo helper bar — sits over the bottom of the iframe and never blocks scroll */}
-      <button
-        type="button"
-        onClick={onPaywall}
-        className="absolute left-3 bottom-3 z-20 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-white shadow-lg"
-        style={{
-          background: RED,
-          letterSpacing: "0.06em",
-          fontFamily: "Inter, sans-serif",
-        }}
-        aria-label="Free Beta preview"
-      >
-        Live Preview · Free Beta
-      </button>
+      {/* Top-center status badge — staff sees neutral "Admin Preview", students see red "Live Preview · Free Beta" */}
+      {isStaff ? (
+        <div
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-20 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-white shadow-lg pointer-events-none"
+          style={{
+            background: "rgba(15,23,42,0.85)",
+            letterSpacing: "0.06em",
+            fontFamily: "Inter, sans-serif",
+            border: "1px solid rgba(255,255,255,0.12)",
+          }}
+          aria-label="Admin preview mode"
+        >
+          Admin Preview
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onPaywall}
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-20 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-white shadow-lg"
+          style={{
+            background: RED,
+            letterSpacing: "0.06em",
+            fontFamily: "Inter, sans-serif",
+          }}
+          aria-label="Free Beta preview"
+        >
+          Live Preview · Free Beta
+        </button>
+      )}
     </div>
   );
 }
