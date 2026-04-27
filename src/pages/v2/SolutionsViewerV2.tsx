@@ -1086,8 +1086,8 @@ export default function SolutionsViewerV2() {
   const [originalImagesLoaded, setOriginalImagesLoaded] = useState<Record<number, boolean>>({});
   const [originalOpen, setOriginalOpen] = useState(false);
 
-  // Instructions accordion (collapsed by default for fast cram mode)
-  const [instructionsOpen, setInstructionsOpen] = useState(false);
+  // "Your Tasks" accordion — open by default so students see what to do.
+  const [instructionsOpen, setInstructionsOpen] = useState(true);
 
   // Reset on asset change
   useEffect(() => {
@@ -1097,7 +1097,7 @@ export default function SolutionsViewerV2() {
     setOriginalImagesLoaded({});
     setOriginalLoading(true);
     setOriginalOpen(false);
-    setInstructionsOpen(false);
+    setInstructionsOpen(true);
   }, [assetCode]);
 
   useEffect(() => {
