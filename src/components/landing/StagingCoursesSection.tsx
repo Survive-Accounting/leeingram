@@ -83,7 +83,19 @@ export default function StagingCoursesSection({
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [detail, setDetail] = useState<ProblemDetail | null>(null);
   const [loading, setLoading] = useState(false);
-  const [revealed, setRevealed] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+
+  // Listen for paywall trigger from the embedded V2 viewer iframe
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      const data = e.data;
+      if (data && typeof data === "object" && data.type === "sa-embed-paywall") {
+        setPaywallOpen(true);
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
 
   // Load chapters when course changes
   useEffect(() => {
@@ -113,7 +125,6 @@ export default function StagingCoursesSection({
     }
     let cancelled = false;
     setLoading(true);
-    setRevealed(false);
     setDetail(null);
     const minDelay = new Promise((r) => setTimeout(r, 250));
     (async () => {
@@ -141,9 +152,8 @@ export default function StagingCoursesSection({
     };
   }, [selectedChapterId, selected?.slug]);
 
-  const handleGetStarted = () => {
-    if (onGetStartedClick) onGetStartedClick(selected?.slug ?? null);
-    else if (selected) onCardClick(selected);
+  const handleJoinBeta = () => {
+    if (selected) onCardClick(selected);
   };
 
   return (
