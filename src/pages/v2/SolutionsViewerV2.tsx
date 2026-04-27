@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, LayoutList, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp } from "lucide-react";
 import { StructuredJEDisplay } from "@/components/StructuredJEDisplay";
 import { generateSimplifiedPracticePdf } from "@/lib/generateSimplifiedPracticePdf";
 import ReactMarkdown from "react-markdown";
@@ -35,7 +35,7 @@ type Asset = {
   journal_entry_completed_json: any | null;
 };
 
-type ChapterMeta = { id: string; chapter_number: number; chapter_name: string };
+type ChapterMeta = { id: string; chapter_number: number; chapter_name: string; course_id?: string };
 
 // Natural sort for source_ref (e.g. BE13.2, BE13.10, EX13.1, P13.3a)
 function naturalKey(s: string | null | undefined): (string | number)[] {
@@ -740,7 +740,7 @@ function ShareModal({
   );
 }
 
-// ── Jump modal ────────────────────────────────────────────────────────
+// ── Navigate panel ────────────────────────────────────────────────────
 function getRefPrefix(ref: string | null): "BE" | "EX" | "PR" | "OTHER" {
   if (!ref) return "OTHER";
   const u = ref.toUpperCase();
@@ -750,105 +750,209 @@ function getRefPrefix(ref: string | null): "BE" | "EX" | "PR" | "OTHER" {
   return "OTHER";
 }
 
-function JumpModal({
+type NavChapter = { id: string; chapter_number: number; chapter_name: string };
+type NavProblem = { asset_name: string; source_ref: string | null; chapter_id: string };
+
+function NavigatePanel({
   open,
   onOpenChange,
-  siblings,
+  courseId,
+  currentChapterId,
   currentAssetName,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  siblings: { asset_name: string; source_ref: string | null }[];
+  courseId: string | undefined;
+  currentChapterId: string | undefined;
   currentAssetName: string | undefined;
 }) {
   const navigate = useNavigate();
 
-  // Detect course family from any sibling asset_name (IA1/IA2 = intermediate, INTRO1/INTRO2 = intro).
-  const isIntro = useMemo(() => {
-    const sample = siblings.find((s) => s.asset_name)?.asset_name || currentAssetName || "";
-    return /^INTRO/i.test(sample);
-  }, [siblings, currentAssetName]);
+  const [chapters, setChapters] = useState<NavChapter[]>([]);
+  const [selectedChapterId, setSelectedChapterId] = useState<string>("");
+  const [problemsByChapter, setProblemsByChapter] = useState<Record<string, NavProblem[]>>({});
+  const [activeCat, setActiveCat] = useState<"BE" | "EX" | "PR">("BE");
+  const [loadingChapters, setLoadingChapters] = useState(false);
+  const [loadingProblems, setLoadingProblems] = useState(false);
+  const [isIntro, setIsIntro] = useState(false);
+
+  // Sync selection to current chapter when panel opens or current changes.
+  useEffect(() => {
+    if (open && currentChapterId) setSelectedChapterId(currentChapterId);
+  }, [open, currentChapterId]);
+
+  // Detect intro vs intermediate from current asset name.
+  useEffect(() => {
+    setIsIntro(/^INTRO/i.test(currentAssetName || ""));
+  }, [currentAssetName]);
+
+  // Load chapters for the current course (only when panel opens).
+  useEffect(() => {
+    if (!open || !courseId) return;
+    let cancelled = false;
+    setLoadingChapters(true);
+    (async () => {
+      const { data } = await supabase
+        .from("chapters")
+        .select("id, chapter_number, chapter_name")
+        .eq("course_id", courseId)
+        .order("chapter_number");
+      if (cancelled) return;
+      setChapters((data || []) as NavChapter[]);
+      setLoadingChapters(false);
+    })();
+    return () => { cancelled = true; };
+  }, [open, courseId]);
+
+  // Load problems for selected chapter (cached per chapter).
+  useEffect(() => {
+    if (!open || !selectedChapterId) return;
+    if (problemsByChapter[selectedChapterId]) return;
+    let cancelled = false;
+    setLoadingProblems(true);
+    (async () => {
+      const { data } = await supabase
+        .from("teaching_assets")
+        .select("asset_name, source_ref, chapter_id")
+        .eq("chapter_id", selectedChapterId);
+      if (cancelled) return;
+      const sorted = [...(data || [])].sort((x: any, y: any) => naturalCompare(x.source_ref, y.source_ref));
+      setProblemsByChapter((prev) => ({ ...prev, [selectedChapterId]: sorted as NavProblem[] }));
+      setLoadingProblems(false);
+    })();
+    return () => { cancelled = true; };
+  }, [open, selectedChapterId, problemsByChapter]);
+
+  const problems = problemsByChapter[selectedChapterId] || [];
 
   const groups = useMemo(() => {
-    const g: Record<"BE" | "EX" | "PR" | "OTHER", typeof siblings> = {
-      BE: [], EX: [], PR: [], OTHER: [],
-    };
-    siblings.forEach((s) => g[getRefPrefix(s.source_ref)].push(s));
+    const g: Record<"BE" | "EX" | "PR" | "OTHER", NavProblem[]> = { BE: [], EX: [], PR: [], OTHER: [] };
+    problems.forEach((p) => g[getRefPrefix(p.source_ref)].push(p));
     return g;
-  }, [siblings]);
+  }, [problems]);
 
   const categories = useMemo(() => {
-    const list: { key: "BE" | "EX" | "PR"; label: string; count: number }[] = [];
-    if (groups.BE.length) list.push({ key: "BE", label: isIntro ? "Quick Studies" : "Brief Exercises", count: groups.BE.length });
-    if (groups.EX.length) list.push({ key: "EX", label: "Exercises", count: groups.EX.length });
-    if (groups.PR.length) list.push({ key: "PR", label: "Problems", count: groups.PR.length });
-    return list;
+    return [
+      { key: "BE" as const, label: isIntro ? "Quick Studies" : "Brief Exercises", count: groups.BE.length },
+      { key: "EX" as const, label: "Exercises", count: groups.EX.length },
+      { key: "PR" as const, label: "Problems", count: groups.PR.length },
+    ];
   }, [groups, isIntro]);
 
-  const [activeCat, setActiveCat] = useState<"BE" | "EX" | "PR" | null>(null);
-
-  // Default to first available category whenever the modal opens or categories change.
+  // When chapter or category changes, default to first non-empty category if current is empty.
   useEffect(() => {
     if (!open) return;
-    if (activeCat && groups[activeCat]?.length) return;
-    if (categories[0]) setActiveCat(categories[0].key);
-  }, [open, categories, activeCat, groups]);
+    if (groups[activeCat]?.length) return;
+    const first = categories.find((c) => c.count > 0);
+    if (first) setActiveCat(first.key);
+  }, [open, selectedChapterId, groups, activeCat, categories]);
+
+  const visibleItems = groups[activeCat] || [];
 
   const go = (assetName: string) => {
     navigate(`/v2/solutions/${assetName}`);
     onOpenChange(false);
   };
 
-  const visibleItems = activeCat ? groups[activeCat] : [];
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[80vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Jump to problem</DialogTitle>
-          <DialogDescription>
-            {siblings.length} {siblings.length === 1 ? "problem" : "problems"} in this chapter
-          </DialogDescription>
+          <DialogTitle>Navigate</DialogTitle>
+          <DialogDescription>Jump anywhere in the course — chapter, type, problem.</DialogDescription>
         </DialogHeader>
 
-        {categories.length > 0 && (
-          <div className="flex flex-wrap gap-2 pb-1">
+        {/* 1. Chapter selection */}
+        <div className="space-y-1.5">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Chapter</div>
+          {loadingChapters && chapters.length === 0 ? (
+            <div className="text-xs text-muted-foreground py-2">Loading chapters…</div>
+          ) : (
+            <div className="flex gap-1.5 overflow-x-auto pb-1.5 -mx-1 px-1" style={{ scrollbarWidth: "thin" }}>
+              {chapters.map((ch) => {
+                const isCurrent = ch.id === selectedChapterId;
+                const isAssetChapter = ch.id === currentChapterId;
+                return (
+                  <button
+                    key={ch.id}
+                    onClick={() => setSelectedChapterId(ch.id)}
+                    className={cn(
+                      "shrink-0 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-all border",
+                      isCurrent
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card hover:bg-accent border-border text-foreground",
+                    )}
+                    title={ch.chapter_name}
+                  >
+                    Ch {ch.chapter_number}
+                    {isAssetChapter && !isCurrent && (
+                      <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-primary align-middle" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 2. Problem type */}
+        <div className="space-y-1.5">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Type</div>
+          <div className="flex flex-wrap gap-1.5">
             {categories.map((c) => {
               const isActive = c.key === activeCat;
+              const disabled = c.count === 0;
               return (
-                <Button
+                <button
                   key={c.key}
-                  size="sm"
-                  variant={isActive ? "default" : "outline"}
-                  className="h-8 text-xs"
+                  disabled={disabled}
                   onClick={() => setActiveCat(c.key)}
+                  className={cn(
+                    "h-8 px-3 rounded-md text-xs font-semibold transition-all border inline-flex items-center gap-1.5",
+                    isActive
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card hover:bg-accent border-border text-foreground",
+                    disabled && "opacity-40 cursor-not-allowed hover:bg-card",
+                  )}
                 >
-                  {c.label} <span className="ml-1.5 opacity-60">{c.count}</span>
-                </Button>
+                  {c.label}
+                  <span
+                    className={cn(
+                      "inline-flex items-center justify-center rounded-full text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]",
+                      isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {c.count}
+                  </span>
+                </button>
               );
             })}
           </div>
-        )}
+        </div>
 
-        <div className="overflow-y-auto -mr-1 pr-1">
-          {visibleItems.length === 0 ? (
-            <div className="text-sm text-muted-foreground py-6 text-center">
-              No problems in this category.
-            </div>
+        {/* 3. Problem grid */}
+        <div className="flex-1 overflow-y-auto -mr-1 pr-1 mt-1">
+          {loadingProblems && problems.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-6 text-center">Loading problems…</div>
+          ) : visibleItems.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-6 text-center">No problems in this category.</div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-              {visibleItems.map((s) => {
-                const isCurrent = s.asset_name === currentAssetName;
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
+              {visibleItems.map((p) => {
+                const isCurrent = p.asset_name === currentAssetName;
                 return (
-                  <Button
-                    key={s.asset_name}
-                    size="sm"
-                    variant={isCurrent ? "default" : "outline"}
-                    className="font-mono text-xs h-8"
-                    onClick={() => go(s.asset_name)}
+                  <button
+                    key={p.asset_name}
+                    onClick={() => go(p.asset_name)}
+                    className={cn(
+                      "font-mono text-xs h-8 rounded-md border transition-all px-2 truncate",
+                      isCurrent
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card hover:bg-accent border-border text-foreground",
+                    )}
                   >
-                    {s.source_ref || s.asset_name}
-                  </Button>
+                    {p.source_ref || p.asset_name}
+                  </button>
                 );
               })}
             </div>
@@ -990,7 +1094,7 @@ export default function SolutionsViewerV2() {
         const [{ data: ch }, { data: sibs }] = await Promise.all([
           supabase
             .from("chapters")
-            .select("id, chapter_number, chapter_name")
+            .select("id, chapter_number, chapter_name, course_id")
             .eq("id", a.chapter_id)
             .maybeSingle(),
           supabase
@@ -1166,16 +1270,16 @@ export default function SolutionsViewerV2() {
             <button
               type="button"
               onClick={() => setJumpOpen(true)}
-              disabled={siblings.length === 0}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-medium transition-all hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-medium transition-all hover:bg-white/10"
               style={{
                 background: "rgba(255,255,255,0.04)",
                 border: "1px solid rgba(255,255,255,0.1)",
                 color: "rgba(255,255,255,0.85)",
               }}
+              aria-label="Open navigation panel"
             >
-              <LayoutList className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Jump</span>
+              <Menu className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Navigate</span>
             </button>
           </div>
         </div>
@@ -1426,10 +1530,11 @@ export default function SolutionsViewerV2() {
 
       <NeedHelpModal open={helpOpen} onOpenChange={setHelpOpen} asset={asset} />
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
-      <JumpModal
+      <NavigatePanel
         open={jumpOpen}
         onOpenChange={setJumpOpen}
-        siblings={siblings}
+        courseId={chapter?.course_id}
+        currentChapterId={chapter?.id}
         currentAssetName={asset?.asset_name}
       />
 
