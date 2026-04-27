@@ -1051,6 +1051,8 @@ export default function SolutionsViewerV2() {
 
   // Original textbook screenshot
   const [originalImages, setOriginalImages] = useState<string[]>([]);
+  const [originalLoading, setOriginalLoading] = useState(true);
+  const [originalImagesLoaded, setOriginalImagesLoaded] = useState<Record<number, boolean>>({});
   const [originalOpen, setOriginalOpen] = useState(false);
 
   // Instructions accordion (collapsed by default for fast cram mode)
