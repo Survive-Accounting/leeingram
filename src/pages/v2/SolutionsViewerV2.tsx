@@ -1515,20 +1515,35 @@ export default function SolutionsViewerV2() {
             <DialogTitle>Original textbook problem</DialogTitle>
           </DialogHeader>
           <div className="overflow-y-auto -mr-1 pr-1 space-y-3">
-            {originalImages.length === 0 ? (
+            {originalLoading ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 animate-fade-in">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <div className="text-xs text-muted-foreground">Loading textbook problem…</div>
+              </div>
+            ) : originalImages.length === 0 ? (
               <div className="text-sm text-muted-foreground py-8 text-center">
                 Original textbook image isn't available for this problem yet.
               </div>
             ) : (
-              originalImages.map((url, i) => (
-                <img
-                  key={i}
-                  src={url}
-                  alt={`Original textbook problem${originalImages.length > 1 ? ` (page ${i + 1})` : ""}`}
-                  className="w-full h-auto rounded-md border border-border bg-white"
-                  loading="lazy"
-                />
-              ))
+              originalImages.map((url, i) => {
+                const loaded = !!originalImagesLoaded[i];
+                return (
+                  <div key={i} className="relative">
+                    {!loaded && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-muted/30 rounded-md min-h-[200px]">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    )}
+                    <img
+                      src={url}
+                      alt={`Original textbook problem${originalImages.length > 1 ? ` (page ${i + 1})` : ""}`}
+                      className={`w-full h-auto rounded-md border border-border bg-white transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+                      onLoad={() => setOriginalImagesLoaded((s) => ({ ...s, [i]: true }))}
+                      onError={() => setOriginalImagesLoaded((s) => ({ ...s, [i]: true }))}
+                    />
+                  </div>
+                );
+              })
             )}
           </div>
         </DialogContent>
