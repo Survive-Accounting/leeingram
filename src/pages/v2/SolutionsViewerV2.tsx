@@ -1283,6 +1283,7 @@ export default function SolutionsViewerV2() {
           return;
         }
         setAsset(a as Asset);
+        bumpWandCounter(WAND_KEY_VIEWS);
 
         const [{ data: ch }, { data: sibs }] = await Promise.all([
           supabase
