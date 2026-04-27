@@ -5,10 +5,11 @@ import leeHeadshot from "@/assets/lee-headshot-original.png";
 import AnimatedArrow from "@/components/landing/AnimatedArrow";
 
 const SUBJECTS = [
-  "I'm stuck on something",
-  "Not sure where to start",
-  "Question about the course",
-  "Just saying hi",
+  "I’m stuck on a problem",
+  "I found a bug",
+  "I have a feature idea",
+  "I need help studying",
+  "Other",
 ];
 
 export default function ContactForm() {
