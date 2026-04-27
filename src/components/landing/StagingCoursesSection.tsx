@@ -366,12 +366,10 @@ export default function StagingCoursesSection({
 interface LaptopViewerProps {
   detail: ProblemDetail | null;
   loading: boolean;
-  revealed: boolean;
-  onReveal: () => void;
-  onGetStarted: () => void;
+  onPaywall: () => void;
 }
 
-function LaptopViewer({ detail, loading, revealed, onReveal, onGetStarted }: LaptopViewerProps) {
+function LaptopViewer({ detail, loading, onPaywall }: LaptopViewerProps) {
   return (
     <div className="mx-auto w-full" style={{ maxWidth: 1100 }}>
       {/* Lid */}
@@ -417,13 +415,7 @@ function LaptopViewer({ detail, loading, revealed, onReveal, onGetStarted }: Lap
               borderRadius: 3,
             }}
           >
-            <ScreenContent
-              detail={detail}
-              loading={loading}
-              revealed={revealed}
-              onReveal={onReveal}
-              onGetStarted={onGetStarted}
-            />
+            <ScreenContent detail={detail} loading={loading} onPaywall={onPaywall} />
           </div>
         </div>
       </div>
@@ -442,13 +434,15 @@ function LaptopViewer({ detail, loading, revealed, onReveal, onGetStarted }: Lap
   );
 }
 
-function ScreenContent({
-  detail,
-  loading,
-  revealed,
-  onReveal,
-  onGetStarted,
-}: LaptopViewerProps) {
+function ScreenContent({ detail, loading, onPaywall }: LaptopViewerProps) {
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [iframeReady, setIframeReady] = useState(false);
+
+  // Reset ready state whenever the asset changes so the spinner shows on swap.
+  useEffect(() => {
+    setIframeReady(false);
+  }, [detail?.asset_name]);
+
   if (loading || !detail) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -463,197 +457,45 @@ function ScreenContent({
     );
   }
 
-  const instructions = [
-    detail.instruction_1,
-    detail.instruction_2,
-    detail.instruction_3,
-    detail.instruction_4,
-    detail.instruction_5,
-  ].filter((x): x is string => !!x && x.trim().length > 0);
-
-  const fullSolutionUrl = detail.asset_name ? `/solutions/${detail.asset_name}` : null;
-
-  const explanationPreview = (detail.survive_solution_text ?? "")
-    .split("\n")
-    .filter((l) => l.trim().length > 0)
-    .slice(0, 8)
-    .join("\n");
+  const src = `/v2/solutions/${detail.asset_name}?embed=1`;
 
   return (
-    <div
-      key={detail.id}
-      className="absolute inset-0 flex flex-col demo-fade-up"
-      style={{ fontFamily: "Inter, sans-serif" }}
-    >
-      {/* Top bar */}
-      <div
-        className="flex items-center justify-between px-5 py-2.5 flex-shrink-0"
+    <div className="absolute inset-0">
+      {!iframeReady && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-white">
+          <div className="demo-spin" />
+          <div
+            className="mt-3 text-[12px]"
+            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
+          >
+            Loading preview...
+          </div>
+        </div>
+      )}
+      <iframe
+        key={detail.asset_name}
+        ref={iframeRef}
+        src={src}
+        title={`Live preview — ${detail.source_ref ?? detail.asset_name}`}
+        onLoad={() => setIframeReady(true)}
+        className="absolute inset-0 w-full h-full"
+        style={{ border: 0, background: "#FFFFFF" }}
+        sandbox="allow-scripts allow-same-origin allow-forms"
+      />
+      {/* Demo helper bar — sits over the bottom of the iframe and never blocks scroll */}
+      <button
+        type="button"
+        onClick={onPaywall}
+        className="absolute left-3 bottom-3 z-20 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-white shadow-lg"
         style={{
-          background: "#F9FAFB",
-          borderBottom: "1px solid #E5E7EB",
+          background: RED,
+          letterSpacing: "0.06em",
+          fontFamily: "Inter, sans-serif",
         }}
+        aria-label="Free Beta preview"
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <span
-            className="text-[10px] font-bold rounded px-1.5 py-0.5 flex-shrink-0"
-            style={{ background: RED, color: "#FFFFFF" }}
-          >
-            {detail.source_ref}
-          </span>
-          <span
-            className="text-[12px] font-semibold truncate"
-            style={{ color: NAVY }}
-          >
-            Practice based on {detail.source_ref}
-          </span>
-        </div>
-        {fullSolutionUrl && (
-          <a
-            href={fullSolutionUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden sm:flex items-center gap-1 text-[11px] font-semibold rounded-md px-2.5 py-1 flex-shrink-0"
-            style={{
-              color: NAVY,
-              background: "#FFFFFF",
-              border: "1px solid #D1D5DB",
-            }}
-          >
-            Open full solution
-            <ExternalLink size={11} />
-          </a>
-        )}
-      </div>
-
-      {/* Two-pane body */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 min-h-0">
-        {/* LEFT: Problem */}
-        <div
-          className="demo-card-scroll overflow-y-auto px-6 py-5"
-          style={{ background: "#FFFFFF", borderRight: "1px solid #E5E7EB" }}
-        >
-          {detail.survive_problem_text && (
-            <div
-              className="text-[13.5px] whitespace-pre-line"
-              style={{ color: "#1F2937", lineHeight: 1.7 }}
-            >
-              {detail.survive_problem_text}
-            </div>
-          )}
-
-          {instructions.length > 0 && (
-            <div className="mt-5">
-              <div
-                className="text-[11px] font-bold uppercase mb-2"
-                style={{ color: "#6B7280", letterSpacing: "0.06em" }}
-              >
-                Required
-              </div>
-              <ol className="space-y-1.5">
-                {instructions.map((ins, i) => (
-                  <li
-                    key={i}
-                    className="text-[13px] flex gap-2"
-                    style={{ color: "#374151", lineHeight: 1.6 }}
-                  >
-                    <span style={{ color: NAVY, fontWeight: 600 }}>
-                      ({String.fromCharCode(97 + i)})
-                    </span>
-                    <span>{ins}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT: Explanation panel */}
-        <div
-          className="demo-card-scroll overflow-y-auto px-6 py-5 flex flex-col"
-          style={{
-            background:
-              "linear-gradient(160deg, #F8FAFF 0%, #EEF2FB 100%)",
-          }}
-        >
-          {!revealed ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center">
-              <div
-                className="text-[10px] font-bold uppercase tracking-widest mb-2"
-                style={{ color: "#6B7280" }}
-              >
-                Stuck?
-              </div>
-              <div
-                className="text-[20px] font-semibold mb-1"
-                style={{
-                  color: NAVY,
-                  fontFamily: "'DM Serif Display', serif",
-                  fontWeight: 400,
-                }}
-              >
-                Get a guided walkthrough
-              </div>
-              <p
-                className="text-[12.5px] mb-5"
-                style={{ color: "#6B7280", maxWidth: 280, lineHeight: 1.55 }}
-              >
-                Lee shows you exactly how to think through this problem — step by step.
-              </p>
-              <button
-                onClick={onReveal}
-                className="demo-cta inline-flex items-center gap-2 rounded-[10px] text-white"
-                style={{
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  padding: "12px 22px",
-                }}
-              >
-                Show me how to think through this
-                <span aria-hidden>→</span>
-              </button>
-            </div>
-          ) : (
-            <div className="demo-fade-up">
-              <div
-                className="text-[10px] font-bold uppercase tracking-widest mb-2"
-                style={{ color: RED }}
-              >
-                Lee's walkthrough
-              </div>
-              <div
-                className="text-[13px] whitespace-pre-line"
-                style={{ color: "#1F2937", lineHeight: 1.7 }}
-              >
-                {explanationPreview ||
-                  "Start by identifying what's being asked. Then pull out the key numbers and decide which accounts move."}
-              </div>
-
-              <div className="mt-5 flex items-center gap-3">
-                {fullSolutionUrl && (
-                  <a
-                    href={fullSolutionUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[12px] font-semibold"
-                    style={{ color: NAVY }}
-                  >
-                    Open full solution
-                    <ExternalLink size={11} />
-                  </a>
-                )}
-                <button
-                  onClick={onGetStarted}
-                  className="ml-auto text-[12px] font-semibold underline-offset-2 hover:underline"
-                  style={{ color: RED, fontFamily: "Inter, sans-serif" }}
-                >
-                  Unlock all problems →
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+        Live Preview · Free Beta
+      </button>
     </div>
   );
 }
