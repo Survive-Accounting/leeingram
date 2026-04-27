@@ -250,6 +250,48 @@ export default function GetAccess() {
 
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [earlyBirdOptIn, setEarlyBirdOptIn] = useState(false);
+
+  const handleClaimBeta = async () => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      requestAccess({});
+      return;
+    }
+    try {
+      localStorage.setItem("student_email", cleanEmail);
+      sessionStorage.setItem("student_email", cleanEmail);
+    } catch { /* ignore */ }
+
+    setCheckoutError(null);
+    setCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("claim-free-beta", {
+        body: {
+          email: cleanEmail,
+          campus: campusParam || null,
+          course: courseParam || null,
+          earlyBirdOptIn,
+          origin: window.location.origin,
+        },
+      });
+      if (error) throw error;
+      const magicLink = (data as { magicLink?: string | null } | null)?.magicLink || null;
+      if (magicLink) {
+        // Magic link → /auth/callback → /my-dashboard?free_beta=1 (signed in)
+        window.location.href = magicLink;
+      } else {
+        // Fallback if magic link generation failed — go to dashboard (will prompt login)
+        navigate("/my-dashboard?free_beta=1");
+      }
+    } catch (err) {
+      console.error("[claim-free-beta]", err);
+      setCheckoutError(
+        "We couldn't set up your beta access. Please try again in a moment.",
+      );
+      setCheckoutLoading(false);
+    }
+  };
 
   const handleCheckout = async () => {
     const cleanEmail = email.trim().toLowerCase();
