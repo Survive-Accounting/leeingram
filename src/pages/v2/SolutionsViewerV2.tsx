@@ -990,7 +990,7 @@ export default function SolutionsViewerV2() {
         const [{ data: ch }, { data: sibs }] = await Promise.all([
           supabase
             .from("chapters")
-            .select("id, chapter_number, chapter_name")
+            .select("id, chapter_number, chapter_name, course_id")
             .eq("id", a.chapter_id)
             .maybeSingle(),
           supabase
