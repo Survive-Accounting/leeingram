@@ -409,11 +409,35 @@ function YouFormatQA({
   chapterDomains: ChapterDomain[];
 }) {
   const { toast } = useToast();
+  const [courseCode, setCourseCode] = useState<string>("");
   const [chapterId, setChapterId] = useState<string>("");
   const [assets, setAssets] = useState<AssetQA[]>([]);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
   const [filter, setFilter] = useState<StatusFilter>("all");
+
+  const COURSE_ORDER: Record<string, number> = { INTRO1: 0, INTRO2: 1, IA1: 2, IA2: 3 };
+  const COURSE_LABELS: Record<string, string> = {
+    INTRO1: "Intro Accounting 1",
+    INTRO2: "Intro Accounting 2",
+    IA1: "Intermediate Accounting 1",
+    IA2: "Intermediate Accounting 2",
+  };
+
+  const availableCourses = useMemo(() => {
+    const set = new Set<string>();
+    chapters.forEach((c) => c.course_code && set.add(c.course_code));
+    return Array.from(set).sort((a, b) => (COURSE_ORDER[a] ?? 99) - (COURSE_ORDER[b] ?? 99));
+  }, [chapters]);
+
+  const filteredChapters = useMemo(() => {
+    const list = courseCode ? chapters.filter((c) => c.course_code === courseCode) : chapters;
+    return [...list].sort((a, b) => {
+      const co = (COURSE_ORDER[a.course_code] ?? 99) - (COURSE_ORDER[b.course_code] ?? 99);
+      if (co !== 0) return co;
+      return a.chapter_number - b.chapter_number;
+    });
+  }, [chapters, courseCode]);
 
   const chapterDomainsForSelected = useMemo(
     () => chapterDomains.filter((d) => d.chapter_id === chapterId).map((d) => d.domain),
