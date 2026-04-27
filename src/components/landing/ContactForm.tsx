@@ -174,7 +174,7 @@ export default function ContactForm() {
                 ))}
               </select>
               <textarea
-                placeholder="What are you stuck on?"
+                placeholder="Tell me anything — what’s confusing, what’s missing, or what would help you cram faster."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 maxLength={2000}
