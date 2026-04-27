@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import BetaPaywallModal from "./BetaPaywallModal";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
