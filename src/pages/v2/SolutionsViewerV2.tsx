@@ -669,7 +669,10 @@ function InlineExplanation({
           key={activeSection}
           className="rounded-lg border border-border bg-muted/30 p-4 animate-in fade-in slide-in-from-top-1 duration-200"
         >
-          <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-2">
+            Your Study Workspace
+          </div>
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5">
             <span aria-hidden>{TOOLBOX_META[activeSection].emoji}</span>
             {TOOLBOX_META[activeSection].label}
           </h3>
