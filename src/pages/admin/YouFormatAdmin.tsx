@@ -527,12 +527,33 @@ function YouFormatQA({
       <Card>
         <CardContent className="pt-6 space-y-3">
           <div className="flex flex-col md:flex-row md:items-end gap-3">
+            <div className="md:w-64">
+              <Label>Course</Label>
+              <Select
+                value={courseCode || "ALL"}
+                onValueChange={(v) => {
+                  const next = v === "ALL" ? "" : v;
+                  setCourseCode(next);
+                  setChapterId("");
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="All courses" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All courses</SelectItem>
+                  {availableCourses.map((code) => (
+                    <SelectItem key={code} value={code}>
+                      {COURSE_LABELS[code] ?? code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex-1">
               <Label>Chapter</Label>
               <Select value={chapterId} onValueChange={setChapterId}>
                 <SelectTrigger><SelectValue placeholder="Choose a chapter…" /></SelectTrigger>
                 <SelectContent>
-                  {chapters.map((c) => (
+                  {filteredChapters.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.course_code} · Ch {c.chapter_number} — {c.chapter_name}
                     </SelectItem>
@@ -540,6 +561,28 @@ function YouFormatQA({
                 </SelectContent>
               </Select>
             </div>
+            <Button
+              onClick={() => runBatch(false)}
+              disabled={!chapterId || running}
+            >
+              {running ? "Running…" : "Generate pending"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => runBatch(true)}
+              disabled={!chapterId || running}
+            >
+              Re-generate all
+            </Button>
+          </div>
+          {selectedChapter && (
+            <p className="text-sm text-muted-foreground">
+              Allowed domains:{" "}
+              {chapterDomainsForSelected.length === 0
+                ? <span className="text-destructive">None set — will fall back to all domains</span>
+                : chapterDomainsForSelected.join(", ")}
+            </p>
+          )}
             <Button
               onClick={() => runBatch(false)}
               disabled={!chapterId || running}
