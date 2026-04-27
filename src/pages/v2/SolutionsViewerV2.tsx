@@ -514,6 +514,8 @@ function InlineExplanation({
   };
 
   const handleToolboxClick = async (key: ToolboxKey) => {
+    // Activity counter for the magic-wand feedback widget
+    bumpWandCounter(WAND_KEY_HELP_CLICKS);
     // Toggle off if same button clicked
     if (activeSection === key) {
       setActiveSection(null);
