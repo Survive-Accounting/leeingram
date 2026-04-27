@@ -5,16 +5,17 @@ import leeHeadshot from "@/assets/lee-headshot-original.png";
 import AnimatedArrow from "@/components/landing/AnimatedArrow";
 
 const SUBJECTS = [
-  "I'm stuck on something",
-  "Not sure where to start",
-  "Question about the course",
-  "Just saying hi",
+  "I’m stuck on a problem",
+  "I found a bug",
+  "I have a feature idea",
+  "I need help studying",
+  "Other",
 ];
 
 export default function ContactForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [subject, setSubject] = useState("Just saying hi");
+  const [subject, setSubject] = useState("I’m stuck on a problem");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -37,7 +38,7 @@ export default function ContactForm() {
       toast.success("Message sent! I'll get back to you soon.");
       setName("");
       setEmail("");
-      setSubject("I'm stuck on something");
+      setSubject("I’m stuck on a problem");
       setMessage("");
     } catch {
       toast.error("Failed to send — please try again");
@@ -113,7 +114,7 @@ export default function ContactForm() {
           className="text-center text-[24px] sm:text-[30px] text-white mb-3"
           style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, textShadow: "2px 2px 8px rgba(0,0,0,0.4)" }}
         >
-          Stuck on something? I've got you.
+          Stuck, confused, or have an idea? Send it to Lee.
         </h2>
         <div className="mb-10" />
 
@@ -135,8 +136,8 @@ export default function ContactForm() {
                   style={{ objectPosition: "center 15%" }}
                 />
               </div>
-              <p className="text-[12px] text-white/70 mt-3 leading-relaxed" style={{ fontFamily: "Inter, sans-serif" }}>
-                I read and reply to every message personally.
+              <p className="text-[12px] text-white/75 mt-3 leading-relaxed" style={{ fontFamily: "Inter, sans-serif" }}>
+                I read these myself. Tell me what’s confusing, what’s missing, or what would help you cram faster.
               </p>
             </div>
 
@@ -144,7 +145,7 @@ export default function ContactForm() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
               <input
                 type="text"
-                placeholder="Your name"
+                placeholder="Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 maxLength={100}
@@ -153,7 +154,7 @@ export default function ContactForm() {
               />
               <input
                 type="email"
-                placeholder="your@university.edu"
+                placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 maxLength={255}
@@ -173,7 +174,7 @@ export default function ContactForm() {
                 ))}
               </select>
               <textarea
-                placeholder="What are you stuck on?"
+                placeholder="Tell me anything — what’s confusing, what’s missing, or what would help you cram faster."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 maxLength={2000}
