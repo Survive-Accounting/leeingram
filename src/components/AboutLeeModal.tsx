@@ -165,13 +165,19 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
                 lineHeight: 1.2,
               }}
             >
-              Ready to Survive Accounting?
+              Ready to help us build the faster cram tool?
             </div>
             <div
               className="mt-1 text-[12px]"
               style={{ color: "rgba(255,255,255,0.85)" }}
             >
-              7-day risk-free refund · Full semester access
+              Free beta access through your Spring ’26 final exams.
+            </div>
+            <div
+              className="mt-1 text-[11px]"
+              style={{ color: "rgba(255,255,255,0.7)" }}
+            >
+              No credit card needed · Instant access · Student feedback shapes what we build next
             </div>
           </div>
 
@@ -190,7 +196,7 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
               whiteSpace: "nowrap",
             }}
           >
-            Get Full Access
+            Join Free Beta
             <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
           </button>
         </div>
