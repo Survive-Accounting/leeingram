@@ -1654,32 +1654,103 @@ export default function SolutionsViewerV2() {
                       </button>
                     </div>
                     {instructionsOpen && (
-                      <ul
-                        className="space-y-2.5 text-[14px] animate-in fade-in slide-in-from-top-1 duration-150"
-                        style={{ lineHeight: 1.6 }}
-                      >
-                        {instructions.map((ins, i) => (
-                          <li key={i} className="flex gap-2.5 items-start">
-                            <span
-                              className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border text-[10px] font-bold"
-                              style={{
-                                borderColor: "rgba(255,255,255,0.35)",
-                                background: "rgba(255,255,255,0.04)",
-                                color: "rgba(255,255,255,0.55)",
-                              }}
-                              aria-hidden
+                      <>
+                        <ul
+                          className="space-y-2 text-[14px] animate-in fade-in slide-in-from-top-1 duration-150"
+                          style={{ lineHeight: 1.6 }}
+                        >
+                          {instructions.map((ins, i) => {
+                            const checked = !!checkedTasks[i];
+                            const isCurrent = !checked && i === currentTaskIndex;
+                            return (
+                              <li
+                                key={i}
+                                className="flex gap-2.5 items-start rounded-md transition-all"
+                                style={{
+                                  padding: "8px 10px",
+                                  marginLeft: "-10px",
+                                  marginRight: "-10px",
+                                  background: isCurrent ? "rgba(250,204,21,0.08)" : "transparent",
+                                  borderLeft: isCurrent
+                                    ? "2px solid #FACC15"
+                                    : "2px solid transparent",
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => toggleTask(i)}
+                                  aria-pressed={checked}
+                                  aria-label={`Mark task ${String.fromCharCode(97 + i).toUpperCase()} as ${checked ? "incomplete" : "complete"}`}
+                                  className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] border text-[10px] font-bold transition-all hover:scale-105"
+                                  style={{
+                                    borderColor: checked
+                                      ? "#CE1126"
+                                      : isCurrent
+                                        ? "rgba(250,204,21,0.7)"
+                                        : "rgba(255,255,255,0.35)",
+                                    background: checked
+                                      ? "#CE1126"
+                                      : isCurrent
+                                        ? "rgba(250,204,21,0.12)"
+                                        : "rgba(255,255,255,0.04)",
+                                    color: checked
+                                      ? "#fff"
+                                      : isCurrent
+                                        ? "#FACC15"
+                                        : "rgba(255,255,255,0.7)",
+                                  }}
+                                >
+                                  {checked ? (
+                                    <Check className="h-3 w-3" />
+                                  ) : (
+                                    String.fromCharCode(97 + i).toUpperCase()
+                                  )}
+                                </button>
+                                <span
+                                  className="whitespace-pre-wrap flex-1 cursor-pointer transition-all"
+                                  onClick={() => toggleTask(i)}
+                                  style={{
+                                    color: checked
+                                      ? "rgba(255,255,255,0.4)"
+                                      : isCurrent
+                                        ? "#FFF8DC"
+                                        : "rgba(255,255,255,0.92)",
+                                    textDecoration: checked ? "line-through" : "none",
+                                    fontWeight: isCurrent ? 500 : 400,
+                                  }}
+                                >
+                                  {highlightTerms(ins)}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        {(anyChecked || allTasksDone) && (
+                          <div className="mt-3 flex items-center justify-between gap-3">
+                            {allTasksDone ? (
+                              <div
+                                className="text-[12px] flex items-center gap-1.5"
+                                style={{ color: "#FACC15" }}
+                              >
+                                <Check className="h-3.5 w-3.5" />
+                                Nice — all parts done. Hit <span className="font-semibold">Walk me through it</span> to compare.
+                              </div>
+                            ) : (
+                              <div className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+                                {checkedTasks.filter(Boolean).length} of {instructions.length} done
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={resetTasks}
+                              className="text-[11px] underline-offset-2 hover:underline transition-colors"
+                              style={{ color: "rgba(255,255,255,0.45)" }}
                             >
-                              {String.fromCharCode(97 + i).toUpperCase()}
-                            </span>
-                            <span
-                              className="whitespace-pre-wrap"
-                              style={{ color: "rgba(255,255,255,0.92)" }}
-                            >
-                              {highlightTerms(ins)}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
+                              Reset
+                            </button>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
