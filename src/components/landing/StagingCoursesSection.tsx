@@ -298,6 +298,7 @@ export default function StagingCoursesSection({
         detail={detail}
         loading={loading}
         onPaywall={() => setPaywallOpen(true)}
+        isStaff={isStaff}
       />
 
       <BetaPaywallModal
