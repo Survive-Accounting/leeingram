@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { Helmet } from "react-helmet-async";
 import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp } from "lucide-react";
 import { StructuredJEDisplay } from "@/components/StructuredJEDisplay";
+import SmartTextRenderer from "@/components/SmartTextRenderer";
 import { generateSimplifiedPracticePdf } from "@/lib/generateSimplifiedPracticePdf";
 import ReactMarkdown from "react-markdown";
 
