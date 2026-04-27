@@ -96,8 +96,15 @@ export default function YouFormatAdmin() {
     return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [businesses]);
 
+  const COURSE_CODES = ["INTRO1", "INTRO2", "IA1", "IA2"] as const;
+  const COURSE_LABELS: Record<string, string> = {
+    INTRO1: "Intro Accounting 1",
+    INTRO2: "Intro Accounting 2",
+    IA1: "Intermediate Accounting 1",
+    IA2: "Intermediate Accounting 2",
+  };
   const introChapters = useMemo(
-    () => chapters.filter((c) => c.course_code === "INTRO1" || c.course_code === "INTRO2"),
+    () => chapters.filter((c) => (COURSE_CODES as readonly string[]).includes(c.course_code)),
     [chapters]
   );
 
@@ -260,14 +267,14 @@ export default function YouFormatAdmin() {
               Toggle which business domains the rewriter is allowed to draw from for each chapter.
               Chapters with no domains selected will fall back to all domains.
             </p>
-            {(["INTRO1", "INTRO2"] as const).map((code) => {
+            {COURSE_CODES.map((code) => {
               const list = introChapters.filter((c) => c.course_code === code);
               if (!list.length) return null;
               return (
                 <Card key={code}>
                   <CardHeader>
                     <CardTitle className="text-base">
-                      {code === "INTRO1" ? "Intro Accounting 1" : "Intro Accounting 2"}
+                      {COURSE_LABELS[code]}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
