@@ -1527,10 +1527,10 @@ export default function SolutionsViewerV2() {
             "bg-card border hover:bg-accent transition-colors",
             "h-11 px-4 inline-flex items-center gap-2 text-sm font-medium",
           )}
-          aria-label="Need help?"
+          aria-label="Stuck? Ask Lee"
         >
           <MessageCircleQuestion className="h-4 w-4" />
-          <span className="hidden sm:inline">Need help?</span>
+          <span className="hidden sm:inline">Stuck? Ask Lee</span>
         </button>
       )}
 
