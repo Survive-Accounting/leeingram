@@ -627,7 +627,7 @@ function InlineExplanation({
         asset.survive_problem_text || "",
         "",
         "INSTRUCTIONS",
-        asset.problem_context || "See problem text above.",
+        (asset as any).problem_context || "See problem text above.",
         "",
         `Original: https://learn.surviveaccounting.com/v2/solutions/${asset.asset_name}`,
       ].filter(Boolean).join("\n");
