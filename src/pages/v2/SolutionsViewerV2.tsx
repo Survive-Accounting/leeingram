@@ -1492,10 +1492,15 @@ export default function SolutionsViewerV2() {
           </Link>
           <Link
             to="/my-dashboard"
-            className="text-sm font-semibold tracking-tight truncate"
-            style={{ color: "rgba(255,255,255,0.95)", letterSpacing: "-0.01em" }}
+            className="tracking-tight truncate"
+            style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, letterSpacing: "-0.01em" }}
+            data-embed-allow="true"
           >
-            Survive Accounting
+            <span style={{ color: "#CE1126", fontWeight: 800 }}>Survive</span>
+            <span style={{ color: "#FFFFFF", fontWeight: 400 }}>
+              {" "}Accounting
+              <sup className="text-[9px] font-normal ml-0.5 opacity-70">™</sup>
+            </span>
           </Link>
           <div className="flex items-center gap-2">
             <button
@@ -1503,6 +1508,7 @@ export default function SolutionsViewerV2() {
               onClick={openShareModal}
               title="Share this problem"
               aria-label="Share this problem"
+              data-embed-allow="true"
               className="inline-flex items-center justify-center h-9 w-9 rounded-lg transition-all hover:bg-white/10"
               style={{
                 background: "rgba(255,255,255,0.04)",
@@ -1515,6 +1521,7 @@ export default function SolutionsViewerV2() {
             <button
               type="button"
               onClick={() => setJumpOpen(true)}
+              data-embed-allow="true"
               className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-medium transition-all hover:bg-white/10"
               style={{
                 background: "rgba(255,255,255,0.04)",
