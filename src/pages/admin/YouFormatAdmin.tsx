@@ -267,14 +267,14 @@ export default function YouFormatAdmin() {
               Toggle which business domains the rewriter is allowed to draw from for each chapter.
               Chapters with no domains selected will fall back to all domains.
             </p>
-            {(["INTRO1", "INTRO2"] as const).map((code) => {
+            {COURSE_CODES.map((code) => {
               const list = introChapters.filter((c) => c.course_code === code);
               if (!list.length) return null;
               return (
                 <Card key={code}>
                   <CardHeader>
                     <CardTitle className="text-base">
-                      {code === "INTRO1" ? "Intro Accounting 1" : "Intro Accounting 2"}
+                      {COURSE_LABELS[code]}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
