@@ -3061,6 +3061,48 @@ export type Database = {
         }
         Relationships: []
       }
+      export_events: {
+        Row: {
+          asset_code: string | null
+          asset_id: string | null
+          chapter_id: string | null
+          course_id: string | null
+          created_at: string
+          email: string | null
+          event_name: string
+          id: string
+          metadata: Json
+          sheet_url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          asset_code?: string | null
+          asset_id?: string | null
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          email?: string | null
+          event_name: string
+          id?: string
+          metadata?: Json
+          sheet_url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          asset_code?: string | null
+          asset_id?: string | null
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          email?: string | null
+          event_name?: string
+          id?: string
+          metadata?: Json
+          sheet_url?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       export_set_items: {
         Row: {
           export_set_id: string
