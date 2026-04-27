@@ -1,116 +1,35 @@
-# Free Beta Checkout — Reframe `/get-access` as Beta Claim
+## Goal
 
-Reposition the checkout page as **free beta access** while anchoring the future $250 price. After the student claims, log them in and send them straight to `/my-dashboard`.
+Make the "Quick favor?" feedback popover (in `SolutionsViewerV2`) available to **any user** previewing the tool — including users in the landing-page embed iframe — and strip out the 5-star rating UI so it's just the textarea + Send.
 
-## 1. New edge function: `claim-free-beta`
+## Current behavior
 
-Create `supabase/functions/claim-free-beta/index.ts` that handles the no-payment flow (parallel to `stripe-webhook`'s post-purchase steps):
+In `src/pages/v2/SolutionsViewerV2.tsx` the `MagicWandFeedback` component:
 
-- Accepts `{ email, campus?, course?, earlyBirdOptIn?, origin? }`
-- Resolves `campus_id` and `course_id` (default course slug: `intro-accounting-2`)
-- Upserts `students` row
-- Inserts `student_purchases` with:
-  - `purchase_type: "free_beta"`
-  - `expires_at: 2026-05-16T23:59:59Z` (Spring '26 finals)
-  - `price_paid_cents: 0`
-  - `stripe_session_id: free-beta-{random}` (uniqueness)
-  - Skipped if an active purchase already exists for that email + course
-- Logs `free_beta_claimed` event in `student_events` (records `early_bird_opt_in` flag)
-- Marks matching `student_emails` rows as `converted: true`
-- Ensures Supabase auth user exists (`createUser` with `email_confirm: true`)
-- Generates a magic link via `auth.admin.generateLink({ type: "magiclink" })` with `redirectTo = /auth/callback?next=/my-dashboard?free_beta=1`
-- Returns `{ ok: true, magicLink }`
+- Only opens after a usage threshold: `views >= 5 || clicks >= 2 || minutes >= 8`.
+- Suppresses itself once `sa_wand_shown` or `sa_wand_dismissed` is in `localStorage` (so first-time landing-page viewers in the iframe almost never see it, and dismissed users never see it again).
+- Shows a 5-star rating row above the textarea.
+- `send()` blocks submit unless `wish.trim()` OR `rating > 0`, and stores `helpful: rating >= 4` plus `rating_N` in the `reason` array.
 
-The client navigates to that magic link → `/auth/callback` establishes the session → user lands on `/my-dashboard` already signed in.
+## Changes (single file: `src/pages/v2/SolutionsViewerV2.tsx`)
 
-## 2. Rewrite checkout card in `src/pages/GetAccess.tsx`
+1. **Always-available trigger for previewers**
+   - Replace the threshold-gated `useEffect` with logic that opens the widget on mount for anyone in preview / embed mode, regardless of `sa_wand_shown` / `sa_wand_dismissed`.
+   - Detection: read `searchParams.get("embed") === "1"` (already used elsewhere in the file as `isEmbed`) — these are landing-page iframe viewers.
+   - For non-embed visits, keep a lightweight first-load open (since the user said "any user who is previewing it"): show the popover once on mount if not previously dismissed, instead of waiting for the views/clicks/minutes thresholds. Dismiss still hides it for the session, but we'll allow it to reopen on a fresh session/load.
+   - Keep the dismiss button so users can close it; just don't permanently suppress on subsequent loads.
 
-Keep the existing layout, light-blue background, premium card, red CTA, and price-pulse animation. Only swap copy + remove now-irrelevant pricing controls for the beta state.
+2. **Remove star rating**
+   - Delete the `rating` and `hoverRating` state plus the `<div role="radiogroup">` star block (lines ~845–864).
+   - Update `send()`: only require `wish.trim()` to submit; remove `rating`-based `helpful` logic (set `helpful: null` or omit), and drop `rating_${rating}` from `reason` (just `["wand_prompt"]`).
+   - Update the empty-state toast to: "Add a quick note first 🙂".
 
-**Hero section (above the card):**
-- H1: "Your exam is coming up." (unchanged)
-- Subhead: "Join the free beta and get access through your Spring '26 final exams."
-- Small line below: "Regular semester access will be $250 after beta."
+3. **Keep everything else intact**
+   - Textarea, placeholder copy, Skip/Send buttons, Wand2 icon header, "Quick favor?" title, position (`bottom-20 right-4`), and Supabase insert into `explanation_feedback` with `asset_name: "__magic_wand__"` all stay the same.
+   - The `bumpWandCounter` calls elsewhere in the file can stay — they just become unused signals for this widget but cause no harm.
 
-**Card header row:**
-- Replace "Finals Week Pricing" badge → **"FREE BETA"** (red pill, same style)
-- Replace "Secure Checkout" → **"Create Your Free Beta Pass"**
-- Remove "Powered by Stripe" line entirely (Stripe is not used in this flow)
+## Out of scope
 
-**Price box (top-right):**
-- Big number: **$0** (keep navy, shimmer, pulse animation)
-- Sub-label under $0: **"FREE BETA ACCESS"** (replaces "One-time payment")
-- Small line below: **"Regularly $250 / semester"** (gray strikethrough style)
-- Remove the promo code UI and `autoRenewActive` "$25 applied" badge for this state
-
-**Product section:**
-- Name: **"Survive Study Pass — Free Beta"**
-- Keep email display
-- Keep: "🔒 One account per student"
-
-**Access section:**
-- Label: **ACCESS** (unchanged)
-- Main line: **"Free beta access through your Spring '26 final exams"**
-- Description: **"Use it as much as you want while beta access is open."**
-- Add note (small, muted): **"After beta, semester access will be $250. You'll only pay if you choose to renew."**
-- Replace the "Continue next semester (save $25)" checkbox with:
-  > **"Send me early-bird discounts for Summer/Fall '26 access"**
-  
-  This is a pure email-list opt-in; no auto-renewal language. Default unchecked.
-
-**CTA button:**
-- Text: **"Get Free Beta Access →"**
-- Loading state: "Setting up your beta access..."
-
-**Trust line (bottom):**
-- **"Free beta · No credit card required · Instant access"**
-- Replaces the 7-day refund guarantee line (refund makes no sense at $0)
-
-## 3. New `handleClaimBeta` handler (replaces `handleCheckout`)
-
-In `GetAccess.tsx`:
-
-```ts
-const handleClaimBeta = async () => {
-  const cleanEmail = email.trim().toLowerCase();
-  if (!cleanEmail) { requestAccess({}); return; }
-  setCheckoutLoading(true);
-  setCheckoutError(null);
-  try {
-    const { data, error } = await supabase.functions.invoke("claim-free-beta", {
-      body: {
-        email: cleanEmail,
-        campus: campusParam || null,
-        course: courseParam || null,
-        earlyBirdOptIn,
-        origin: window.location.origin,
-      },
-    });
-    if (error) throw error;
-    const magicLink = (data as any)?.magicLink as string | null;
-    if (magicLink) {
-      window.location.href = magicLink;     // → /auth/callback → /my-dashboard
-    } else {
-      navigate("/my-dashboard?free_beta=1"); // fallback if email send pipeline failed
-    }
-  } catch (err) {
-    setCheckoutError("We couldn't set up your beta access. Please try again.");
-    setCheckoutLoading(false);
-  }
-};
-```
-
-Replace the old `autoRenew` checkbox state with `earlyBirdOptIn`. Drop the now-unused promo code, extra-semester, lifetime-upgrade, and price-pulse-on-toggle code paths for this beta state — leave the static pulse animation in place since the price never changes (just renders once).
-
-## Files touched
-
-- **NEW:** `supabase/functions/claim-free-beta/index.ts`
-- **EDITED:** `src/pages/GetAccess.tsx`
-
-No DB migrations needed — `student_purchases` already supports arbitrary `purchase_type` and `price_paid_cents: 0`. No new secrets needed (uses existing service role key + Supabase auth admin).
-
-## What's intentionally NOT changed
-
-- The page background, navbar, founding-student banner, alias testing banner, testimonials section, footer
-- The Stripe-based `create-get-access-checkout` edge function (left in place — it'll be reused after beta ends)
-- LearnWorlds enrollment is **not** triggered in this beta flow (LW seats cost money; we'll enroll on actual purchase). Free beta access flows through Survive Accounting's own `/my-dashboard` and the existing `useAccessControl` hook, which checks `student_purchases` regardless of LW status.
+- No DB / migration changes (still reusing `explanation_feedback`).
+- No changes to the landing-page embed wrapper or admin preview logic.
+- No copy changes other than the empty-submit toast.

@@ -741,51 +741,18 @@ function bumpWandCounter(key: string) {
 }
 
 function MagicWandFeedback() {
-  const [open, setOpen] = useState(false);
-  const [rating, setRating] = useState<number>(0);
-  const [hoverRating, setHoverRating] = useState<number>(0);
+  const [open, setOpen] = useState(true); // available immediately to any previewer
   const [wish, setWish] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    try {
-      if (!localStorage.getItem(WAND_KEY_FIRST_TS)) {
-        localStorage.setItem(WAND_KEY_FIRST_TS, String(Date.now()));
-      }
-    } catch {}
-
-    const check = () => {
-      try {
-        if (localStorage.getItem(WAND_KEY_SHOWN) || localStorage.getItem(WAND_KEY_DISMISSED)) return;
-        const views = parseInt(localStorage.getItem(WAND_KEY_VIEWS) || "0", 10) || 0;
-        const clicks = parseInt(localStorage.getItem(WAND_KEY_HELP_CLICKS) || "0", 10) || 0;
-        const firstTs = parseInt(localStorage.getItem(WAND_KEY_FIRST_TS) || "0", 10) || Date.now();
-        const minutes = (Date.now() - firstTs) / 60000;
-        if (views >= 5 || clicks >= 2 || minutes >= 8) {
-          setOpen(true);
-          localStorage.setItem(WAND_KEY_SHOWN, "1");
-        }
-      } catch {}
-    };
-
-    check();
-    const onTick = () => check();
-    window.addEventListener("sa-wand-tick", onTick);
-    const interval = window.setInterval(check, 30_000); // re-check every 30s for the time-based trigger
-    return () => {
-      window.removeEventListener("sa-wand-tick", onTick);
-      window.clearInterval(interval);
-    };
-  }, []);
-
   const dismiss = () => {
-    try { localStorage.setItem(WAND_KEY_DISMISSED, "1"); } catch {}
+    // Session-only dismiss: don't permanently suppress on future loads.
     setOpen(false);
   };
 
   const send = async () => {
-    if (!wish.trim() && rating === 0) {
-      toast.message("Add a rating or a quick note first 🙂");
+    if (!wish.trim()) {
+      toast.message("Add a quick note first 🙂");
       return;
     }
     setSubmitting(true);
@@ -794,25 +761,23 @@ function MagicWandFeedback() {
       userEmail = localStorage.getItem("v2_student_email") || localStorage.getItem("sa_free_user_email") || null;
     } catch {}
     try {
-      // Reuse explanation_feedback table — no migration needed for tonight.
+      // Reuse explanation_feedback table — no migration needed.
       // asset_id is required, so we use a fixed sentinel UUID for "wand" feedback (00…01)
       // and tag the reason array so we can filter later.
       await supabase.from("explanation_feedback").insert({
         asset_id: "00000000-0000-0000-0000-000000000001",
         asset_name: "__magic_wand__",
         user_email: userEmail,
-        helpful: rating >= 4, // 4-5 stars = helpful
-        reason: ["wand_prompt", `rating_${rating || 0}`],
-        note: wish.trim() || null,
+        helpful: null,
+        reason: ["wand_prompt"],
+        note: wish.trim(),
       });
       toast.success("Saved — we'll use this to make it better 🙏");
     } catch (e) {
-      // Even on insert failure, treat as dismissed so we don't nag.
       console.warn("wand feedback insert failed", e);
       toast.success("Got it — thanks!");
     } finally {
       setSubmitting(false);
-      try { localStorage.setItem(WAND_KEY_DISMISSED, "1"); } catch {}
       setOpen(false);
     }
   };
