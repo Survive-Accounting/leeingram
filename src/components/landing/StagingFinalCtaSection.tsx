@@ -87,13 +87,13 @@ export default function StagingFinalCtaSection({
           className="text-white leading-tight tracking-tight text-[36px] sm:text-[52px]"
           style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
         >
-          Help us build a better way to cram.
+          Your exam is coming up. Cram with us for free.
         </h2>
         <p
           className="mt-4 text-[16px]"
           style={{ color: "rgba(255,255,255,0.9)", opacity: 0.9, fontFamily: "Inter, sans-serif" }}
         >
-          Jump in for free, ask questions when you’re stuck, and shape what we build next.
+          We’re opening the beta so students can test the tool, ask questions, and help us make it better before the next exam.
         </p>
 
         <div className="mt-8 flex flex-col items-center gap-4">
@@ -133,7 +133,7 @@ export default function StagingFinalCtaSection({
           className="mt-6 text-[12px]"
           style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif" }}
         >
-          Free during beta · No credit card required
+          Free during beta • No credit card required • Built for accounting exam prep
         </p>
       </div>
     </section>
