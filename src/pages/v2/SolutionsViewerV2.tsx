@@ -1063,6 +1063,8 @@ export default function SolutionsViewerV2() {
     setSimplifiedText(null);
     setSimplifyError(null);
     setOriginalImages([]);
+    setOriginalImagesLoaded({});
+    setOriginalLoading(true);
     setOriginalOpen(false);
     setInstructionsOpen(false);
   }, [assetCode]);
