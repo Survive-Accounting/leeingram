@@ -580,7 +580,7 @@ export default function GetAccess() {
                 className="text-[16px] font-semibold leading-tight"
                 style={{ color: NAVY }}
               >
-                Survive Study Pass
+                Survive Study Pass — Free Beta
               </div>
               {email.trim() && (
                 <p
@@ -598,7 +598,7 @@ export default function GetAccess() {
               </p>
             </div>
 
-            {/* Access Period — compact inline upsell */}
+            {/* Access section — free beta */}
             <div
               className="mt-7 pt-5 border-t"
               style={{ fontFamily: "Inter, sans-serif", borderColor: "#EEF1F5" }}
@@ -613,56 +613,37 @@ export default function GetAccess() {
                 className="mt-1 text-[15px] font-semibold leading-tight"
                 style={{ color: NAVY }}
               >
-                Full access through your Spring '26 exams
+                Free beta access through your Spring &rsquo;26 final exams
               </div>
               <div
                 className="mt-1 text-[12px] leading-snug"
                 style={{ color: "#64748B" }}
               >
-                Use it as much as you want until your exams are over.
+                Use it as much as you want while beta access is open.
               </div>
-              <label className="mt-3 inline-flex items-center gap-2 cursor-pointer select-none">
+              <div
+                className="mt-2 text-[11.5px] leading-snug"
+                style={{ color: "#94A3B8" }}
+              >
+                After beta, semester access will be $250. You&rsquo;ll only pay
+                if you choose to renew.
+              </div>
+              <label className="mt-3 inline-flex items-start gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
-                  checked={autoRenew}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setAutoRenew(checked);
-                    if (checked && extraCount === 0) {
-                      const id = Date.now() + Math.random();
-                      const amount = AUTO_RENEW_DISCOUNT_USD;
-                      setDiscountToasts((t) => [...t, { id, amount }]);
-                      setPulseKey((k) => k + 1);
-                      setTimeout(() => {
-                        setDiscountToasts((t) => t.filter((x) => x.id !== id));
-                      }, 800);
-                    } else if (!checked && extraCount === 0) {
-                      // Suppress the +$ toast when restoring price after uncheck
-                      skipNextToastRef.current = true;
-                    }
-                  }}
-                  className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[#14213D]"
+                  checked={earlyBirdOptIn}
+                  onChange={(e) => setEarlyBirdOptIn(e.target.checked)}
+                  className="h-3.5 w-3.5 mt-0.5 shrink-0 cursor-pointer accent-[#14213D]"
                 />
-                <span className="text-[13px] leading-none" style={{ color: "#475569" }}>
-                  Continue next semester{" "}
-                  <span style={{ color: "#16A34A", fontWeight: 600 }}>
-                    (save ${AUTO_RENEW_DISCOUNT_USD})
-                  </span>
+                <span className="text-[13px] leading-snug" style={{ color: "#475569" }}>
+                  Send me early-bird discounts for Summer/Fall &rsquo;26 access
                 </span>
               </label>
-              {autoRenew && (
-                <p
-                  className="mt-1 text-[11px] leading-tight"
-                  style={{ color: "#94A3B8" }}
-                >
-                  We'll remind you before your next term begins.
-                </p>
-              )}
             </div>
 
             {/* CTA */}
             <button
-              onClick={handleCheckout}
+              onClick={handleClaimBeta}
               disabled={checkoutLoading}
               className="mt-5 w-full rounded-xl py-4 text-[17px] font-bold tracking-tight text-white transition-all hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.99] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{
@@ -683,12 +664,12 @@ export default function GetAccess() {
                     <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
                     <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                   </svg>
-                  Redirecting to secure checkout...
+                  Setting up your beta access...
                 </>
               ) : (
                 <>
-                  <ShoppingCart className="w-[18px] h-[18px]" />
-                  Get Access <span aria-hidden="true">→</span>
+                  <Sparkles className="w-[18px] h-[18px]" />
+                  Get Free Beta Access <span aria-hidden="true">→</span>
                 </>
               )}
             </button>
@@ -700,7 +681,7 @@ export default function GetAccess() {
               >
                 Hmm, something went wrong on our end. Please try again, or{" "}
                 <a
-                  href="mailto:lee@surviveaccounting.com?subject=Checkout%20issue%20on%20Survive%20Study%20Pass"
+                  href="mailto:lee@surviveaccounting.com?subject=Free%20beta%20access%20issue"
                   className="underline font-semibold hover:no-underline"
                   style={{ color: RED }}
                 >
@@ -716,7 +697,7 @@ export default function GetAccess() {
               style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              7-day refund guarantee • Instant access
+              Free beta · No credit card required · Instant access
             </div>
           </div>
         </div>
