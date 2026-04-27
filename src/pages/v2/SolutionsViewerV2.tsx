@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { Helmet } from "react-helmet-async";
 import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp } from "lucide-react";
 import { StructuredJEDisplay } from "@/components/StructuredJEDisplay";
+import SmartTextRenderer from "@/components/SmartTextRenderer";
 import { generateSimplifiedPracticePdf } from "@/lib/generateSimplifiedPracticePdf";
 import ReactMarkdown from "react-markdown";
 
@@ -450,14 +451,16 @@ function ExplanationFeedback({ asset, onShareClick }: { asset: Asset; onShareCli
 // `lees_approach` is reused for the "How to start" button.
 type ToolboxKey = "lees_approach" | "how_to_solve" | "why_it_works" | "lock_it_in";
 
-const TOOLBOX_META: Record<ToolboxKey, { label: string; emoji: string }> = {
-  lees_approach: { label: "How to start", emoji: "🧭" },
-  how_to_solve: { label: "Steps to solve", emoji: "📌" },
-  why_it_works: { label: "Why it works", emoji: "⚖️" },
-  lock_it_in: { label: "Lock this in", emoji: "🔒" },
+// Student-brain labels: how a stressed student actually thinks about getting help.
+const TOOLBOX_META: Record<ToolboxKey, { label: string; emoji: string; subtitle: string }> = {
+  lees_approach: { label: "Start me off",     emoji: "🧭", subtitle: "Just the first step — no spoilers" },
+  how_to_solve: { label: "Walk me through it", emoji: "📌", subtitle: "Full step-by-step solution" },
+  why_it_works: { label: "Explain the rule",   emoji: "⚖️", subtitle: "The concept behind it" },
+  lock_it_in:   { label: "Show the setup",     emoji: "🧱", subtitle: "Tables, formulas, structure" },
 };
 
-const TOOLBOX_ORDER: ToolboxKey[] = ["lees_approach", "how_to_solve", "why_it_works", "lock_it_in"];
+// Secondary buttons (primary "Walk me through it" is rendered separately above the grid).
+const TOOLBOX_ORDER: ToolboxKey[] = ["lees_approach", "lock_it_in", "why_it_works"];
 
 function InlineExplanation({
   asset,
@@ -511,6 +514,8 @@ function InlineExplanation({
   };
 
   const handleToolboxClick = async (key: ToolboxKey) => {
+    // Activity counter for the magic-wand feedback widget
+    bumpWandCounter(WAND_KEY_HELP_CLICKS);
     // Toggle off if same button clicked
     if (activeSection === key) {
       setActiveSection(null);
@@ -561,17 +566,22 @@ function InlineExplanation({
 
   return (
     <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-5">
-      {/* Top: "Get Quick Help" + Print PDF */}
-      <div className="flex items-center justify-between gap-3 pb-4 border-b border-border/60">
-        <span className="text-sm font-semibold text-foreground">
-          Get Quick Help
-        </span>
+      {/* Top: heading + Print PDF */}
+      <div className="flex items-start justify-between gap-3 pb-4 border-b border-border/60">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-foreground">
+            Choose how you want help
+          </div>
+          <div className="text-xs text-muted-foreground mt-0.5">
+            Get a hint, see the setup, or walk through the full solution.
+          </div>
+        </div>
         <Button
           size="sm"
           variant="outline"
           onClick={handlePrintPdf}
           disabled={printing}
-          className="gap-1.5 h-8 px-3 text-xs font-medium"
+          className="gap-1.5 h-8 px-3 text-xs font-medium shrink-0"
         >
           {printing ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -584,6 +594,25 @@ function InlineExplanation({
 
       {/* Toolbox */}
       <div className="space-y-3">
+        {/* PRIMARY: Walk me through it — big red CTA */}
+        <button
+          type="button"
+          onClick={() => handleToolboxClick("how_to_solve")}
+          className={cn(
+            "w-full inline-flex items-center justify-center gap-2 rounded-lg h-12 px-4 text-sm font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99]",
+            activeSection === "how_to_solve" && "ring-2 ring-offset-2 ring-[#CE1126]/40"
+          )}
+          style={{
+            background: "linear-gradient(180deg, #E63950 0%, #CE1126 50%, #A30E1F 100%)",
+            boxShadow:
+              "0 1px 0 rgba(255,255,255,0.18) inset, 0 6px 16px -6px rgba(206,17,38,0.5), 0 2px 4px rgba(0,0,0,0.2)",
+          }}
+        >
+          <span aria-hidden>📌</span>
+          Walk me through this problem
+        </button>
+
+        {/* Secondary buttons */}
         <div className="grid grid-cols-2 gap-2">
           {TOOLBOX_ORDER.map((k) => {
             const isActive = activeSection === k;
@@ -594,6 +623,7 @@ function InlineExplanation({
                 size="sm"
                 onClick={() => handleToolboxClick(k)}
                 className="justify-start gap-2 h-9 text-xs sm:text-sm font-medium"
+                title={TOOLBOX_META[k].subtitle}
               >
                 <span aria-hidden>{TOOLBOX_META[k].emoji}</span>
                 {TOOLBOX_META[k].label}
@@ -642,7 +672,10 @@ function InlineExplanation({
           key={activeSection}
           className="rounded-lg border border-border bg-muted/30 p-4 animate-in fade-in slide-in-from-top-1 duration-200"
         >
-          <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-2">
+            Your Study Workspace
+          </div>
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5">
             <span aria-hidden>{TOOLBOX_META[activeSection].emoji}</span>
             {TOOLBOX_META[activeSection].label}
           </h3>
@@ -668,7 +701,163 @@ function InlineExplanation({
   );
 }
 
-// ── Share modal ───────────────────────────────────────────────────────
+// ── Magic Wand feedback widget (slide-up, once per browser) ───────────
+const WAND_KEY_SHOWN = "sa_wand_shown";
+const WAND_KEY_DISMISSED = "sa_wand_dismissed";
+const WAND_KEY_VIEWS = "sa_problem_views";
+const WAND_KEY_HELP_CLICKS = "sa_help_clicks";
+const WAND_KEY_FIRST_TS = "sa_first_visit_ts";
+
+function bumpWandCounter(key: string) {
+  try {
+    const cur = parseInt(localStorage.getItem(key) || "0", 10) || 0;
+    localStorage.setItem(key, String(cur + 1));
+    window.dispatchEvent(new Event("sa-wand-tick"));
+  } catch {}
+}
+
+function MagicWandFeedback() {
+  const [open, setOpen] = useState(false);
+  const [rating, setRating] = useState<number>(0);
+  const [hoverRating, setHoverRating] = useState<number>(0);
+  const [wish, setWish] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem(WAND_KEY_FIRST_TS)) {
+        localStorage.setItem(WAND_KEY_FIRST_TS, String(Date.now()));
+      }
+    } catch {}
+
+    const check = () => {
+      try {
+        if (localStorage.getItem(WAND_KEY_SHOWN) || localStorage.getItem(WAND_KEY_DISMISSED)) return;
+        const views = parseInt(localStorage.getItem(WAND_KEY_VIEWS) || "0", 10) || 0;
+        const clicks = parseInt(localStorage.getItem(WAND_KEY_HELP_CLICKS) || "0", 10) || 0;
+        const firstTs = parseInt(localStorage.getItem(WAND_KEY_FIRST_TS) || "0", 10) || Date.now();
+        const minutes = (Date.now() - firstTs) / 60000;
+        if (views >= 5 || clicks >= 2 || minutes >= 8) {
+          setOpen(true);
+          localStorage.setItem(WAND_KEY_SHOWN, "1");
+        }
+      } catch {}
+    };
+
+    check();
+    const onTick = () => check();
+    window.addEventListener("sa-wand-tick", onTick);
+    const interval = window.setInterval(check, 30_000); // re-check every 30s for the time-based trigger
+    return () => {
+      window.removeEventListener("sa-wand-tick", onTick);
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  const dismiss = () => {
+    try { localStorage.setItem(WAND_KEY_DISMISSED, "1"); } catch {}
+    setOpen(false);
+  };
+
+  const send = async () => {
+    if (!wish.trim() && rating === 0) {
+      toast.message("Add a rating or a quick note first 🙂");
+      return;
+    }
+    setSubmitting(true);
+    let userEmail: string | null = null;
+    try {
+      userEmail = localStorage.getItem("v2_student_email") || localStorage.getItem("sa_free_user_email") || null;
+    } catch {}
+    try {
+      // Reuse explanation_feedback table — no migration needed for tonight.
+      // asset_id is required, so we use a fixed sentinel UUID for "wand" feedback (00…01)
+      // and tag the reason array so we can filter later.
+      await supabase.from("explanation_feedback").insert({
+        asset_id: "00000000-0000-0000-0000-000000000001",
+        asset_name: "__magic_wand__",
+        user_email: userEmail,
+        helpful: rating >= 4, // 4-5 stars = helpful
+        reason: ["wand_prompt", `rating_${rating || 0}`],
+        note: wish.trim() || null,
+      });
+      toast.success("Saved — we'll use this to make it better 🙏");
+    } catch (e) {
+      // Even on insert failure, treat as dismissed so we don't nag.
+      console.warn("wand feedback insert failed", e);
+      toast.success("Got it — thanks!");
+    } finally {
+      setSubmitting(false);
+      try { localStorage.setItem(WAND_KEY_DISMISSED, "1"); } catch {}
+      setOpen(false);
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed bottom-20 right-4 z-40 w-[min(360px,calc(100vw-2rem))] rounded-2xl border bg-card shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300"
+      role="dialog"
+      aria-label="Quick feedback"
+    >
+      <div className="p-4 space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <Wand2 className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold">Quick favor?</span>
+          </div>
+          <button
+            onClick={dismiss}
+            className="text-muted-foreground hover:text-foreground text-xs"
+            aria-label="Dismiss"
+          >
+            Not now
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground leading-snug">
+          If we could wave a magic wand and make this the perfect study tool for you, what would it do?
+        </p>
+        <div className="flex items-center gap-1" role="radiogroup" aria-label="Rating">
+          {[1, 2, 3, 4, 5].map((n) => {
+            const filled = (hoverRating || rating) >= n;
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setRating(n)}
+                onMouseEnter={() => setHoverRating(n)}
+                onMouseLeave={() => setHoverRating(0)}
+                className="text-xl leading-none transition-transform hover:scale-110"
+                aria-label={`${n} star${n === 1 ? "" : "s"}`}
+                role="radio"
+                aria-checked={rating === n}
+              >
+                <span className={filled ? "text-amber-400" : "text-muted-foreground/40"}>★</span>
+              </button>
+            );
+          })}
+        </div>
+        <Textarea
+          value={wish}
+          onChange={(e) => setWish(e.target.value)}
+          placeholder="Tell us anything — what's confusing, what's missing, what would help you cram faster…"
+          rows={3}
+          className="text-sm resize-none"
+        />
+        <div className="flex items-center justify-end gap-2 pt-1">
+          <Button size="sm" variant="ghost" onClick={dismiss} disabled={submitting}>
+            Skip
+          </Button>
+          <Button size="sm" onClick={send} disabled={submitting}>
+            {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ShareModal({
   open,
   onOpenChange,
@@ -1055,8 +1244,8 @@ export default function SolutionsViewerV2() {
   const [originalImagesLoaded, setOriginalImagesLoaded] = useState<Record<number, boolean>>({});
   const [originalOpen, setOriginalOpen] = useState(false);
 
-  // Instructions accordion (collapsed by default for fast cram mode)
-  const [instructionsOpen, setInstructionsOpen] = useState(false);
+  // "Your Tasks" accordion — open by default so students see what to do.
+  const [instructionsOpen, setInstructionsOpen] = useState(true);
 
   // Reset on asset change
   useEffect(() => {
@@ -1066,7 +1255,7 @@ export default function SolutionsViewerV2() {
     setOriginalImagesLoaded({});
     setOriginalLoading(true);
     setOriginalOpen(false);
-    setInstructionsOpen(false);
+    setInstructionsOpen(true);
   }, [assetCode]);
 
   useEffect(() => {
@@ -1094,6 +1283,7 @@ export default function SolutionsViewerV2() {
           return;
         }
         setAsset(a as Asset);
+        bumpWandCounter(WAND_KEY_VIEWS);
 
         const [{ data: ch }, { data: sibs }] = await Promise.all([
           supabase
@@ -1291,42 +1481,56 @@ export default function SolutionsViewerV2() {
                   color: "rgba(255,255,255,0.92)",
                 }}
               >
-                {/* Top line: "Practice based on E1.4 🔍" */}
-                {asset.source_ref && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (originalImages.length > 0) setOriginalOpen(true);
-                    }}
-                    disabled={originalImages.length === 0}
-                    title={
-                      originalImages.length === 0
-                        ? "Original textbook image not available"
-                        : "View the original textbook problem"
-                    }
-                    className="group inline-flex items-center gap-1.5 -ml-1 px-1 py-0.5 rounded-md transition-colors hover:bg-white/5 disabled:hover:bg-transparent disabled:cursor-default"
-                  >
+                {/* Top row: Topic chip + "Practice based on …" */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                  {chapter && (
                     <span
-                      className="text-[11px] font-medium uppercase tracking-[0.12em]"
-                      style={{ color: "rgba(255,255,255,0.55)" }}
+                      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
+                      style={{
+                        background: "rgba(206,17,38,0.18)",
+                        color: "#FFB8C0",
+                        border: "1px solid rgba(206,17,38,0.35)",
+                      }}
                     >
-                      Practice based on{" "}
-                      <span className="font-mono normal-case tracking-normal text-white/85">
-                        {asset.source_ref}
-                      </span>
+                      Ch {chapter.chapter_number} · {chapter.chapter_name}
                     </span>
-                    {originalImages.length > 0 && (
-                      <Search
-                        className="h-3 w-3 transition-colors"
-                        style={{ color: "rgba(255,255,255,0.4)" }}
-                      />
-                    )}
-                  </button>
-                )}
+                  )}
+                  {asset.source_ref && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (originalImages.length > 0) setOriginalOpen(true);
+                      }}
+                      disabled={originalImages.length === 0}
+                      title={
+                        originalImages.length === 0
+                          ? "Original textbook image not available"
+                          : "View the original textbook problem"
+                      }
+                      className="group inline-flex items-center gap-1.5 -ml-1 px-1 py-0.5 rounded-md transition-colors hover:bg-white/5 disabled:hover:bg-transparent disabled:cursor-default"
+                    >
+                      <span
+                        className="text-[11px] font-medium uppercase tracking-[0.12em]"
+                        style={{ color: "rgba(255,255,255,0.55)" }}
+                      >
+                        Practice based on{" "}
+                        <span className="font-mono normal-case tracking-normal text-white/85">
+                          {asset.source_ref}
+                        </span>
+                      </span>
+                      {originalImages.length > 0 && (
+                        <Search
+                          className="h-3 w-3 transition-colors"
+                          style={{ color: "rgba(255,255,255,0.4)" }}
+                        />
+                      )}
+                    </button>
+                  )}
+                </div>
 
-                {/* Problem section (default open) */}
+                {/* Problem section — uses SmartTextRenderer to auto-format pipe tables */}
                 {asset.survive_problem_text && (
-                  <div className="mt-4">
+                  <div className="mt-5">
                     <div
                       className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2"
                       style={{ color: "rgba(255,255,255,0.45)" }}
@@ -1334,53 +1538,67 @@ export default function SolutionsViewerV2() {
                       Problem
                     </div>
                     <div
-                      className="whitespace-pre-wrap text-[14px] max-w-prose [&>p+p]:mt-3"
-                      style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
+                      className="text-[14px] max-w-[68ch] space-y-3 [&_p]:whitespace-pre-wrap [&_p]:text-[14px]"
+                      style={{ color: "rgba(255,255,255,0.9)", lineHeight: 1.65 }}
                     >
-                      {asset.survive_problem_text}
+                      <SmartTextRenderer text={asset.survive_problem_text} />
                     </div>
                   </div>
                 )}
 
-                {/* Instructions — collapsed by default */}
+                {/* Your Tasks — open by default */}
                 {instructions.length > 0 && (
                   <div
                     className="mt-6 pt-5 border-t"
                     style={{ borderColor: "rgba(255,255,255,0.08)" }}
                   >
-                    <button
-                      type="button"
-                      onClick={() => setInstructionsOpen((v) => !v)}
-                      className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md text-xs font-medium transition-colors hover:bg-white/5"
-                      style={{
-                        color: "rgba(255,255,255,0.85)",
-                        border: "1px solid rgba(255,255,255,0.18)",
-                        background: "transparent",
-                      }}
-                    >
-                      {instructionsOpen ? (
-                        <ChevronUp className="h-3.5 w-3.5" />
-                      ) : (
-                        <ChevronDown className="h-3.5 w-3.5" />
-                      )}
-                      {instructionsOpen ? "Hide instructions" : "View instructions"}
-                    </button>
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div
+                        className="text-[10px] font-semibold uppercase tracking-[0.14em]"
+                        style={{ color: "rgba(255,255,255,0.55)" }}
+                      >
+                        Your Tasks
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setInstructionsOpen((v) => !v)}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium transition-colors hover:text-white"
+                        style={{ color: "rgba(255,255,255,0.55)" }}
+                      >
+                        {instructionsOpen ? (
+                          <>
+                            <ChevronUp className="h-3 w-3" />
+                            Hide
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-3 w-3" />
+                            Show
+                          </>
+                        )}
+                      </button>
+                    </div>
                     {instructionsOpen && (
                       <ul
-                        className="mt-4 space-y-2 text-[14px] animate-in fade-in slide-in-from-top-1 duration-150"
+                        className="space-y-2.5 text-[14px] animate-in fade-in slide-in-from-top-1 duration-150"
                         style={{ lineHeight: 1.6 }}
                       >
                         {instructions.map((ins, i) => (
-                          <li key={i} className="flex gap-2.5">
+                          <li key={i} className="flex gap-2.5 items-start">
                             <span
-                              className="font-semibold shrink-0 mt-0.5"
-                              style={{ color: "rgba(255,255,255,0.7)" }}
+                              className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border text-[10px] font-bold"
+                              style={{
+                                borderColor: "rgba(255,255,255,0.35)",
+                                background: "rgba(255,255,255,0.04)",
+                                color: "rgba(255,255,255,0.55)",
+                              }}
+                              aria-hidden
                             >
-                              {String.fromCharCode(97 + i)}.
+                              {String.fromCharCode(97 + i).toUpperCase()}
                             </span>
                             <span
                               className="whitespace-pre-wrap"
-                              style={{ color: "rgba(255,255,255,0.88)" }}
+                              style={{ color: "rgba(255,255,255,0.92)" }}
                             >
                               {highlightTerms(ins)}
                             </span>
@@ -1468,14 +1686,15 @@ export default function SolutionsViewerV2() {
             "bg-card border hover:bg-accent transition-colors",
             "h-11 px-4 inline-flex items-center gap-2 text-sm font-medium",
           )}
-          aria-label="Need help?"
+          aria-label="Stuck? Ask Lee"
         >
           <MessageCircleQuestion className="h-4 w-4" />
-          <span className="hidden sm:inline">Need help?</span>
+          <span className="hidden sm:inline">Stuck? Ask Lee</span>
         </button>
       )}
 
       <NeedHelpModal open={helpOpen} onOpenChange={setHelpOpen} asset={asset} />
+      <MagicWandFeedback />
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
       <NavigatePanel
         open={jumpOpen}

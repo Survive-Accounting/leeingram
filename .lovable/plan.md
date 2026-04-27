@@ -1,104 +1,106 @@
-## Scope
+## Goal
 
-Refactor **`src/pages/v2/SolutionsViewerV2.tsx`** (route `/v2/solutions/:assetCode`) into a focused, fast cram experience. Live route `/solutions/:assetCode` stays untouched until you promote.
+Tonight's launch needs the V2 Solutions Viewer to feel less like a "problem viewer" and more like a "cram tool that tells me exactly what to do next." Focus on three quick wins: **clearer problem text**, **better quick-help buttons (with one primary CTA)**, and **lightweight feedback collection** that doesn't interrupt cramming.
 
-All needed infrastructure already exists — no new tables, no new edge functions:
-- `simplified_problem_cache` table (asset_id unique, public read)
-- `simplify-problem` edge function (already used by V2)
-- `chapter_problems.problem_screenshot_urls` (already fetched via `base_raw_problem_id` in V2)
+Everything is scoped to be safe to ship in a single pass — no schema migrations required.
 
 ---
 
-## LEFT PANEL — Problem
+## What Will Change
 
-**Remove:**
-- "Simplified / Original" segmented toggle (lines ~1059–1100)
-- "Try it yourself first!" header strip (lines ~564–567)
-- Verbose problem titles (e.g. "Usefulness, Objective of Financial Reporting…")
-- The "no simplified version yet → CTA" branch (~1004–1057) — generation is now automatic
+### 1. Problem card — readability pass (left column)
 
-**Keep / add:**
+File: `src/pages/v2/SolutionsViewerV2.tsx` (lines ~1280–1393)
 
-1. **Top line**
-   `Practice based on E1.4 🔍`
-   - Source ref pulled from `asset.source_ref`
-   - 🔍 magnifying-glass icon button → opens existing `originalOpen` Dialog with `originalImages` (already wired)
-   - Disabled state if `originalImages.length === 0` (preserve current tooltip)
+- Add a **Topic chip** above "Practice based on …" when `chapter.chapter_name` exists: "Ch 7 · Inventory Costing".
+- Render the problem text with **SmartTextRenderer** (already in repo) instead of raw `whitespace-pre-wrap`. This auto-detects pipe tables (Date/Activity/Units/Cost…) and renders them as proper styled tables on the dark card. Falls back to paragraphs for normal prose.
+- Increase paragraph spacing (`space-y-3`) and ensure long lines wrap nicely (drop `max-w-prose` on dark card, replace with `max-w-[68ch]`).
+- Default the **Instructions** section to **open** and re-label to **"Your Tasks"** with checkbox-style bullets (visual only — no state).
+- Keep the same navy background; just add air, structure, and a clear "Your Tasks" heading.
 
-2. **Problem section** (default open)
-   - Header: `Problem`
-   - Body: simplified text only, rendered with existing `SmartContent` / markdown renderer
-   - Slightly smaller font (`text-[14px]`, `leading-[1.65]`), tighter spacing
-   - **Auto-fetch on mount** (replaces today's manual "Simplify" button):
-     - Read `simplified_problem_cache` by `asset_id`
-     - If hit → render
-     - If miss → open blocking modal `"Getting this problem ready…"` (Dialog, no close button, spinner) → call `simplify-problem` edge fn → cache writes server-side → render → close modal
-     - Errors fall back to raw `problem_context` with a small inline "Couldn't simplify — showing original" notice
+### 2. Quick Help redesign (right column)
 
-3. **Instructions section** (collapsed by default)
-   - Trigger: outline button `View instructions` ↔ `Hide instructions`
-   - Content: existing instruction list (lettered a/b/c, deduped via existing `deduplicateInstructions`)
+File: `src/pages/v2/SolutionsViewerV2.tsx` `InlineExplanation` component (lines ~449–668)
 
----
+Rename + reorder the four buttons to match how a stressed student thinks:
 
-## RIGHT PANEL — Help
+| Old key | New label | Notes |
+|---|---|---|
+| `lees_approach` | **Start me off** | hint only, first 1–2 steps |
+| `how_to_solve` | **Walk me through it** | full step-by-step — **PRIMARY** |
+| `why_it_works` | **Explain the rule** | concept-only |
+| `lock_it_in` | **Show the setup** | tables/formulas/structure |
 
-Replace today's right column entirely with:
+Layout change:
+```text
+┌─────────────────────────────────────────────┐
+│  Choose how you want help                   │
+│  Get a hint, see the setup, or walk through │
+│  the full solution.                         │
+│                                             │
+│  ┌───────────────────────────────────────┐  │
+│  │  ▶  Walk me through this problem      │  │  ← large red primary
+│  └───────────────────────────────────────┘  │
+│                                             │
+│  [ Start me off ]  [ Show the setup ]       │
+│  [ Explain the rule ]  [ Journal Entries ]  │
+└─────────────────────────────────────────────┘
+```
 
-1. **Header**: `Get Quick Help` + small `Print PDF` icon button top-right (reuses existing `generateSimplifiedPracticePdf` flow already in the file)
+- Replace card heading "Get Quick Help" → **"Choose how you want help"** + subtext.
+- Print PDF stays in the top-right of the card.
+- The active section still renders below in the existing "Your Study Workspace"-style panel — re-label that panel header to **"Your Study Workspace"** and use the new button label as the section title.
+- Keep the existing `ExplanationFeedback` thumbs Yes/Not really at the bottom (already implemented and writes to `explanation_feedback`).
 
-2. **Action grid** (2-col on desktop, 1-col mobile, navy outlined buttons matching #14213D / #CE1126 system):
+**No prompt/edge-function changes.** The `lees_approach`/`how_to_solve`/`why_it_works`/`lock_it_in` keys keep their existing meaning so cached responses in `explanation_feedback`/`survive-this` continue to hit. Only the labels students see change.
 
-   | Button | Maps to existing data |
-   |---|---|
-   | **How to start** | `flowchart` / `worked_steps` first step |
-   | **Steps to solve** | `worked_steps` full / structured solution |
-   | **Why it works** | `concept_notes` ("The Why") |
-   | **Lock this in** | `memory_items` for this asset's chapter |
-   | **Journal Entries** *(conditional)* | Only render if asset has JE data (`je_data` / canonical JE detected) |
+### 3. Lightweight "magic wand" feedback prompt
 
-3. **Lazy-load behavior** (hard requirement — "Do NOT preload"):
-   - Track `activeHelp: string | null` in local state
-   - Each button click sets `activeHelp` → that section's panel mounts and runs its own `useQuery` (or existing fetcher)
-   - Only one section open at a time (matches your single-open accordion policy from `mem://ui/viewer-interaction-modes`)
-   - A small "← Back to actions" link inside the open panel returns to the grid
-   - Loading state per-section: small inline spinner, not modal
+A small **slide-up card** in the bottom-right corner that appears once per session after meaningful activity, instead of every-10th-navigation modals.
 
-4. **Removed from right panel**: every other accordion currently rendered in V2's right column (chapter formulas, key terms, accounts, exam traps, etc.) — they belong on the chapter Cram hub, not here.
+Triggers (whichever happens first):
+- 5 problems viewed in this session, OR
+- 2 quick-help buttons clicked, OR
+- 8 minutes on the site
 
----
+Content:
+> **Quick favor?**
+> If we could wave a magic wand and make this the perfect study tool for you, what would it do?
+> [ ★★★★★ rating ]
+> [ textarea — optional ]
+> [ Send ]   [ Not now ]
 
-## NAVIGATION (unchanged)
+Storage: writes to existing `explanation_feedback` table (reuse — `note` field for the wish, `reason` array can hold `["wand_prompt", "rating_4"]`). No migration needed for tonight; we can split into a dedicated table later.
 
-- Footer Previous / Next + counter (e.g. `18 / 26`) — keep existing logic
-- Floating "Need help?" button bottom-right — keep
-- Existing chapter / course breadcrumb in topbar — keep but simplified (no large title)
+Dismiss state stored in `localStorage` (`sa_wand_shown=1`) so it never nags the same student twice.
 
----
+### 4. Quick wins on copy and visual hierarchy
 
-## STYLE PASS
-
-- Page background: white
-- Card backgrounds: `#F8F9FA`, soft borders `#E5E7EB`
-- Body 14px / line-height 1.65
-- Section headers: 11px uppercase tracking-wider, navy
-- More vertical whitespace between Problem / Instructions / Help blocks (24–32px gaps)
-- Action-grid buttons: 44px tall, navy border, white bg, hover fills navy
+- Floating "Need help?" bubble (already on page) → relabel to **"Stuck? Ask Lee"**.
+- After a thumbs-up on Quick Help, the existing share CTA stays.
+- Show toast **"Saved — we'll use this to make it better"** after wand feedback.
 
 ---
 
-## File touchpoints
+## What We Are NOT Doing Tonight
 
-- `src/pages/v2/SolutionsViewerV2.tsx` — main rewrite (will shrink significantly; the old `SimplifiedProblem` component, toggle UI, and right-column accordions are removed)
-- No DB migrations
-- No edge function changes
-- No changes to live `/solutions/:assetCode` route
+To keep the launch safe, these are explicitly deferred (good follow-ups for week 2):
+
+- "Practice another version" / AI clone problem
+- Confidence buttons ("Still lost / Getting there / I could do this on an exam") — needs a new table
+- Per-AI-response thumbs (already partially exists on `survive_ai_responses`; not refactoring tonight)
+- Tabbed Hint / Setup / Solution / Why — current single-section reveal is fine for v1
+- New `prompt_version` column on cache — keep current cache shape
 
 ---
 
-## Out of scope (call out for follow-up)
+## Files Touched
 
-- Promoting this to the live `/solutions/:assetCode` route
-- Pre-warming simplified cache for entire chapters
-- Updating chapter Cram hub links to point at `/v2/solutions/...`
-- QA-mode editing controls (`QAEditButton`, etc.) — will keep current admin gating but won't redesign
+- `src/pages/v2/SolutionsViewerV2.tsx` — problem card formatting, Quick Help redesign, wand feedback widget
+- (no edge function, no DB migration, no Supabase config changes)
+
+---
+
+## Risk
+
+Very low. All changes are UI-only on a single page, reuse existing tables (`explanation_feedback`), and preserve existing AI section keys so cached responses still work. If anything misbehaves, reverting is one-file.
