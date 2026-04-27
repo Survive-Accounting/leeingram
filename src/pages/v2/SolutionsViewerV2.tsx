@@ -1214,6 +1214,28 @@ export default function SolutionsViewerV2() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isPreview = searchParams.get("mode") === "preview";
+  const isEmbed = searchParams.get("embed") === "1";
+
+  // In embed mode, intercept ALL clicks except those explicitly allowed,
+  // and notify the parent window to open the Beta paywall.
+  const handleEmbedClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isEmbed) return;
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+    // Allow text selection and scrolling — only block actual interactive intent.
+    const interactive = target.closest(
+      'button, a, [role="button"], input, select, textarea, [data-embed-block="true"]',
+    ) as HTMLElement | null;
+    if (!interactive) return;
+    if (interactive.closest('[data-embed-allow="true"]')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      window.parent?.postMessage({ type: "sa-embed-paywall" }, "*");
+    } catch {
+      /* ignore */
+    }
+  };
 
   const [asset, setAsset] = useState<Asset | null>(null);
   const [chapter, setChapter] = useState<ChapterMeta | null>(null);
@@ -1436,7 +1458,7 @@ export default function SolutionsViewerV2() {
   const anyChecked = checkedTasks.some(Boolean);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground" onClickCapture={handleEmbedClickCapture}>
       <Helmet>
         <title>{asset?.source_ref ? `Practice based on ${asset.source_ref}` : "Problem"} · Survive Accounting</title>
       </Helmet>
