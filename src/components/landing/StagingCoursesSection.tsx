@@ -421,7 +421,7 @@ function LaptopViewer({ detail, loading, onPaywall, isStaff }: LaptopViewerProps
               borderRadius: 3,
             }}
           >
-            <ScreenContent detail={detail} loading={loading} onPaywall={onPaywall} />
+            <ScreenContent detail={detail} loading={loading} onPaywall={onPaywall} isStaff={isStaff} />
           </div>
         </div>
       </div>
