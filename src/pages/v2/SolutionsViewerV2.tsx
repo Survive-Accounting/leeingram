@@ -589,6 +589,59 @@ function InlineExplanation({
     }
   };
 
+  // Open in Google Sheets — creates a fresh sheet and opens Google's "Make a copy" prompt
+  const handleOpenInSheets = async () => {
+    setError(null);
+    let userEmail: string | null = null;
+    try {
+      userEmail = localStorage.getItem("v2_student_email") || localStorage.getItem("sa_free_user_email") || null;
+    } catch {}
+
+    // Fire click event (best-effort, fire-and-forget)
+    void supabase.from("export_events").insert({
+      event_name: "google_sheet_export_clicked",
+      asset_id: asset.id,
+      asset_code: asset.asset_name,
+      chapter_id: chapter?.id ?? null,
+      course_id: chapter?.course_id ?? null,
+      email: userEmail,
+    });
+
+    setExportingSheet(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-tutoring-sheet", {
+        body: { assetId: asset.id, email: userEmail },
+      });
+      if (error) throw error;
+      if (!data?.success || !data?.copyUrl) throw new Error(data?.error || "Failed to create sheet");
+      window.open(data.copyUrl, "_blank", "noopener,noreferrer");
+      toast.success("Opened in Google Sheets — click \"Make a copy\" to save your own.");
+    } catch (e: any) {
+      console.error("[create-tutoring-sheet] failed:", e);
+      // Clipboard fallback
+      const fallback = [
+        `Survive Accounting — ${asset.source_ref || asset.asset_name}`,
+        chapter ? `Ch ${chapter.chapter_number}: ${chapter.chapter_name}` : "",
+        "",
+        "PROBLEM TEXT",
+        asset.survive_problem_text || "",
+        "",
+        "INSTRUCTIONS",
+        asset.problem_context || "See problem text above.",
+        "",
+        `Original: https://learn.surviveaccounting.com/v2/solutions/${asset.asset_name}`,
+      ].filter(Boolean).join("\n");
+      try {
+        await navigator.clipboard.writeText(fallback);
+        toast.error("Couldn't open Google Sheets — problem copied to your clipboard instead.");
+      } catch {
+        toast.error("Couldn't open Google Sheets. Try again in a moment.");
+      }
+    } finally {
+      setExportingSheet(false);
+    }
+  };
+
   return (
     <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-5">
       {/* Top: heading + Print PDF */}
