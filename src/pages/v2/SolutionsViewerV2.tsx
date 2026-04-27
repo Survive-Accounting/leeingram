@@ -807,26 +807,6 @@ function MagicWandFeedback() {
         <p className="text-xs text-muted-foreground leading-snug">
           If we could wave a magic wand and make this the perfect study tool for you, what would it do?
         </p>
-        <div className="flex items-center gap-1" role="radiogroup" aria-label="Rating">
-          {[1, 2, 3, 4, 5].map((n) => {
-            const filled = (hoverRating || rating) >= n;
-            return (
-              <button
-                key={n}
-                type="button"
-                onClick={() => setRating(n)}
-                onMouseEnter={() => setHoverRating(n)}
-                onMouseLeave={() => setHoverRating(0)}
-                className="text-xl leading-none transition-transform hover:scale-110"
-                aria-label={`${n} star${n === 1 ? "" : "s"}`}
-                role="radio"
-                aria-checked={rating === n}
-              >
-                <span className={filled ? "text-amber-400" : "text-muted-foreground/40"}>★</span>
-              </button>
-            );
-          })}
-        </div>
         <Textarea
           value={wish}
           onChange={(e) => setWish(e.target.value)}
