@@ -143,8 +143,11 @@ export default function StagingNavbar({
           </button>
           <button
             onClick={() => {
-              if (onPricingClick) onPricingClick();
-              else navigate("/get-access");
+              const el = document.getElementById("demo-section") || document.getElementById("courses-section");
+              if (el) {
+                const top = el.getBoundingClientRect().top + window.scrollY - 24;
+                window.scrollTo({ top, behavior: "smooth" });
+              }
             }}
             className="text-[13px] font-semibold hover:opacity-70"
             style={{
@@ -153,7 +156,7 @@ export default function StagingNavbar({
               transition: `color ${TRANSITION}`,
             }}
           >
-            Pricing
+            How it works
           </button>
 
           {/* Log In — wrap two visual states and crossfade between them */}
