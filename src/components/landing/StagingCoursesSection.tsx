@@ -86,9 +86,11 @@ export default function StagingCoursesSection({
   const [detail, setDetail] = useState<ProblemDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const isStaff = useIsStaff();
 
-  // Listen for paywall trigger from the embedded V2 viewer iframe
+  // Listen for paywall trigger from the embedded V2 viewer iframe (skipped for staff)
   useEffect(() => {
+    if (isStaff) return;
     const onMessage = (e: MessageEvent) => {
       const data = e.data;
       if (data && typeof data === "object" && data.type === "sa-embed-paywall") {
@@ -97,7 +99,7 @@ export default function StagingCoursesSection({
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, []);
+  }, [isStaff]);
 
   // Load chapters when course changes
   useEffect(() => {
