@@ -136,8 +136,8 @@ export default function ContactForm() {
                   style={{ objectPosition: "center 15%" }}
                 />
               </div>
-              <p className="text-[12px] text-white/70 mt-3 leading-relaxed" style={{ fontFamily: "Inter, sans-serif" }}>
-                I read and reply to every message personally.
+              <p className="text-[12px] text-white/75 mt-3 leading-relaxed" style={{ fontFamily: "Inter, sans-serif" }}>
+                I read these myself. Tell me what’s confusing, what’s missing, or what would help you cram faster.
               </p>
             </div>
 
