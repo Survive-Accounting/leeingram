@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp, Sheet as SheetIcon } from "lucide-react";
 import { StructuredJEDisplay } from "@/components/StructuredJEDisplay";
 import SmartTextRenderer from "@/components/SmartTextRenderer";
 import { generateSimplifiedPracticePdf } from "@/lib/generateSimplifiedPracticePdf";
@@ -504,6 +504,7 @@ function InlineExplanation({
   const [sections, setSections] = useState<ExplanationSections | null>(null);
   const [activeSection, setActiveSection] = useState<ToolboxKey | null>(null);
   const [printing, setPrinting] = useState(false);
+  const [exportingSheet, setExportingSheet] = useState(false);
   const [jeOpen, setJeOpen] = useState(false);
 
   const hasJE = Array.isArray(asset.journal_entry_completed_json?.scenario_sections)
@@ -588,6 +589,59 @@ function InlineExplanation({
     }
   };
 
+  // Open in Google Sheets — creates a fresh sheet and opens Google's "Make a copy" prompt
+  const handleOpenInSheets = async () => {
+    setError(null);
+    let userEmail: string | null = null;
+    try {
+      userEmail = localStorage.getItem("v2_student_email") || localStorage.getItem("sa_free_user_email") || null;
+    } catch {}
+
+    // Fire click event (best-effort, fire-and-forget)
+    void supabase.from("export_events").insert({
+      event_name: "google_sheet_export_clicked",
+      asset_id: asset.id,
+      asset_code: asset.asset_name,
+      chapter_id: chapter?.id ?? null,
+      course_id: chapter?.course_id ?? null,
+      email: userEmail,
+    });
+
+    setExportingSheet(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-tutoring-sheet", {
+        body: { assetId: asset.id, email: userEmail },
+      });
+      if (error) throw error;
+      if (!data?.success || !data?.copyUrl) throw new Error(data?.error || "Failed to create sheet");
+      window.open(data.copyUrl, "_blank", "noopener,noreferrer");
+      toast.success("Opened in Google Sheets — click \"Make a copy\" to save your own.");
+    } catch (e: any) {
+      console.error("[create-tutoring-sheet] failed:", e);
+      // Clipboard fallback
+      const fallback = [
+        `Survive Accounting — ${asset.source_ref || asset.asset_name}`,
+        chapter ? `Ch ${chapter.chapter_number}: ${chapter.chapter_name}` : "",
+        "",
+        "PROBLEM TEXT",
+        asset.survive_problem_text || "",
+        "",
+        "INSTRUCTIONS",
+        (asset as any).problem_context || "See problem text above.",
+        "",
+        `Original: https://learn.surviveaccounting.com/v2/solutions/${asset.asset_name}`,
+      ].filter(Boolean).join("\n");
+      try {
+        await navigator.clipboard.writeText(fallback);
+        toast.error("Couldn't open Google Sheets — problem copied to your clipboard instead.");
+      } catch {
+        toast.error("Couldn't open Google Sheets. Try again in a moment.");
+      }
+    } finally {
+      setExportingSheet(false);
+    }
+  };
+
   return (
     <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-5">
       {/* Top: heading + Print PDF */}
@@ -600,20 +654,37 @@ function InlineExplanation({
             Get a hint, see the setup, or walk through the full solution.
           </div>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handlePrintPdf}
-          disabled={printing}
-          className="gap-1.5 h-8 px-3 text-xs font-medium shrink-0"
-        >
-          {printing ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Printer className="h-3.5 w-3.5" />
-          )}
-          Print PDF
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleOpenInSheets}
+            disabled={exportingSheet}
+            className="gap-1.5 h-8 px-3 text-xs font-medium"
+            title="Create a Google Sheet of this problem and open the 'Make a copy' prompt"
+          >
+            {exportingSheet ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <SheetIcon className="h-3.5 w-3.5" />
+            )}
+            Open in Google Sheets
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handlePrintPdf}
+            disabled={printing}
+            className="gap-1.5 h-8 px-3 text-xs font-medium"
+          >
+            {printing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Printer className="h-3.5 w-3.5" />
+            )}
+            Print PDF
+          </Button>
+        </div>
       </div>
 
       {/* Toolbox */}
