@@ -35,7 +35,7 @@ type Asset = {
   journal_entry_completed_json: any | null;
 };
 
-type ChapterMeta = { id: string; chapter_number: number; chapter_name: string };
+type ChapterMeta = { id: string; chapter_number: number; chapter_name: string; course_id?: string };
 
 // Natural sort for source_ref (e.g. BE13.2, BE13.10, EX13.1, P13.3a)
 function naturalKey(s: string | null | undefined): (string | number)[] {
