@@ -1458,7 +1458,7 @@ export default function SolutionsViewerV2() {
   const anyChecked = checkedTasks.some(Boolean);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground" onClickCapture={handleEmbedClickCapture}>
       <Helmet>
         <title>{asset?.source_ref ? `Practice based on ${asset.source_ref}` : "Problem"} · Survive Accounting</title>
       </Helmet>
