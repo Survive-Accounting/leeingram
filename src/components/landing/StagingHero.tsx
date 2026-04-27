@@ -352,7 +352,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               textShadow: "0 2px 20px rgba(0,0,0,0.3)",
             }}
           >
-            A faster way to cram accounting problems.
+            Help us build the fastest way to cram accounting problems.
           </h1>
 
           {/* Subtext */}
@@ -367,39 +367,52 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               textShadow: "0 2px 20px rgba(0,0,0,0.3)",
             }}
           >
-            A new cram tool from Survive Accounting — open and free during beta. Try it, ask questions when you’re stuck, and help shape what we build next.
+            Try the new Survive Accounting cram tool free during beta. Practice textbook-style problems, get quick tutor-style help when you’re stuck, and tell us what would make studying easier before your exam.
           </p>
 
           {/* CTA */}
-          <div className="mt-8 flex flex-col items-center gap-5">
-            <button
-              onClick={onGetStartedClick}
-              className="group hero-anim-btn rounded-xl px-9 py-4 text-[16px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center"
-              style={{
-                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-                fontFamily: "Inter, sans-serif",
-                boxShadow:
-                  "inset 0 1px 0 rgba(255,255,255,0.25), 0 10px 28px rgba(206,17,38,0.35)",
-                letterSpacing: "0.01em",
-              }}
-            >
-              Join the Free Beta <AnimatedArrow />
-            </button>
+          <div className="mt-8 flex flex-col items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <button
+                onClick={onGetStartedClick}
+                className="group hero-anim-btn rounded-xl px-9 py-4 text-[16px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center"
+                style={{
+                  background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+                  fontFamily: "Inter, sans-serif",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.25), 0 10px 28px rgba(206,17,38,0.35)",
+                  letterSpacing: "0.01em",
+                }}
+              >
+                Join the Free Beta <AnimatedArrow />
+              </button>
 
-            <button
-              onClick={handleSeeHowItWorks}
-              className="hero-anim-link text-[13px] font-medium transition-colors hover:underline underline-offset-4"
+              <button
+                onClick={handleSeeHowItWorks}
+                className="hero-anim-btn rounded-xl px-7 py-4 text-[15px] font-semibold transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 inline-flex items-center justify-center"
+                style={{
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.3)",
+                  color: "#FFFFFF",
+                  fontFamily: "Inter, sans-serif",
+                  backdropFilter: "blur(8px)",
+                  WebkitBackdropFilter: "blur(8px)",
+                }}
+              >
+                See how it works
+              </button>
+            </div>
+
+            <p
+              className="hero-anim-link text-[12px]"
               style={{
-                color: "rgba(255,255,255,0.7)",
-                background: "none",
-                border: "none",
-                padding: 0,
+                color: "rgba(255,255,255,0.65)",
                 fontFamily: "Inter, sans-serif",
-                cursor: "pointer",
+                letterSpacing: "0.02em",
               }}
             >
-              See how it works ↓
-            </button>
+              Free beta access • Built by Lee Ingram • Accounting tutor since 2015
+            </p>
           </div>
         </div>
       </div>
