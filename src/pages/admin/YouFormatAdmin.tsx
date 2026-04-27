@@ -365,3 +365,300 @@ function BusinessRow({
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// Generation & QA tab
+// ─────────────────────────────────────────────────────────────────────────
+
+type AssetQA = {
+  id: string;
+  asset_name: string;
+  survive_problem_text: string | null;
+  problem_text_backup: string | null;
+  instruction_1: string | null;
+  instruction_2: string | null;
+  instruction_3: string | null;
+  instruction_4: string | null;
+  instruction_5: string | null;
+  you_problem_text: string | null;
+  you_instruction_1: string | null;
+  you_instruction_2: string | null;
+  you_instruction_3: string | null;
+  you_instruction_4: string | null;
+  you_instruction_5: string | null;
+  you_business_name: string | null;
+  you_format_status: string;
+  you_format_notes: string | null;
+};
+
+const STATUS_FILTERS = ["all", "pending", "generated", "approved", "failed", "rejected", "skipped"] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+
+function YouFormatQA({
+  chapters,
+  chapterDomains,
+}: {
+  chapters: ChapterRow[];
+  chapterDomains: ChapterDomain[];
+}) {
+  const { toast } = useToast();
+  const [chapterId, setChapterId] = useState<string>("");
+  const [assets, setAssets] = useState<AssetQA[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [filter, setFilter] = useState<StatusFilter>("all");
+
+  const chapterDomainsForSelected = useMemo(
+    () => chapterDomains.filter((d) => d.chapter_id === chapterId).map((d) => d.domain),
+    [chapterDomains, chapterId],
+  );
+
+  const loadAssets = async (cid: string) => {
+    if (!cid) return;
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("teaching_assets")
+      .select(
+        "id, asset_name, survive_problem_text, problem_text_backup, instruction_1, instruction_2, instruction_3, instruction_4, instruction_5, you_problem_text, you_instruction_1, you_instruction_2, you_instruction_3, you_instruction_4, you_instruction_5, you_business_name, you_format_status, you_format_notes",
+      )
+      .eq("chapter_id", cid)
+      .order("asset_name");
+    if (error) {
+      toast({ title: "Load failed", description: error.message, variant: "destructive" });
+    } else {
+      setAssets((data ?? []) as AssetQA[]);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (chapterId) loadAssets(chapterId);
+  }, [chapterId]);
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: assets.length };
+    for (const a of assets) c[a.you_format_status] = (c[a.you_format_status] ?? 0) + 1;
+    return c;
+  }, [assets]);
+
+  const visible = useMemo(
+    () => (filter === "all" ? assets : assets.filter((a) => a.you_format_status === filter)),
+    [assets, filter],
+  );
+
+  const runBatch = async (force: boolean) => {
+    if (!chapterId) return;
+    if (force && !confirm("Re-generate ALL assets in this chapter (including approved/generated)? This will overwrite existing rewrites.")) return;
+    setRunning(true);
+    const { data, error } = await supabase.functions.invoke("you-format-batch", {
+      body: { chapter_id: chapterId, force },
+    });
+    setRunning(false);
+    if (error) {
+      toast({ title: "Batch failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({
+        title: "Batch complete",
+        description: `Generated: ${data?.generated ?? 0} · Failed: ${data?.failed ?? 0} · Skipped: ${data?.skipped ?? 0}`,
+      });
+      loadAssets(chapterId);
+    }
+  };
+
+  const regenerateOne = async (id: string) => {
+    const { error } = await supabase.functions.invoke("you-format-rewrite", {
+      body: { asset_id: id, force: true },
+    });
+    if (error) {
+      toast({ title: "Regenerate failed", description: error.message, variant: "destructive" });
+    } else {
+      loadAssets(chapterId);
+    }
+  };
+
+  const setStatus = async (id: string, status: "approved" | "rejected" | "pending") => {
+    const patch: Record<string, unknown> = { you_format_status: status };
+    if (status === "approved") patch.you_format_approved_at = new Date().toISOString();
+    const { error } = await supabase.from("teaching_assets").update(patch).eq("id", id);
+    if (error) {
+      toast({ title: "Update failed", description: error.message, variant: "destructive" });
+    } else {
+      setAssets((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, you_format_status: status } : a)),
+      );
+    }
+  };
+
+  const selectedChapter = chapters.find((c) => c.id === chapterId);
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardContent className="pt-6 space-y-3">
+          <div className="flex flex-col md:flex-row md:items-end gap-3">
+            <div className="flex-1">
+              <Label>Chapter</Label>
+              <Select value={chapterId} onValueChange={setChapterId}>
+                <SelectTrigger><SelectValue placeholder="Choose a chapter…" /></SelectTrigger>
+                <SelectContent>
+                  {chapters.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.course_code} · Ch {c.chapter_number} — {c.chapter_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={() => runBatch(false)}
+              disabled={!chapterId || running}
+            >
+              {running ? "Running…" : "Generate pending"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => runBatch(true)}
+              disabled={!chapterId || running}
+            >
+              Re-generate all
+            </Button>
+          </div>
+          {selectedChapter && (
+            <p className="text-sm text-muted-foreground">
+              Allowed domains:{" "}
+              {chapterDomainsForSelected.length === 0
+                ? <span className="text-destructive">None set — will fall back to all domains</span>
+                : chapterDomainsForSelected.join(", ")}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {chapterId && (
+        <div className="flex flex-wrap gap-2">
+          {STATUS_FILTERS.map((s) => (
+            <button
+              key={s}
+              onClick={() => setFilter(s)}
+              className={`text-xs px-3 py-1 rounded border transition ${
+                filter === s
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background hover:bg-muted border-border"
+              }`}
+            >
+              {s} ({counts[s] ?? 0})
+            </button>
+          ))}
+        </div>
+      )}
+
+      {loading && <p className="text-muted-foreground">Loading…</p>}
+
+      {visible.map((a) => (
+        <AssetQACard
+          key={a.id}
+          asset={a}
+          onApprove={() => setStatus(a.id, "approved")}
+          onReject={() => setStatus(a.id, "rejected")}
+          onReset={() => setStatus(a.id, "pending")}
+          onRegenerate={() => regenerateOne(a.id)}
+        />
+      ))}
+
+      {chapterId && !loading && visible.length === 0 && (
+        <p className="text-sm text-muted-foreground">No assets in this filter.</p>
+      )}
+    </div>
+  );
+}
+
+function AssetQACard({
+  asset,
+  onApprove,
+  onReject,
+  onReset,
+  onRegenerate,
+}: {
+  asset: AssetQA;
+  onApprove: () => void;
+  onReject: () => void;
+  onReset: () => void;
+  onRegenerate: () => void;
+}) {
+  const original = asset.survive_problem_text ?? asset.problem_text_backup ?? "";
+  const rewritten = asset.you_problem_text ?? "";
+  const origInstr = [
+    asset.instruction_1, asset.instruction_2, asset.instruction_3, asset.instruction_4, asset.instruction_5,
+  ].filter(Boolean) as string[];
+  const newInstr = [
+    asset.you_instruction_1, asset.you_instruction_2, asset.you_instruction_3, asset.you_instruction_4, asset.you_instruction_5,
+  ].filter(Boolean) as string[];
+
+  const statusVariant: Record<string, string> = {
+    approved: "bg-green-600 text-white",
+    generated: "bg-blue-600 text-white",
+    failed: "bg-destructive text-destructive-foreground",
+    rejected: "bg-muted text-muted-foreground",
+    pending: "bg-amber-500 text-white",
+    skipped: "bg-muted text-muted-foreground",
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm flex items-center justify-between">
+          <span className="font-mono">{asset.asset_name}</span>
+          <span className="flex items-center gap-2">
+            {asset.you_business_name && (
+              <Badge variant="outline">{asset.you_business_name}</Badge>
+            )}
+            <span className={`text-xs px-2 py-0.5 rounded ${statusVariant[asset.you_format_status] ?? "bg-muted"}`}>
+              {asset.you_format_status}
+            </span>
+          </span>
+        </CardTitle>
+        {asset.you_format_notes && (
+          <p className="text-xs text-muted-foreground">{asset.you_format_notes}</p>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <div className="text-xs font-semibold text-muted-foreground mb-1">ORIGINAL</div>
+            <div className="text-sm whitespace-pre-wrap bg-muted/40 rounded p-3 max-h-72 overflow-y-auto">
+              {original || <em className="text-muted-foreground">No source text</em>}
+            </div>
+            {origInstr.length > 0 && (
+              <ol className="text-xs mt-2 list-decimal pl-5 space-y-1 text-muted-foreground">
+                {origInstr.map((x, i) => <li key={i}>{x}</li>)}
+              </ol>
+            )}
+          </div>
+          <div>
+            <div className="text-xs font-semibold text-muted-foreground mb-1">YOU-FORMAT</div>
+            <div className="text-sm whitespace-pre-wrap bg-primary/5 rounded p-3 max-h-72 overflow-y-auto">
+              {rewritten || <em className="text-muted-foreground">Not generated yet</em>}
+            </div>
+            {newInstr.length > 0 && (
+              <ol className="text-xs mt-2 list-decimal pl-5 space-y-1">
+                {newInstr.map((x, i) => <li key={i}>{x}</li>)}
+              </ol>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 justify-end">
+          <Button size="sm" variant="outline" onClick={onRegenerate}>Regenerate</Button>
+          {asset.you_format_status !== "pending" && (
+            <Button size="sm" variant="ghost" onClick={onReset}>Reset</Button>
+          )}
+          {asset.you_format_status !== "rejected" && (
+            <Button size="sm" variant="outline" onClick={onReject}>Reject</Button>
+          )}
+          {rewritten && asset.you_format_status !== "approved" && (
+            <Button size="sm" onClick={onApprove}>Approve</Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
