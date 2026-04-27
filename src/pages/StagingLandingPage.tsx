@@ -424,3 +424,104 @@ function SocialProofStrip() {
   );
 }
 
+// "Every question helps us make this better" — encouraging, student-friendly
+function AskAnythingSection() {
+  const NAVY = "#14213D";
+  const RED = "#CE1126";
+  const questions = [
+    "Why did we debit this?",
+    "How do I know which formula to use?",
+    "Can you walk me through this like I’m cramming?",
+    "What would this look like on an exam?",
+  ];
+  return (
+    <section
+      className="relative px-4 sm:px-6"
+      style={{
+        background: "#FFFFFF",
+        borderTop: "1px solid #E5E7EB",
+        paddingTop: 72,
+        paddingBottom: 72,
+      }}
+    >
+      <div className="mx-auto" style={{ maxWidth: 880 }}>
+        <div className="text-center" style={{ maxWidth: 640, margin: "0 auto" }}>
+          <h2
+            className="text-[26px] sm:text-[34px] leading-tight"
+            style={{
+              fontFamily: "'DM Serif Display', serif",
+              fontWeight: 400,
+              color: NAVY,
+            }}
+          >
+            Every question helps us make this better.
+          </h2>
+          <p
+            className="mt-3 sm:mt-4 text-[15px] sm:text-[16px]"
+            style={{
+              fontFamily: "Inter, sans-serif",
+              color: "#6B7280",
+              lineHeight: 1.6,
+            }}
+          >
+            When students ask great questions, we use them to improve explanations,
+            create new walkthroughs, and build better study tools.
+          </p>
+        </div>
+
+        <div
+          className="mx-auto mt-8 sm:mt-10 rounded-2xl"
+          style={{
+            maxWidth: 640,
+            background: "#F9FAFB",
+            border: "1px solid #E5E7EB",
+            padding: "24px 24px 22px",
+            fontFamily: "Inter, sans-serif",
+            boxShadow: "0 1px 2px rgba(20,33,61,0.04)",
+          }}
+        >
+          <div
+            className="text-[11px] font-bold uppercase mb-3"
+            style={{ color: RED, letterSpacing: "0.08em" }}
+          >
+            Ask anything
+          </div>
+          <ul className="space-y-2.5">
+            {questions.map((q) => (
+              <li
+                key={q}
+                className="flex items-start gap-2.5 text-[14.5px]"
+                style={{ color: "#1F2937", lineHeight: 1.55 }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    color: NAVY,
+                    fontWeight: 700,
+                    lineHeight: 1.55,
+                    flexShrink: 0,
+                  }}
+                >
+                  “
+                </span>
+                <span>{q}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p
+          className="text-center mt-6 text-[12.5px]"
+          style={{
+            fontFamily: "Inter, sans-serif",
+            color: "#9CA3AF",
+            lineHeight: 1.5,
+          }}
+        >
+          Student questions may be used anonymously to improve future study materials.
+        </p>
+      </div>
+    </section>
+  );
+}
+
