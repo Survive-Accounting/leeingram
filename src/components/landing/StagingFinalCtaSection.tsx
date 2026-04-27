@@ -110,23 +110,6 @@ export default function StagingFinalCtaSection({
             Join the Free Beta <span className="final-cta-arrow final-cta-arrow-char" />
           </button>
 
-          {onTryDemoClick && (
-            <button
-              onClick={onTryDemoClick}
-              className="final-cta-secondary text-[13px] font-medium underline-offset-4 hover:underline"
-              style={{
-                background: "none",
-                border: "none",
-                color: "rgba(255,255,255,0.85)",
-                fontFamily: "Inter, sans-serif",
-                cursor: "pointer",
-                padding: 0,
-                opacity: 0.85,
-              }}
-            >
-              See how it works ↓
-            </button>
-          )}
         </div>
 
         <p
