@@ -372,9 +372,10 @@ interface LaptopViewerProps {
   detail: ProblemDetail | null;
   loading: boolean;
   onPaywall: () => void;
+  isStaff?: boolean;
 }
 
-function LaptopViewer({ detail, loading, onPaywall }: LaptopViewerProps) {
+function LaptopViewer({ detail, loading, onPaywall, isStaff }: LaptopViewerProps) {
   return (
     <div className="mx-auto w-full" style={{ maxWidth: 1100 }}>
       {/* Lid */}
