@@ -154,7 +154,7 @@ export default function ContactForm() {
               />
               <input
                 type="email"
-                placeholder="your@university.edu"
+                placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 maxLength={255}
