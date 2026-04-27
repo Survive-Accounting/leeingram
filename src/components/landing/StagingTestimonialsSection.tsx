@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 const NAVY = "#14213D";
 const RED = "#CE1126";
 const EMBED_ID = "484dc267-e1b2-425c-b5c6-49d9525cec9f";
-const TARGET_COUNT = 1200;
 const FINALS_DATE = new Date(2026, 4, 4); // May 4, 2026 (local)
 
 /** Returns the countdown line text, or null if exam date has passed. */
@@ -121,19 +120,16 @@ export default function StagingTestimonialsSection({ onCtaClick }: StagingTestim
       />
       <div className="mx-auto max-w-[800px]" style={{ paddingTop: 16 }}>
         <p
+          className="text-center mb-2 text-[11px] sm:text-[12px] font-semibold tracking-[0.14em] uppercase"
+          style={{ color: RED, fontFamily: "Inter, sans-serif" }}
+        >
+          From students who studied with Lee
+        </p>
+        <p
           className="text-center mb-8 text-[22px] sm:text-[28px] md:text-[34px] leading-tight"
           style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
         >
-          Trusted by{" "}
-          <span
-            ref={counterRef}
-            className="inline-block align-baseline"
-            style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 700 }}
-          >
-            <Counter target={TARGET_COUNT} active={animate} />
-            <span>+</span>
-          </span>
-          {" "}accounting students preparing for exams.
+          Built on a decade of one-on-one tutoring.
         </p>
 
         <iframe

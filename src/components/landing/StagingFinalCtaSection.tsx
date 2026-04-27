@@ -5,6 +5,7 @@ interface StagingFinalCtaSectionProps {
 
 export default function StagingFinalCtaSection({
   onGetAccessClick,
+  onTryDemoClick,
 }: StagingFinalCtaSectionProps) {
   return (
     <section
@@ -21,6 +22,8 @@ export default function StagingFinalCtaSection({
         .final-cta-btn:hover .final-cta-arrow { transform: translateX(4px); }
         .final-cta-arrow-char::before { content: "›"; }
         .final-cta-btn:hover .final-cta-arrow-char::before { content: "→"; }
+        .final-cta-secondary { transition: opacity 0.2s ease, transform 0.2s ease; }
+        .final-cta-secondary:hover { opacity: 1; transform: translateY(-1px); }
       `}</style>
 
       {/* Soft top vignette — blends from page above */}
@@ -56,20 +59,44 @@ export default function StagingFinalCtaSection({
       />
 
       <div className="mx-auto max-w-[680px] relative" style={{ zIndex: 1 }}>
+        {/* Beta tag */}
+        <div
+          className="inline-flex items-center gap-2 mb-5"
+          style={{
+            padding: "5px 12px",
+            borderRadius: 999,
+            background: "rgba(255,255,255,0.15)",
+            border: "1px solid rgba(255,255,255,0.3)",
+            fontFamily: "Inter, sans-serif",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: "#FFFFFF",
+          }}
+        >
+          <span style={{
+            width: 6, height: 6, borderRadius: 999,
+            background: "#FFFFFF",
+            boxShadow: "0 0 8px rgba(255,255,255,0.9)",
+          }} />
+          Free Beta
+        </div>
+
         <h2
           className="text-white leading-tight tracking-tight text-[36px] sm:text-[52px]"
           style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
         >
-          Your exam is coming up.
+          Help us build a better way to cram.
         </h2>
         <p
           className="mt-4 text-[16px]"
           style={{ color: "rgba(255,255,255,0.9)", opacity: 0.9, fontFamily: "Inter, sans-serif" }}
         >
-          Practice smarter, understand faster, walk into your exam confident.
+          Jump in for free, ask questions when you’re stuck, and shape what we build next.
         </p>
 
-        <div className="mt-8 flex items-center justify-center">
+        <div className="mt-8 flex flex-col items-center gap-4">
           <button
             onClick={onGetAccessClick}
             className="final-cta-btn rounded-xl px-9 py-4 text-[16px] font-bold transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -80,15 +107,33 @@ export default function StagingFinalCtaSection({
               fontFamily: "Inter, sans-serif",
             }}
           >
-            Start Studying <span className="final-cta-arrow final-cta-arrow-char" />
+            Join the Free Beta <span className="final-cta-arrow final-cta-arrow-char" />
           </button>
+
+          {onTryDemoClick && (
+            <button
+              onClick={onTryDemoClick}
+              className="final-cta-secondary text-[13px] font-medium underline-offset-4 hover:underline"
+              style={{
+                background: "none",
+                border: "none",
+                color: "rgba(255,255,255,0.85)",
+                fontFamily: "Inter, sans-serif",
+                cursor: "pointer",
+                padding: 0,
+                opacity: 0.85,
+              }}
+            >
+              See how it works ↓
+            </button>
+          )}
         </div>
 
         <p
           className="mt-6 text-[12px]"
           style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif" }}
         >
-          7-day refund guarantee • Full access through your exams
+          Free during beta · No credit card required
         </p>
       </div>
     </section>

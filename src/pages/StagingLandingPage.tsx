@@ -377,20 +377,19 @@ export default function StagingLandingPage() {
   );
 }
 
-// Floating glass-pill social proof strip — bridges hero → testimonials
+// Floating glass-pill strip — beta framing (no fake user counts)
 function SocialProofStrip() {
   const NAVY = "#14213D";
   const MUTED = "#6B7280";
   const stats: Array<{ label: string; bold: string }> = [
     { bold: "2,500+", label: "practice problems" },
     { bold: "4", label: "courses covered" },
-    { bold: "Based on 10+", label: "years tutoring" },
+    { bold: "10+ years", label: "of tutoring behind it" },
   ];
   return (
     <div
       className="relative px-4"
       style={{
-        // Floats between hero and next section
         marginTop: -28,
         marginBottom: -28,
         zIndex: 5,
@@ -419,7 +418,7 @@ function SocialProofStrip() {
       <div
         className="proof-pill mx-auto flex flex-wrap items-center justify-center"
         style={{
-          maxWidth: 720,
+          maxWidth: 760,
           padding: "16px 28px",
           borderRadius: 999,
           background: "rgba(255, 255, 255, 0.72)",
