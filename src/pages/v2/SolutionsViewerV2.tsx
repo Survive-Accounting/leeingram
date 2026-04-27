@@ -654,20 +654,37 @@ function InlineExplanation({
             Get a hint, see the setup, or walk through the full solution.
           </div>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handlePrintPdf}
-          disabled={printing}
-          className="gap-1.5 h-8 px-3 text-xs font-medium shrink-0"
-        >
-          {printing ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Printer className="h-3.5 w-3.5" />
-          )}
-          Print PDF
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleOpenInSheets}
+            disabled={exportingSheet}
+            className="gap-1.5 h-8 px-3 text-xs font-medium"
+            title="Create a Google Sheet of this problem and open the 'Make a copy' prompt"
+          >
+            {exportingSheet ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <SheetIcon className="h-3.5 w-3.5" />
+            )}
+            Open in Google Sheets
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handlePrintPdf}
+            disabled={printing}
+            className="gap-1.5 h-8 px-3 text-xs font-medium"
+          >
+            {printing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Printer className="h-3.5 w-3.5" />
+            )}
+            Print PDF
+          </Button>
+        </div>
       </div>
 
       {/* Toolbox */}
