@@ -1270,16 +1270,16 @@ export default function SolutionsViewerV2() {
             <button
               type="button"
               onClick={() => setJumpOpen(true)}
-              disabled={siblings.length === 0}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-medium transition-all hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-sm font-medium transition-all hover:bg-white/10"
               style={{
                 background: "rgba(255,255,255,0.04)",
                 border: "1px solid rgba(255,255,255,0.1)",
                 color: "rgba(255,255,255,0.85)",
               }}
+              aria-label="Open navigation panel"
             >
-              <LayoutList className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Jump</span>
+              <Menu className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Navigate</span>
             </button>
           </div>
         </div>
