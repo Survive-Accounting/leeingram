@@ -1390,9 +1390,50 @@ export default function SolutionsViewerV2() {
   }, [asset, siblings]);
 
   const instructions = asset ? getInstructions(asset) : [];
+  const courseLabel = getCourseLabel(chapter?.course);
   const headerLabel = chapter
     ? `Ch ${chapter.chapter_number}${asset?.source_ref ? ` — ${asset.source_ref}` : ""}`
     : asset?.source_ref || "";
+
+  // Load persisted task-check state when asset/instructions change.
+  const tasksStorageKey = asset ? `sa_tasks_${asset.asset_name}` : null;
+  useEffect(() => {
+    if (!tasksStorageKey || instructions.length === 0) {
+      setCheckedTasks([]);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(tasksStorageKey);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(parsed) && parsed.length === instructions.length) {
+        setCheckedTasks(parsed.map(Boolean));
+        return;
+      }
+    } catch {/* ignore */}
+    setCheckedTasks(new Array(instructions.length).fill(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasksStorageKey, instructions.length]);
+
+  const toggleTask = (i: number) => {
+    setCheckedTasks((prev) => {
+      const next = prev.length === instructions.length ? [...prev] : new Array(instructions.length).fill(false);
+      next[i] = !next[i];
+      if (tasksStorageKey) {
+        try { localStorage.setItem(tasksStorageKey, JSON.stringify(next)); } catch {/* ignore */}
+      }
+      return next;
+    });
+  };
+
+  const resetTasks = () => {
+    if (!tasksStorageKey) return;
+    try { localStorage.removeItem(tasksStorageKey); } catch {/* ignore */}
+    setCheckedTasks(new Array(instructions.length).fill(false));
+  };
+
+  const currentTaskIndex = checkedTasks.findIndex((c) => !c);
+  const allTasksDone = instructions.length > 0 && currentTaskIndex === -1 && checkedTasks.length === instructions.length;
+  const anyChecked = checkedTasks.some(Boolean);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
