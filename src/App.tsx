@@ -113,6 +113,7 @@ const SurviveChapterAdmin = lazy(() => import("./pages/SurviveChapterAdmin"));
 const ChapterJEManager = lazy(() => import("./pages/ChapterJEManager"));
 const ChapterFormulasManager = lazy(() => import("./pages/ChapterFormulasManager"));
 const LaunchAnalytics = lazy(() => import("./pages/LaunchAnalytics"));
+const YouFormatAdmin = lazy(() => import("./pages/admin/YouFormatAdmin"));
 const ContentAnalytics = lazy(() => import("./pages/ContentAnalytics"));
 const AdminLandingPages = lazy(() => import("./pages/AdminLandingPages"));
 const AdminAuth = lazy(() => import("./pages/AdminAuth"));
@@ -329,6 +330,7 @@ const AppRoutes = () => {
         <Route path="/admin/greek" element={<ProtectedRoute><AdminGreek /></ProtectedRoute>} />
         <Route path="/admin/legacy-links" element={<ProtectedRoute><LegacyLinks /></ProtectedRoute>} />
         <Route path="/admin/ai-features" element={<ProtectedRoute><AIFeatures /></ProtectedRoute>} />
+        <Route path="/admin/you-format" element={<ProtectedRoute><YouFormatAdmin /></ProtectedRoute>} />
         <Route path="/qa-costs" element={<ProtectedRoute><QACosts /></ProtectedRoute>} />
         <Route path="/inbox" element={<ProtectedRoute><StudentInboxPage /></ProtectedRoute>} />
         <Route path="/je-debug" element={<ProtectedRoute><JEDebug /></ProtectedRoute>} />
