@@ -1530,10 +1530,11 @@ export default function SolutionsViewerV2() {
 
       <NeedHelpModal open={helpOpen} onOpenChange={setHelpOpen} asset={asset} />
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
-      <JumpModal
+      <NavigatePanel
         open={jumpOpen}
         onOpenChange={setJumpOpen}
-        siblings={siblings}
+        courseId={chapter?.course_id}
+        currentChapterId={chapter?.id}
         currentAssetName={asset?.asset_name}
       />
 
