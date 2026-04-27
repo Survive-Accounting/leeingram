@@ -253,45 +253,53 @@ export default function StagingCoursesSection({
         </div>
       </div>
 
-      {/* Chapter chips (above laptop) */}
-      <div className="mx-auto max-w-[1100px] mb-6">
-        <div
-          className="demo-card-scroll flex gap-1.5 justify-center flex-wrap"
-          style={{ rowGap: 8 }}
-        >
-          {chapters.length === 0 ? (
-            <div style={{ height: 28 }} />
-          ) : (
-            chapters.map((ch) => {
-              const isActive = ch.id === selectedChapterId;
-              return (
-                <button
-                  key={ch.id}
-                  onClick={() => setSelectedChapterId(ch.id)}
-                  className="demo-chip rounded-md px-2.5 py-1 text-[11.5px] font-semibold whitespace-nowrap"
-                  style={{
-                    fontFamily: "Inter, sans-serif",
-                    background: isActive ? NAVY : "#FFFFFF",
-                    color: isActive ? "#FFFFFF" : "#6B7280",
-                    border: `1px solid ${isActive ? NAVY : "#E5E7EB"}`,
-                  }}
-                  title={ch.chapter_name}
-                >
-                  Ch. {ch.chapter_number}
-                </button>
-              );
-            })
-          )}
-        </div>
+      {/* Chapter dropdown (above laptop) */}
+      <div className="mx-auto max-w-[1100px] mb-6 flex justify-center">
+        {chapters.length === 0 ? (
+          <div style={{ height: 40 }} />
+        ) : (
+          <div className="relative inline-block">
+            <select
+              value={selectedChapterId ?? ""}
+              onChange={(e) => setSelectedChapterId(e.target.value)}
+              className="appearance-none rounded-lg pl-4 pr-10 py-2.5 text-[13px] font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1"
+              style={{
+                fontFamily: "Inter, sans-serif",
+                background: "#FFFFFF",
+                color: NAVY,
+                border: "1px solid #D1D5DB",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                minWidth: 280,
+              }}
+            >
+              {chapters.map((ch) => (
+                <option key={ch.id} value={ch.id}>
+                  Ch. {ch.chapter_number} — {ch.chapter_name}
+                </option>
+              ))}
+            </select>
+            <span
+              aria-hidden
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[11px]"
+              style={{ color: "#6B7280" }}
+            >
+              ▼
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Laptop */}
       <LaptopViewer
         detail={detail}
         loading={loading}
-        revealed={revealed}
-        onReveal={() => setRevealed(true)}
-        onGetStarted={handleGetStarted}
+        onPaywall={() => setPaywallOpen(true)}
+      />
+
+      <BetaPaywallModal
+        open={paywallOpen}
+        onOpenChange={setPaywallOpen}
+        onJoinBeta={handleJoinBeta}
       />
 
       {/* Benefit cards */}
