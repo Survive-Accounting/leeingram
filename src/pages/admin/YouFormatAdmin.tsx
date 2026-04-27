@@ -583,28 +583,6 @@ function YouFormatQA({
                 : chapterDomainsForSelected.join(", ")}
             </p>
           )}
-            <Button
-              onClick={() => runBatch(false)}
-              disabled={!chapterId || running}
-            >
-              {running ? "Running…" : "Generate pending"}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => runBatch(true)}
-              disabled={!chapterId || running}
-            >
-              Re-generate all
-            </Button>
-          </div>
-          {selectedChapter && (
-            <p className="text-sm text-muted-foreground">
-              Allowed domains:{" "}
-              {chapterDomainsForSelected.length === 0
-                ? <span className="text-destructive">None set — will fall back to all domains</span>
-                : chapterDomainsForSelected.join(", ")}
-            </p>
-          )}
         </CardContent>
       </Card>
 
