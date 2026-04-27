@@ -113,6 +113,7 @@ const SurviveChapterAdmin = lazy(() => import("./pages/SurviveChapterAdmin"));
 const ChapterJEManager = lazy(() => import("./pages/ChapterJEManager"));
 const ChapterFormulasManager = lazy(() => import("./pages/ChapterFormulasManager"));
 const LaunchAnalytics = lazy(() => import("./pages/LaunchAnalytics"));
+const YouFormatAdmin = lazy(() => import("./pages/admin/YouFormatAdmin"));
 const ContentAnalytics = lazy(() => import("./pages/ContentAnalytics"));
 const AdminLandingPages = lazy(() => import("./pages/AdminLandingPages"));
 const AdminAuth = lazy(() => import("./pages/AdminAuth"));
