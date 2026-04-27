@@ -6125,6 +6125,18 @@ export type Database = {
           whiteboard_status: string
           worked_steps: string | null
           worked_steps_backup: string | null
+          you_business_name: string | null
+          you_format_approved_at: string | null
+          you_format_approved_by: string | null
+          you_format_generated_at: string | null
+          you_format_notes: string | null
+          you_format_status: string
+          you_instruction_1: string | null
+          you_instruction_2: string | null
+          you_instruction_3: string | null
+          you_instruction_4: string | null
+          you_instruction_5: string | null
+          you_problem_text: string | null
         }
         Insert: {
           admin_notes?: Json
@@ -6237,6 +6249,18 @@ export type Database = {
           whiteboard_status?: string
           worked_steps?: string | null
           worked_steps_backup?: string | null
+          you_business_name?: string | null
+          you_format_approved_at?: string | null
+          you_format_approved_by?: string | null
+          you_format_generated_at?: string | null
+          you_format_notes?: string | null
+          you_format_status?: string
+          you_instruction_1?: string | null
+          you_instruction_2?: string | null
+          you_instruction_3?: string | null
+          you_instruction_4?: string | null
+          you_instruction_5?: string | null
+          you_problem_text?: string | null
         }
         Update: {
           admin_notes?: Json
@@ -6349,6 +6373,18 @@ export type Database = {
           whiteboard_status?: string
           worked_steps?: string | null
           worked_steps_backup?: string | null
+          you_business_name?: string | null
+          you_format_approved_at?: string | null
+          you_format_approved_by?: string | null
+          you_format_generated_at?: string | null
+          you_format_notes?: string | null
+          you_format_status?: string
+          you_instruction_1?: string | null
+          you_instruction_2?: string | null
+          you_instruction_3?: string | null
+          you_instruction_4?: string | null
+          you_instruction_5?: string | null
+          you_problem_text?: string | null
         }
         Relationships: [
           {
@@ -7629,6 +7665,68 @@ export type Database = {
           video_url?: string | null
         }
         Relationships: []
+      }
+      you_format_businesses: {
+        Row: {
+          created_at: string
+          description: string | null
+          domain: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          domain: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          domain?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      you_format_chapter_domains: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          domain: string
+          id: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          domain: string
+          id?: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          domain?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "you_format_chapter_domains_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
