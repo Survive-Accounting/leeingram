@@ -36,7 +36,31 @@ type Asset = {
   journal_entry_completed_json: any | null;
 };
 
-type ChapterMeta = { id: string; chapter_number: number; chapter_name: string; course_id?: string };
+type ChapterMeta = {
+  id: string;
+  chapter_number: number;
+  chapter_name: string;
+  course_id?: string;
+  course?: { code: string | null; course_name: string | null } | null;
+};
+
+const FRIENDLY_COURSE_NAMES: Record<string, string> = {
+  INTRO1: "Intro Accounting 1",
+  INTRO2: "Intro Accounting 2",
+  IA1: "Intermediate Accounting 1",
+  IA2: "Intermediate Accounting 2",
+};
+
+function getCourseLabel(course?: ChapterMeta["course"]): string | null {
+  if (!course) return null;
+  const code = (course.code || "").trim();
+  if (code) {
+    // Friendly fallback for slug-style codes
+    return FRIENDLY_COURSE_NAMES[code.toUpperCase()] ? `${code} · ${FRIENDLY_COURSE_NAMES[code.toUpperCase()]}` : code;
+  }
+  const name = (course.course_name || "").trim();
+  return name || null;
+}
 
 // Natural sort for source_ref (e.g. BE13.2, BE13.10, EX13.1, P13.3a)
 function naturalKey(s: string | null | undefined): (string | number)[] {
