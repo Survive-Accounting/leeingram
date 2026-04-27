@@ -36,7 +36,31 @@ type Asset = {
   journal_entry_completed_json: any | null;
 };
 
-type ChapterMeta = { id: string; chapter_number: number; chapter_name: string; course_id?: string };
+type ChapterMeta = {
+  id: string;
+  chapter_number: number;
+  chapter_name: string;
+  course_id?: string;
+  course?: { code: string | null; course_name: string | null } | null;
+};
+
+const FRIENDLY_COURSE_NAMES: Record<string, string> = {
+  INTRO1: "Intro Accounting 1",
+  INTRO2: "Intro Accounting 2",
+  IA1: "Intermediate Accounting 1",
+  IA2: "Intermediate Accounting 2",
+};
+
+function getCourseLabel(course?: ChapterMeta["course"]): string | null {
+  if (!course) return null;
+  const code = (course.code || "").trim();
+  if (code) {
+    // Friendly fallback for slug-style codes
+    return FRIENDLY_COURSE_NAMES[code.toUpperCase()] ? `${code} · ${FRIENDLY_COURSE_NAMES[code.toUpperCase()]}` : code;
+  }
+  const name = (course.course_name || "").trim();
+  return name || null;
+}
 
 // Natural sort for source_ref (e.g. BE13.2, BE13.10, EX13.1, P13.3a)
 function naturalKey(s: string | null | undefined): (string | number)[] {
@@ -1246,6 +1270,8 @@ export default function SolutionsViewerV2() {
 
   // "Your Tasks" accordion — open by default so students see what to do.
   const [instructionsOpen, setInstructionsOpen] = useState(true);
+  // Per-task checked state, persisted to localStorage per asset.
+  const [checkedTasks, setCheckedTasks] = useState<boolean[]>([]);
 
   // Reset on asset change
   useEffect(() => {
@@ -1288,7 +1314,7 @@ export default function SolutionsViewerV2() {
         const [{ data: ch }, { data: sibs }] = await Promise.all([
           supabase
             .from("chapters")
-            .select("id, chapter_number, chapter_name, course_id")
+            .select("id, chapter_number, chapter_name, course_id, course:courses(code, course_name)")
             .eq("id", a.chapter_id)
             .maybeSingle(),
           supabase
@@ -1364,9 +1390,50 @@ export default function SolutionsViewerV2() {
   }, [asset, siblings]);
 
   const instructions = asset ? getInstructions(asset) : [];
+  const courseLabel = getCourseLabel(chapter?.course);
   const headerLabel = chapter
     ? `Ch ${chapter.chapter_number}${asset?.source_ref ? ` — ${asset.source_ref}` : ""}`
     : asset?.source_ref || "";
+
+  // Load persisted task-check state when asset/instructions change.
+  const tasksStorageKey = asset ? `sa_tasks_${asset.asset_name}` : null;
+  useEffect(() => {
+    if (!tasksStorageKey || instructions.length === 0) {
+      setCheckedTasks([]);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(tasksStorageKey);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(parsed) && parsed.length === instructions.length) {
+        setCheckedTasks(parsed.map(Boolean));
+        return;
+      }
+    } catch {/* ignore */}
+    setCheckedTasks(new Array(instructions.length).fill(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasksStorageKey, instructions.length]);
+
+  const toggleTask = (i: number) => {
+    setCheckedTasks((prev) => {
+      const next = prev.length === instructions.length ? [...prev] : new Array(instructions.length).fill(false);
+      next[i] = !next[i];
+      if (tasksStorageKey) {
+        try { localStorage.setItem(tasksStorageKey, JSON.stringify(next)); } catch {/* ignore */}
+      }
+      return next;
+    });
+  };
+
+  const resetTasks = () => {
+    if (!tasksStorageKey) return;
+    try { localStorage.removeItem(tasksStorageKey); } catch {/* ignore */}
+    setCheckedTasks(new Array(instructions.length).fill(false));
+  };
+
+  const currentTaskIndex = checkedTasks.findIndex((c) => !c);
+  const allTasksDone = instructions.length > 0 && currentTaskIndex === -1 && checkedTasks.length === instructions.length;
+  const anyChecked = checkedTasks.some(Boolean);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -1481,7 +1548,15 @@ export default function SolutionsViewerV2() {
                   color: "rgba(255,255,255,0.92)",
                 }}
               >
-                {/* Top row: Topic chip + "Practice based on …" */}
+                {/* Top row: Course label + Topic chip + "Practice based on …" */}
+                {courseLabel && (
+                  <div
+                    className="text-[10px] font-semibold uppercase tracking-[0.16em] mb-2"
+                    style={{ color: "rgba(255,255,255,0.45)" }}
+                  >
+                    {courseLabel}
+                  </div>
+                )}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                   {chapter && (
                     <span
@@ -1513,7 +1588,7 @@ export default function SolutionsViewerV2() {
                         className="text-[11px] font-medium uppercase tracking-[0.12em]"
                         style={{ color: "rgba(255,255,255,0.55)" }}
                       >
-                        Practice based on{" "}
+                        Example based on{" "}
                         <span className="font-mono normal-case tracking-normal text-white/85">
                           {asset.source_ref}
                         </span>
@@ -1579,32 +1654,103 @@ export default function SolutionsViewerV2() {
                       </button>
                     </div>
                     {instructionsOpen && (
-                      <ul
-                        className="space-y-2.5 text-[14px] animate-in fade-in slide-in-from-top-1 duration-150"
-                        style={{ lineHeight: 1.6 }}
-                      >
-                        {instructions.map((ins, i) => (
-                          <li key={i} className="flex gap-2.5 items-start">
-                            <span
-                              className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border text-[10px] font-bold"
-                              style={{
-                                borderColor: "rgba(255,255,255,0.35)",
-                                background: "rgba(255,255,255,0.04)",
-                                color: "rgba(255,255,255,0.55)",
-                              }}
-                              aria-hidden
+                      <>
+                        <ul
+                          className="space-y-2 text-[14px] animate-in fade-in slide-in-from-top-1 duration-150"
+                          style={{ lineHeight: 1.6 }}
+                        >
+                          {instructions.map((ins, i) => {
+                            const checked = !!checkedTasks[i];
+                            const isCurrent = !checked && i === currentTaskIndex;
+                            return (
+                              <li
+                                key={i}
+                                className="flex gap-2.5 items-start rounded-md transition-all"
+                                style={{
+                                  padding: "8px 10px",
+                                  marginLeft: "-10px",
+                                  marginRight: "-10px",
+                                  background: isCurrent ? "rgba(250,204,21,0.08)" : "transparent",
+                                  borderLeft: isCurrent
+                                    ? "2px solid #FACC15"
+                                    : "2px solid transparent",
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => toggleTask(i)}
+                                  aria-pressed={checked}
+                                  aria-label={`Mark task ${String.fromCharCode(97 + i).toUpperCase()} as ${checked ? "incomplete" : "complete"}`}
+                                  className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] border text-[10px] font-bold transition-all hover:scale-105"
+                                  style={{
+                                    borderColor: checked
+                                      ? "#CE1126"
+                                      : isCurrent
+                                        ? "rgba(250,204,21,0.7)"
+                                        : "rgba(255,255,255,0.35)",
+                                    background: checked
+                                      ? "#CE1126"
+                                      : isCurrent
+                                        ? "rgba(250,204,21,0.12)"
+                                        : "rgba(255,255,255,0.04)",
+                                    color: checked
+                                      ? "#fff"
+                                      : isCurrent
+                                        ? "#FACC15"
+                                        : "rgba(255,255,255,0.7)",
+                                  }}
+                                >
+                                  {checked ? (
+                                    <Check className="h-3 w-3" />
+                                  ) : (
+                                    String.fromCharCode(97 + i).toUpperCase()
+                                  )}
+                                </button>
+                                <span
+                                  className="whitespace-pre-wrap flex-1 cursor-pointer transition-all"
+                                  onClick={() => toggleTask(i)}
+                                  style={{
+                                    color: checked
+                                      ? "rgba(255,255,255,0.4)"
+                                      : isCurrent
+                                        ? "#FFF8DC"
+                                        : "rgba(255,255,255,0.92)",
+                                    textDecoration: checked ? "line-through" : "none",
+                                    fontWeight: isCurrent ? 500 : 400,
+                                  }}
+                                >
+                                  {highlightTerms(ins)}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        {(anyChecked || allTasksDone) && (
+                          <div className="mt-3 flex items-center justify-between gap-3">
+                            {allTasksDone ? (
+                              <div
+                                className="text-[12px] flex items-center gap-1.5"
+                                style={{ color: "#FACC15" }}
+                              >
+                                <Check className="h-3.5 w-3.5" />
+                                Nice — all parts done. Hit <span className="font-semibold">Walk me through it</span> to compare.
+                              </div>
+                            ) : (
+                              <div className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+                                {checkedTasks.filter(Boolean).length} of {instructions.length} done
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={resetTasks}
+                              className="text-[11px] underline-offset-2 hover:underline transition-colors"
+                              style={{ color: "rgba(255,255,255,0.45)" }}
                             >
-                              {String.fromCharCode(97 + i).toUpperCase()}
-                            </span>
-                            <span
-                              className="whitespace-pre-wrap"
-                              style={{ color: "rgba(255,255,255,0.92)" }}
-                            >
-                              {highlightTerms(ins)}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
+                              Reset
+                            </button>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
