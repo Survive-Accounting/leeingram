@@ -206,13 +206,13 @@ export default function StagingCoursesSection({
           className="text-[28px] sm:text-[36px] leading-tight"
           style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: NAVY }}
         >
-          Built for how students actually study
+          Built for last-minute accounting studying.
         </h2>
         <p
           className="mt-3 sm:mt-4 text-[15px] sm:text-[16px]"
           style={{ fontFamily: "Inter, sans-serif", color: "#6B7280", lineHeight: 1.55 }}
         >
-          Pick a chapter. Work a problem. Get a quick explanation when you’re stuck.
+          Pick a course. Choose a chapter. Work through problems. When you get stuck, ask for help and keep moving.
         </p>
       </div>
 
