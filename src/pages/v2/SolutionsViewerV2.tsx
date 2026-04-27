@@ -450,14 +450,16 @@ function ExplanationFeedback({ asset, onShareClick }: { asset: Asset; onShareCli
 // `lees_approach` is reused for the "How to start" button.
 type ToolboxKey = "lees_approach" | "how_to_solve" | "why_it_works" | "lock_it_in";
 
-const TOOLBOX_META: Record<ToolboxKey, { label: string; emoji: string }> = {
-  lees_approach: { label: "How to start", emoji: "🧭" },
-  how_to_solve: { label: "Steps to solve", emoji: "📌" },
-  why_it_works: { label: "Why it works", emoji: "⚖️" },
-  lock_it_in: { label: "Lock this in", emoji: "🔒" },
+// Student-brain labels: how a stressed student actually thinks about getting help.
+const TOOLBOX_META: Record<ToolboxKey, { label: string; emoji: string; subtitle: string }> = {
+  lees_approach: { label: "Start me off",     emoji: "🧭", subtitle: "Just the first step — no spoilers" },
+  how_to_solve: { label: "Walk me through it", emoji: "📌", subtitle: "Full step-by-step solution" },
+  why_it_works: { label: "Explain the rule",   emoji: "⚖️", subtitle: "The concept behind it" },
+  lock_it_in:   { label: "Show the setup",     emoji: "🧱", subtitle: "Tables, formulas, structure" },
 };
 
-const TOOLBOX_ORDER: ToolboxKey[] = ["lees_approach", "how_to_solve", "why_it_works", "lock_it_in"];
+// Secondary buttons (primary "Walk me through it" is rendered separately above the grid).
+const TOOLBOX_ORDER: ToolboxKey[] = ["lees_approach", "lock_it_in", "why_it_works"];
 
 function InlineExplanation({
   asset,
