@@ -1,10 +1,12 @@
 // Rewrite a single teaching asset into "you-format":
 // - Replace "Survive Company A (the X)" with second-person "you" voice
-// - Pick a fictitious business from curated library matching chapter's allowed domains
-// - Preserve every numeric fact, date, account name, and instruction count
-// - Validate: all original numbers still present; instruction count matches
+// - No business names. Use a generic domain hint (e.g., "you own a car dealership")
+//   only when the original problem implies a business activity that benefits from context.
+// - Drop role parentheticals unless 2+ distinct parties are referenced.
+// - Preserve every numeric fact, account name, and instruction count.
 //
-// Writes to shadow columns: you_problem_text, you_instruction_1..5, you_business_name,
+// Writes to shadow columns: you_problem_text, you_instruction_1..5,
+// you_business_name (used to store the *domain hint* for traceability),
 // you_format_status ('generated' on success, 'failed' on validation fail).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
@@ -15,25 +17,27 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You rewrite accounting practice problems into second-person ("you") voice using a fictitious business name.
+const SYSTEM_PROMPT = `You rewrite accounting practice problems into second-person ("you") voice. NO BUSINESS NAMES. Keep it generic and contextual.
 
 REWRITE RULES:
-1. Replace every reference to "Survive Company A", "Survive Company A (the seller)", "Survive Company A (the buyer)", etc., with the assigned business name OR with "you / your business" — whichever reads more naturally.
-2. Drop role parentheticals like "(the seller)", "(the buyer)", "(the lender)" UNLESS the problem involves 2+ different parties — then keep the role for clarity.
-3. Use second person ("you", "your") wherever the original used the company as the actor: "Survive Company A purchased" → "You purchased" or "Your business, [Name], purchased".
-4. Preserve EVERY:
+1. Replace every reference to "Survive Company A", "Survive Company A (the seller)", etc., with "you" / "your" / "your business".
+2. When the problem benefits from context, you may say things like "You own a [domain hint]..." or "You run a [domain hint]..." ONCE near the start. Otherwise just use "you/your" throughout.
+3. NEVER invent or use a fictitious business name. No proper-noun business names of any kind.
+4. Drop role parentheticals like "(the seller)", "(the buyer)" UNLESS the problem involves 2+ different parties — then keep the role for clarity.
+5. Use second person consistently. "Survive Company A purchased" → "You purchased".
+6. Preserve EVERY:
    - Number, dollar amount, percentage, date
    - Account name (Cash, Inventory, Sales Revenue, etc.)
    - Quantity, unit, term length
-   - Conjunction/sequence ("first", "then", "finally")
-5. Do NOT change accounting facts. Do NOT add new transactions. Do NOT remove transactions.
-6. Keep instruction count IDENTICAL. If there were 3 instructions, return exactly 3.
-7. Keep instructions short and direct ("Prepare the journal entries", "Calculate gross profit").
-8. Tone: confident, conversational, exam-tutor voice. No textbook hedging.
+   - Sub-part labels: "(a)", "(b)", "(c)" — keep them exactly
+7. Do NOT change accounting facts. Do NOT add/remove transactions or sub-parts.
+8. If the original has separate numbered instructions, return the SAME number of instructions.
+9. If the original has instructions inline (e.g., "(a) Calculate... (b) Prepare..."), keep them inline in the rewritten problem text and return an empty instructions array.
+10. Tone: confident, conversational, exam-tutor voice. No textbook hedging.
 
 OUTPUT a JSON object ONLY — no prose, no markdown fences:
 {
-  "problem_text": "rewritten problem in you-voice using the assigned business name",
+  "problem_text": "rewritten problem in you-voice",
   "instructions": ["instruction 1", "instruction 2", ...]
 }`;
 
@@ -48,6 +52,7 @@ type Asset = {
   instruction_3: string | null;
   instruction_4: string | null;
   instruction_5: string | null;
+  you_format_status?: string;
 };
 
 function collectInstructions(a: Asset): string[] {
@@ -56,35 +61,39 @@ function collectInstructions(a: Asset): string[] {
     .filter(Boolean);
 }
 
-// Extract every dollar amount, integer, percentage, and date-like token from a string.
+// Extract dollar amounts, percentages, and large standalone numbers
 function extractFacts(text: string): string[] {
   const facts = new Set<string>();
-  // Dollar amounts: $1,200 / $1,200.50
-  for (const m of text.matchAll(/\$[0-9,]+(?:\.[0-9]+)?/g)) facts.add(m[0].replace(/,/g, ""));
-  // Percentages
-  for (const m of text.matchAll(/[0-9]+(?:\.[0-9]+)?\s*%/g)) facts.add(m[0].replace(/\s+/g, ""));
-  // Standalone numbers >= 100 (skip tiny noise like "1 year")
-  for (const m of text.matchAll(/\b[0-9]{1,3}(?:,[0-9]{3})+(?:\.[0-9]+)?\b|\b[0-9]{3,}(?:\.[0-9]+)?\b/g)) {
+  for (const m of text.matchAll(/\$[\d,]+(?:\.\d+)?/g)) facts.add(m[0].replace(/,/g, ""));
+  for (const m of text.matchAll(/\d+(?:\.\d+)?\s*%/g)) facts.add(m[0].replace(/\s+/g, ""));
+  for (const m of text.matchAll(/\b\d{1,3}(?:,\d{3})+(?:\.\d+)?\b|\b\d{4,}(?:\.\d+)?\b/g)) {
     facts.add(m[0].replace(/,/g, ""));
   }
   return Array.from(facts);
 }
 
-function pickBusiness(
-  available: { name: string; domain: string }[],
-  allowedDomains: string[],
-  seedKey: string,
-): { name: string; domain: string } | null {
-  const pool = allowedDomains.length
-    ? available.filter((b) => allowedDomains.includes(b.domain))
-    : available;
-  if (!pool.length) return null;
-  // Deterministic pick by hash of asset id so re-runs give same business
+// Pick a domain hint deterministically from chapter mapping
+function pickDomainHint(allowedDomains: string[], seedKey: string): string | null {
+  if (!allowedDomains.length) return null;
   let hash = 0;
   for (let i = 0; i < seedKey.length; i++) hash = (hash * 31 + seedKey.charCodeAt(i)) | 0;
-  const idx = Math.abs(hash) % pool.length;
-  return pool[idx];
+  return allowedDomains[Math.abs(hash) % allowedDomains.length];
 }
+
+// Map raw domain slug → human-friendly description for the "you own a ___" frame
+const DOMAIN_DESCRIPTIONS: Record<string, string> = {
+  retail: "small retail business",
+  manufacturing: "small manufacturing business",
+  services: "service business",
+  professional: "professional firm (law, accounting, or consulting)",
+  tech: "small tech / software business",
+  hospitality: "small hospitality business (restaurant, hotel, or cafe)",
+  construction: "construction business",
+  real_estate: "real estate business",
+  logistics: "logistics / shipping business",
+  automotive: "car dealership or auto-related business",
+  healthcare: "healthcare practice",
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -121,6 +130,7 @@ Deno.serve(async (req) => {
     const problemSource =
       asset.survive_problem_text?.trim() || asset.problem_text_backup?.trim() || "";
     const instructions = collectInstructions(asset as Asset);
+    const instructionsAreInline = instructions.length === 0;
 
     if (!problemSource) {
       await sb
@@ -132,35 +142,29 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Pick a business from the curated library, restricted to chapter's allowed domains
-    const [{ data: bizRows }, { data: domainRows }] = await Promise.all([
-      sb.from("you_format_businesses").select("name, domain").eq("is_active", true),
-      sb.from("you_format_chapter_domains").select("domain").eq("chapter_id", asset.chapter_id),
-    ]);
-
+    // Domain hint from chapter mapping (optional flavor only)
+    const { data: domainRows } = await sb
+      .from("you_format_chapter_domains")
+      .select("domain")
+      .eq("chapter_id", asset.chapter_id);
     const allowedDomains = (domainRows ?? []).map((d) => d.domain);
-    const business = pickBusiness(
-      (bizRows ?? []) as { name: string; domain: string }[],
-      allowedDomains,
-      asset.id,
-    );
-    if (!business) throw new Error("No active businesses available for chapter");
+    const domainSlug = pickDomainHint(allowedDomains, asset.id);
+    const domainHint = domainSlug ? DOMAIN_DESCRIPTIONS[domainSlug] ?? domainSlug : null;
 
-    // Count parties referenced in original (for role-keeping rule)
+    // Multi-party detection
     const roleMatches = (problemSource.match(/Survive Company [A-Z]\s*\((the\s+\w+)\)/gi) ?? [])
       .map((m) => m.toLowerCase());
     const uniqueRoles = new Set(roleMatches.map((m) => m.replace(/.*\(|\).*/g, "")));
     const multiParty = uniqueRoles.size >= 2;
 
-    const userMessage = `Assigned business name: ${business.name}
-Business domain: ${business.domain}
-Multiple distinct parties in this problem: ${multiParty ? "YES — keep role parentheticals" : "NO — drop role parentheticals"}
+    const userMessage = `Domain hint (use ONLY if a business-context phrase fits naturally; never invent a name): ${domainHint ?? "none — just use 'you/your business'"}
+Multiple distinct parties in this problem: ${multiParty ? "YES — keep role parentheticals like (the seller)" : "NO — drop role parentheticals"}
+Instruction format: ${instructionsAreInline ? "INLINE inside the problem text — return empty instructions array" : `SEPARATE — return exactly ${instructions.length} instructions`}
 
 ORIGINAL PROBLEM:
 ${problemSource}
 
-ORIGINAL INSTRUCTIONS (return exactly ${instructions.length}):
-${instructions.map((x, i) => `${i + 1}. ${x}`).join("\n")}
+${instructionsAreInline ? "" : `ORIGINAL INSTRUCTIONS (return exactly ${instructions.length}):\n${instructions.map((x, i) => `${i + 1}. ${x}`).join("\n")}`}
 
 Rewrite into you-format following all rules. Return JSON only.`;
 
@@ -171,8 +175,8 @@ Rewrite into you-format following all rules. Return JSON only.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        max_completion_tokens: 2000,
+        model: "gpt-5-mini",
+        max_completion_tokens: 3000,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
@@ -198,15 +202,16 @@ Rewrite into you-format following all rules. Return JSON only.`;
     const newProblem = (parsed.problem_text ?? "").trim();
     const newInstructions = (parsed.instructions ?? []).map((x) => String(x).trim()).filter(Boolean);
 
-    // Validate: instruction count
     const validationErrors: string[] = [];
-    if (newInstructions.length !== instructions.length) {
+
+    // Validate instruction count ONLY if originals were stored separately
+    if (!instructionsAreInline && newInstructions.length !== instructions.length) {
       validationErrors.push(
         `Instruction count mismatch: expected ${instructions.length}, got ${newInstructions.length}`,
       );
     }
 
-    // Validate: facts preserved
+    // Facts preservation
     const originalCombined = problemSource + "\n" + instructions.join("\n");
     const newCombined = newProblem + "\n" + newInstructions.join("\n");
     const originalFacts = extractFacts(originalCombined);
@@ -216,7 +221,7 @@ Rewrite into you-format following all rules. Return JSON only.`;
       validationErrors.push(`Missing facts: ${missingFacts.slice(0, 8).join(", ")}`);
     }
 
-    // Validate: didn't keep "Survive Company"
+    // No "Survive Company" should remain
     if (/survive company/i.test(newCombined)) {
       validationErrors.push("Output still contains 'Survive Company'");
     }
@@ -224,14 +229,14 @@ Rewrite into you-format following all rules. Return JSON only.`;
     const status = validationErrors.length === 0 ? "generated" : "failed";
     const notes =
       validationErrors.length === 0
-        ? `Rewritten with ${business.name} (${business.domain})${multiParty ? " · multi-party kept roles" : ""}`
+        ? `Rewritten${domainHint ? ` (hint: ${domainHint})` : ""}${multiParty ? " · multi-party kept roles" : ""}`
         : validationErrors.join(" | ");
 
     const update: Record<string, unknown> = {
       you_format_status: status,
       you_format_notes: notes,
       you_format_generated_at: new Date().toISOString(),
-      you_business_name: business.name,
+      you_business_name: domainHint, // store the domain hint for traceability (no proper name)
     };
 
     if (status === "generated") {
@@ -253,7 +258,7 @@ Rewrite into you-format following all rules. Return JSON only.`;
       JSON.stringify({
         success: true,
         status,
-        business: business.name,
+        domain_hint: domainHint,
         validation_errors: validationErrors,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
