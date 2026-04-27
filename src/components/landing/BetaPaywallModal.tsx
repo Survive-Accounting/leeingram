@@ -45,7 +45,7 @@ export default function BetaPaywallModal({ open, onOpenChange, onJoinBeta }: Bet
                 className="text-[14px]"
                 style={{ color: "#6B7280", lineHeight: 1.55 }}
               >
-                This is a live preview of the cram tool. Help walkthroughs, PDFs,
+                This is a live preview of the cram tool. Help walkthroughs, practice PDFs,
                 and Ask Lee are turned on for beta students.
               </DialogDescription>
             </DialogHeader>
