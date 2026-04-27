@@ -250,6 +250,48 @@ export default function GetAccess() {
 
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [earlyBirdOptIn, setEarlyBirdOptIn] = useState(false);
+
+  const handleClaimBeta = async () => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      requestAccess({});
+      return;
+    }
+    try {
+      localStorage.setItem("student_email", cleanEmail);
+      sessionStorage.setItem("student_email", cleanEmail);
+    } catch { /* ignore */ }
+
+    setCheckoutError(null);
+    setCheckoutLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("claim-free-beta", {
+        body: {
+          email: cleanEmail,
+          campus: campusParam || null,
+          course: courseParam || null,
+          earlyBirdOptIn,
+          origin: window.location.origin,
+        },
+      });
+      if (error) throw error;
+      const magicLink = (data as { magicLink?: string | null } | null)?.magicLink || null;
+      if (magicLink) {
+        // Magic link → /auth/callback → /my-dashboard?free_beta=1 (signed in)
+        window.location.href = magicLink;
+      } else {
+        // Fallback if magic link generation failed — go to dashboard (will prompt login)
+        navigate("/my-dashboard?free_beta=1");
+      }
+    } catch (err) {
+      console.error("[claim-free-beta]", err);
+      setCheckoutError(
+        "We couldn't set up your beta access. Please try again in a moment.",
+      );
+      setCheckoutLoading(false);
+    }
+  };
 
   const handleCheckout = async () => {
     const cleanEmail = email.trim().toLowerCase();
@@ -386,7 +428,13 @@ export default function GetAccess() {
           className="mt-4 max-w-[640px] mx-auto text-[16px] sm:text-[18px]"
           style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
         >
-          Get {problemCountLabel} practice problems to cram with — available all semester.
+          Join the free beta and get access through your Spring &rsquo;26 final exams.
+        </p>
+        <p
+          className="mt-2 max-w-[640px] mx-auto text-[13px]"
+          style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+        >
+          Regular semester access will be $250 after beta.
         </p>
       </section>
 
@@ -455,7 +503,7 @@ export default function GetAccess() {
               }
             `}</style>
 
-            {/* Header row — Secure Checkout + Price Badge */}
+            {/* Header row — Free Beta + Price Badge */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <span
@@ -465,39 +513,23 @@ export default function GetAccess() {
                     color: RED,
                     border: "1px solid #FECACA",
                     fontFamily: "Inter, sans-serif",
+                    letterSpacing: "0.06em",
                   }}
                 >
-                  Finals Week Pricing
+                  FREE BETA
                 </span>
                 <h2
                   className="text-[24px] sm:text-[28px] leading-tight"
                   style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
                 >
-                  Secure Checkout
+                  Create Your Free Beta Pass
                 </h2>
-                <p
-                  className="mt-1 text-[12px] flex items-center gap-1"
-                  style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                >
-                  Powered by{" "}
-                  <span
-                    className="font-semibold"
-                    style={{
-                      color: "#635BFF",
-                      fontFamily: "Inter, sans-serif",
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    Stripe
-                  </span>
-                </p>
               </div>
 
               {/* Price badge inside card, top-right */}
               <div className="flex flex-col items-end shrink-0">
                 <div
-                  key={`pulse-${pulseKey}`}
-                  className="relative rounded-2xl px-5 py-3.5 flex flex-col items-center justify-center animate-[pricePulse_400ms_ease-out] motion-reduce:animate-none"
+                  className="relative rounded-2xl px-5 py-3.5 flex flex-col items-center justify-center"
                   style={{
                     background: "#F0F6FF",
                     border: `1px solid ${NAVY}`,
@@ -506,144 +538,38 @@ export default function GetAccess() {
                     transform: "translateY(-3px)",
                   }}
                 >
-                  {hasDiscount && (
-                    <div
-                      className="text-[12px] line-through leading-none mb-0.5"
-                      style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                    >
-                      ${subtotal}
-                    </div>
-                  )}
                   <div
-                    key={`shimmer-${totalPrice}`}
-                    className={`font-bold leading-none shimmer-done ${hasDiscount ? "price-shimmer-discount" : "price-shimmer"}`}
+                    className="font-bold leading-none price-shimmer"
                     style={{
                       fontSize: 44,
                       letterSpacing: "-0.03em",
                       fontFamily: "Inter, sans-serif",
+                      color: NAVY,
                     }}
                     ref={(el) => {
                       if (!el) return;
-                      // Remove shimmer-done so animation runs, then re-add after it completes
                       el.classList.remove("shimmer-done");
                       const t = setTimeout(() => el.classList.add("shimmer-done"), 1750);
-                      // store timeout on element for cleanup
                       (el as any)._shimmerTimeout && clearTimeout((el as any)._shimmerTimeout);
                       (el as any)._shimmerTimeout = t;
                     }}
                   >
-                    ${totalPrice}
+                    $0
                   </div>
                   <div
-                    className="mt-1.5 text-[10px] font-medium uppercase tracking-wider text-center"
-                    style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                    className="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-center"
+                    style={{ color: RED, fontFamily: "Inter, sans-serif", letterSpacing: "0.08em" }}
                   >
-                    One-time payment
+                    Free Beta Access
                   </div>
-                  {autoRenewActive && (
-                    <div
-                      className="mt-0.5 text-[10px] font-medium animate-fade-in"
-                      style={{ color: "#86EFAC", fontFamily: "Inter, sans-serif" }}
-                    >
-                      ${AUTO_RENEW_DISCOUNT_USD} applied
-                    </div>
-                  )}
-
-                  {/* Floating positive delta toasts only */}
-                  {priceToasts.map((t) => (
-                    <span
-                      key={t.id}
-                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-2 text-[15px] font-bold animate-[priceToast_1100ms_ease-out_forwards] motion-reduce:animate-[priceToastFade_900ms_ease-out_forwards]"
-                      style={{
-                        color: "#16A34A",
-                        fontFamily: "Inter, sans-serif",
-                        textShadow: "0 1px 3px rgba(255,255,255,0.9)",
-                      }}
-                    >
-                      +${t.delta}
-                    </span>
-                  ))}
-
-                  {/* Discount applied floating toast (positive feedback only) */}
-                  {discountToasts.map((t) => (
-                    <span
-                      key={t.id}
-                      className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-3 text-[15px] font-bold whitespace-nowrap animate-[priceToast_800ms_ease-out_forwards] motion-reduce:animate-[priceToastFade_700ms_ease-out_forwards]"
-                      style={{
-                        color: RED,
-                        fontFamily: "Inter, sans-serif",
-                        textShadow: "0 1px 3px rgba(255,255,255,0.9)",
-                      }}
-                    >
-                      -${t.amount}
-                    </span>
-                  ))}
                 </div>
-
-                {/* Promo code area under badge */}
-                <div className="mt-2 flex flex-col items-end" style={{ minWidth: 120 }}>
-                  {hasDiscount ? (
-                    <div className="flex flex-col items-end gap-0.5">
-                      <span
-                        className="text-[11px] font-semibold"
-                        style={{ color: "#16A34A", fontFamily: "Inter, sans-serif" }}
-                      >
-                        {appliedPromo!.code} applied
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleRemovePromo}
-                        className="text-[10px] underline hover:no-underline"
-                        style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : promoOpen ? (
-                    <div className="flex flex-col items-end gap-1">
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="text"
-                          value={promoInput}
-                          onChange={(e) => { setPromoInput(e.target.value); setPromoError(null); }}
-                          onKeyDown={(e) => { if (e.key === "Enter") handleApplyPromo(); }}
-                          placeholder="Code"
-                          className="rounded-md px-2 py-1 text-[12px] outline-none focus:ring-2 focus:ring-[#14213D]/20"
-                          style={{
-                            border: "1px solid #CBD5E1",
-                            width: 90,
-                            fontFamily: "Inter, sans-serif",
-                            color: NAVY,
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleApplyPromo}
-                          className="rounded-md px-2.5 py-1 text-[11px] font-semibold text-white hover:brightness-110"
-                          style={{ background: NAVY, fontFamily: "Inter, sans-serif" }}
-                        >
-                          Apply
-                        </button>
-                      </div>
-                      {promoError && (
-                        <span
-                          className="text-[10px]"
-                          style={{ color: RED, fontFamily: "Inter, sans-serif" }}
-                        >
-                          {promoError}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setPromoOpen(true)}
-                      className="text-[10px] underline hover:no-underline"
-                      style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                    >
-                      Promo code?
-                    </button>
-                  )}
+                <div
+                  className="mt-2 text-[11px]"
+                  style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                >
+                  Regularly{" "}
+                  <span style={{ textDecoration: "line-through" }}>$250</span>
+                  {" "}/ semester
                 </div>
               </div>
             </div>
@@ -654,7 +580,7 @@ export default function GetAccess() {
                 className="text-[16px] font-semibold leading-tight"
                 style={{ color: NAVY }}
               >
-                Survive Study Pass
+                Survive Study Pass — Free Beta
               </div>
               {email.trim() && (
                 <p
@@ -672,7 +598,7 @@ export default function GetAccess() {
               </p>
             </div>
 
-            {/* Access Period — compact inline upsell */}
+            {/* Access section — free beta */}
             <div
               className="mt-7 pt-5 border-t"
               style={{ fontFamily: "Inter, sans-serif", borderColor: "#EEF1F5" }}
@@ -687,56 +613,37 @@ export default function GetAccess() {
                 className="mt-1 text-[15px] font-semibold leading-tight"
                 style={{ color: NAVY }}
               >
-                Full access through your Spring '26 exams
+                Free beta access through your Spring &rsquo;26 final exams
               </div>
               <div
                 className="mt-1 text-[12px] leading-snug"
                 style={{ color: "#64748B" }}
               >
-                Use it as much as you want until your exams are over.
+                Use it as much as you want while beta access is open.
               </div>
-              <label className="mt-3 inline-flex items-center gap-2 cursor-pointer select-none">
+              <div
+                className="mt-2 text-[11.5px] leading-snug"
+                style={{ color: "#94A3B8" }}
+              >
+                After beta, semester access will be $250. You&rsquo;ll only pay
+                if you choose to renew.
+              </div>
+              <label className="mt-3 inline-flex items-start gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
-                  checked={autoRenew}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setAutoRenew(checked);
-                    if (checked && extraCount === 0) {
-                      const id = Date.now() + Math.random();
-                      const amount = AUTO_RENEW_DISCOUNT_USD;
-                      setDiscountToasts((t) => [...t, { id, amount }]);
-                      setPulseKey((k) => k + 1);
-                      setTimeout(() => {
-                        setDiscountToasts((t) => t.filter((x) => x.id !== id));
-                      }, 800);
-                    } else if (!checked && extraCount === 0) {
-                      // Suppress the +$ toast when restoring price after uncheck
-                      skipNextToastRef.current = true;
-                    }
-                  }}
-                  className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-[#14213D]"
+                  checked={earlyBirdOptIn}
+                  onChange={(e) => setEarlyBirdOptIn(e.target.checked)}
+                  className="h-3.5 w-3.5 mt-0.5 shrink-0 cursor-pointer accent-[#14213D]"
                 />
-                <span className="text-[13px] leading-none" style={{ color: "#475569" }}>
-                  Continue next semester{" "}
-                  <span style={{ color: "#16A34A", fontWeight: 600 }}>
-                    (save ${AUTO_RENEW_DISCOUNT_USD})
-                  </span>
+                <span className="text-[13px] leading-snug" style={{ color: "#475569" }}>
+                  Send me early-bird discounts for Summer/Fall &rsquo;26 access
                 </span>
               </label>
-              {autoRenew && (
-                <p
-                  className="mt-1 text-[11px] leading-tight"
-                  style={{ color: "#94A3B8" }}
-                >
-                  We'll remind you before your next term begins.
-                </p>
-              )}
             </div>
 
             {/* CTA */}
             <button
-              onClick={handleCheckout}
+              onClick={handleClaimBeta}
               disabled={checkoutLoading}
               className="mt-5 w-full rounded-xl py-4 text-[17px] font-bold tracking-tight text-white transition-all hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.99] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               style={{
@@ -757,12 +664,12 @@ export default function GetAccess() {
                     <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
                     <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                   </svg>
-                  Redirecting to secure checkout...
+                  Setting up your beta access...
                 </>
               ) : (
                 <>
-                  <ShoppingCart className="w-[18px] h-[18px]" />
-                  Get Access <span aria-hidden="true">→</span>
+                  <Sparkles className="w-[18px] h-[18px]" />
+                  Get Free Beta Access <span aria-hidden="true">→</span>
                 </>
               )}
             </button>
@@ -774,7 +681,7 @@ export default function GetAccess() {
               >
                 Hmm, something went wrong on our end. Please try again, or{" "}
                 <a
-                  href="mailto:lee@surviveaccounting.com?subject=Checkout%20issue%20on%20Survive%20Study%20Pass"
+                  href="mailto:lee@surviveaccounting.com?subject=Free%20beta%20access%20issue"
                   className="underline font-semibold hover:no-underline"
                   style={{ color: RED }}
                 >
@@ -790,7 +697,7 @@ export default function GetAccess() {
               style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              7-day refund guarantee • Instant access
+              Free beta · No credit card required · Instant access
             </div>
           </div>
         </div>
