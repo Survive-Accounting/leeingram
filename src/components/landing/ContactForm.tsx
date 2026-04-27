@@ -145,7 +145,7 @@ export default function ContactForm() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
               <input
                 type="text"
-                placeholder="Your name"
+                placeholder="Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 maxLength={100}
