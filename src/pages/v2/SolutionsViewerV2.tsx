@@ -1548,7 +1548,15 @@ export default function SolutionsViewerV2() {
                   color: "rgba(255,255,255,0.92)",
                 }}
               >
-                {/* Top row: Topic chip + "Practice based on …" */}
+                {/* Top row: Course label + Topic chip + "Practice based on …" */}
+                {courseLabel && (
+                  <div
+                    className="text-[10px] font-semibold uppercase tracking-[0.16em] mb-2"
+                    style={{ color: "rgba(255,255,255,0.45)" }}
+                  >
+                    {courseLabel}
+                  </div>
+                )}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                   {chapter && (
                     <span
@@ -1580,7 +1588,7 @@ export default function SolutionsViewerV2() {
                         className="text-[11px] font-medium uppercase tracking-[0.12em]"
                         style={{ color: "rgba(255,255,255,0.55)" }}
                       >
-                        Practice based on{" "}
+                        Example based on{" "}
                         <span className="font-mono normal-case tracking-normal text-white/85">
                           {asset.source_ref}
                         </span>
