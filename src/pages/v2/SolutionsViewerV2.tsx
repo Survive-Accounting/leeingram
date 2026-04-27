@@ -1322,42 +1322,56 @@ export default function SolutionsViewerV2() {
                   color: "rgba(255,255,255,0.92)",
                 }}
               >
-                {/* Top line: "Practice based on E1.4 🔍" */}
-                {asset.source_ref && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (originalImages.length > 0) setOriginalOpen(true);
-                    }}
-                    disabled={originalImages.length === 0}
-                    title={
-                      originalImages.length === 0
-                        ? "Original textbook image not available"
-                        : "View the original textbook problem"
-                    }
-                    className="group inline-flex items-center gap-1.5 -ml-1 px-1 py-0.5 rounded-md transition-colors hover:bg-white/5 disabled:hover:bg-transparent disabled:cursor-default"
-                  >
+                {/* Top row: Topic chip + "Practice based on …" */}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                  {chapter && (
                     <span
-                      className="text-[11px] font-medium uppercase tracking-[0.12em]"
-                      style={{ color: "rgba(255,255,255,0.55)" }}
+                      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
+                      style={{
+                        background: "rgba(206,17,38,0.18)",
+                        color: "#FFB8C0",
+                        border: "1px solid rgba(206,17,38,0.35)",
+                      }}
                     >
-                      Practice based on{" "}
-                      <span className="font-mono normal-case tracking-normal text-white/85">
-                        {asset.source_ref}
-                      </span>
+                      Ch {chapter.chapter_number} · {chapter.chapter_name}
                     </span>
-                    {originalImages.length > 0 && (
-                      <Search
-                        className="h-3 w-3 transition-colors"
-                        style={{ color: "rgba(255,255,255,0.4)" }}
-                      />
-                    )}
-                  </button>
-                )}
+                  )}
+                  {asset.source_ref && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (originalImages.length > 0) setOriginalOpen(true);
+                      }}
+                      disabled={originalImages.length === 0}
+                      title={
+                        originalImages.length === 0
+                          ? "Original textbook image not available"
+                          : "View the original textbook problem"
+                      }
+                      className="group inline-flex items-center gap-1.5 -ml-1 px-1 py-0.5 rounded-md transition-colors hover:bg-white/5 disabled:hover:bg-transparent disabled:cursor-default"
+                    >
+                      <span
+                        className="text-[11px] font-medium uppercase tracking-[0.12em]"
+                        style={{ color: "rgba(255,255,255,0.55)" }}
+                      >
+                        Practice based on{" "}
+                        <span className="font-mono normal-case tracking-normal text-white/85">
+                          {asset.source_ref}
+                        </span>
+                      </span>
+                      {originalImages.length > 0 && (
+                        <Search
+                          className="h-3 w-3 transition-colors"
+                          style={{ color: "rgba(255,255,255,0.4)" }}
+                        />
+                      )}
+                    </button>
+                  )}
+                </div>
 
-                {/* Problem section (default open) */}
+                {/* Problem section — uses SmartTextRenderer to auto-format pipe tables */}
                 {asset.survive_problem_text && (
-                  <div className="mt-4">
+                  <div className="mt-5">
                     <div
                       className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2"
                       style={{ color: "rgba(255,255,255,0.45)" }}
@@ -1365,53 +1379,67 @@ export default function SolutionsViewerV2() {
                       Problem
                     </div>
                     <div
-                      className="whitespace-pre-wrap text-[14px] max-w-prose [&>p+p]:mt-3"
-                      style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
+                      className="text-[14px] max-w-[68ch] space-y-3 [&_p]:whitespace-pre-wrap [&_p]:text-[14px]"
+                      style={{ color: "rgba(255,255,255,0.9)", lineHeight: 1.65 }}
                     >
-                      {asset.survive_problem_text}
+                      <SmartTextRenderer text={asset.survive_problem_text} />
                     </div>
                   </div>
                 )}
 
-                {/* Instructions — collapsed by default */}
+                {/* Your Tasks — open by default */}
                 {instructions.length > 0 && (
                   <div
                     className="mt-6 pt-5 border-t"
                     style={{ borderColor: "rgba(255,255,255,0.08)" }}
                   >
-                    <button
-                      type="button"
-                      onClick={() => setInstructionsOpen((v) => !v)}
-                      className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md text-xs font-medium transition-colors hover:bg-white/5"
-                      style={{
-                        color: "rgba(255,255,255,0.85)",
-                        border: "1px solid rgba(255,255,255,0.18)",
-                        background: "transparent",
-                      }}
-                    >
-                      {instructionsOpen ? (
-                        <ChevronUp className="h-3.5 w-3.5" />
-                      ) : (
-                        <ChevronDown className="h-3.5 w-3.5" />
-                      )}
-                      {instructionsOpen ? "Hide instructions" : "View instructions"}
-                    </button>
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div
+                        className="text-[10px] font-semibold uppercase tracking-[0.14em]"
+                        style={{ color: "rgba(255,255,255,0.55)" }}
+                      >
+                        Your Tasks
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setInstructionsOpen((v) => !v)}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium transition-colors hover:text-white"
+                        style={{ color: "rgba(255,255,255,0.55)" }}
+                      >
+                        {instructionsOpen ? (
+                          <>
+                            <ChevronUp className="h-3 w-3" />
+                            Hide
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-3 w-3" />
+                            Show
+                          </>
+                        )}
+                      </button>
+                    </div>
                     {instructionsOpen && (
                       <ul
-                        className="mt-4 space-y-2 text-[14px] animate-in fade-in slide-in-from-top-1 duration-150"
+                        className="space-y-2.5 text-[14px] animate-in fade-in slide-in-from-top-1 duration-150"
                         style={{ lineHeight: 1.6 }}
                       >
                         {instructions.map((ins, i) => (
-                          <li key={i} className="flex gap-2.5">
+                          <li key={i} className="flex gap-2.5 items-start">
                             <span
-                              className="font-semibold shrink-0 mt-0.5"
-                              style={{ color: "rgba(255,255,255,0.7)" }}
+                              className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border text-[10px] font-bold"
+                              style={{
+                                borderColor: "rgba(255,255,255,0.35)",
+                                background: "rgba(255,255,255,0.04)",
+                                color: "rgba(255,255,255,0.55)",
+                              }}
+                              aria-hidden
                             >
-                              {String.fromCharCode(97 + i)}.
+                              {String.fromCharCode(97 + i).toUpperCase()}
                             </span>
                             <span
                               className="whitespace-pre-wrap"
-                              style={{ color: "rgba(255,255,255,0.88)" }}
+                              style={{ color: "rgba(255,255,255,0.92)" }}
                             >
                               {highlightTerms(ins)}
                             </span>
