@@ -1051,6 +1051,8 @@ export default function SolutionsViewerV2() {
 
   // Original textbook screenshot
   const [originalImages, setOriginalImages] = useState<string[]>([]);
+  const [originalLoading, setOriginalLoading] = useState(true);
+  const [originalImagesLoaded, setOriginalImagesLoaded] = useState<Record<number, boolean>>({});
   const [originalOpen, setOriginalOpen] = useState(false);
 
   // Instructions accordion (collapsed by default for fast cram mode)
@@ -1061,6 +1063,8 @@ export default function SolutionsViewerV2() {
     setSimplifiedText(null);
     setSimplifyError(null);
     setOriginalImages([]);
+    setOriginalImagesLoaded({});
+    setOriginalLoading(true);
     setOriginalOpen(false);
     setInstructionsOpen(false);
   }, [assetCode]);
@@ -1129,9 +1133,12 @@ export default function SolutionsViewerV2() {
   useEffect(() => {
     if (!asset?.base_raw_problem_id) {
       setOriginalImages([]);
+      setOriginalLoading(false);
       return;
     }
     let cancelled = false;
+    setOriginalLoading(true);
+    setOriginalImagesLoaded({});
     (async () => {
       try {
         const { data } = await supabase
@@ -1148,6 +1155,8 @@ export default function SolutionsViewerV2() {
         setOriginalImages(urls);
       } catch {
         // ignore
+      } finally {
+        if (!cancelled) setOriginalLoading(false);
       }
     })();
     return () => {
@@ -1506,20 +1515,35 @@ export default function SolutionsViewerV2() {
             <DialogTitle>Original textbook problem</DialogTitle>
           </DialogHeader>
           <div className="overflow-y-auto -mr-1 pr-1 space-y-3">
-            {originalImages.length === 0 ? (
+            {originalLoading ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 animate-fade-in">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <div className="text-xs text-muted-foreground">Loading textbook problem…</div>
+              </div>
+            ) : originalImages.length === 0 ? (
               <div className="text-sm text-muted-foreground py-8 text-center">
                 Original textbook image isn't available for this problem yet.
               </div>
             ) : (
-              originalImages.map((url, i) => (
-                <img
-                  key={i}
-                  src={url}
-                  alt={`Original textbook problem${originalImages.length > 1 ? ` (page ${i + 1})` : ""}`}
-                  className="w-full h-auto rounded-md border border-border bg-white"
-                  loading="lazy"
-                />
-              ))
+              originalImages.map((url, i) => {
+                const loaded = !!originalImagesLoaded[i];
+                return (
+                  <div key={i} className="relative">
+                    {!loaded && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-muted/30 rounded-md min-h-[200px]">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    )}
+                    <img
+                      src={url}
+                      alt={`Original textbook problem${originalImages.length > 1 ? ` (page ${i + 1})` : ""}`}
+                      className={`w-full h-auto rounded-md border border-border bg-white transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+                      onLoad={() => setOriginalImagesLoaded((s) => ({ ...s, [i]: true }))}
+                      onError={() => setOriginalImagesLoaded((s) => ({ ...s, [i]: true }))}
+                    />
+                  </div>
+                );
+              })
             )}
           </div>
         </DialogContent>
