@@ -330,6 +330,7 @@ const AppRoutes = () => {
         <Route path="/admin/greek" element={<ProtectedRoute><AdminGreek /></ProtectedRoute>} />
         <Route path="/admin/legacy-links" element={<ProtectedRoute><LegacyLinks /></ProtectedRoute>} />
         <Route path="/admin/ai-features" element={<ProtectedRoute><AIFeatures /></ProtectedRoute>} />
+        <Route path="/admin/you-format" element={<ProtectedRoute><YouFormatAdmin /></ProtectedRoute>} />
         <Route path="/qa-costs" element={<ProtectedRoute><QACosts /></ProtectedRoute>} />
         <Route path="/inbox" element={<ProtectedRoute><StudentInboxPage /></ProtectedRoute>} />
         <Route path="/je-debug" element={<ProtectedRoute><JEDebug /></ProtectedRoute>} />
