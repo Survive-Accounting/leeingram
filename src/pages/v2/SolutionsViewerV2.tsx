@@ -1122,51 +1122,8 @@ export default function SolutionsViewerV2() {
     };
   }, [assetCode]);
 
-  // Fetch / generate the simplified version (default view).
-  // Cache-first via simplified_problem_cache; falls back to simplify-problem edge fn.
-  useEffect(() => {
-    if (!asset) return;
-    let cancelled = false;
-    (async () => {
-      setSimplifyError(null);
-      // 1. Try cache
-      try {
-        const { data } = await supabase
-          .from("simplified_problem_cache")
-          .select("simplified_text")
-          .eq("asset_id", asset.id)
-          .maybeSingle();
-        if (cancelled) return;
-        if (data?.simplified_text) {
-          setSimplifiedText(data.simplified_text);
-          return;
-        }
-      } catch {
-        // ignore — fall through to generation
-      }
-
-      // 2. Generate via edge fn
-      setSimplifyLoading(true);
-      try {
-        const { data, error } = await supabase.functions.invoke("simplify-problem", {
-          body: { asset_id: asset.id },
-        });
-        if (cancelled) return;
-        if (error) throw error;
-        if (!data?.success) throw new Error(data?.error || "Failed to simplify");
-        setSimplifiedText(data.simplified_text);
-      } catch (e: any) {
-        if (cancelled) return;
-        console.error("[simplify-problem] failed:", e);
-        setSimplifyError("Couldn't load the simplified version. Showing the original problem text.");
-      } finally {
-        if (!cancelled) setSimplifyLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [asset?.id]);
+  // Simplify-on-load is paused. Show original problem text as-is.
+  // (PDF print path still calls simplify-problem on demand.)
 
   // Fetch original textbook screenshot from chapter_problems via base_raw_problem_id
   useEffect(() => {
@@ -1367,31 +1324,12 @@ export default function SolutionsViewerV2() {
                     >
                       Problem
                     </div>
-                    {simplifiedText ? (
-                      <div
-                        className="prose prose-invert max-w-prose text-[14px] prose-p:my-2 prose-ul:my-1.5 prose-li:my-1 prose-headings:text-white/95 prose-headings:font-semibold prose-strong:text-white"
-                        style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
-                      >
-                        <ReactMarkdown>{simplifiedText}</ReactMarkdown>
-                      </div>
-                    ) : simplifyError ? (
-                      // Fallback: show raw problem with a small notice
-                      <>
-                        <div
-                          className="mb-2 text-xs"
-                          style={{ color: "rgba(255,180,180,0.85)" }}
-                        >
-                          {simplifyError}
-                        </div>
-                        <div
-                          className="whitespace-pre-wrap text-[14px] max-w-prose [&>p+p]:mt-3"
-                          style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
-                        >
-                          {asset.survive_problem_text}
-                        </div>
-                      </>
-                    ) : null}
-                    {/* If no simplifiedText and no error → blocking modal below covers this state */}
+                    <div
+                      className="whitespace-pre-wrap text-[14px] max-w-prose [&>p+p]:mt-3"
+                      style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1.65 }}
+                    >
+                      {asset.survive_problem_text}
+                    </div>
                   </div>
                 )}
 
