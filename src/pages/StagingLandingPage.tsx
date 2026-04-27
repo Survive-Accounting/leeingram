@@ -418,7 +418,7 @@ function SocialProofStrip() {
           letterSpacing: "0.005em",
         }}
       >
-        Built from thousands of hours of accounting tutoring. Now we’re turning that into a faster cram tool.
+        ​
       </p>
     </div>
   );
