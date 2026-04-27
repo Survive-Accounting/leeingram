@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import BetaPaywallModal from "./BetaPaywallModal";
+import { useIsStaff } from "@/hooks/useIsStaff";
+import leeHeadshot from "@/assets/lee-headshot-original.png";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
