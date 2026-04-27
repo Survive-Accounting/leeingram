@@ -1694,6 +1694,7 @@ export default function SolutionsViewerV2() {
       )}
 
       <NeedHelpModal open={helpOpen} onOpenChange={setHelpOpen} asset={asset} />
+      <MagicWandFeedback />
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
       <NavigatePanel
         open={jumpOpen}
