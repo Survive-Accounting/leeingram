@@ -238,22 +238,6 @@ export default function StudyPreviewer({
     };
   }, [activeTool, iframeReloadKey, viewerAssetCode, iframeLoaded, iframeError]);
 
-  // Skeleton at >500ms, subtle status at >2s, error at >12s
-  useEffect(() => {
-    if (!activeTool || iframeLoaded || iframeError) return;
-    const t1 = window.setTimeout(() => setShowSkeleton(true), 500);
-    const t2 = window.setTimeout(() => setShowSlowStatus(true), 2000);
-    const t3 = window.setTimeout(() => {
-      if (!iframeLoaded) setIframeError(true);
-    }, 12000);
-    return () => {
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
-      window.clearTimeout(t3);
-    };
-  }, [activeTool, iframeReloadKey, viewerAssetCode, iframeLoaded, iframeError]);
-
-
   const selectedChapter = useMemo(
     () => chapters.find((c) => c.id === selectedChapterId) ?? null,
     [chapters, selectedChapterId],
