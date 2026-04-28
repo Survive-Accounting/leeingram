@@ -396,26 +396,32 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
 
   // ─── Render ───
   return (
-    <section className="py-16 sm:py-24 px-4 sm:px-6" style={{ background: "#EDEEF1" }}>
+    <section
+      className="py-20 sm:py-28 px-4 sm:px-6"
+      style={{
+        background:
+          "radial-gradient(1200px 600px at 50% -10%, #F4F5F8 0%, #EDEEF1 55%, #E8EAEE 100%)",
+      }}
+    >
       <div className="mx-auto max-w-[1120px]">
         {/* Header */}
         <motion.div
-          className="text-center mb-10 sm:mb-14"
+          className="text-center mb-14 sm:mb-20"
           initial="hidden"
           animate="show"
           variants={stagger(0, 0.08)}
         >
           <motion.h2
             variants={fadeUp}
-            className="text-[26px] sm:text-[34px] font-bold tracking-tight mb-3"
+            className="text-[30px] sm:text-[42px] font-bold leading-[1.1] tracking-[-0.02em] mb-4"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
           >
             Built for last-minute accounting studying.
           </motion.h2>
           <motion.p
             variants={fadeUp}
-            className="text-[14px] sm:text-[16px] max-w-[620px] mx-auto"
-            style={{ color: "#4B5563", fontFamily: "Inter, sans-serif" }}
+            className="text-[15px] sm:text-[17px] leading-relaxed max-w-[600px] mx-auto"
+            style={{ color: "#525B6B", fontFamily: "Inter, sans-serif" }}
           >
             Pick a course, choose a chapter, and explore the tools built to help you cram smarter for finals.
           </motion.p>
