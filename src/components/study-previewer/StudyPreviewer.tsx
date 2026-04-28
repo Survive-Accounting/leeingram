@@ -203,11 +203,39 @@ export default function StudyPreviewer({
     if (key === "practice" && onRequestUnlock && !onRequestUnlock("open_workspace")) {
       return;
     }
+    // Reset viewer load state for the new tool
+    setIframeLoaded(false);
+    setIframeError(false);
+    setShowSkeleton(false);
+    setShowSlowStatus(false);
+    // Fire the CRT refresh pulse on the retro layer
+    setCrtPulseKey((k) => k + 1);
     setActiveTool(key);
+    // Gentle conditional scroll — only if the workspace top is off-screen.
     setTimeout(() => {
-      workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
+      const el = workspaceRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top < 0 || rect.top > window.innerHeight * 0.6) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 60);
   };
+
+  // Skeleton at >500ms, subtle status at >2s, error at >12s
+  useEffect(() => {
+    if (!activeTool || iframeLoaded || iframeError) return;
+    const t1 = window.setTimeout(() => setShowSkeleton(true), 500);
+    const t2 = window.setTimeout(() => setShowSlowStatus(true), 2000);
+    const t3 = window.setTimeout(() => {
+      if (!iframeLoaded) setIframeError(true);
+    }, 12000);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+    };
+  }, [activeTool, iframeReloadKey, viewerAssetCode, iframeLoaded, iframeError]);
 
 
   const selectedChapter = useMemo(
