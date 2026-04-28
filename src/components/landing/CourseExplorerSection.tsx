@@ -396,26 +396,32 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
 
   // ─── Render ───
   return (
-    <section className="py-16 sm:py-24 px-4 sm:px-6" style={{ background: "#EDEEF1" }}>
+    <section
+      className="py-20 sm:py-28 px-4 sm:px-6"
+      style={{
+        background:
+          "radial-gradient(1200px 600px at 50% -10%, #F4F5F8 0%, #EDEEF1 55%, #E8EAEE 100%)",
+      }}
+    >
       <div className="mx-auto max-w-[1120px]">
         {/* Header */}
         <motion.div
-          className="text-center mb-10 sm:mb-14"
+          className="text-center mb-14 sm:mb-20"
           initial="hidden"
           animate="show"
           variants={stagger(0, 0.08)}
         >
           <motion.h2
             variants={fadeUp}
-            className="text-[26px] sm:text-[34px] font-bold tracking-tight mb-3"
+            className="text-[30px] sm:text-[42px] font-bold leading-[1.1] tracking-[-0.02em] mb-4"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
           >
             Built for last-minute accounting studying.
           </motion.h2>
           <motion.p
             variants={fadeUp}
-            className="text-[14px] sm:text-[16px] max-w-[620px] mx-auto"
-            style={{ color: "#4B5563", fontFamily: "Inter, sans-serif" }}
+            className="text-[15px] sm:text-[17px] leading-relaxed max-w-[600px] mx-auto"
+            style={{ color: "#525B6B", fontFamily: "Inter, sans-serif" }}
           >
             Pick a course, choose a chapter, and explore the tools built to help you cram smarter for finals.
           </motion.p>
@@ -424,7 +430,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
         {/* Step 1: Course pills */}
         <StepLabel number={1} label="Choose your course" active={!selectedCourseId} done={!!selectedCourseId} />
         <motion.div
-          className="flex flex-wrap justify-center gap-2.5 mb-10"
+          className="flex flex-wrap justify-center gap-2.5 mb-14"
           initial="hidden"
           animate="show"
           variants={stagger(0.1, 0.05)}
@@ -484,7 +490,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                   done={!!selectedChapterId}
                 />
               </div>
-              <div className="max-w-[480px] mx-auto mb-10">
+              <div className="max-w-[480px] mx-auto mb-14">
                 <div className="relative">
                   <select
                     value={selectedChapterId || ""}
@@ -537,7 +543,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                 />
               </div>
               <motion.div
-                className="grid sm:grid-cols-2 gap-5 mb-12"
+                className="grid sm:grid-cols-2 gap-6 mb-14"
                 initial="hidden"
                 animate="show"
                 variants={stagger(0.05, 0.07)}
@@ -648,26 +654,20 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                     <span className="block w-2.5 h-2.5 rounded-full" style={{ background: "#28C840" }} />
                   </div>
                   <div
-                    className="flex-1 mx-2 sm:mx-4 hidden sm:flex items-center justify-center rounded-md px-3 py-1 text-[11.5px] font-medium truncate"
+                    className="flex-1 mx-3 sm:mx-4 flex items-center justify-center rounded-md px-3 py-1 text-[11px] sm:text-[11.5px] font-medium truncate"
                     style={{
                       background: "#fff",
                       border: "1px solid #E2E5EA",
                       color: "#6B7280",
                       fontFamily: "Inter, sans-serif",
-                      maxWidth: 420,
+                      maxWidth: 460,
                     }}
                   >
                     learn.surviveaccounting.com/
                     {selectedTool === "practice" ? "practice" : "journal-entry"}
                   </div>
-                  <button
-                    onClick={() => setQuestionOpen(true)}
-                    className="hidden sm:flex items-center gap-1.5 text-[11.5px] font-medium transition-colors hover:underline"
-                    style={{ color: "#6B7280" }}
-                  >
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    Have questions?
-                  </button>
+                  {/* Spacer to keep URL pill centered against traffic lights */}
+                  <div className="w-[42px] shrink-0" aria-hidden />
                 </div>
 
                 <ScrollArea style={{ maxHeight: 620 }}>
@@ -710,12 +710,24 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
 
 
         {/* Microcopy under flow */}
-        <p
-          className="mt-6 text-center text-[12.5px]"
-          style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
-        >
-          Free during finals. No credit card needed. Help us improve it with your feedback.
-        </p>
+        <div className="mt-8 flex flex-col items-center gap-2 text-center">
+          <p
+            className="text-[12.5px]"
+            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
+          >
+            Free during finals. No credit card needed. Help us improve it with your feedback.
+          </p>
+          {selectedTool && (
+            <button
+              onClick={() => setQuestionOpen(true)}
+              className="inline-flex items-center gap-1.5 text-[12px] font-medium hover:underline"
+              style={{ color: "#525B6B", fontFamily: "Inter, sans-serif" }}
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              Have questions?
+            </button>
+          )}
+        </div>
 
         {/* Questions modal */}
         {questionOpen && (
@@ -773,23 +785,41 @@ function StepLabel({
   done?: boolean;
   disabled?: boolean;
 }) {
-  const color = disabled ? "#B7BCC4" : done ? "#6B7280" : active ? NAVY : "#6B7280";
+  const labelColor = disabled ? "#B7BCC4" : active ? NAVY : "#6B7280";
   const dotBg = disabled ? "#E5E7EB" : done ? NAVY : active ? RED : "#D1D5DB";
   const dotColor = disabled ? "#9CA3AF" : "#fff";
   return (
-    <div className="flex items-center justify-center gap-2.5 mb-4">
+    <div className="flex items-center justify-center gap-3 mb-5">
       <span
-        className="inline-flex items-center justify-center text-[11px] font-bold rounded-full"
-        style={{ background: dotBg, color: dotColor, width: 22, height: 22, fontFamily: "Inter, sans-serif" }}
-      >
-        {number}
+        className="block h-px w-8 sm:w-12"
+        style={{ background: "linear-gradient(to right, transparent, rgba(20,33,61,0.18))" }}
+      />
+      <span className="inline-flex items-center gap-2.5">
+        <span
+          className="inline-flex items-center justify-center text-[10.5px] font-bold rounded-full"
+          style={{
+            background: dotBg,
+            color: dotColor,
+            width: 20,
+            height: 20,
+            fontFamily: "Inter, sans-serif",
+            boxShadow: active ? "0 0 0 4px rgba(206,17,38,0.12)" : "none",
+            transition: "background 0.25s ease, box-shadow 0.25s ease",
+          }}
+        >
+          {done ? <Check className="w-3 h-3" strokeWidth={3} /> : number}
+        </span>
+        <span
+          className="text-[11.5px] font-semibold uppercase tracking-[0.18em]"
+          style={{ color: labelColor, fontFamily: "Inter, sans-serif" }}
+        >
+          {label}
+        </span>
       </span>
       <span
-        className="text-[12px] font-semibold uppercase tracking-[0.12em]"
-        style={{ color, fontFamily: "Inter, sans-serif" }}
-      >
-        Step {number} — {label}
-      </span>
+        className="block h-px w-8 sm:w-12"
+        style={{ background: "linear-gradient(to left, transparent, rgba(20,33,61,0.18))" }}
+      />
     </div>
   );
 }
