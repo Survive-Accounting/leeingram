@@ -2375,15 +2375,7 @@ export default function SolutionsViewerV2() {
                   color: "rgba(255,255,255,0.92)",
                 }}
               >
-                {/* Top row: Course label + Topic chip + "Practice based on …" */}
-                {courseLabel && (
-                  <div
-                    className="text-[10px] font-semibold uppercase tracking-[0.16em] mb-2"
-                    style={{ color: "rgba(255,255,255,0.45)" }}
-                  >
-                    {courseLabel}
-                  </div>
-                )}
+                {/* Course label removed — already shown in header (left of "Switch Problem") */}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                   {/* Chapter pill removed — already shown in header "Switch Problem · Ch N" */}
                   {asset.source_ref && (
