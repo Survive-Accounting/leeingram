@@ -2002,10 +2002,7 @@ export default function SolutionsViewerV2() {
   // Per-task checked state, persisted to localStorage per asset.
   const [checkedTasks, setCheckedTasks] = useState<boolean[]>([]);
 
-  // Reading controls for the problem body — helps students digest long word problems.
-  const [problemBodyOpen, setProblemBodyOpen] = useState(true);
-  const [readingMode, setReadingMode] = useState<"chunks" | "all">("chunks");
-  const [chunkIndex, setChunkIndex] = useState(0);
+
 
   // ── Split-view controls ──────────────────────────────────────────────
   const isMobileViewport = useIsMobile();
