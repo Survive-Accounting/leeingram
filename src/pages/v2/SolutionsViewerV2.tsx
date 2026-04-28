@@ -1676,28 +1676,21 @@ export default function SolutionsViewerV2() {
               type="button"
               onClick={() => setJumpOpen(true)}
               data-embed-allow="true"
-              className="group inline-flex items-center gap-2.5 h-11 pl-3 pr-3.5 rounded-lg text-left transition-all hover:bg-white/10 hover:border-[#CE1126]/50"
+              title={courseLabel || "Navigate"}
+              aria-label={courseLabel ? `Open ${courseLabel} navigation` : "Open navigation panel"}
+              className="group inline-flex items-center gap-2 h-10 px-3 rounded-lg text-left transition-all hover:bg-white/10 hover:border-[#CE1126]/50"
               style={{
                 background: "rgba(255,255,255,0.04)",
                 border: "1px solid rgba(255,255,255,0.1)",
-                color: "rgba(255,255,255,0.85)",
+                color: "rgba(255,255,255,0.9)",
               }}
-              aria-label="Open navigation panel"
             >
-              <Menu className="h-4 w-4 shrink-0 opacity-70 group-hover:opacity-100" />
-              <span className="hidden sm:flex flex-col leading-tight">
-                <span
-                  className="text-[9px] font-semibold uppercase tracking-[0.14em]"
-                  style={{ color: "rgba(255,255,255,0.5)" }}
-                >
-                  {courseLabel || "Course"}
+              <Menu className="h-4 w-4 shrink-0 opacity-80 group-hover:opacity-100" />
+              {courseLabel && (
+                <span className="hidden sm:inline text-[12px] font-semibold text-white">
+                  {courseLabel}
                 </span>
-                <span className="text-[12px] font-semibold text-white -mt-0.5">
-                  Jump anywhere in the course
-                </span>
-              </span>
-              <span className="sm:hidden text-[12px] font-semibold">Jump</span>
-              <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-50 group-hover:opacity-90" />
+              )}
             </button>
           </div>
         </div>
