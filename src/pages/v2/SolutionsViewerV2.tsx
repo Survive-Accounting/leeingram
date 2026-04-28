@@ -1860,6 +1860,7 @@ export default function SolutionsViewerV2() {
 
   const [helpOpen, setHelpOpen] = useState(false);
   const [feedbackChooserOpen, setFeedbackChooserOpen] = useState(false);
+  const [featureIdeasOpen, setFeatureIdeasOpen] = useState(false);
 
   const openReportIssue = () => {
     setFeedbackChooserOpen(false);
@@ -1868,9 +1869,9 @@ export default function SolutionsViewerV2() {
   };
   const openSuggestFeature = () => {
     setFeedbackChooserOpen(false);
-    setTimeout(() => {
-      try { window.dispatchEvent(new Event("sa:open-vote-ideas")); } catch { /* ignore */ }
-    }, 80);
+    // Open the shared feature voting modal — same component used by the
+    // "Vote on new ideas" accordion in the right helper panel.
+    setTimeout(() => setFeatureIdeasOpen(true), 80);
   };
   const [activeHelper, setActiveHelper] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
