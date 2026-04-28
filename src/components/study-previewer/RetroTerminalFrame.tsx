@@ -217,6 +217,10 @@ export default function RetroTerminalFrame({
             {crtPulseKey > 0 && (
               <div key={`crt-pulse-${crtPulseKey}`} className="sa-crt-pulse-overlay" aria-hidden />
             )}
+            {/* CRT sweep on tool launch / hand-off to viewer */}
+            {crtSweepKey > 0 && (
+              <div key={`crt-sweep-${crtSweepKey}`} className="sa-crt-sweep-overlay" aria-hidden />
+            )}
             {/* Scanlines */}
             <div
               aria-hidden
