@@ -532,6 +532,43 @@ function InlineExplanation({
     setError(null);
   }, [asset.asset_name]);
 
+  // Background prefetch — silently warm the explanation cache so the red
+  // "Walk me through this problem" CTA opens instantly. Uses requestIdleCallback
+  // when available; falls back to a small setTimeout. Stays silent on errors.
+  useEffect(() => {
+    if (sections || loading) return;
+    let cancelled = false;
+    const prefetch = () => {
+      if (cancelled || sections || loading) return;
+      // Fire-and-forget; don't toggle the visible loading state.
+      supabase.functions
+        .invoke("explain-this-solution", { body: { asset_code: asset.asset_name } })
+        .then(({ data, error }) => {
+          if (cancelled || error || !data?.success || !data?.sections) return;
+          setSections(data.sections as ExplanationSections);
+        })
+        .catch(() => { /* silent — student will retry on click */ });
+    };
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: () => void, opts?: { timeout: number }) => number)
+      | undefined;
+    let idleId: number | undefined;
+    let timeoutId: number | undefined;
+    if (ric) {
+      idleId = ric(prefetch, { timeout: 2500 });
+    } else {
+      timeoutId = window.setTimeout(prefetch, 1500);
+    }
+    return () => {
+      cancelled = true;
+      if (idleId !== undefined && (window as any).cancelIdleCallback) {
+        (window as any).cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asset.asset_name]);
+
   const ensureSections = async (): Promise<ExplanationSections | null> => {
     if (sections) return sections;
     setLoading(true);
@@ -759,9 +796,31 @@ function InlineExplanation({
             {TOOLBOX_META[activeSection].label}
           </h3>
           {loading && !sections ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Survive Accounting is thinking…
+            <div className="space-y-3 animate-in fade-in duration-200">
+              {/* Step header skeleton */}
+              <div className="flex items-baseline justify-between gap-3">
+                <div className="flex items-baseline gap-2">
+                  <div className="h-3 w-16 rounded bg-muted-foreground/15 animate-pulse" />
+                  <div className="h-3.5 w-40 rounded bg-muted-foreground/20 animate-pulse" />
+                </div>
+              </div>
+              {/* Restate callout skeleton */}
+              <div
+                className="rounded-md px-3 py-2"
+                style={{ background: "rgba(250,204,21,0.08)", borderLeft: "2px solid #FACC15" }}
+              >
+                <div className="h-3 w-11/12 rounded bg-muted-foreground/15 animate-pulse" />
+              </div>
+              {/* Content lines skeleton */}
+              <div className="space-y-2">
+                <div className="h-3 w-full rounded bg-muted-foreground/15 animate-pulse" />
+                <div className="h-3 w-5/6 rounded bg-muted-foreground/15 animate-pulse" />
+                <div className="h-3 w-2/3 rounded bg-muted-foreground/15 animate-pulse" />
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Lee is unpacking part (a)… first step lands in a few seconds.
+              </div>
             </div>
           ) : sections ? (
             (() => {
@@ -780,7 +839,7 @@ function InlineExplanation({
                   if (!isLast) setWalkStep(idx + 1);
                 };
                 return (
-                  <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div key={`walk-step-${idx}`} className="space-y-3 animate-in fade-in slide-in-from-right-1 duration-150">
                     {/* Step header */}
                     <div className="flex items-baseline justify-between gap-3">
                       <div className="flex items-baseline gap-2">
