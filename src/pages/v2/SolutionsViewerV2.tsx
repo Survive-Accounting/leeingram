@@ -796,9 +796,31 @@ function InlineExplanation({
             {TOOLBOX_META[activeSection].label}
           </h3>
           {loading && !sections ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Survive Accounting is thinking…
+            <div className="space-y-3 animate-in fade-in duration-200">
+              {/* Step header skeleton */}
+              <div className="flex items-baseline justify-between gap-3">
+                <div className="flex items-baseline gap-2">
+                  <div className="h-3 w-16 rounded bg-muted-foreground/15 animate-pulse" />
+                  <div className="h-3.5 w-40 rounded bg-muted-foreground/20 animate-pulse" />
+                </div>
+              </div>
+              {/* Restate callout skeleton */}
+              <div
+                className="rounded-md px-3 py-2"
+                style={{ background: "rgba(250,204,21,0.08)", borderLeft: "2px solid #FACC15" }}
+              >
+                <div className="h-3 w-11/12 rounded bg-muted-foreground/15 animate-pulse" />
+              </div>
+              {/* Content lines skeleton */}
+              <div className="space-y-2">
+                <div className="h-3 w-full rounded bg-muted-foreground/15 animate-pulse" />
+                <div className="h-3 w-5/6 rounded bg-muted-foreground/15 animate-pulse" />
+                <div className="h-3 w-2/3 rounded bg-muted-foreground/15 animate-pulse" />
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Lee is unpacking part (a)… first step lands in a few seconds.
+              </div>
             </div>
           ) : sections ? (
             (() => {
