@@ -98,56 +98,47 @@ export default function LandingStudyPreviewerSection({
     >
       <div className="mx-auto" style={{ maxWidth: 1080 }}>
         {/* Header */}
-        <div className="text-center mb-10 sm:mb-14" style={{ maxWidth: 720, margin: "0 auto" }}>
+        <div className="text-center mb-10 sm:mb-14" style={{ maxWidth: 760, margin: "0 auto" }}>
           <div
-            className="inline-block text-[11px] font-bold uppercase mb-3"
-            style={{ color: RED, letterSpacing: "0.12em" }}
+            className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4"
+            style={{ color: RED, letterSpacing: "0.16em" }}
           >
+            <span
+              className="inline-block rounded-full"
+              style={{ width: 6, height: 6, background: RED }}
+            />
             Free Beta · Try it now
           </div>
           <h2
-            className="text-[28px] sm:text-[36px] leading-tight"
+            className="text-[30px] sm:text-[42px] leading-[1.1]"
             style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: NAVY }}
           >
-            Built for last-minute accounting studying.
+            Free accounting study tools for finals.
           </h2>
           <p
-            className="mt-3 sm:mt-4 text-[15px] sm:text-[16px]"
-            style={{ fontFamily: "Inter, sans-serif", color: "#64748B", lineHeight: 1.6 }}
+            className="mt-4 sm:mt-5 text-[15px] sm:text-[17px] mx-auto"
+            style={{
+              fontFamily: "Inter, sans-serif",
+              color: "#475569",
+              lineHeight: 1.6,
+              maxWidth: 620,
+            }}
           >
-            Pick a course, choose a chapter, and explore the tools built to help you cram smarter for finals.
+            Choose a course, pick a chapter, and explore beta tools built to
+            help you study faster — and help us improve them.
           </p>
         </div>
 
-        {/* Course pills */}
-        <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-8" style={{ fontFamily: "Inter, sans-serif" }}>
-          {COURSES.map((c) => {
-            const active = c.id === selectedCourseId;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => handleCourseClick(c.id)}
-                className="rounded-full px-4 py-2 text-[13px] font-semibold transition-all"
-                style={{
-                  background: active ? NAVY : "#fff",
-                  color: active ? "#fff" : NAVY,
-                  border: `1px solid ${active ? NAVY : "#E2E8F0"}`,
-                  boxShadow: active ? "0 6px 16px rgba(20,33,61,0.18)" : "none",
-                }}
-              >
-                {c.shortName}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Previewer */}
+        {/* Previewer (course selector lives inside) */}
         <StudyPreviewer
           chapters={chapters}
-          headerEyebrow="Previewing"
-          campusName={selectedCourse.fullName}
-          courseLabel={chaptersLoading ? "Loading chapters…" : null}
+          courses={COURSES.map((c) => ({
+            id: c.id,
+            shortName: c.shortName,
+            fullName: c.fullName,
+          }))}
+          selectedCourseId={selectedCourseId}
+          onCourseChange={handleCourseClick}
           onOpenFeedback={() => setFeedbackOpen(true)}
           onRequestUnlock={(action) => {
             if (action === "open_workspace") {

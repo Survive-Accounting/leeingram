@@ -325,9 +325,7 @@ export default function StudentDashboard() {
         {/* Course + chapter selector + tools + workspace */}
         <StudyPreviewer
           chapters={chapters}
-          headerEyebrow="Your course"
-          campusName={campusName}
-          courseLabel={courseLabel}
+          fixedCourseLabel={courseLabel ?? campusName ?? null}
           onOpenFeedback={() => setFeedbackOpen(true)}
           persistChapterKey={SELECTED_CHAPTER_KEY}
         />
