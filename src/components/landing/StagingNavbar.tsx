@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import MagicLinkModal from "./MagicLinkModal";
 import AnimatedArrow from "./AnimatedArrow";
 
@@ -21,8 +21,20 @@ export default function StagingNavbar({
   transparentOnTop = false,
 }: StagingNavbarProps) {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loginOpen, setLoginOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  // Allow other pages to open the login modal by redirecting to "/?login=1"
+  useEffect(() => {
+    if (searchParams.get("login")) {
+      setLoginOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("login");
+      next.delete("reason");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   const [hovered, setHovered] = useState(false);
   const hoverTimer = useRef<number | null>(null);
 
