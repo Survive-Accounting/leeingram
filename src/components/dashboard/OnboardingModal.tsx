@@ -83,9 +83,8 @@ export default function OnboardingModal({
   // Validation per step
   const canAdvance = useMemo(() => {
     if (step === 1) {
-      // Catch-all campus: name only — write-in/skip is allowed.
-      if (isCatchAll) return name.trim().length > 0;
-      return name.trim().length > 0 && !!campusId;
+      // Name is the only requirement. Campus is either known or optional write-in.
+      return name.trim().length > 0;
     }
     if (step === 2) {
       if (!major) return false;
@@ -97,31 +96,7 @@ export default function OnboardingModal({
       return confidence >= 1 && confidence <= 10;
     }
     return false;
-  }, [step, name, campusId, isCatchAll, major, inGreek, greekOrgId, greekOther, confidence]);
-
-  const handleSyllabusUpload = async (file: File) => {
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Syllabus too large (max 10 MB)");
-      return;
-    }
-    setUploading(true);
-    try {
-      const ext = file.name.split(".").pop() || "pdf";
-      const path = `syllabi/${userId}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("chapter-resources")
-        .upload(path, file, { upsert: true });
-      if (error) throw error;
-      setSyllabusPath(path);
-      setSyllabusName(file.name);
-    } catch (err) {
-      console.error(err);
-      toast.error("Couldn't upload that file. Try again or skip.");
-    } finally {
-      setUploading(false);
-    }
-  };
+  }, [step, name, major, inGreek, greekOrgId, greekOther, confidence]);
 
   const handleSubmit = async () => {
     setSubmitting(true);
