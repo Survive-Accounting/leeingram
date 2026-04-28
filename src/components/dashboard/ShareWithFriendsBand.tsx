@@ -7,9 +7,11 @@ const RED = "#CE1126";
 interface Props {
   betaNumber: number | null;
   campusName: string | null;
+  /** When true, renders a denser layout suitable for half-width column placement. */
+  compact?: boolean;
 }
 
-export default function ShareWithFriendsBand({ betaNumber, campusName }: Props) {
+export default function ShareWithFriendsBand({ betaNumber, campusName, compact = false }: Props) {
   const [copied, setCopied] = useState(false);
 
   const shareUrl = betaNumber
@@ -32,7 +34,7 @@ export default function ShareWithFriendsBand({ betaNumber, campusName }: Props) 
 
   return (
     <section
-      className="relative overflow-hidden rounded-2xl p-6 sm:p-10"
+      className={`relative overflow-hidden rounded-2xl h-full ${compact ? "p-6 sm:p-7" : "p-6 sm:p-10"}`}
       style={{
         background:
           "linear-gradient(135deg, #14213D 0%, #1E3A66 55%, #14213D 100%)",
@@ -52,53 +54,42 @@ export default function ShareWithFriendsBand({ betaNumber, campusName }: Props) 
         style={{ background: "#3B82F6" }}
       />
 
-      <div className="relative max-w-2xl">
+      <div className={`relative h-full flex flex-col ${compact ? "" : "max-w-2xl"}`}>
         <div
-          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-widest"
+          className="inline-flex items-center self-start gap-1.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-widest"
           style={{ background: "rgba(255,255,255,0.12)", color: "#FCA5A5" }}
         >
           <Sparkles className="h-3 w-3" /> Help us launch loud
         </div>
 
         <h2
-          className="mt-3 text-[28px] sm:text-[38px] leading-[1.1]"
+          className={`mt-3 leading-[1.08] ${compact ? "text-[24px] sm:text-[28px]" : "text-[28px] sm:text-[38px] leading-[1.1]"}`}
           style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
         >
           Make this beta epic — share it with a friend.
         </h2>
 
         <p
-          className="mt-3 text-[14.5px] sm:text-[15.5px] leading-relaxed"
+          className={`mt-3 leading-relaxed ${compact ? "text-[13.5px]" : "text-[14.5px] sm:text-[15.5px]"}`}
           style={{ color: "rgba(255,255,255,0.85)" }}
         >
-          Every friend who joins makes the tools sharper for{" "}
-          {campusName ? campusName : "your class"} — and bumps you up the
-          leaderboard. The more feedback we get, the better this gets before
-          your final.
+          {compact ? (
+            <>
+              Every friend who joins makes the tools sharper for{" "}
+              {campusName ? campusName : "your class"} — and bumps you up the
+              leaderboard.
+            </>
+          ) : (
+            <>
+              Every friend who joins makes the tools sharper for{" "}
+              {campusName ? campusName : "your class"} — and bumps you up the
+              leaderboard. The more feedback we get, the better this gets before
+              your final.
+            </>
+          )}
         </p>
 
-        <div className="mt-6 flex flex-col sm:flex-row gap-3">
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="inline-flex items-center justify-center gap-2 rounded-md px-5 py-3 text-[14px] font-semibold transition-all hover:brightness-110 active:scale-[0.98]"
-            style={{
-              background: "#fff",
-              color: NAVY,
-              minWidth: 220,
-            }}
-          >
-            {copied ? (
-              <>
-                <Check className="h-4 w-4" /> Link copied — paste anywhere
-              </>
-            ) : (
-              <>
-                <Copy className="h-4 w-4" /> Copy share link
-              </>
-            )}
-          </button>
-
+        <div className={`flex flex-col gap-2.5 ${compact ? "mt-5" : "mt-6 sm:flex-row sm:gap-3"}`}>
           <a
             href={`sms:?&body=${smsBody}`}
             className="inline-flex items-center justify-center gap-2 rounded-md px-5 py-3 text-[14px] font-semibold transition-all hover:brightness-110 active:scale-[0.98]"
@@ -106,15 +97,36 @@ export default function ShareWithFriendsBand({ betaNumber, campusName }: Props) 
               background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
               color: "#fff",
               boxShadow: "0 6px 18px rgba(206,17,38,0.35)",
-              minWidth: 220,
+              minWidth: compact ? undefined : 220,
             }}
           >
             <MessageCircle className="h-4 w-4" /> Text a friend now
           </a>
+
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="inline-flex items-center justify-center gap-2 rounded-md px-5 py-3 text-[14px] font-semibold transition-all hover:brightness-110 active:scale-[0.98]"
+            style={{
+              background: "#fff",
+              color: NAVY,
+              minWidth: compact ? undefined : 220,
+            }}
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4" /> Link copied
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4" /> Copy share link
+              </>
+            )}
+          </button>
         </div>
 
         <p
-          className="mt-4 text-[12px]"
+          className={`text-[12px] truncate ${compact ? "mt-4" : "mt-4"}`}
           style={{ color: "rgba(255,255,255,0.55)" }}
         >
           Your link:{" "}

@@ -293,32 +293,41 @@ export default function StudentDashboard() {
       <BetaCountdownStrip />
       <DashNavbar onFeedback={() => setFeedbackOpen(true)} onSignOut={handleSignOut} />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-5 sm:px-8 pt-12 md:pt-16 pb-20 space-y-10">
-        {/* Welcome heading + video */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 md:gap-10">
-          <div className="text-center md:text-left">
-            <h1
-              className="text-[34px] sm:text-[44px] md:text-[54px] leading-tight"
-              style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
-            >
-              {greeting}
-            </h1>
-            <p
-              className="mt-2 text-[13px] sm:text-[14px]"
-              style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
-            >
-              Free Beta Access through {expiresStr}
-            </p>
+      <main className="flex-1 max-w-6xl w-full mx-auto px-5 sm:px-8 pt-10 md:pt-12 pb-20 space-y-10">
+        {/* Slim personal greeting strip */}
+        <div className="text-center md:text-left">
+          <h1
+            className="text-[26px] sm:text-[32px] md:text-[36px] leading-tight"
+            style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
+          >
+            {greeting}
+          </h1>
+          <p
+            className="mt-1 text-[12.5px] sm:text-[13px]"
+            style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+          >
+            Free Beta Access through {expiresStr}
+          </p>
 
-            {!earlyBirdOpted && userId && (
-              <EarlyBirdOptInRow
-                userId={userId}
-                onOptedIn={() => setEarlyBirdOpted(true)}
-              />
-            )}
+          {!earlyBirdOpted && userId && (
+            <EarlyBirdOptInRow
+              userId={userId}
+              onOptedIn={() => setEarlyBirdOpted(true)}
+            />
+          )}
+        </div>
+
+        {/* Top row — Share (primary, left) + A Note From Lee (right) */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-6 items-stretch">
+          <div className="md:col-span-7">
+            <ShareWithFriendsBand
+              betaNumber={betaNumber}
+              campusName={campusName}
+              compact
+            />
           </div>
-          <div className="md:shrink-0 flex justify-center md:justify-end">
-            <WelcomeVideoCard onClick={() => setVideoOpen(true)} />
+          <div className="md:col-span-5">
+            <WelcomeVideoCard onClick={() => setVideoOpen(true)} fullWidth />
           </div>
         </div>
 
@@ -350,9 +359,6 @@ export default function StudentDashboard() {
             persistChapterKey={SELECTED_CHAPTER_KEY}
           />
         </div>
-
-        {/* Share with friends */}
-        <ShareWithFriendsBand betaNumber={betaNumber} campusName={campusName} />
 
         {/* Support */}
         <p
