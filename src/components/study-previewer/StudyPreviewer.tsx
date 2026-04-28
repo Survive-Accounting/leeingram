@@ -719,13 +719,16 @@ interface SelectShellProps {
   accent: boolean;
   disabled?: boolean;
   loading?: boolean;
+  compact?: boolean;
   children: React.ReactNode;
 }
 
 const SelectShell = forwardRef<HTMLSelectElement, SelectShellProps>(function SelectShell(
-  { value, onChange, accent, disabled, loading, children },
+  { value, onChange, accent, disabled, loading, compact, children },
   ref,
 ) {
+  const phosphorBorder = "rgba(124,255,176,0.35)";
+  const phosphorGlow = "rgba(124,255,176,0.45)";
   return (
     <div className="relative group">
       <select
@@ -733,15 +736,25 @@ const SelectShell = forwardRef<HTMLSelectElement, SelectShellProps>(function Sel
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="w-full appearance-none rounded-md px-3 py-2.5 pr-9 text-[13.5px] font-medium outline-none transition-all disabled:opacity-60 focus:outline-none"
+        className={
+          compact
+            ? "w-full appearance-none rounded-[4px] pl-2 pr-7 py-1 text-[12.5px] outline-none transition-all disabled:opacity-60 focus:outline-none"
+            : "w-full appearance-none rounded-md px-3 py-2.5 pr-9 text-[13.5px] font-medium outline-none transition-all disabled:opacity-60 focus:outline-none"
+        }
         style={{
-          background: disabled ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.35)",
-          border: `1px solid ${accent ? PHOSPHOR_DIM : CHASSIS_BORDER}`,
-          color: accent ? PHOSPHOR : "#E8FFF1",
+          background: compact
+            ? "rgba(8,28,16,0.55)"
+            : disabled
+            ? "rgba(0,0,0,0.25)"
+            : "rgba(0,0,0,0.35)",
+          border: `1px solid ${compact ? phosphorBorder : accent ? PHOSPHOR_DIM : CHASSIS_BORDER}`,
+          color: compact ? "#E8FFF1" : accent ? PHOSPHOR : "#E8FFF1",
           fontFamily: MONO_FONT,
           letterSpacing: "0.01em",
           cursor: disabled ? "not-allowed" : loading ? "wait" : "pointer",
-          boxShadow: accent
+          boxShadow: compact
+            ? `inset 0 0 0 1px rgba(124,255,176,0.10), 0 0 8px -3px ${phosphorGlow}`
+            : accent
             ? `inset 0 0 0 1px ${PHOSPHOR_GLOW}, 0 0 12px -4px ${PHOSPHOR_GLOW}`
             : "inset 0 1px 2px rgba(0,0,0,0.4)",
         }}
@@ -749,8 +762,12 @@ const SelectShell = forwardRef<HTMLSelectElement, SelectShellProps>(function Sel
         {children}
       </select>
       <ChevronDown
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none transition-colors"
-        style={{ color: accent ? PHOSPHOR : "#6B7280" }}
+        className={
+          compact
+            ? "absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none transition-colors"
+            : "absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none transition-colors"
+        }
+        style={{ color: compact ? PHOSPHOR : accent ? PHOSPHOR : "#6B7280" }}
       />
     </div>
   );
