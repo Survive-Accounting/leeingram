@@ -528,6 +528,19 @@ export default function RetroTerminalFrame({
                 />
               </Line>
 
+              {/* Inline chapter selector — appears once a course is chosen, replaced by tools after chapter is set */}
+              {chapterSelector && (
+                <div
+                  style={{
+                    opacity: bootStep >= 5 ? 1 : 0,
+                    transform: bootStep >= 5 ? "translateY(0)" : "translateY(2px)",
+                    transition: "opacity 240ms ease-out, transform 240ms ease-out",
+                  }}
+                >
+                  {chapterSelector}
+                </div>
+              )}
+
               {/* Tool menu — keycap-style rows */}
               {tools && tools.length > 0 && (
                 <div
