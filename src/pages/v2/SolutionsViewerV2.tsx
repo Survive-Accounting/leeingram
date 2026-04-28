@@ -1983,6 +1983,7 @@ export default function SolutionsViewerV2() {
                 simplifiedText={simplifiedText}
                 setSimplifiedText={setSimplifiedText}
                 onShareClick={openShareModal}
+                onAdvanceTask={markTaskDone}
               />
             </div>
           </div>
