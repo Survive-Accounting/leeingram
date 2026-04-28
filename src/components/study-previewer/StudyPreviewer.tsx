@@ -322,7 +322,11 @@ export default function StudyPreviewer({
 
           {/* Workspace pane — retro terminal entry state OR loaded tool */}
           {!activeTool ? (
-            <div ref={workspaceRef}>
+            <div
+              ref={workspaceRef}
+              className="sa-rise"
+              style={{ animationDelay: "360ms" }}
+            >
               <RetroTerminalFrame
                 courseLabel={fixedCourseLabel ?? selectedCourseLabel ?? null}
                 chapterLabel={
@@ -335,12 +339,13 @@ export default function StudyPreviewer({
           ) : (
             <section
               ref={workspaceRef}
-              className="rounded-2xl overflow-hidden animate-fade-in"
+              className="rounded-2xl overflow-hidden sa-rise"
               style={{
                 background: "#fff",
                 boxShadow:
                   "0 16px 40px rgba(0,0,0,0.22), 0 4px 10px rgba(0,0,0,0.10)",
                 minHeight: 600,
+                animationDelay: "0ms",
               }}
             >
               {activeTool === "practice" && viewerAssetCode && (
