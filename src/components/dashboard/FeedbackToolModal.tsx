@@ -214,37 +214,54 @@ export default function FeedbackToolModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl rounded-2xl bg-white shadow-2xl overflow-hidden my-auto"
+        className="w-full max-w-xl rounded-2xl bg-white shadow-2xl overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200"
         style={{
           border: "1px solid #E0E7F0",
           fontFamily: "Inter, sans-serif",
           maxHeight: "calc(100vh - 3rem)",
           display: "flex",
           flexDirection: "column",
+          boxShadow:
+            "0 24px 60px -12px rgba(20,33,61,0.35), 0 0 0 1px rgba(20,33,61,0.04)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="px-6 pt-6 pb-4">
-          <p
-            className="text-[11px] uppercase tracking-widest"
-            style={{ color: RED, fontWeight: 700 }}
-          >
-            Help us decide
-          </p>
-          <h3
-            className="mt-1 text-[22px] leading-tight"
-            style={{
-              color: NAVY,
-              fontFamily: "'DM Serif Display', serif",
-              fontWeight: 400,
-            }}
-          >
-            What should we build next?
-          </h3>
-          <p className="mt-1.5 text-[13px]" style={{ color: "#64748B" }}>
-            Pick the tools you'd actually use — then rank your favorites.
-          </p>
+        {/* Header — navy gradient banner */}
+        <div
+          className="relative px-6 pt-6 pb-5 overflow-hidden"
+          style={{
+            background: `linear-gradient(135deg, ${NAVY} 0%, #1E2F52 100%)`,
+            color: "#fff",
+          }}
+        >
+          {/* decorative sparkle */}
+          <Sparkles
+            className="absolute right-5 top-5 opacity-20"
+            style={{ width: 56, height: 56 }}
+          />
+          <div className="relative">
+            <p
+              className="text-[10.5px] uppercase tracking-[0.18em] font-bold"
+              style={{ color: "#FCA5AF" }}
+            >
+              Help shape what we build next
+            </p>
+            <h3
+              className="mt-1.5 text-[22px] sm:text-[24px] leading-tight"
+              style={{
+                fontFamily: "'DM Serif Display', serif",
+                fontWeight: 400,
+              }}
+            >
+              What should we build next?
+            </h3>
+            <p
+              className="mt-1.5 text-[13px]"
+              style={{ color: "rgba(255,255,255,0.72)" }}
+            >
+              Pick the tools you'd actually use — then rank your favorites.
+            </p>
+          </div>
         </div>
 
         {/* Scrollable body */}
