@@ -567,9 +567,7 @@ export default function GetAccess() {
                   className="mt-2 text-[11px]"
                   style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
                 >
-                  Regularly{" "}
-                  <span style={{ textDecoration: "line-through" }}>$250</span>
-                  {" "}/ semester
+                  Regularly $250 / semester
                 </div>
               </div>
             </div>
