@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const PHOSPHOR = "#7CFFB0";
 const PHOSPHOR_DIM = "rgba(124,255,176,0.55)";
