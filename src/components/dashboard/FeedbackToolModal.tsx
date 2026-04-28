@@ -155,11 +155,29 @@ export default function FeedbackToolModal({
     setSubmitting(true);
     try {
       const ranked = order.map((id, i) => `${i + 1}. ${labelFor(id)}`);
+      const removed = Array.from(removedRef.current)
+        .filter((id) => !selected.includes(id))
+        .map(labelFor);
+      const customIdea =
+        selected.includes(OTHER_ID) && otherIdea.trim()
+          ? otherIdea.trim()
+          : null;
+
       const lines: string[] = [];
       lines.push("[Beta · Build-Next Prioritization]");
       lines.push("");
+      lines.push(`Selected (${selected.length}): ${selected.map(labelFor).join(", ") || "(none)"}`);
+      lines.push("");
       lines.push("Ranked picks:");
       lines.push(ranked.length ? ranked.join("\n") : "(none ranked)");
+      if (customIdea) {
+        lines.push("");
+        lines.push(`Custom idea: ${customIdea}`);
+      }
+      if (removed.length) {
+        lines.push("");
+        lines.push(`Removed after selecting: ${removed.join(", ")}`);
+      }
       if (extraNote.trim()) {
         lines.push("");
         lines.push("Anything we missed:");
