@@ -306,11 +306,17 @@ export default function SurviveExplorePanel({
   };
 
   return (
-    <div className="mt-4 rounded-2xl border bg-card p-5 shadow-sm space-y-4">
+    <div
+      className="mt-4 rounded-2xl border bg-card p-5 shadow-sm space-y-4"
+      data-embed-allow="true"
+    >
       {/* Challenge me — primary CTA */}
       <button
         type="button"
-        onClick={() => fetchPrompt("challenge")}
+        onClick={() => {
+          if (isEmbed) { logEmbedVoteAndPaywall("challenge"); return; }
+          fetchPrompt("challenge");
+        }}
         className={cn(
           "w-full inline-flex items-center justify-center gap-2 rounded-lg h-11 px-4 text-sm font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99]",
           activeKey === "challenge" && "ring-2 ring-offset-2 ring-amber-400/40"
@@ -326,7 +332,9 @@ export default function SurviveExplorePanel({
         Challenge me
       </button>
 
-      {/* Explore toggle */}
+      {/* Explore toggle — always allowed to open even in embed mode so the
+          student can see the prompt menu. Individual prompt clicks then
+          trigger the silent-vote + paywall flow. */}
       <button
         type="button"
         onClick={() => setExploreOpen((v) => !v)}
@@ -338,6 +346,7 @@ export default function SurviveExplorePanel({
         </span>
         {exploreOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
+
 
       {exploreOpen && (
         <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
