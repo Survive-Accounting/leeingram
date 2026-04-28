@@ -1612,7 +1612,11 @@ function InlineExplanation({
             className="mt-4 pt-3 border-t"
             style={{ borderColor: "rgba(255,255,255,0.08)" }}
           >
-            <ExplanationFeedback asset={asset} onShareClick={onShareClick} />
+            <HelperResponseThumbs
+              asset={asset}
+              chapter={chapter}
+              section={activeSection}
+            />
           </div>
         )}
       </div>
