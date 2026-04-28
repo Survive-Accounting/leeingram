@@ -150,6 +150,12 @@ export default function RetroTerminalFrame({
           100% { background: rgba(124,255,176,0); box-shadow: inset 0 0 0 0 rgba(124,255,176,0); }
         }
         .sa-line-flash { animation: sa-line-flash 780ms cubic-bezier(0.22,1,0.36,1) both; }
+        /* Very slow scanline drift — adds ambient life without flicker. 3px travel = perfect seamless loop. */
+        @keyframes sa-scanline-drift {
+          0%   { background-position: 0 0; }
+          100% { background-position: 0 3px; }
+        }
+        .sa-crt-scanlines { animation: sa-scanline-drift 9s linear infinite; }
         /* Soft scanline brightness pulse on the whole CRT after an update */
         @keyframes sa-crt-pulse {
           0%   { box-shadow: inset 0 0 0 0 rgba(124,255,176,0); filter: brightness(1); }
