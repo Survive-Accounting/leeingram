@@ -428,6 +428,8 @@ function StuckSupportModal({
   const [email, setEmail] = useState("");
   const [hasStoredEmail, setHasStoredEmail] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // Auto-captured user_id (best effort — null if not signed in).
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -446,6 +448,15 @@ function StuckSupportModal({
     } catch {
       setHasStoredEmail(false);
     }
+    // Best-effort capture of authenticated user id for the report context.
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        setUserId(data.user?.id ?? null);
+      } catch {
+        setUserId(null);
+      }
+    })();
   }, [open]);
 
   const buildContextBlock = (): string => {
