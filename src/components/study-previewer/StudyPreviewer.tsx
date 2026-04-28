@@ -350,14 +350,13 @@ export default function StudyPreviewer({
                     : chapters.length === 0
                     ? "Loading chapters…"
                     : "Choose chapter…"}
+                </option>
+                {chapters.map((ch) => (
+                  <option key={ch.id} value={ch.id}>
+                    Ch {ch.chapter_number} — {ch.chapter_name}
                   </option>
-                  {chapters.map((ch) => (
-                    <option key={ch.id} value={ch.id}>
-                      Ch {ch.chapter_number} — {ch.chapter_name}
-                    </option>
-                  ))}
-                </SelectShell>
-              </div>
+                ))}
+              </SelectShell>
             </div>
           </section>
 
