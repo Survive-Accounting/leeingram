@@ -91,6 +91,11 @@ function DashNavbar({
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
+  const previewerRef = useRef<HTMLDivElement | null>(null);
+  const scrollToPreviewer = () => {
+    previewerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const [email, setEmail] = useState<string | null>(null);
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -294,14 +299,35 @@ export default function StudentDashboard() {
       <DashNavbar onFeedback={() => setFeedbackOpen(true)} onSignOut={handleSignOut} />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-5 sm:px-8 pt-10 md:pt-12 pb-20 space-y-12 md:space-y-14">
-        {/* Top row — Share (primary, left) + A Note From Lee (right) */}
-        <section aria-label="Beta priorities">
-          <div
-            className="inline-flex items-center gap-2 text-[10.5px] font-bold uppercase mb-3"
-            style={{ color: "#94A3B8", letterSpacing: "0.18em", fontFamily: "Inter, sans-serif" }}
-          >
-            <span className="inline-block rounded-full" style={{ width: 5, height: 5, background: "#CBD5E1" }} />
-            Your beta · two quick things
+        {/* Welcome header */}
+        <section aria-label="Welcome">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5">
+            <div>
+              <h1
+                className="text-[22px] sm:text-[26px] leading-tight"
+                style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: NAVY }}
+              >
+                {firstName ? `Welcome back, ${firstName}.` : "Welcome back."}
+              </h1>
+              <p
+                className="mt-1 text-[13px] sm:text-[14px]"
+                style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+              >
+                {courseLabel && campusName
+                  ? `Let's Survive ${courseLabel} at ${campusName}.`
+                  : courseLabel
+                    ? `Let's Survive ${courseLabel}.`
+                    : "Let's get you ready for finals."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={scrollToPreviewer}
+              className="self-start sm:self-end inline-flex items-center gap-1.5 text-[12.5px] font-semibold hover:underline transition-opacity"
+              style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+            >
+              Go to study tools <ArrowRight className="h-3.5 w-3.5" />
+            </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-6 items-stretch">
             <div className="md:col-span-7">
@@ -327,7 +353,7 @@ export default function StudentDashboard() {
         )}
 
         {/* Previewer entry — the centerpiece */}
-        <div className="space-y-6">
+        <div ref={previewerRef} className="space-y-6 scroll-mt-24">
           <div className="text-center" style={{ maxWidth: 760, margin: "0 auto" }}>
             <div
               className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4"
@@ -346,10 +372,10 @@ export default function StudentDashboard() {
               Free accounting study tools for finals.
             </h2>
             <p
-              className="mt-2 text-[12.5px] sm:text-[13px]"
-              style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+              className="mt-2 text-[11px]"
+              style={{ color: "#A3AEC2", fontFamily: "Inter, sans-serif" }}
             >
-              Free Beta Access through {expiresStr}
+              Free access expires May 31st
             </p>
           </div>
 

@@ -63,7 +63,7 @@ export default function ShareWithFriendsBand({ betaNumber, campusName, compact =
             letterSpacing: "0.16em",
           }}
         >
-          <Sparkles className="h-3 w-3" /> Help us launch loud
+          <Sparkles className="h-3 w-3" /> Help us, help you
         </div>
 
         <h2
