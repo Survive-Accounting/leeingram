@@ -696,115 +696,111 @@ export default function StudyPreviewer({
               />
             </div>
 
-            {/* Layer 2 — Modern V2 viewer in a subtle 90s desktop-app frame */}
+            {/* Layer 2 — Modern laptop chassis with the V2 viewer inside */}
             {activeTool && (
               <section
-                className="sa-stage-layer sa-stage-visible sa-win-frame"
-                style={{ minHeight: 600 }}
+                className="sa-stage-layer sa-stage-visible"
+                aria-label={
+                  activeTool === "practice"
+                    ? "Practice Problem Helper"
+                    : "Journal Entry Helper"
+                }
               >
-                {/* Classic title bar */}
-                <div className="sa-win-titlebar">
-                  <div className="sa-win-traffic" aria-hidden>
-                    <span className="sa-win-dot" style={{ background: "#FF5F57", borderColor: "#E14640" }} />
-                    <span className="sa-win-dot" style={{ background: "#FEBC2E", borderColor: "#D89E1F" }} />
-                    <span className="sa-win-dot" style={{ background: "#28C840", borderColor: "#1FA22F" }} />
-                  </div>
-                  <div className="sa-win-title">
-                    {activeTool === "practice"
-                      ? selectedChapter
-                        ? `Practice Problem Helper — Ch ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}`
-                        : "Practice Problem Helper"
-                      : "Journal Entry Helper"}
-                  </div>
-                  <div className="sa-win-controls" aria-hidden>
-                    <span className="sa-win-btn">_</span>
-                    <span className="sa-win-btn">▢</span>
-                    <span className="sa-win-btn sa-win-btn-close">✕</span>
-                  </div>
-                </div>
-
-                {/* Optional toolbar / address strip */}
-                {activeTool === "practice" && viewerAssetCode && (
-                  <div className="sa-win-toolbar">
-                    <span className="sa-win-addr-label">File</span>
-                    <div className="sa-win-addr">
-                      <span className="truncate">
-                        {selectedChapter
-                          ? `Ch ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}`
-                          : "Practice Problem Helper"}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() =>
-                        window.open(
-                          `/v2/solutions/${encodeURIComponent(viewerAssetCode)}`,
-                          "_blank",
-                          "noopener,noreferrer",
-                        )
-                      }
-                      className="sa-win-tool-btn"
+                <div className="w-full flex justify-center px-2 sm:px-6 py-6 sm:py-10 animate-fade-in">
+                  <div className="w-full" style={{ maxWidth: 980 }}>
+                    {/* Modern laptop lid */}
+                    <div
+                      className="relative rounded-t-[18px] p-3 sm:p-4"
+                      style={{
+                        background: "linear-gradient(180deg, #1F1F23 0%, #141417 100%)",
+                        border: "1px solid #2A2A30",
+                        boxShadow:
+                          "0 30px 60px -25px rgba(0,0,0,0.6), 0 10px 24px -10px rgba(0,0,0,0.4)",
+                      }}
                     >
-                      Open in new tab <ArrowUpRight className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
+                      {/* Camera dot */}
+                      <div
+                        aria-hidden
+                        className="absolute left-1/2 -translate-x-1/2 top-1.5 rounded-full"
+                        style={{ width: 4, height: 4, background: "#3A3A42" }}
+                      />
 
-                {/* Inset content well */}
-                <div className="sa-win-content">
-                  {activeTool === "practice" && viewerAssetCode && (
-                    <iframe
-                      key={viewerAssetCode}
-                      src={`/v2/solutions/${encodeURIComponent(viewerAssetCode)}`}
-                      title="Practice Problem Helper"
-                      className="w-full block border-0"
-                      style={{ height: "min(85vh, 980px)", background: "#fff" }}
-                    />
-                  )}
-
-                  {activeTool === "practice" && !viewerAssetCode && (
-                    <div className="flex items-center justify-center text-center px-6 py-24 bg-white">
-                      <p className="text-[14px]" style={{ color: "#64748B" }}>
-                        This chapter is being finalized — check back soon.
-                      </p>
-                    </div>
-                  )}
-
-                  {activeTool === "je" && (
-                    <div className="px-6 py-16 sm:py-20 max-w-2xl mx-auto text-center bg-white">
-                      <h3
-                        className="text-[26px] leading-tight"
-                        style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
-                      >
-                        Journal Entry Helper is being built
-                      </h3>
-                      <p className="mt-2 text-[14px]" style={{ color: "#64748B" }}>
-                        Tell us exactly how you'd want this to work and we'll build it
-                        straight from your feedback.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={onOpenFeedback}
-                        className="mt-5 inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-[13px] font-semibold text-white transition-all hover:brightness-110"
+                      {/* Modern bright screen */}
+                      <div
+                        className="relative rounded-md overflow-hidden bg-white"
                         style={{
-                          background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-                          boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
+                          border: "1px solid rgba(0,0,0,0.08)",
+                          minHeight: "clamp(380px, 56vw, 560px)",
                         }}
                       >
-                        Tell us what you'd want <ArrowRight className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  )}
-                </div>
+                        {activeTool === "practice" && viewerAssetCode && (
+                          <iframe
+                            key={viewerAssetCode}
+                            src={`/v2/solutions/${encodeURIComponent(viewerAssetCode)}`}
+                            title="Practice Problem Helper"
+                            className="w-full block border-0"
+                            style={{ height: "min(85vh, 980px)", background: "#fff" }}
+                          />
+                        )}
 
-                {/* Status bar */}
-                <div className="sa-win-statusbar">
-                  <span className="sa-win-status-cell sa-win-status-grow">
-                    <span className="sa-win-status-led" /> Ready
-                  </span>
-                  <span className="sa-win-status-cell">
-                    {activeTool === "practice" ? "PRACTICE.EXE" : "JE_HELPER.EXE"}
-                  </span>
-                  <span className="sa-win-status-cell">SURVIVE OS</span>
+                        {activeTool === "practice" && !viewerAssetCode && (
+                          <div className="flex items-center justify-center text-center px-6 py-24">
+                            <p className="text-[14px]" style={{ color: "#64748B" }}>
+                              This chapter is being finalized — check back soon.
+                            </p>
+                          </div>
+                        )}
+
+                        {activeTool === "je" && (
+                          <div className="px-6 py-16 sm:py-20 max-w-2xl mx-auto text-center">
+                            <h3
+                              className="text-[26px] leading-tight"
+                              style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
+                            >
+                              Journal Entry Helper is being built
+                            </h3>
+                            <p className="mt-2 text-[14px]" style={{ color: "#64748B" }}>
+                              Tell us exactly how you'd want this to work and we'll build it
+                              straight from your feedback.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={onOpenFeedback}
+                              className="mt-5 inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-[13px] font-semibold text-white transition-all hover:brightness-110"
+                              style={{
+                                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+                                boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
+                              }}
+                            >
+                              Tell us what you'd want <ArrowRight className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Open in new tab — sits below the screen, no fake chrome */}
+                      {activeTool === "practice" && viewerAssetCode && (
+                        <div className="flex items-center justify-end pt-2.5">
+                          <button
+                            onClick={() =>
+                              window.open(
+                                `/v2/solutions/${encodeURIComponent(viewerAssetCode)}`,
+                                "_blank",
+                                "noopener,noreferrer",
+                              )
+                            }
+                            className="inline-flex items-center gap-1 text-[11.5px] font-medium hover:opacity-100 transition-opacity"
+                            style={{
+                              color: "rgba(255,255,255,0.65)",
+                              fontFamily: "Inter, sans-serif",
+                            }}
+                          >
+                            Open in new tab <ArrowUpRight className="h-3 w-3" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </section>
             )}
