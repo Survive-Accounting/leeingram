@@ -400,15 +400,29 @@ export default function OnboardingModal({
           className="px-6 py-4 flex items-center justify-between gap-3"
           style={{ borderTop: "1px solid #F1F5F9", background: "#FAFBFC" }}
         >
-          <button
-            type="button"
-            onClick={() => setStep((s) => (s > 1 ? ((s - 1) as Step) : s))}
-            disabled={step === 1 || submitting}
-            className="text-[13px] font-medium disabled:opacity-30"
-            style={{ color: "#64748B" }}
-          >
-            ← Back
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setStep((s) => (s > 1 ? ((s - 1) as Step) : s))}
+              disabled={step === 1 || submitting}
+              className="text-[13px] font-medium disabled:opacity-30"
+              style={{ color: "#64748B" }}
+            >
+              ← Back
+            </button>
+            {isStaff && (
+              <button
+                type="button"
+                onClick={handleAdminSkip}
+                disabled={submitting}
+                className="text-[12px] font-medium underline disabled:opacity-30"
+                style={{ color: "#94A3B8" }}
+                title="Admin only"
+              >
+                Admin: skip {step < 3 ? "step →" : "& submit"}
+              </button>
+            )}
+          </div>
 
           {step < 3 ? (
             <button
@@ -427,7 +441,7 @@ export default function OnboardingModal({
             <button
               type="button"
               disabled={!canAdvance || submitting}
-              onClick={handleSubmit}
+              onClick={() => handleSubmit()}
               className="inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-[13.5px] font-semibold text-white transition-all disabled:opacity-40"
               style={{
                 background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
