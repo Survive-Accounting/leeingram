@@ -32,8 +32,27 @@ export default function CheckoutComplete() {
 
   useEffect(() => {
     if (!sessionId) return;
-    const timer = setTimeout(() => setStatus("success"), 1500);
-    return () => clearTimeout(timer);
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (session?.user?.email) {
+        // Already signed in — fire-and-forget LW enrollment, then redirect.
+        void supabase.functions
+          .invoke("enroll-lw-background", {
+            body: { email: session.user.email.toLowerCase() },
+          })
+          .catch(() => { /* noop */ });
+        window.location.replace("/my-dashboard?just_paid=1");
+        return;
+      }
+      timer = setTimeout(() => setStatus("success"), 1500);
+    })();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [sessionId]);
 
   useEffect(() => {
