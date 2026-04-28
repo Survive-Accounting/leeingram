@@ -36,6 +36,8 @@ interface RetroTerminalFrameProps {
   isReturning?: boolean;
   /** Transient header notice (e.g. "Pick a chapter first"). When set, replaces the readiness badge and blinks. */
   notice?: string | null;
+  /** Optional inline chapter selector rendered inside the terminal once a course is chosen. */
+  chapterSelector?: React.ReactNode;
 }
 
 /**
@@ -55,6 +57,7 @@ export default function RetroTerminalFrame({
   welcomeName,
   isReturning = false,
   notice = null,
+  chapterSelector = null,
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
 
