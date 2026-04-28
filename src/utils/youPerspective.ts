@@ -166,8 +166,14 @@ function transformLine(line: string, roles: Record<string, string>): string {
   out = out.replace(/[ \t]{2,}/g, " ");
   out = out.replace(/\s+([.,;:!?])/g, "$1");
 
-  // 6. Re-capitalize first letter if a sentence now starts with "you".
-  out = out.replace(/(^|[.!?]\s+)you\b/g, (_m, pre) => `${pre}You`);
+  // 6. Idiomatic possessive collapses — "of you / of your" reads awkwardly
+  //    after the substitution. Rewrite as "your <noun>".
+  out = out.replace(/\bon the books of you\b/gi, "on your books");
+  out = out.replace(/\bof you\b(?=[\s.,;:!?]|$)/g, "yours");
+
+  // 7. Re-capitalize first letter if a line/sentence now starts with you/your.
+  out = out.replace(/(^|[.!?]\s+|\n)you\b/g, (_m, pre) => `${pre}You`);
+  out = out.replace(/(^|[.!?]\s+|\n)your\b/g, (_m, pre) => `${pre}Your`);
 
   // Avoid ESLint complaint about unused map.
   void SMALL_LETTER_TO_LABEL;
