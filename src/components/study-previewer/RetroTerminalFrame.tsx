@@ -75,6 +75,24 @@ export default function RetroTerminalFrame({
   canChangeChapter = false,
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
+  const [editingCourse, setEditingCourse] = useState(false);
+  const [editingChapter, setEditingChapter] = useState(false);
+
+  // Auto-exit edit mode whenever the underlying label changes (i.e. user picked something).
+  const prevCourseRef = useRef(courseLabel);
+  const prevChapterRef = useRef(chapterLabel);
+  useEffect(() => {
+    if (prevCourseRef.current !== courseLabel) {
+      prevCourseRef.current = courseLabel;
+      setEditingCourse(false);
+    }
+  }, [courseLabel]);
+  useEffect(() => {
+    if (prevChapterRef.current !== chapterLabel) {
+      prevChapterRef.current = chapterLabel;
+      setEditingChapter(false);
+    }
+  }, [chapterLabel]);
 
   // Type-in + pulse state for the two reactive lines
   const courseTyped = useTerminalValue(courseLabel);
