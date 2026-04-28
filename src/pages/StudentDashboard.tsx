@@ -8,7 +8,7 @@ import BetaCountdownStrip from "@/components/dashboard/BetaCountdownStrip";
 import FeedbackToolModal from "@/components/dashboard/FeedbackToolModal";
 import { WelcomeVideoCard, WelcomeVideoModal } from "@/components/dashboard/WelcomeVideoCard";
 import EarlyBirdOptInRow from "@/components/dashboard/EarlyBirdOptInRow";
-import StudyToolCards, { type ToolKey } from "@/components/dashboard/StudyToolCards";
+import StudyPreviewer from "@/components/study-previewer/StudyPreviewer";
 import ShareWithFriendsBand from "@/components/dashboard/ShareWithFriendsBand";
 import { getCourseLabel } from "@/lib/courseLabel";
 
@@ -94,10 +94,6 @@ export default function StudentDashboard() {
   const [email, setEmail] = useState<string | null>(null);
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
-  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
-  const [chapterLoading, setChapterLoading] = useState(false);
-  const [activeTool, setActiveTool] = useState<ToolKey | null>(null);
-  const [viewerAssetCode, setViewerAssetCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [campusId, setCampusId] = useState<string | null>(null);
