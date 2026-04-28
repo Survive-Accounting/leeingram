@@ -105,6 +105,7 @@ export default function StudyPreviewer({
   const [iframeReloadKey, setIframeReloadKey] = useState(0);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [showSlowStatus, setShowSlowStatus] = useState(false);
+  const [stageLockHeight, setStageLockHeight] = useState<number | null>(null);
   
 
   const chapterDropdownRef = useRef<HTMLSelectElement>(null);
