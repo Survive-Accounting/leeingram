@@ -11,6 +11,15 @@ const NAVY = "#14213D";
 const RED = "#CE1126";
 const LOGO_FONT = "'DM Serif Display', serif";
 
+/* Match the retro terminal chassis so the selectors feel like the same hardware. */
+const PHOSPHOR = "#7CFFB0";
+const PHOSPHOR_DIM = "rgba(124,255,176,0.65)";
+const PHOSPHOR_GLOW = "rgba(124,255,176,0.45)";
+const CHASSIS_TOP = "#1F1F23";
+const CHASSIS_BOTTOM = "#141417";
+const CHASSIS_BORDER = "#2A2A30";
+const MONO_FONT = "'JetBrains Mono', 'SF Mono', ui-monospace, monospace";
+
 const TERMINAL_TOOLS: TerminalTool[] = [
   { key: "practice", label: "Practice Problem Helper" },
   { key: "je", label: "Journal Entry Helper", hint: "(coming soon)" },
