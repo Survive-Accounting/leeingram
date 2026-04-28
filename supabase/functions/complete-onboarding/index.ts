@@ -12,6 +12,7 @@ const corsHeaders = {
 interface Payload {
   display_name: string;
   campus_id: string | null;
+  campus_other?: string | null;
   course_id: string | null;
   syllabus_file_path?: string | null;
   is_accounting_major: "yes" | "no" | "definitely_not";
@@ -105,6 +106,7 @@ Deno.serve(async (req) => {
         email,
         display_name: body.display_name.trim().slice(0, 120),
         campus_id: body.campus_id,
+        campus_other: body.campus_other?.trim() || null,
         course_id: body.course_id,
         syllabus_file_path: body.syllabus_file_path || null,
         is_accounting_major: body.is_accounting_major,

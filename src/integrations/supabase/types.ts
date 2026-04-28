@@ -5894,6 +5894,7 @@ export type Database = {
           beta_number: number | null
           campus_beta_number: number | null
           campus_id: string | null
+          campus_other: string | null
           completed_at: string | null
           confidence_1_10: number | null
           course_id: string | null
@@ -5915,6 +5916,7 @@ export type Database = {
           beta_number?: number | null
           campus_beta_number?: number | null
           campus_id?: string | null
+          campus_other?: string | null
           completed_at?: string | null
           confidence_1_10?: number | null
           course_id?: string | null
@@ -5936,6 +5938,7 @@ export type Database = {
           beta_number?: number | null
           campus_beta_number?: number | null
           campus_id?: string | null
+          campus_other?: string | null
           completed_at?: string | null
           confidence_1_10?: number | null
           course_id?: string | null

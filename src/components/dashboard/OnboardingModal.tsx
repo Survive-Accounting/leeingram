@@ -10,7 +10,9 @@ const RED = "#CE1126";
 interface Campus {
   id: string;
   name: string;
+  slug: string;
 }
+const CATCH_ALL_SLUG = "general";
 interface Course {
   id: string;
   course_name: string;
@@ -51,6 +53,7 @@ export default function OnboardingModal({
   const [syllabusPath, setSyllabusPath] = useState<string | null>(null);
   const [syllabusName, setSyllabusName] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [campusWriteIn, setCampusWriteIn] = useState("");
 
   const [major, setMajor] = useState<"yes" | "no" | "definitely_not" | null>(null);
   const [inGreek, setInGreek] = useState<boolean | null>(null);
@@ -64,16 +67,24 @@ export default function OnboardingModal({
     (async () => {
       const { data } = await supabase
         .from("campuses")
-        .select("id, name")
+        .select("id, name, slug")
         .eq("status", "active")
         .order("name", { ascending: true });
       setCampuses((data || []) as Campus[]);
     })();
   }, []);
 
+  const prefilledCampus = useMemo(
+    () => campuses.find((c) => c.id === campusId) || null,
+    [campuses, campusId],
+  );
+  const isCatchAll = prefilledCampus?.slug === CATCH_ALL_SLUG;
+
   // Validation per step
   const canAdvance = useMemo(() => {
     if (step === 1) {
+      // Catch-all campus: name only — write-in/skip is allowed.
+      if (isCatchAll) return name.trim().length > 0;
       return name.trim().length > 0 && !!campusId;
     }
     if (step === 2) {
@@ -86,7 +97,7 @@ export default function OnboardingModal({
       return confidence >= 1 && confidence <= 10;
     }
     return false;
-  }, [step, name, campusId, major, inGreek, greekOrgId, greekOther, confidence]);
+  }, [step, name, campusId, isCatchAll, major, inGreek, greekOrgId, greekOther, confidence]);
 
   const handleSyllabusUpload = async (file: File) => {
     if (!file) return;
@@ -119,6 +130,7 @@ export default function OnboardingModal({
         body: {
           display_name: name.trim(),
           campus_id: campusId,
+          campus_other: isCatchAll ? (campusWriteIn.trim() || null) : null,
           course_id: courseId,
           syllabus_file_path: syllabusPath,
           is_accounting_major: major,
@@ -202,25 +214,47 @@ export default function OnboardingModal({
                 />
               </Field>
 
-              <Field label="Your campus" required>
-                <select
-                  value={campusId ?? ""}
-                  onChange={(e) => setCampusId(e.target.value || null)}
-                  className="w-full rounded-lg px-3 py-2.5 text-[15px] outline-none"
-                  style={{
-                    background: "#F8FAFC",
-                    border: "1px solid #E2E8F0",
-                    color: NAVY,
-                  }}
+              {isCatchAll ? (
+                <Field
+                  label="Your campus"
+                  optional
+                  hint="We don't have your school in the system yet — type it in or skip."
                 >
-                  <option value="">Select your campus…</option>
-                  {campuses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+                  <input
+                    value={campusWriteIn}
+                    onChange={(e) => setCampusWriteIn(e.target.value)}
+                    placeholder="e.g. Ole Miss, University of Alabama…"
+                    className="w-full rounded-lg px-3 py-2.5 text-[15px] outline-none focus:ring-2"
+                    style={{
+                      background: "#F8FAFC",
+                      border: "1px solid #E2E8F0",
+                      color: NAVY,
+                    }}
+                  />
+                </Field>
+              ) : (
+                <Field label="Your campus" required>
+                  <select
+                    value={campusId ?? ""}
+                    onChange={(e) => setCampusId(e.target.value || null)}
+                    className="w-full rounded-lg px-3 py-2.5 text-[15px] outline-none"
+                    style={{
+                      background: "#F8FAFC",
+                      border: "1px solid #E2E8F0",
+                      color: NAVY,
+                    }}
+                  >
+                    <option value="">Select your campus…</option>
+                    {campuses
+                      .filter((c) => c.slug !== CATCH_ALL_SLUG)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                  </select>
+                </Field>
+              )}
 
               <Field label="Upload your syllabus" optional>
                 {syllabusPath ? (
