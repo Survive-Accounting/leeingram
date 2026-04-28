@@ -7,6 +7,8 @@ const RED = "#CE1126";
 interface Props {
   betaNumber: number | null;
   campusName: string | null;
+  /** When true, renders a denser layout suitable for half-width column placement. */
+  compact?: boolean;
 }
 
 export default function ShareWithFriendsBand({ betaNumber, campusName }: Props) {
