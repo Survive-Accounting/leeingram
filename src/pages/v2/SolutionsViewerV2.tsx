@@ -792,8 +792,10 @@ function bumpWandCounter(key: string) {
 const WAND_KEY_OPTOUT = "sa_wand_optout";
 const WAND_INTERVAL = 15;
 
-function MagicWandFeedback() {
+function MagicWandFeedback({ onTriggerShare }: { onTriggerShare: () => void }) {
   const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<"rate" | "wish" | "thanks">("rate");
+  const [rating, setRating] = useState<number | null>(null);
   const [wish, setWish] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -805,45 +807,92 @@ function MagicWandFeedback() {
       const next = v + 1;
       localStorage.setItem(WAND_KEY_VIEWS, String(next));
       if (next > 0 && next % WAND_INTERVAL === 0) {
+        setStep("rate");
+        setRating(null);
+        setWish("");
         setOpen(true);
       }
     } catch {}
   }, []);
 
-  const skip = () => setOpen(false);
-
-  const optOut = () => {
-    try { localStorage.setItem(WAND_KEY_OPTOUT, "1"); } catch {}
-    setOpen(false);
+  const getEmail = () => {
+    try {
+      return (
+        localStorage.getItem("v2_student_email") ||
+        localStorage.getItem("sa_free_user_email") ||
+        null
+      );
+    } catch {
+      return null;
+    }
   };
 
-  const send = async () => {
-    if (!wish.trim()) {
-      toast.message("Add a quick note first 🙂");
-      return;
-    }
-    setSubmitting(true);
-    let userEmail: string | null = null;
-    try {
-      userEmail = localStorage.getItem("v2_student_email") || localStorage.getItem("sa_free_user_email") || null;
-    } catch {}
+  const writeFeedback = async (r: number, note: string | null) => {
     try {
       await supabase.from("explanation_feedback").insert({
         asset_id: "00000000-0000-0000-0000-000000000001",
         asset_name: "__magic_wand__",
-        user_email: userEmail,
-        helpful: null,
-        reason: ["wand_prompt"],
-        note: wish.trim(),
+        user_email: getEmail(),
+        helpful: r >= 4 ? true : r <= 3 ? false : null,
+        reason: ["wand_prompt", `rating:${r}`],
+        note: note && note.trim() ? note.trim() : null,
       });
-      toast.success("Saved — we'll use this to make it better 🙏");
     } catch (e) {
       console.warn("wand feedback insert failed", e);
-      toast.success("Got it — thanks!");
-    } finally {
-      setSubmitting(false);
-      setOpen(false);
     }
+  };
+
+  const closeAll = () => {
+    setOpen(false);
+    setTimeout(() => {
+      setStep("rate");
+      setRating(null);
+      setWish("");
+    }, 200);
+  };
+
+  const skip = () => closeAll();
+
+  const optOut = () => {
+    try { localStorage.setItem(WAND_KEY_OPTOUT, "1"); } catch {}
+    closeAll();
+  };
+
+  const handleRate = async (r: number) => {
+    setRating(r);
+    if (r <= 3) {
+      setSubmitting(true);
+      await writeFeedback(r, null);
+      setSubmitting(false);
+      setStep("thanks");
+      setTimeout(() => closeAll(), 1400);
+    } else {
+      setStep("wish");
+    }
+  };
+
+  const handleWishSkip = async () => {
+    if (rating != null) {
+      setSubmitting(true);
+      await writeFeedback(rating, null);
+      setSubmitting(false);
+    }
+    closeAll();
+  };
+
+  const handleWishSend = async () => {
+    if (!wish.trim()) {
+      toast.message("Add a quick note first 🙂");
+      return;
+    }
+    if (rating == null) return;
+    setSubmitting(true);
+    await writeFeedback(rating, wish);
+    setSubmitting(false);
+    toast.success("Thanks — that's exactly what we needed 🙏");
+    closeAll();
+    // Defer briefly so the wand modal is fully closed before share opens.
+    setTimeout(() => onTriggerShare(), 220);
   };
 
   return (
@@ -856,38 +905,100 @@ function MagicWandFeedback() {
             className="h-20 w-20 rounded-full object-cover ring-2 ring-primary/20 shadow-md"
           />
           <DialogHeader className="space-y-1.5">
-            <DialogTitle className="text-center">Quick favor?</DialogTitle>
-            <DialogDescription className="text-center">
-              If you could wave a magic wand, what would make this perfect for you?
-            </DialogDescription>
+            {step === "rate" && (
+              <>
+                <DialogTitle className="text-center">Quick favor?</DialogTitle>
+                <DialogDescription className="text-center">
+                  How's Survive Accounting working for you so far?
+                </DialogDescription>
+              </>
+            )}
+            {step === "wish" && (
+              <>
+                <DialogTitle className="text-center">Awesome — one wish?</DialogTitle>
+                <DialogDescription className="text-center">
+                  If you could wave a magic wand, what would make this perfect?
+                </DialogDescription>
+              </>
+            )}
+            {step === "thanks" && (
+              <>
+                <DialogTitle className="text-center">Thanks 🙏</DialogTitle>
+                <DialogDescription className="text-center">
+                  We'll keep making it better.
+                </DialogDescription>
+              </>
+            )}
           </DialogHeader>
         </div>
-        <Textarea
-          value={wish}
-          onChange={(e) => setWish(e.target.value)}
-          placeholder="One thing you'd change…"
-          rows={3}
-          className="text-sm resize-none mt-2"
-          autoFocus
-        />
-        <div className="flex items-center justify-between gap-2 pt-1">
-          <button
-            type="button"
-            onClick={optOut}
-            disabled={submitting}
-            className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
-          >
-            Don't show again
-          </button>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="ghost" onClick={skip} disabled={submitting}>
-              Skip
-            </Button>
-            <Button size="sm" onClick={send} disabled={submitting}>
-              {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send to Lee"}
-            </Button>
-          </div>
-        </div>
+
+        {step === "rate" && (
+          <>
+            <div className="flex items-center justify-center gap-2 mt-3">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => handleRate(n)}
+                  disabled={submitting}
+                  className="h-12 w-12 rounded-lg text-base font-semibold transition-all border"
+                  style={{
+                    background: rating === n ? "#CE1126" : "rgba(20,33,61,0.04)",
+                    color: rating === n ? "#fff" : "#14213D",
+                    borderColor: rating === n ? "#CE1126" : "rgba(20,33,61,0.15)",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (rating !== n) e.currentTarget.style.background = "rgba(20,33,61,0.08)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (rating !== n) e.currentTarget.style.background = "rgba(20,33,61,0.04)";
+                  }}
+                  aria-label={`Rate ${n} out of 5`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-between text-[11px] text-muted-foreground px-1 mt-1">
+              <span>Worst</span>
+              <span>Best</span>
+            </div>
+            <div className="flex items-center justify-between gap-2 pt-3">
+              <button
+                type="button"
+                onClick={optOut}
+                disabled={submitting}
+                className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+              >
+                Don't show again
+              </button>
+              <Button size="sm" variant="ghost" onClick={skip} disabled={submitting}>
+                Skip
+              </Button>
+            </div>
+          </>
+        )}
+
+        {step === "wish" && (
+          <>
+            <Textarea
+              value={wish}
+              onChange={(e) => setWish(e.target.value)}
+              placeholder="One thing you'd change…"
+              rows={3}
+              className="text-sm resize-none mt-2"
+              autoFocus
+            />
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <Button size="sm" variant="ghost" onClick={handleWishSkip} disabled={submitting}>
+                Skip
+              </Button>
+              <Button size="sm" onClick={handleWishSend} disabled={submitting}>
+                {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send to Lee"}
+              </Button>
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
