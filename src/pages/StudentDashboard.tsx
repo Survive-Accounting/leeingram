@@ -321,6 +321,11 @@ export default function StudentDashboard() {
     chapterDropdownRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
+  const selectedChapter = useMemo(
+    () => chapters.find((c) => c.id === selectedChapterId) ?? null,
+    [chapters, selectedChapterId],
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: BG_GRADIENT }}>
@@ -349,11 +354,6 @@ export default function StudentDashboard() {
   const greeting = isReturning
     ? (firstName ? `Welcome back, ${firstName}` : "Welcome back")
     : (firstName ? `Thanks for joining, ${firstName}` : "Thanks for joining");
-
-  const selectedChapter = useMemo(
-    () => chapters.find((c) => c.id === selectedChapterId) ?? null,
-    [chapters, selectedChapterId],
-  );
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: BG_GRADIENT }}>
