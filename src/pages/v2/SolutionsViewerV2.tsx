@@ -1942,7 +1942,20 @@ export default function SolutionsViewerV2() {
               className="flex flex-col lg:flex-row lg:items-stretch gap-6 lg:gap-0 relative"
             >
             {/* LEFT: Problem + What you need to solve */}
-            <div className="space-y-4 min-w-0">
+            <div
+              className="space-y-4 min-w-0"
+              style={
+                isMobileViewport
+                  ? { display: mobileTab === "problem" ? "block" : "none", width: "100%" }
+                  : {
+                      display: viewMode === "helper" ? "none" : "block",
+                      flexBasis: viewMode === "problem" ? "100%" : `${splitRatio * 100}%`,
+                      flexShrink: 0,
+                      minWidth: viewMode === "problem" ? undefined : 320,
+                      paddingRight: viewMode === "split" ? 12 : 0,
+                    }
+              }
+            >
               {/* Card 1: Problem */}
               <section
                 className="rounded-2xl p-8"
