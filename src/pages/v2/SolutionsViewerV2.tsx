@@ -2676,6 +2676,12 @@ export default function SolutionsViewerV2() {
         onOpenChange={setShareOpen}
         onCopy={() => trackShareEvent("copy_link")}
       />
+
+      <ViewerOnboardingModal
+        assetCode={assetCode ?? null}
+        userId={currentUserId}
+        userEmail={currentUserEmail}
+      />
     </div>
   );
 }
