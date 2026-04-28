@@ -1974,7 +1974,7 @@ export default function SolutionsViewerV2() {
                 type="button"
                 onClick={() => setHelpOpen(true)}
                 data-embed-allow="true"
-                aria-label="Stuck? Ask Lee"
+                aria-label="Stuck? Send feedback"
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-sm font-medium transition-all hover:bg-white/10"
                 style={{
                   background: "rgba(255,255,255,0.04)",
@@ -1983,7 +1983,7 @@ export default function SolutionsViewerV2() {
                 }}
               >
                 <MessageCircleQuestion className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Stuck? Ask Lee</span>
+                <span className="hidden sm:inline">Stuck?</span>
               </button>
             ) : (
               <Link
