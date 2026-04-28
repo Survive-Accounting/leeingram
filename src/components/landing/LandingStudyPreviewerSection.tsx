@@ -163,13 +163,6 @@ export default function LandingStudyPreviewerSection({
           resetSignal={resetKey}
         />
 
-        {/* Microcopy */}
-        <p
-          className="mt-8 text-center text-[12.5px]"
-          style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-        >
-          Free during finals. No credit card needed. Help us improve it with your feedback.
-        </p>
       </div>
 
       <BetaPaywallModal
