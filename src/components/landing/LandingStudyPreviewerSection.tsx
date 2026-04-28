@@ -109,7 +109,7 @@ export default function LandingStudyPreviewerSection({
           .sa-hero-in { animation: sa-hero-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
         `}</style>
         {/* Header */}
-        <div className="text-center mb-10 sm:mb-14" style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div className="text-center mb-16 sm:mb-24" style={{ maxWidth: 760, margin: "0 auto" }}>
           <div
             className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4 sa-hero-in"
             style={{ color: RED, letterSpacing: "0.16em", animationDelay: "0ms" }}
