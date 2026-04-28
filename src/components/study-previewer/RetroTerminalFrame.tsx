@@ -391,7 +391,7 @@ export default function RetroTerminalFrame({
                   {">"} Survive Accounting Beta v1.0
                 </Line>
               )}
-              <Line show={bootStep >= 2}>
+              <Line show={bootStep >= 2} flashKey={courseTyped.pulseKey}>
                 {">"} Course selected:{" "}
                 <span
                   key={`course-${courseTyped.pulseKey}`}
@@ -414,7 +414,7 @@ export default function RetroTerminalFrame({
                   )}
                 </span>
               </Line>
-              <Line show={bootStep >= 3}>
+              <Line show={bootStep >= 3} flashKey={chapterTyped.pulseKey}>
                 {">"} Chapter selected:{" "}
                 <span
                   key={`chapter-${chapterTyped.pulseKey}`}
