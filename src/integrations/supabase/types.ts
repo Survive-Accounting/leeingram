@@ -5900,6 +5900,7 @@ export type Database = {
           course_id: string | null
           created_at: string
           display_name: string | null
+          early_bird_opt_in: boolean
           email: string
           greek_org_id: string | null
           greek_org_other: string | null
@@ -5922,6 +5923,7 @@ export type Database = {
           course_id?: string | null
           created_at?: string
           display_name?: string | null
+          early_bird_opt_in?: boolean
           email: string
           greek_org_id?: string | null
           greek_org_other?: string | null
@@ -5944,6 +5946,7 @@ export type Database = {
           course_id?: string | null
           created_at?: string
           display_name?: string | null
+          early_bird_opt_in?: boolean
           email?: string
           greek_org_id?: string | null
           greek_org_other?: string | null
