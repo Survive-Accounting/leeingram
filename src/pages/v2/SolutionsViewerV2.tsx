@@ -2049,6 +2049,7 @@ export default function SolutionsViewerV2() {
         courseId={chapter?.course_id}
         currentChapterId={chapter?.id}
         currentAssetName={asset?.asset_name}
+        courseLabel={courseLabel}
       />
 
       {/* Blocking modal while we generate the practice version on first open */}
