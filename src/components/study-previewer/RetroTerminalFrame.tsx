@@ -28,6 +28,10 @@ interface RetroTerminalFrameProps {
   loading?: boolean;
   /** Called when a user attempts to pick a tool before a chapter is chosen. */
   onNudgeChapter?: () => void;
+  /** Optional first name for a personalized welcome line at the top of the terminal. */
+  welcomeName?: string | null;
+  /** When true, greets as returning ("Welcome back"); otherwise as new ("Welcome"). */
+  isReturning?: boolean;
 }
 
 /**
