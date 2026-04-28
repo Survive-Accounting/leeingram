@@ -2385,18 +2385,7 @@ export default function SolutionsViewerV2() {
                   </div>
                 )}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                  {chapter && (
-                    <span
-                      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
-                      style={{
-                        background: "rgba(206,17,38,0.18)",
-                        color: "#FFB8C0",
-                        border: "1px solid rgba(206,17,38,0.35)",
-                      }}
-                    >
-                      Ch {chapter.chapter_number} · {chapter.chapter_name}
-                    </span>
-                  )}
+                  {/* Chapter pill removed — already shown in header "Switch Problem · Ch N" */}
                   {asset.source_ref && (
                     <button
                       type="button"
