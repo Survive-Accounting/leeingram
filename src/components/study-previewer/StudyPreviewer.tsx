@@ -41,6 +41,7 @@ const TERMINAL_TOOLS: TerminalTool[] = [
     description: "Rank ideas or suggest a tool we should build.",
     cta: "Share Feedback",
     icon: Lightbulb,
+    variant: "ghost",
   },
 ];
 

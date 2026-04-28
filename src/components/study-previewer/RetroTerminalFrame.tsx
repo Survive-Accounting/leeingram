@@ -20,6 +20,8 @@ export interface TerminalTool {
   /** Optional small caption shown after the label, e.g. "(coming soon)" */
   hint?: string;
   disabled?: boolean;
+  /** Visual variant. "ghost" = dashed border, faded — implies user can shape it. */
+  variant?: "default" | "ghost";
 }
 
 interface RetroTerminalFrameProps {
@@ -155,10 +157,10 @@ export default function RetroTerminalFrame({
   const safeChapter = chapterLabel?.trim() || "—";
 
   const promptLabel = !canPickTool
-    ? "> Select a chapter to reveal 3 study tools"
+    ? "> Select a chapter to start studying"
     : loading
     ? "> Loading chapter assets"
-    : "> Select a tool to start studying";
+    : "> Select a study tool";
 
   const LOGO_URL =
     "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
@@ -509,7 +511,7 @@ export default function RetroTerminalFrame({
                 </div>
               ) : (
                 <Line show={bootStep >= 1}>
-                  {">"} Survive Accounting Beta v1.0
+                  {">"} Survive Accounting: Spring '26 Beta
                 </Line>
               )}
               {chapterLabel && (
@@ -612,13 +614,6 @@ export default function RetroTerminalFrame({
                 )}
               </Line>
               <Line show={bootStep >= 4}>{">"}</Line>
-              {!canPickTool && (
-                <Line show={bootStep >= 5}>
-                  <span style={{ color: PHOSPHOR_MUTED, fontStyle: "italic" }}>
-                    {"> Awaiting chapter selection…"}
-                  </span>
-                </Line>
-              )}
               <Line show={bootStep >= 5}>
                 <span style={{ color: PHOSPHOR_DIM }}>{promptLabel}</span>
                 <span
@@ -650,26 +645,40 @@ export default function RetroTerminalFrame({
                     const locked = !canPickTool || loading;
                     const interactable = canPickTool && !isDisabled && !loading;
                     const Icon = tool.icon;
+                    const isGhost = tool.variant === "ghost";
 
-                    const idleBg =
-                      "linear-gradient(180deg, rgba(8,28,16,0.92) 0%, rgba(4,16,9,0.96) 100%)";
-                    const hoverBg =
-                      "linear-gradient(180deg, rgba(14,46,26,0.95) 0%, rgba(6,22,13,0.98) 100%)";
-                    const activeBg =
-                      "linear-gradient(180deg, rgba(20,60,36,0.95) 0%, rgba(8,28,16,0.98) 100%)";
+                    const idleBg = isGhost
+                      ? "transparent"
+                      : "linear-gradient(180deg, rgba(8,28,16,0.92) 0%, rgba(4,16,9,0.96) 100%)";
+                    const hoverBg = isGhost
+                      ? "rgba(124,255,176,0.04)"
+                      : "linear-gradient(180deg, rgba(14,46,26,0.95) 0%, rgba(6,22,13,0.98) 100%)";
+                    const activeBg = isGhost
+                      ? "rgba(124,255,176,0.06)"
+                      : "linear-gradient(180deg, rgba(20,60,36,0.95) 0%, rgba(8,28,16,0.98) 100%)";
 
-                    const idleBorder = locked
+                    const idleBorder = isGhost
+                      ? "rgba(124,255,176,0.18)"
+                      : locked
                       ? "rgba(124,255,176,0.10)"
                       : "rgba(124,255,176,0.22)";
-                    const hoverBorder = "rgba(124,255,176,0.55)";
-                    const activeBorder = "rgba(124,255,176,0.75)";
+                    const hoverBorder = isGhost
+                      ? "rgba(124,255,176,0.40)"
+                      : "rgba(124,255,176,0.55)";
+                    const activeBorder = isGhost
+                      ? "rgba(124,255,176,0.55)"
+                      : "rgba(124,255,176,0.75)";
+                    const borderStyle = isGhost ? "dashed" : "solid";
 
-                    const idleShadow =
-                      "inset 0 1px 0 rgba(180,255,210,0.06), inset 0 -1px 0 rgba(0,0,0,0.55), 0 4px 10px rgba(0,0,0,0.45)";
-                    const hoverShadow =
-                      "inset 0 1px 0 rgba(180,255,210,0.10), 0 0 0 1px rgba(124,255,176,0.30), 0 6px 16px rgba(0,0,0,0.55), 0 0 22px rgba(124,255,176,0.18)";
-                    const activeShadow =
-                      "inset 0 0 0 1px rgba(124,255,176,0.55), 0 0 28px rgba(124,255,176,0.30), 0 6px 16px rgba(0,0,0,0.55)";
+                    const idleShadow = isGhost
+                      ? "none"
+                      : "inset 0 1px 0 rgba(180,255,210,0.06), inset 0 -1px 0 rgba(0,0,0,0.55), 0 4px 10px rgba(0,0,0,0.45)";
+                    const hoverShadow = isGhost
+                      ? "0 0 14px rgba(124,255,176,0.10)"
+                      : "inset 0 1px 0 rgba(180,255,210,0.10), 0 0 0 1px rgba(124,255,176,0.30), 0 6px 16px rgba(0,0,0,0.55), 0 0 22px rgba(124,255,176,0.18)";
+                    const activeShadow = isGhost
+                      ? "0 0 18px rgba(124,255,176,0.15)"
+                      : "inset 0 0 0 1px rgba(124,255,176,0.55), 0 0 28px rgba(124,255,176,0.30), 0 6px 16px rgba(0,0,0,0.55)";
 
                     return (
                       <button
@@ -691,7 +700,7 @@ export default function RetroTerminalFrame({
                         style={{
                           padding: "12px 12px 10px",
                           background: isActive ? activeBg : idleBg,
-                          border: `1px solid ${isActive ? activeBorder : idleBorder}`,
+                          border: `1px ${borderStyle} ${isActive ? activeBorder : idleBorder}`,
                           boxShadow: isActive ? activeShadow : idleShadow,
                           color: PHOSPHOR,
                           fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace",
@@ -702,7 +711,7 @@ export default function RetroTerminalFrame({
                             : locked
                             ? "not-allowed"
                             : "wait",
-                          opacity: isDisabled ? 0.45 : locked ? 0.55 : 1,
+                          opacity: isDisabled ? 0.45 : locked ? 0.55 : isGhost ? 0.72 : 1,
                           transform: isActive ? "translateY(1px)" : "translateY(0)",
                           transition:
                             "background 160ms ease-out, border-color 160ms ease-out, box-shadow 200ms ease-out, transform 120ms ease-out, opacity 200ms ease-out",
