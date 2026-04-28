@@ -3032,31 +3032,37 @@ export type Database = {
         Row: {
           asset_id: string
           asset_name: string | null
+          context: Json | null
           created_at: string
           helpful: boolean
           id: string
           note: string | null
           reason: string[] | null
+          section: string | null
           user_email: string | null
         }
         Insert: {
           asset_id: string
           asset_name?: string | null
+          context?: Json | null
           created_at?: string
           helpful: boolean
           id?: string
           note?: string | null
           reason?: string[] | null
+          section?: string | null
           user_email?: string | null
         }
         Update: {
           asset_id?: string
           asset_name?: string | null
+          context?: Json | null
           created_at?: string
           helpful?: boolean
           id?: string
           note?: string | null
           reason?: string[] | null
+          section?: string | null
           user_email?: string | null
         }
         Relationships: []
