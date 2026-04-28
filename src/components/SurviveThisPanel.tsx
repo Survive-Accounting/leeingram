@@ -429,46 +429,241 @@ function FloatingButton({ open, onOpen, leeOnline, bottomOffset = 24 }: { open: 
   );
 }
 
-// ── Menu View ──────────────────────────────────────────────────────────
+// ── Menu View — 5 primary buttons + collapsible Explore section ───────
 
-function MenuView({ onPick }: { onPick: (key: PromptKey) => void }) {
+function MenuView({ onPick, assetId }: { onPick: (key: PromptKey) => void; assetId?: string }) {
+  const [exploreOpen, setExploreOpen] = useState(false);
+  const [voteCounts, setVoteCounts] = useState<Record<string, number>>({});
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestText, setSuggestText] = useState("");
+  const [suggestSent, setSuggestSent] = useState(false);
+
+  // Fetch helpful_count per explore prompt_type for this asset (best-effort)
+  useEffect(() => {
+    if (!assetId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("survive_ai_responses")
+          .select("prompt_type, helpful_count")
+          .eq("asset_id", assetId)
+          .in("prompt_type", EXPLORE_KEYS as unknown as string[]);
+        if (cancelled || !data) return;
+        const counts: Record<string, number> = {};
+        for (const row of data as any[]) {
+          counts[row.prompt_type] = (counts[row.prompt_type] || 0) + (row.helpful_count || 0);
+        }
+        setVoteCounts(counts);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [assetId]);
+
+  const sendSuggestion = async () => {
+    const text = suggestText.trim().slice(0, 120);
+    if (!text) return;
+    try {
+      if (assetId) {
+        await supabase.from("activity_log").insert({
+          entity_id: assetId,
+          entity_type: "teaching_asset" as any,
+          event_type: "explore_idea_suggestion",
+          message: text,
+        } as any);
+      }
+      setSuggestSent(true);
+      setSuggestText("");
+    } catch {
+      toast.error("Could not send. Try again in a sec.");
+    }
+  };
+
+  const primaryBtnStyle: React.CSSProperties = {
+    background: "#F8F9FA",
+    border: "1px solid #E5E7EB",
+    color: NAVY,
+    borderRadius: 8,
+    padding: "10px 13px",
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: "Inter, sans-serif",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    transition: "all 120ms ease",
+  };
+
   return (
-    <div style={{ padding: 16 }}>
-      <p style={{ fontSize: 16, color: NAVY, fontFamily: "Inter, sans-serif", margin: "0 0 14px" }}>
+    <div style={{ padding: 16, fontFamily: "Inter, sans-serif" }}>
+      <p style={{ fontSize: 14, color: NAVY, margin: "0 0 12px", fontWeight: 500 }}>
         How can I help you survive this problem?
       </p>
-      {CARDS.map((c, i) => (
-        <button
-          key={c.key}
-          onClick={() => onPick(c.key)}
-          className={i === 0 ? "stp-card-pulse" : "stp-card"}
-          style={{
-            position: "relative",
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            background: c.highlight ? "#FFF8F0" : "#fff",
-            border: `1px solid ${c.highlight ? AMBER : "#E5E7EB"}`,
-            borderRadius: 10,
-            padding: "14px 16px",
-            marginBottom: 8,
-            cursor: "pointer",
-            textAlign: "left",
-            fontFamily: "Inter, sans-serif",
-            transition: "all 150ms ease",
-            animationDelay: `${i * 80}ms`,
-          }}
-        >
-          <span style={{ fontSize: 20, lineHeight: 1 }}>{c.emoji}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: NAVY }}>{c.title}</div>
-            <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>{c.subtitle}</div>
+
+      {/* Row 1 — primary CTA */}
+      <button
+        onClick={() => onPick("walk_through")}
+        style={{
+          width: "100%",
+          background: `linear-gradient(180deg, #E63950 0%, ${RED} 50%, #A30E1F 100%)`,
+          color: "#fff",
+          border: 0,
+          borderRadius: 8,
+          padding: "12px 14px",
+          fontSize: 14,
+          fontWeight: 700,
+          cursor: "pointer",
+          fontFamily: "Inter, sans-serif",
+          boxShadow: "0 1px 0 rgba(255,255,255,0.18) inset, 0 6px 16px -6px rgba(206,17,38,0.5)",
+          marginBottom: 8,
+        }}
+      >
+        🚀 Walk me through it
+      </button>
+
+      {/* Row 2 */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+        <button onClick={() => onPick("hint")} style={primaryBtnStyle}>💡 Give me a hint</button>
+        <button onClick={() => onPick("setup")} style={primaryBtnStyle}>📄 Show the setup</button>
+      </div>
+
+      {/* Row 3 */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <button onClick={() => onPick("full_solution")} style={primaryBtnStyle}>✅ Full solution</button>
+        <button onClick={() => onPick("challenge")} style={primaryBtnStyle}>⚡ Challenge me</button>
+      </div>
+
+      {/* Divider */}
+      <div style={{ height: 1, background: "#E5E7EB", margin: "16px 0 12px" }} />
+
+      {/* Explore toggle */}
+      <button
+        onClick={() => setExploreOpen((v) => !v)}
+        style={{
+          width: "100%",
+          background: "#fff",
+          border: 0,
+          padding: "8px 0",
+          cursor: "pointer",
+          textAlign: "left",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          fontFamily: "Inter, sans-serif",
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 11, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>
+            Vote on Ideas
           </div>
-          <ChevronRight size={16} color="#9CA3AF" />
-          <span style={{ position: "absolute", top: 6, right: 10, fontSize: 10, color: "#9CA3AF", fontWeight: 600 }}>{c.step}</span>
-        </button>
-      ))}
+          <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>
+            Try these and tell us what's useful
+          </div>
+        </div>
+        <ChevronDown size={18} color="#9CA3AF" style={{ transform: exploreOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 200ms ease" }} />
+      </button>
+
+      {exploreOpen && (
+        <div style={{ marginTop: 8, animation: "stp-fade-in 200ms ease forwards" }}>
+          <p style={{ fontSize: 11, color: "#9CA3AF", fontStyle: "italic", margin: "0 0 8px" }}>
+            Try any of these — then rate the response. Your votes shape what we build.
+          </p>
+          {EXPLORE_KEYS.map((k) => (
+            <button
+              key={k}
+              onClick={() => onPick(k)}
+              style={{
+                width: "100%",
+                background: "#FAFAFA",
+                border: "1px solid #E5E7EB",
+                color: "#6B7280",
+                borderRadius: 7,
+                padding: "9px 12px",
+                fontSize: 12.5,
+                fontFamily: "Inter, sans-serif",
+                cursor: "pointer",
+                marginBottom: 6,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+                transition: "all 120ms ease",
+              }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span>{PROMPT_EMOJIS[k]}</span>
+                <span>{PROMPT_LABELS[k]}</span>
+              </span>
+              <span style={{
+                background: "#F3F4F6",
+                borderRadius: 10,
+                fontSize: 11,
+                padding: "2px 7px",
+                color: "#9CA3AF",
+                fontWeight: 600,
+              }}>
+                {voteCounts[k] || 0}
+              </span>
+            </button>
+          ))}
+
+          {/* Suggest your own */}
+          {!suggestOpen && !suggestSent && (
+            <button
+              onClick={() => setSuggestOpen(true)}
+              style={{
+                background: "transparent",
+                border: 0,
+                color: "#9CA3AF",
+                fontSize: 12,
+                textDecoration: "underline",
+                cursor: "pointer",
+                padding: "8px 0 0",
+                fontFamily: "Inter, sans-serif",
+              }}
+            >
+              + suggest your own idea
+            </button>
+          )}
+          {suggestOpen && !suggestSent && (
+            <div style={{ marginTop: 8 }}>
+              <textarea
+                value={suggestText}
+                onChange={(e) => setSuggestText(e.target.value.slice(0, 120))}
+                placeholder="What button would you want to see here?"
+                rows={2}
+                style={{ width: "100%", padding: "8px 10px", border: "1px solid #D1D5DB", borderRadius: 6, fontSize: 12, fontFamily: "inherit", resize: "vertical" }}
+              />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+                <span style={{ fontSize: 11, color: "#9CA3AF" }}>{suggestText.length}/120</span>
+                <button
+                  onClick={sendSuggestion}
+                  disabled={!suggestText.trim()}
+                  style={{
+                    background: suggestText.trim() ? NAVY : "#D1D5DB",
+                    color: "#fff",
+                    border: 0,
+                    borderRadius: 6,
+                    padding: "6px 12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: suggestText.trim() ? "pointer" : "not-allowed",
+                  }}
+                >
+                  Send to Lee →
+                </button>
+              </div>
+            </div>
+          )}
+          {suggestSent && (
+            <p style={{ fontSize: 12, color: GREEN, margin: "8px 0 0", fontWeight: 600 }}>
+              ✓ Sent — thanks for the idea.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
