@@ -153,6 +153,7 @@ export default function StudyPreviewer({
     setSelectedChapterId(chId);
     setViewerAssetCode(first);
     setChapterLoading(false);
+    setTerminalNotice(null);
     if (persistChapterKey) {
       try { localStorage.setItem(persistChapterKey, chId); } catch { /* ignore */ }
     }
