@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp, Sheet as SheetIcon, PanelLeftClose, PanelRightClose, Columns2, RotateCcw, GripVertical, Maximize2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp, Sheet as SheetIcon, PanelLeftClose, PanelRightClose, Columns2, Rows2, RotateCcw, GripVertical, GripHorizontal, Maximize2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { z } from "zod";
@@ -337,7 +337,7 @@ function StuckSupportModal({
   asset: Asset | null;
   chapter: ChapterMeta | null;
   courseLabel: string | null;
-  viewMode: "split" | "problem" | "helper";
+  viewMode: "split" | "split-h" | "problem" | "helper";
   simplifiedText: string | null;
   activeHelper: string | null;
 }) {
@@ -1661,7 +1661,7 @@ export default function SolutionsViewerV2() {
 
   // ── Split-view controls ──────────────────────────────────────────────
   const isMobileViewport = useIsMobile();
-  type ViewMode = "split" | "problem" | "helper";
+  type ViewMode = "split" | "split-h" | "problem" | "helper";
   const [viewMode, setViewMode] = useState<ViewMode>("split");
   const [mobileTab, setMobileTab] = useState<"problem" | "helper">("problem");
   const [splitRatio, setSplitRatio] = useState<number>(() => {
