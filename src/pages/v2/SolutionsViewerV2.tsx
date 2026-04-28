@@ -789,55 +789,31 @@ function bumpWandCounter(key: string) {
   } catch {}
 }
 
+const WAND_KEY_OPTOUT = "sa_wand_optout";
+const WAND_INTERVAL = 15;
+
 function MagicWandFeedback() {
   const [open, setOpen] = useState(false);
   const [wish, setWish] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Engagement-gated trigger: only open after the student has shown real
-  // interest in the product. Never on initial visit.
+  // Trigger every 15th interaction (problem view), unless opted out.
   useEffect(() => {
-    const check = () => {
-      try {
-        if (localStorage.getItem(WAND_KEY_SHOWN) === "1") return;
-        if (localStorage.getItem(WAND_KEY_DISMISSED) === "1") return;
-
-        const helpClicks = parseInt(localStorage.getItem(WAND_KEY_HELP_CLICKS) || "0", 10) || 0;
-        const views = parseInt(localStorage.getItem(WAND_KEY_VIEWS) || "0", 10) || 0;
-        const firstTs = parseInt(localStorage.getItem(WAND_KEY_FIRST_TS) || "0", 10) || 0;
-        const minutesSinceFirst = firstTs ? (Date.now() - firstTs) / 60000 : 0;
-
-        // Real engagement = clicked into help tools at least 3 times
-        // OR viewed 2+ problems with at least 2 minutes on the platform.
-        const engaged =
-          helpClicks >= 3 ||
-          (views >= 2 && minutesSinceFirst >= 2);
-
-        if (engaged) {
-          localStorage.setItem(WAND_KEY_SHOWN, "1");
-          setOpen(true);
-        }
-      } catch {}
-    };
-    // Stamp first visit if missing, count this view
     try {
-      if (!localStorage.getItem(WAND_KEY_FIRST_TS)) {
-        localStorage.setItem(WAND_KEY_FIRST_TS, String(Date.now()));
-      }
+      if (localStorage.getItem(WAND_KEY_OPTOUT) === "1") return;
       const v = parseInt(localStorage.getItem(WAND_KEY_VIEWS) || "0", 10) || 0;
-      localStorage.setItem(WAND_KEY_VIEWS, String(v + 1));
+      const next = v + 1;
+      localStorage.setItem(WAND_KEY_VIEWS, String(next));
+      if (next > 0 && next % WAND_INTERVAL === 0) {
+        setOpen(true);
+      }
     } catch {}
-
-    check();
-    const onTick = () => check();
-    window.addEventListener("sa-wand-tick", onTick);
-    return () => window.removeEventListener("sa-wand-tick", onTick);
   }, []);
 
-  const dismiss = () => {
-    try {
-      localStorage.setItem(WAND_KEY_DISMISSED, "1");
-    } catch {}
+  const skip = () => setOpen(false);
+
+  const optOut = () => {
+    try { localStorage.setItem(WAND_KEY_OPTOUT, "1"); } catch {}
     setOpen(false);
   };
 
@@ -866,13 +842,12 @@ function MagicWandFeedback() {
       toast.success("Got it — thanks!");
     } finally {
       setSubmitting(false);
-      try { localStorage.setItem(WAND_KEY_DISMISSED, "1"); } catch {}
       setOpen(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) dismiss(); }}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) skip(); }}>
       <DialogContent className="sm:max-w-md">
         <div className="flex flex-col items-center text-center gap-3 pt-2">
           <img
@@ -883,25 +858,35 @@ function MagicWandFeedback() {
           <DialogHeader className="space-y-1.5">
             <DialogTitle className="text-center">Quick favor?</DialogTitle>
             <DialogDescription className="text-center">
-              If I could wave a magic wand and make this the perfect study tool for you, what would it do?
+              If you could wave a magic wand, what would make this perfect for you?
             </DialogDescription>
           </DialogHeader>
         </div>
         <Textarea
           value={wish}
           onChange={(e) => setWish(e.target.value)}
-          placeholder="Tell us anything! Your feedback helps us ensure we're building something perfect for you."
-          rows={4}
+          placeholder="One thing you'd change…"
+          rows={3}
           className="text-sm resize-none mt-2"
           autoFocus
         />
-        <div className="flex items-center justify-end gap-2 pt-1">
-          <Button size="sm" variant="ghost" onClick={dismiss} disabled={submitting}>
-            Not now
-          </Button>
-          <Button size="sm" onClick={send} disabled={submitting}>
-            {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send to Lee"}
-          </Button>
+        <div className="flex items-center justify-between gap-2 pt-1">
+          <button
+            type="button"
+            onClick={optOut}
+            disabled={submitting}
+            className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+          >
+            Don't show again
+          </button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="ghost" onClick={skip} disabled={submitting}>
+              Skip
+            </Button>
+            <Button size="sm" onClick={send} disabled={submitting}>
+              {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send to Lee"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
