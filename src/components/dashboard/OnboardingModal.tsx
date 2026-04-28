@@ -130,6 +130,7 @@ export default function OnboardingModal({
         body: {
           display_name: name.trim(),
           campus_id: campusId,
+          campus_other: isCatchAll ? (campusWriteIn.trim() || null) : null,
           course_id: courseId,
           syllabus_file_path: syllabusPath,
           is_accounting_major: major,
