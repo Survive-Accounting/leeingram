@@ -98,21 +98,31 @@ export default function OnboardingModal({
     return false;
   }, [step, name, major, inGreek, greekOrgId, greekOther, confidence]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (overrides?: {
+    display_name?: string;
+    is_accounting_major?: "yes" | "no" | "definitely_not";
+    is_in_greek_life?: boolean;
+    confidence_1_10?: number;
+  }) => {
     setSubmitting(true);
     try {
+      const finalName = (overrides?.display_name ?? name).trim() || "Test User";
+      const finalMajor = overrides?.is_accounting_major ?? major;
+      const finalGreek = overrides?.is_in_greek_life ?? inGreek;
+      const finalConfidence = overrides?.confidence_1_10 ?? confidence;
+
       const { data, error } = await supabase.functions.invoke("complete-onboarding", {
         body: {
-          display_name: name.trim(),
+          display_name: finalName,
           campus_id: campusId,
-          campus_other: isCatchAll ? (campusWriteIn.trim() || null) : null,
+          campus_other: !campusId || isCatchAll ? (campusWriteIn.trim() || null) : null,
           course_id: courseId,
-          syllabus_file_path: syllabusPath,
-          is_accounting_major: major,
-          is_in_greek_life: inGreek,
-          greek_org_id: greekOrgId,
-          greek_org_other: greekOther.trim() || null,
-          confidence_1_10: confidence,
+          syllabus_file_path: null,
+          is_accounting_major: finalMajor,
+          is_in_greek_life: finalGreek,
+          greek_org_id: finalGreek ? greekOrgId : null,
+          greek_org_other: finalGreek ? (greekOther.trim() || null) : null,
+          confidence_1_10: finalConfidence,
         },
       });
       if (error || !data?.ok) {
@@ -129,6 +139,20 @@ export default function OnboardingModal({
       toast.error(err?.message || "Something went wrong. Try again.");
       setSubmitting(false);
     }
+  };
+
+  // Admin-only: skip current step (or finish with safe defaults on step 3)
+  const handleAdminSkip = () => {
+    if (step < 3) {
+      setStep(((step + 1) as Step));
+      return;
+    }
+    handleSubmit({
+      display_name: name.trim() || prefillName.trim() || "Admin Test",
+      is_accounting_major: major ?? "no",
+      is_in_greek_life: inGreek ?? false,
+      confidence_1_10: confidence,
+    });
   };
 
   return (
