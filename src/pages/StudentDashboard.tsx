@@ -57,10 +57,10 @@ async function openFirstAssetForChapter(chapterId: string) {
 /* ─── Navbar ─── */
 
 function DashNavbar({
-  onStart,
+  onFeedback,
   onSignOut,
 }: {
-  onStart: () => void;
+  onFeedback: () => void;
   onSignOut: () => void;
 }) {
   const navigate = useNavigate();
@@ -92,7 +92,7 @@ function DashNavbar({
             Sign out
           </button>
           <button
-            onClick={onStart}
+            onClick={onFeedback}
             className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98]"
             style={{
               background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
@@ -100,7 +100,7 @@ function DashNavbar({
               fontFamily: "Inter, sans-serif",
             }}
           >
-            Start Studying <ArrowRight className="h-3.5 w-3.5" />
+            Submit Feedback <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>
       </nav>
