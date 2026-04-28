@@ -53,6 +53,18 @@ export default function RetroTerminalFrame({
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
 
+  // Type-in + pulse state for the two reactive lines
+  const courseTyped = useTerminalValue(courseLabel);
+  const chapterTyped = useTerminalValue(chapterLabel);
+
+  // CRT pulse: one quick brighten when either value changes (skips the very first mount)
+  const [crtPulseKey, setCrtPulseKey] = useState(0);
+  const firstPulseRef = useRef(true);
+  useEffect(() => {
+    if (firstPulseRef.current) { firstPulseRef.current = false; return; }
+    setCrtPulseKey((k) => k + 1);
+  }, [courseLabel, chapterLabel]);
+
   // Sequential reveal of the boot lines for a tasteful "entering the system" feel.
   useEffect(() => {
     setBootStep(0);
