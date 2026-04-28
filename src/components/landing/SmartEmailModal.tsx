@@ -253,18 +253,12 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
         )}
 
         {step === "magic-link-sent" && (
-          <div className="text-center space-y-4 py-4">
-            <CheckCircle className="w-12 h-12 mx-auto" style={{ color: "#22C55E" }} />
-            <h2 className="text-lg font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
-              Welcome back!
-            </h2>
-            <p className="text-[14px]" style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>
-              Check your email for a login link.
-            </p>
-            <button onClick={handleClose} className="text-[13px] font-medium hover:underline" style={{ color: NAVY }}>
-              Close
-            </button>
-          </div>
+          <CheckEmailPanel
+            email={email}
+            onChangeEmail={() => { setStep("email"); }}
+            onDismiss={handleClose}
+            dismissLabel="Done"
+          />
         )}
 
         {step === "course-select" && (
