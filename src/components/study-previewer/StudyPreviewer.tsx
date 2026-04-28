@@ -279,65 +279,77 @@ export default function StudyPreviewer({
         />
 
         <div className="relative space-y-6 sm:space-y-8">
-          {/* Stepper: Course + Chapter */}
+          {/* Setup panels — dark control modules above the monitor */}
           <section
-            className="rounded-2xl sa-rise p-5 sm:p-6"
-            style={{
-              background: "#fff",
-              boxShadow:
-                "0 12px 28px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08)",
-              animationDelay: "120ms",
-            }}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 sa-rise"
+            style={{ animationDelay: "120ms" }}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
-              {/* Step 1 — Course */}
-              <div className="space-y-2.5">
-                {stepLabel(1, "Course", courseChosen)}
-                {courses ? (
-                  <SelectShell
-                    value={selectedCourseId ?? ""}
-                    onChange={(v) => onCourseChange?.(v)}
-                    accent={!!selectedCourseId}
-                  >
-                    <option value="">Choose course…</option>
-                    {courses.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.fullName}
-                      </option>
-                    ))}
-                  </SelectShell>
-                ) : (
-                  <div
-                    className="w-full rounded-lg px-4 py-2.5 text-[14px] font-semibold flex items-center justify-between"
-                    style={{
-                      background: "#F8FAFC",
-                      border: "1px solid #E2E8F0",
-                      color: NAVY,
-                    }}
-                  >
-                    <span className="truncate">{fixedCourseLabel ?? "—"}</span>
-                    <Lock className="h-3.5 w-3.5" style={{ color: "#94A3B8" }} />
-                  </div>
-                )}
-              </div>
-
-              {/* Step 2 — Chapter */}
-              <div className="space-y-2.5">
-                {stepLabel(2, "Chapter", chapterChosen)}
+            {/* Module 1 — Course */}
+            <div
+              className="rounded-xl p-3.5 sm:p-4 space-y-2.5"
+              style={{
+                background: `linear-gradient(180deg, ${CHASSIS_TOP} 0%, ${CHASSIS_BOTTOM} 100%)`,
+                border: `1px solid ${CHASSIS_BORDER}`,
+                boxShadow:
+                  "0 8px 20px -10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
+              }}
+            >
+              {moduleHeader("Course", courseChosen, courseChosen)}
+              {courses ? (
                 <SelectShell
-                  ref={chapterDropdownRef}
-                  value={selectedChapterId ?? ""}
-                  onChange={handleChapterChange}
-                  accent={!!selectedChapterId}
-                  disabled={!courseChosen || chapterLoading || chapters.length === 0}
-                  loading={chapterLoading}
+                  value={selectedCourseId ?? ""}
+                  onChange={(v) => onCourseChange?.(v)}
+                  accent={!!selectedCourseId}
                 >
-                  <option value="">
-                    {!courseChosen
-                      ? "Pick a course first"
-                      : chapters.length === 0
-                      ? "Loading chapters…"
-                      : "Choose chapter…"}
+                  <option value="">Choose course…</option>
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.fullName}
+                    </option>
+                  ))}
+                </SelectShell>
+              ) : (
+                <div
+                  className="w-full rounded-md px-3 py-2.5 text-[13.5px] font-medium flex items-center justify-between"
+                  style={{
+                    background: "rgba(0,0,0,0.35)",
+                    border: `1px solid ${CHASSIS_BORDER}`,
+                    color: "#E8FFF1",
+                    fontFamily: MONO_FONT,
+                  }}
+                >
+                  <span className="truncate">{fixedCourseLabel ?? "—"}</span>
+                  <Lock className="h-3.5 w-3.5 shrink-0 ml-2" style={{ color: "#6B7280" }} />
+                </div>
+              )}
+            </div>
+
+            {/* Module 2 — Chapter */}
+            <div
+              className="rounded-xl p-3.5 sm:p-4 space-y-2.5 transition-opacity"
+              style={{
+                background: `linear-gradient(180deg, ${CHASSIS_TOP} 0%, ${CHASSIS_BOTTOM} 100%)`,
+                border: `1px solid ${CHASSIS_BORDER}`,
+                boxShadow:
+                  "0 8px 20px -10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
+                opacity: courseChosen ? 1 : 0.55,
+              }}
+            >
+              {moduleHeader("Chapter", chapterChosen, chapterChosen)}
+              <SelectShell
+                ref={chapterDropdownRef}
+                value={selectedChapterId ?? ""}
+                onChange={handleChapterChange}
+                accent={!!selectedChapterId}
+                disabled={!courseChosen || chapterLoading || chapters.length === 0}
+                loading={chapterLoading}
+              >
+                <option value="">
+                  {!courseChosen
+                    ? "Pick a course first"
+                    : chapters.length === 0
+                    ? "Loading chapters…"
+                    : "Choose chapter…"}
                   </option>
                   {chapters.map((ch) => (
                     <option key={ch.id} value={ch.id}>
