@@ -1,109 +1,79 @@
-# Engagement-gated sharing on V2 Solutions Viewer
+# Global Course Label Rule
 
-Goal: stop asking everyone to share. Only invite the most engaged students (those who rated us 4–5 AND took the time to send written feedback) to share with a friend.
+## The rule (one source of truth)
 
----
+Whenever we display a course name to a student anywhere in the app:
 
-## What changes for the student
+1. If we know the user's campus AND it's NOT "Catch-All University" (slug `general`) AND that campus has a `local_course_code` for the course → show **`local_course_code`** (e.g. `ACCY 201`).
+2. Otherwise → show **`courses.course_name`** (e.g. `Intro Accounting 1`).
 
-**1. Remove the Share button from the V2 viewer header.**
-No more always-visible Share icon next to "Jump anywhere in the course."
+Never combine "code · long name" anymore. Code alone, or name alone.
 
-**2. The "Quick favor?" popup (every 15th problem view) becomes a 3-step funnel:**
+## Step 1 — Create shared helper
 
-```text
-Step 1 — Rate
-  "How are we doing so far?"
-  [1] [2] [3] [4] [5]   ← 1 = worst, 5 = best
-  Don't show again · Skip
+New file: `src/lib/courseLabel.ts`
 
-  ├─ Rating 1–3 → save rating, show short "Thanks — we'll keep improving" → close.
-  │              No wish step. No share step.
-  │
-  └─ Rating 4–5 → continue to Step 2.
+```ts
+export const CATCH_ALL_CAMPUS_SLUG = "general";
 
-Step 2 — Wish (only for 4★/5★)
-  "Glad it's helping. If you could wave a magic wand,
-   what would make this even better?"
-  [textarea — placeholder: "One thing you'd change…"]
-  Skip · Send to Lee
+export interface CourseLabelInput {
+  courseName: string | null | undefined;     // courses.course_name
+  campusSlug?: string | null;                // user's resolved campus slug
+  localCourseCode?: string | null;           // campus_courses.local_course_code for this user's campus + course
+}
 
-  ├─ Skip / empty → save rating only → close.
-  │
-  └─ Sends actual feedback → continue to Step 3.
-
-Step 3 — Share (only after they actually submit a wish)
-  "You're exactly the kind of student we built this for.
-   Know a friend cramming right now? Send them this:"
-  [link field]  [Copy link]
-  Done
+export function getCourseLabel(input: CourseLabelInput): string {
+  const { courseName, campusSlug, localCourseCode } = input;
+  const code = (localCourseCode || "").trim();
+  const knowsCampus = !!campusSlug && campusSlug.toLowerCase() !== CATCH_ALL_CAMPUS_SLUG;
+  if (knowsCampus && code) return code;
+  return (courseName || "").trim();
+}
 ```
 
-The existing "Send this to a friend" button inside the per-problem **ExplanationFeedback** card (shown after a thumbs-up) stays — it's user-initiated and only appears for engaged students, which fits the same philosophy.
+This is the only function any component should call to render a course label.
 
----
+## Step 2 — Get campus context where needed
 
-## Trigger rules (unchanged from today)
+Most call sites already have `useAccessControl` / purchase context returning the user's campus slug. For surfaces that load chapter+course via Supabase, we'll add a join to fetch `local_course_code` for the active campus when one is known:
 
-- Popup opens on every 15th problem view (`sa_problem_views % 15 === 0`).
-- "Don't show again" sets `sa_wand_optout=1` and the popup never returns on that browser.
-- "Skip" at any step just closes; the next 15-view cycle can re-trigger.
+```ts
+// when loading chapter/course for a logged-in or campus-resolved student:
+const { data: cc } = await supabase
+  .from("campus_courses")
+  .select("local_course_code")
+  .eq("course_id", courseId)
+  .eq("campus_id", activeCampusId)
+  .maybeSingle();
+```
 
----
+We'll cache this on the chapter/course object passed to children (e.g. extend `ChapterMeta` with `localCourseCode?: string | null`).
 
-## Data captured
+## Step 3 — Replace existing label logic
 
-Reuse the existing `explanation_feedback` table. One row per popup completion, written at the end of whichever step the student finished:
+Delete the local `getCourseLabel` + `FRIENDLY_COURSE_NAMES` map in `src/pages/v2/SolutionsViewerV2.tsx` and import the shared helper. Same for any other file currently formatting "code · name" strings:
 
-| field | value |
-|---|---|
-| `asset_id` | sentinel `00000000-0000-0000-0000-000000000001` (current pattern) |
-| `asset_name` | `__magic_wand__` |
-| `user_email` | from `v2_student_email` / `sa_free_user_email` if present |
-| `helpful` | `true` if rating ≥ 4, `false` if ≤ 3, `null` if skipped |
-| `reason` | `["wand_prompt", "rating:<1-5>"]` |
-| `note` | wish text (only for 4–5 who typed something) |
+- `src/pages/v2/SolutionsViewerV2.tsx` (header pill, Jump dialog title, share/PDF metadata)
+- `src/lib/campusProgressions.ts` `formatCourseLabel` (update to follow same rule — code-only when present)
+- Any campus landing / dashboard / chapter page that today renders "ACCY 201 — Intro Accounting 1" or "INTRO1 · Intro Accounting 1"
 
-No schema migration needed — `reason` is already a text array.
+After this pass, "Jump anywhere in [course]" reads:
+- Ole Miss student → "Jump anywhere in ACCY 201"
+- Catch-All / unknown campus → "Jump anywhere in Intro Accounting 1"
 
----
+## Step 4 — Remove now-unused code paths
 
-## Technical implementation
+- `FRIENDLY_COURSE_NAMES` map in SolutionsViewerV2 (the `INTRO1 → Intro Accounting 1` lookup) is dead once we rely on `courses.course_name` directly. Delete it.
+- Any "code · name" string concatenation across the app.
 
-All changes live in **`src/pages/v2/SolutionsViewerV2.tsx`**.
+## Out of scope
 
-1. **Delete** the header Share button (lines ~1564–1578) — the `<button>` with `<Share2>` icon. Keep `openShareModal`, `ShareModal`, and `shareOpen` state — they're still used by `ExplanationFeedback` and now by the new wand flow.
-
-2. **Refactor `MagicWandFeedback`** (lines ~795–894):
-   - Add `onTriggerShare: () => void` prop.
-   - Replace single-screen UI with a `step` state machine: `"rate" | "wish" | "thanks"`.
-   - On rating click: store rating in local state; if 1–3, write feedback row and show "Thanks" then close; if 4–5, advance to `"wish"`.
-   - On wish "Send to Lee" with non-empty text: write feedback row → close popup → call `onTriggerShare()` (which opens the existing `ShareModal`).
-   - On wish "Skip": write rating-only row → close.
-   - Keep "Don't show again" link visible on the rate step only.
-   - Keep Lee headshot at the top of all steps for continuity.
-
-3. **Wire it up** at line 1951:
-   ```tsx
-   <MagicWandFeedback onTriggerShare={openShareModal} />
-   ```
-
-4. **Tighten copy** to keep the friendly, concise voice already established:
-   - Rate step title: `Quick favor?`
-   - Rate step body: `How's Survive Accounting working for you so far?`
-   - Wish step title: `Awesome — one wish?`
-   - Wish step body: `If you could wave a magic wand, what would make this perfect?`
-   - Share step title: `Help a friend before their exam`
-   - Share step body: `You're the kind of student we built this for. Send them the link:`
-
-5. **Star UI**: 5 large numbered buttons (1–5) in a row, navy fill on hover, red fill on selected, matching the project's existing button styling. No icon library needed beyond Lucide `Star` if we want stars; numeric 1–5 is simpler and matches the user's spec ("1 worse, 5 best").
-
-6. **Remove unused import** `Share2` from the lucide import line **only if** no other in-file usage remains. `ExplanationFeedback` still uses `Share2`, so the import stays.
-
----
+- No DB migration. `campus_courses.local_course_code` already exists.
+- No change to admin/staff views — they keep showing internal slugs for clarity.
 
 ## Files touched
 
-- `src/pages/v2/SolutionsViewerV2.tsx` — single-file change.
-
-No DB migrations, no new components, no new dependencies.
+- **new** `src/lib/courseLabel.ts`
+- `src/pages/v2/SolutionsViewerV2.tsx`
+- `src/lib/campusProgressions.ts`
+- Any other student-facing component currently formatting course names (will sweep with `rg` during build)

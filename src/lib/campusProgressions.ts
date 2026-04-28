@@ -110,13 +110,12 @@ export function getCampusProgression(campusSlug: string | null | undefined): Cam
 }
 
 /**
- * Build the label shown in dropdowns / summaries for a given course
- * within a campus context. Uses the campus-specific code when available
- * (e.g. "ACCY 201 — Introductory Accounting 1"); otherwise falls back
- * to just the generic name.
+ * Build the label shown to students for a course within a campus context.
+ * Per the global rule: campus code alone when present (e.g. "ACCY 201"),
+ * otherwise the generic course name.
  */
 export function formatCourseLabel(course: ProgressionCourse): string {
-  return course.code ? `${course.code} — ${course.name}` : course.name;
+  return course.code ? course.code : course.name;
 }
 
 /** Resolve a course slug from a URL param against a progression. */

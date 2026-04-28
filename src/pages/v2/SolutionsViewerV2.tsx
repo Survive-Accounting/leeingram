@@ -49,23 +49,8 @@ type ChapterMeta = {
   course?: { code: string | null; course_name: string | null } | null;
 };
 
-const FRIENDLY_COURSE_NAMES: Record<string, string> = {
-  INTRO1: "Intro Accounting 1",
-  INTRO2: "Intro Accounting 2",
-  IA1: "Intermediate Accounting 1",
-  IA2: "Intermediate Accounting 2",
-};
-
-function getCourseLabel(course?: ChapterMeta["course"]): string | null {
-  if (!course) return null;
-  const code = (course.code || "").trim();
-  if (code) {
-    // Friendly fallback for slug-style codes
-    return FRIENDLY_COURSE_NAMES[code.toUpperCase()] ? `${code} · ${FRIENDLY_COURSE_NAMES[code.toUpperCase()]}` : code;
-  }
-  const name = (course.course_name || "").trim();
-  return name || null;
-}
+// Course label rule lives in src/lib/courseLabel.ts (campus code if known, else course name).
+import { getCourseLabel as buildCourseLabel } from "@/lib/courseLabel";
 
 // Natural sort for source_ref (e.g. BE13.2, BE13.10, EX13.1, P13.3a)
 function naturalKey(s: string | null | undefined): (string | number)[] {
@@ -552,7 +537,7 @@ function InlineExplanation({
       .filter(Boolean)
       .join("\n"),
     chapter_name: chapter ? `Ch ${chapter.chapter_number}: ${chapter.chapter_name}` : "",
-    course_name: getCourseLabel(chapter?.course) || "",
+    course_name: chapter?.course?.course_name || "",
   });
 
   // Background prefetch for "Walk me through it" — survive-this caches in
@@ -1382,6 +1367,11 @@ export default function SolutionsViewerV2() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
+  // Campus context for the active user (if any). Drives whether we show the
+  // campus course code (e.g. "ACCY 201") vs the generic course name.
+  const [campusSlug, setCampusSlug] = useState<string | null>(null);
+  const [localCourseCode, setLocalCourseCode] = useState<string | null>(null);
+
   const [helpOpen, setHelpOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [jumpOpen, setJumpOpen] = useState(false);
@@ -1503,6 +1493,57 @@ export default function SolutionsViewerV2() {
     };
   }, [assetCode]);
 
+  // Resolve the active student's campus + the local course code for the
+  // current course. We only do this when the chapter (and therefore course_id)
+  // is known. Best-effort: silently no-ops for anonymous viewers.
+  useEffect(() => {
+    if (!chapter?.course_id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || cancelled) return;
+
+        // Find this user's campus via student_onboarding (preferred) or student_purchases.
+        const { data: onb } = await supabase
+          .from("student_onboarding")
+          .select("campus_id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        let cId: string | null = onb?.campus_id ?? null;
+
+        if (!cId) {
+          const { data: sp } = await supabase
+            .from("student_purchases")
+            .select("campus_id")
+            .eq("email", (user.email || "").toLowerCase())
+            .not("campus_id", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          cId = (sp as any)?.campus_id ?? null;
+        }
+        if (!cId || cancelled) return;
+
+        const [{ data: c }, { data: cc }] = await Promise.all([
+          supabase.from("campuses").select("slug").eq("id", cId).maybeSingle(),
+          supabase
+            .from("campus_courses")
+            .select("local_course_code")
+            .eq("campus_id", cId)
+            .eq("course_id", chapter.course_id)
+            .maybeSingle(),
+        ]);
+        if (cancelled) return;
+        setCampusSlug((c as any)?.slug ?? null);
+        setLocalCourseCode(cc?.local_course_code ?? null);
+      } catch {
+        /* best-effort */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [chapter?.course_id]);
+
   // Simplify-on-load is paused. Show original problem text as-is.
   // (PDF print path still calls simplify-problem on demand.)
 
@@ -1551,7 +1592,11 @@ export default function SolutionsViewerV2() {
   }, [asset, siblings]);
 
   const instructions = asset ? getInstructions(asset) : [];
-  const courseLabel = getCourseLabel(chapter?.course);
+  const courseLabel = buildCourseLabel({
+    courseName: chapter?.course?.course_name,
+    campusSlug,
+    localCourseCode,
+  });
   const headerLabel = chapter
     ? `Ch ${chapter.chapter_number}${asset?.source_ref ? ` — ${asset.source_ref}` : ""}`
     : asset?.source_ref || "";
@@ -1976,7 +2021,7 @@ export default function SolutionsViewerV2() {
                 problemText={asset.survive_problem_text}
                 instructions={getInstructions(asset).join("\n")}
                 chapterName={chapter ? `Ch ${chapter.chapter_number}: ${chapter.chapter_name}` : ""}
-                courseName={getCourseLabel(chapter?.course) || ""}
+                courseName={courseLabel}
               />
             </div>
           </div>
