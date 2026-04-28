@@ -437,7 +437,7 @@ export default function RetroTerminalFrame({
                       whiteSpace: "nowrap",
                     }}
                   >
-                    Ready for Spring '26 finals
+                    Survive Your Spring '26 Finals
                   </span>
                 )}
               </div>
