@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { getStoredFingerprint, getDeviceName } from "@/hooks/useDeviceFingerprint";
+import { sendMagicLink } from "@/lib/sendMagicLink";
 
 const registerDevice = async (studentId: string, email: string) => {
   try {
@@ -78,10 +79,48 @@ export default function AuthCallback() {
           return;
         }
 
-        // Honor explicit "next" param from magic link (post-checkout flow)
         const url = new URL(window.location.href);
         const nextParam = url.searchParams.get("next");
+        const nonce = url.searchParams.get("n");
         const cleanEmail = email.toLowerCase();
+
+        // ── Device-binding check ─────────────────────────────────────────
+        // If the link carries a nonce, verify it was opened on the same
+        // device that requested it. Links without a nonce (legacy emails,
+        // password reset flows, etc.) are allowed through.
+        if (nonce) {
+          try {
+            const { data: vdata } = await supabase.functions.invoke(
+              "verify-magic-link",
+              { body: { nonce, fingerprint: getStoredFingerprint() } },
+            );
+            const outcome = (vdata as any)?.outcome;
+
+            if (outcome === "device_mismatch") {
+              // Sign out, fire a fresh link to *this* device, send to login
+              await supabase.auth.signOut();
+              void sendMagicLink({ email: cleanEmail, allowNew: true });
+              navigate(
+                `/login?message=device_mismatch&resent=1&email=${encodeURIComponent(cleanEmail)}`,
+                { replace: true },
+              );
+              return;
+            }
+            if (outcome === "expired" || outcome === "consumed") {
+              await supabase.auth.signOut();
+              navigate(
+                `/login?message=link_expired&email=${encodeURIComponent(cleanEmail)}`,
+                { replace: true },
+              );
+              return;
+            }
+            // outcome === "ok" or "not_found" → fall through and allow.
+            // ("not_found" covers backwards compat for stale/legacy nonces.)
+          } catch (vErr) {
+            console.error("verify-magic-link failed", vErr);
+            // Fail-open so a transient network error doesn't lock the user out.
+          }
+        }
 
         // Instant redirect — gating happens on the destination via useAccessControl.
         navigate(nextParam || "/my-dashboard", { replace: true });
