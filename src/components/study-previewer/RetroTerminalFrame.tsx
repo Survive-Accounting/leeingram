@@ -54,6 +54,7 @@ export default function RetroTerminalFrame({
   onNudgeChapter,
   welcomeName,
   isReturning = false,
+  notice = null,
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
 
