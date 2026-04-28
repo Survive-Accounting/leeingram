@@ -640,15 +640,32 @@ export default function RetroTerminalFrame({
   );
 }
 
-function Line({ show, children }: { show: boolean; children: React.ReactNode }) {
+function Line({
+  show,
+  children,
+  flashKey,
+}: {
+  show: boolean;
+  children: React.ReactNode;
+  flashKey?: string | number;
+}) {
+  const flashing = flashKey !== undefined && flashKey !== "" && flashKey !== 0;
   return (
     <div
-      className="whitespace-pre-wrap"
+      className={`relative whitespace-pre-wrap ${flashing ? "sa-line-flash" : ""}`}
+      key={flashing ? `flash-${flashKey}` : undefined}
       style={{
         opacity: show ? 1 : 0,
         transform: show ? "translateY(0)" : "translateY(2px)",
         transition: "opacity 220ms ease-out, transform 220ms ease-out",
         minHeight: "1.7em",
+        // Negative margin + padding so the highlight bleeds slightly past the
+        // text without shifting layout.
+        marginLeft: "-0.4em",
+        marginRight: "-0.4em",
+        paddingLeft: "0.4em",
+        paddingRight: "0.4em",
+        borderRadius: 4,
       }}
     >
       {children}
