@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { DevShortcut } from "@/components/DevShortcut";
+import { sendMagicLink } from "@/lib/sendMagicLink";
+import CheckEmailPanel from "@/components/landing/CheckEmailPanel";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
