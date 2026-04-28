@@ -294,29 +294,6 @@ export default function StudentDashboard() {
       <DashNavbar onFeedback={() => setFeedbackOpen(true)} onSignOut={handleSignOut} />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-5 sm:px-8 pt-10 md:pt-12 pb-20 space-y-10">
-        {/* Slim personal greeting strip */}
-        <div className="text-center md:text-left">
-          <h1
-            className="text-[26px] sm:text-[32px] md:text-[36px] leading-tight"
-            style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
-          >
-            {greeting}
-          </h1>
-          <p
-            className="mt-1 text-[12.5px] sm:text-[13px]"
-            style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
-          >
-            Free Beta Access through {expiresStr}
-          </p>
-
-          {!earlyBirdOpted && userId && (
-            <EarlyBirdOptInRow
-              userId={userId}
-              onOptedIn={() => setEarlyBirdOpted(true)}
-            />
-          )}
-        </div>
-
         {/* Top row — Share (primary, left) + A Note From Lee (right) */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-6 items-stretch">
           <div className="md:col-span-7">
@@ -330,6 +307,15 @@ export default function StudentDashboard() {
             <WelcomeVideoCard onClick={() => setVideoOpen(true)} fullWidth />
           </div>
         </div>
+
+        {!earlyBirdOpted && userId && (
+          <div className="text-center md:text-left">
+            <EarlyBirdOptInRow
+              userId={userId}
+              onOptedIn={() => setEarlyBirdOpted(true)}
+            />
+          </div>
+        )}
 
         {/* Previewer entry — eyebrow + headline + monitor read as one launchpad unit */}
         <div className="space-y-6">
@@ -350,6 +336,12 @@ export default function StudentDashboard() {
             >
               Free accounting study tools for finals.
             </h2>
+            <p
+              className="mt-2 text-[12.5px] sm:text-[13px]"
+              style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+            >
+              Free Beta Access through {expiresStr}
+            </p>
           </div>
 
           <StudyPreviewer
@@ -357,6 +349,8 @@ export default function StudentDashboard() {
             fixedCourseLabel={courseLabel ?? campusName ?? null}
             onOpenFeedback={() => setFeedbackOpen(true)}
             persistChapterKey={SELECTED_CHAPTER_KEY}
+            welcomeName={firstName || null}
+            isReturning={isReturning}
           />
         </div>
 
