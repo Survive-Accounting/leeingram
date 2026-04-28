@@ -306,6 +306,87 @@ function NeedHelpModal({
   );
 }
 
+// ── Share Feedback chooser modal ───────────────────────────────────────
+// Lightweight two-card chooser shown when the student clicks "Share
+// Feedback". Routes them to either the existing issue-report flow or to
+// the "Vote on new ideas" section of the right panel.
+function FeedbackChooserModal({
+  open,
+  onOpenChange,
+  onReportIssue,
+  onSuggestFeature,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onReportIssue: () => void;
+  onSuggestFeature: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Share feedback</DialogTitle>
+          <DialogDescription>
+            What would you like to share with us?
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 gap-3 pt-1">
+          <button
+            type="button"
+            onClick={onReportIssue}
+            className="group text-left rounded-xl border p-4 transition-all hover:-translate-y-px hover:shadow-md hover:border-[#CE1126]/50 focus:outline-none focus:ring-2 focus:ring-[#CE1126]/40"
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0"
+                style={{
+                  background: "rgba(206,17,38,0.10)",
+                  border: "1px solid rgba(206,17,38,0.35)",
+                  color: "#FCA5A5",
+                }}
+              >
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold leading-tight">Report an issue</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Something is confusing, incorrect, unclear, or not working.
+                </div>
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={onSuggestFeature}
+            className="group text-left rounded-xl border p-4 transition-all hover:-translate-y-px hover:shadow-md hover:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0"
+                style={{
+                  background: "rgba(251,191,36,0.12)",
+                  border: "1px solid rgba(251,191,36,0.45)",
+                  color: "#FCD34D",
+                }}
+              >
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold leading-tight">Suggest a new feature</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Vote on or suggest tools and features that would make this better.
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Stuck? Support modal ───────────────────────────────────────────────
 type StuckIssueType = "question" | "problem_text_issue" | "walkthrough_issue" | "general_feedback";
 
