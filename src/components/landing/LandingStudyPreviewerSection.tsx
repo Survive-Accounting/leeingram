@@ -126,19 +126,6 @@ export default function LandingStudyPreviewerSection({
           >
             Free accounting study tools for finals.
           </h2>
-          <p
-            className="mt-4 sm:mt-5 text-[15px] sm:text-[17px] mx-auto sa-hero-in"
-            style={{
-              fontFamily: "Inter, sans-serif",
-              color: "#475569",
-              lineHeight: 1.6,
-              maxWidth: 620,
-              animationDelay: "240ms",
-            }}
-          >
-            Choose a course, pick a chapter, and explore beta tools built to
-            help you study faster — and help us improve them.
-          </p>
         </div>
 
         {/* Previewer (course selector lives inside) */}
