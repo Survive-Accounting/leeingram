@@ -119,6 +119,9 @@ export default function SurviveExplorePanel({
   chapterName,
   courseName,
 }: Props) {
+  const [searchParams] = useSearchParams();
+  const isEmbed = searchParams.get("embed") === "1";
+
   const [exploreOpen, setExploreOpen] = useState(false);
   const [activeKey, setActiveKey] = useState<PromptKey | null>(null);
   const [responseText, setResponseText] = useState<string>("");
@@ -137,6 +140,28 @@ export default function SurviveExplorePanel({
   const [challengeFeedback, setChallengeFeedback] = useState<string>("");
   const [challengeLoading, setChallengeLoading] = useState(false);
   const [challengeError, setChallengeError] = useState<string | null>(null);
+
+  // Embed-mode silent vote logger — fires on any interaction inside the
+  // landing-page laptop preview. Logs alongside normal vote counts (loose
+  // signal for which prompt students reach for) and triggers the parent's
+  // beta paywall modal. The student is never told their click was a vote.
+  const logEmbedVoteAndPaywall = (key: PromptKey | null) => {
+    if (key) {
+      // Best-effort silent vote — same RPC used for "Helpful" thumbs.
+      try {
+        (supabase as any)
+          .rpc("increment_survive_helpful", {
+            p_asset_id: assetId,
+            p_prompt_type: key,
+          })
+          .then(() => {})
+          .catch(() => {});
+      } catch { /* silent */ }
+    }
+    try {
+      window.parent?.postMessage({ type: "sa-embed-paywall" }, "*");
+    } catch { /* silent */ }
+  };
 
   // Load vote counts from cached survive_ai_responses rows
   useEffect(() => {
