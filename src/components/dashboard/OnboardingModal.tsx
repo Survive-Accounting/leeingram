@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Upload, X, Check } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import GreekOrgSearch from "./GreekOrgSearch";
+import { useIsStaff } from "@/hooks/useIsStaff";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -42,6 +43,7 @@ export default function OnboardingModal({
   prefillName,
   onComplete,
 }: Props) {
+  const isStaff = useIsStaff();
   const [step, setStep] = useState<Step>(1);
   const [submitting, setSubmitting] = useState(false);
 
@@ -50,10 +52,8 @@ export default function OnboardingModal({
   const [campusId, setCampusId] = useState<string | null>(prefillCampusId);
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [courseId] = useState<string | null>(prefillCourseId);
-  const [syllabusPath, setSyllabusPath] = useState<string | null>(null);
-  const [syllabusName, setSyllabusName] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [campusWriteIn, setCampusWriteIn] = useState("");
+  const [editCampus, setEditCampus] = useState(false);
 
   const [major, setMajor] = useState<"yes" | "no" | "definitely_not" | null>(null);
   const [inGreek, setInGreek] = useState<boolean | null>(null);
@@ -83,9 +83,8 @@ export default function OnboardingModal({
   // Validation per step
   const canAdvance = useMemo(() => {
     if (step === 1) {
-      // Catch-all campus: name only — write-in/skip is allowed.
-      if (isCatchAll) return name.trim().length > 0;
-      return name.trim().length > 0 && !!campusId;
+      // Name is the only requirement. Campus is either known or optional write-in.
+      return name.trim().length > 0;
     }
     if (step === 2) {
       if (!major) return false;
@@ -97,47 +96,33 @@ export default function OnboardingModal({
       return confidence >= 1 && confidence <= 10;
     }
     return false;
-  }, [step, name, campusId, isCatchAll, major, inGreek, greekOrgId, greekOther, confidence]);
+  }, [step, name, major, inGreek, greekOrgId, greekOther, confidence]);
 
-  const handleSyllabusUpload = async (file: File) => {
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Syllabus too large (max 10 MB)");
-      return;
-    }
-    setUploading(true);
-    try {
-      const ext = file.name.split(".").pop() || "pdf";
-      const path = `syllabi/${userId}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("chapter-resources")
-        .upload(path, file, { upsert: true });
-      if (error) throw error;
-      setSyllabusPath(path);
-      setSyllabusName(file.name);
-    } catch (err) {
-      console.error(err);
-      toast.error("Couldn't upload that file. Try again or skip.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = async (overrides?: {
+    display_name?: string;
+    is_accounting_major?: "yes" | "no" | "definitely_not";
+    is_in_greek_life?: boolean;
+    confidence_1_10?: number;
+  }) => {
     setSubmitting(true);
     try {
+      const finalName = (overrides?.display_name ?? name).trim() || "Test User";
+      const finalMajor = overrides?.is_accounting_major ?? major;
+      const finalGreek = overrides?.is_in_greek_life ?? inGreek;
+      const finalConfidence = overrides?.confidence_1_10 ?? confidence;
+
       const { data, error } = await supabase.functions.invoke("complete-onboarding", {
         body: {
-          display_name: name.trim(),
+          display_name: finalName,
           campus_id: campusId,
-          campus_other: isCatchAll ? (campusWriteIn.trim() || null) : null,
+          campus_other: !campusId || isCatchAll ? (campusWriteIn.trim() || null) : null,
           course_id: courseId,
-          syllabus_file_path: syllabusPath,
-          is_accounting_major: major,
-          is_in_greek_life: inGreek,
-          greek_org_id: greekOrgId,
-          greek_org_other: greekOther.trim() || null,
-          confidence_1_10: confidence,
+          syllabus_file_path: null,
+          is_accounting_major: finalMajor,
+          is_in_greek_life: finalGreek,
+          greek_org_id: finalGreek ? greekOrgId : null,
+          greek_org_other: finalGreek ? (greekOther.trim() || null) : null,
+          confidence_1_10: finalConfidence,
         },
       });
       if (error || !data?.ok) {
@@ -154,6 +139,20 @@ export default function OnboardingModal({
       toast.error(err?.message || "Something went wrong. Try again.");
       setSubmitting(false);
     }
+  };
+
+  // Admin-only: skip current step (or finish with safe defaults on step 3)
+  const handleAdminSkip = () => {
+    if (step < 3) {
+      setStep(((step + 1) as Step));
+      return;
+    }
+    handleSubmit({
+      display_name: name.trim() || prefillName.trim() || "Admin Test",
+      is_accounting_major: major ?? "no",
+      is_in_greek_life: inGreek ?? false,
+      confidence_1_10: confidence,
+    });
   };
 
   return (
@@ -199,12 +198,12 @@ export default function OnboardingModal({
         <div className="px-6 pb-6 space-y-5">
           {step === 1 && (
             <>
-              <Field label="Your first name" required>
+              <Field label="Your full name" required>
                 <input
                   autoFocus
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Jordan"
+                  placeholder="e.g. Lee Ingram"
                   className="w-full rounded-lg px-3 py-2.5 text-[15px] outline-none focus:ring-2"
                   style={{
                     background: "#F8FAFC",
@@ -214,11 +213,32 @@ export default function OnboardingModal({
                 />
               </Field>
 
-              {isCatchAll ? (
+              {prefilledCampus && !isCatchAll && !editCampus ? (
+                <Field label="Your campus">
+                  <div
+                    className="flex items-center justify-between rounded-lg px-3 py-2.5 text-[14px]"
+                    style={{
+                      background: "#F8FAFC",
+                      border: "1px solid #E2E8F0",
+                      color: NAVY,
+                    }}
+                  >
+                    <span className="font-medium">{prefilledCampus.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditCampus(true)}
+                      className="text-[12px] underline"
+                      style={{ color: "#64748B" }}
+                    >
+                      Not right?
+                    </button>
+                  </div>
+                </Field>
+              ) : (!prefilledCampus || isCatchAll) ? (
                 <Field
                   label="Your campus"
                   optional
-                  hint="We don't have your school in the system yet — type it in or skip."
+                  hint="We don't have your school in the system yet — type it in or skip. We'll clean it up later."
                 >
                   <input
                     value={campusWriteIn}
@@ -255,57 +275,6 @@ export default function OnboardingModal({
                   </select>
                 </Field>
               )}
-
-              <Field label="Upload your syllabus" optional>
-                {syllabusPath ? (
-                  <div
-                    className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-[13.5px]"
-                    style={{
-                      background: "#ECFDF5",
-                      border: "1px solid #A7F3D0",
-                      color: "#065F46",
-                    }}
-                  >
-                    <Check className="h-4 w-4" />
-                    <span className="flex-1 truncate">{syllabusName}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSyllabusPath(null);
-                        setSyllabusName(null);
-                      }}
-                      className="opacity-60 hover:opacity-100"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <label
-                    className="flex items-center gap-2 rounded-lg px-3 py-2.5 cursor-pointer transition-colors text-[13.5px]"
-                    style={{
-                      background: "#F8FAFC",
-                      border: "1px dashed #CBD5E1",
-                      color: "#64748B",
-                    }}
-                  >
-                    {uploading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Upload className="h-4 w-4" />
-                    )}
-                    <span>{uploading ? "Uploading…" : "Choose a file (PDF, DOCX, image)"}</span>
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleSyllabusUpload(f);
-                      }}
-                    />
-                  </label>
-                )}
-              </Field>
             </>
           )}
 
@@ -431,15 +400,29 @@ export default function OnboardingModal({
           className="px-6 py-4 flex items-center justify-between gap-3"
           style={{ borderTop: "1px solid #F1F5F9", background: "#FAFBFC" }}
         >
-          <button
-            type="button"
-            onClick={() => setStep((s) => (s > 1 ? ((s - 1) as Step) : s))}
-            disabled={step === 1 || submitting}
-            className="text-[13px] font-medium disabled:opacity-30"
-            style={{ color: "#64748B" }}
-          >
-            ← Back
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setStep((s) => (s > 1 ? ((s - 1) as Step) : s))}
+              disabled={step === 1 || submitting}
+              className="text-[13px] font-medium disabled:opacity-30"
+              style={{ color: "#64748B" }}
+            >
+              ← Back
+            </button>
+            {isStaff && (
+              <button
+                type="button"
+                onClick={handleAdminSkip}
+                disabled={submitting}
+                className="text-[12px] font-medium underline disabled:opacity-30"
+                style={{ color: "#94A3B8" }}
+                title="Admin only"
+              >
+                Admin: skip {step < 3 ? "step →" : "& submit"}
+              </button>
+            )}
+          </div>
 
           {step < 3 ? (
             <button
@@ -458,7 +441,7 @@ export default function OnboardingModal({
             <button
               type="button"
               disabled={!canAdvance || submitting}
-              onClick={handleSubmit}
+              onClick={() => handleSubmit()}
               className="inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-[13.5px] font-semibold text-white transition-all disabled:opacity-40"
               style={{
                 background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
