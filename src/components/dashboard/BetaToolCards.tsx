@@ -1,15 +1,16 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Brain, MessageCircleQuestion, Wand2 } from "lucide-react";
-import { toast } from "sonner";
-import FeedbackToolModal from "./FeedbackToolModal";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
 
-export default function BetaToolCards({ email }: { email: string | null }) {
+export default function BetaToolCards({
+  onOpenFeedback,
+}: {
+  email?: string | null;
+  onOpenFeedback: () => void;
+}) {
   const navigate = useNavigate();
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   return (
     <section>
@@ -20,12 +21,14 @@ export default function BetaToolCards({ email }: { email: string | null }) {
         >
           Beta Tools
         </h2>
-        <span
-          className="text-[10.5px] uppercase tracking-widest font-semibold"
-          style={{ color: "#94A3B8" }}
+        <button
+          type="button"
+          onClick={onOpenFeedback}
+          className="text-[10.5px] uppercase tracking-widest font-semibold hover:underline transition-colors"
+          style={{ color: RED }}
         >
-          You're shaping these
-        </span>
+          Your feedback is implemented in real time →
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -33,7 +36,7 @@ export default function BetaToolCards({ email }: { email: string | null }) {
           icon={<Wand2 className="h-4 w-4" />}
           eyebrow="Tool 01 · Active"
           title="Practice Problem Helper"
-          body="Your live tutor for any problem in your chapter."
+          body="Get instant help for any problem in your chapter."
           cta="Open"
           onClick={() => navigate("/cram")}
           accent={RED}
@@ -43,14 +46,9 @@ export default function BetaToolCards({ email }: { email: string | null }) {
           icon={<Brain className="h-4 w-4" />}
           eyebrow="Tool 02 · Building"
           title="Journal Entry Memorizer"
-          body="Drill the JEs you keep getting wrong. Coming soon."
+          body="Drill the JEs for deeper understanding."
           cta="Tell us what you'd want"
-          onClick={() => {
-            toast.info(
-              "Hop into 'Help us decide' and tell us what would make this tool actually useful for you.",
-            );
-            setFeedbackOpen(true);
-          }}
+          onClick={onOpenFeedback}
           accent="#94A3B8"
           status="soon"
         />
@@ -58,19 +56,14 @@ export default function BetaToolCards({ email }: { email: string | null }) {
           icon={<MessageCircleQuestion className="h-4 w-4" />}
           eyebrow="Tool 03 · Your turn"
           title="Help us decide"
-          body="What should we build next? Your idea could be Tool 04."
+          subtitle="If we could build you the perfect study tool, what all would it do?"
+          body=""
           cta="Drop an idea"
-          onClick={() => setFeedbackOpen(true)}
+          onClick={onOpenFeedback}
           accent={NAVY}
           status="prompt"
         />
       </div>
-
-      <FeedbackToolModal
-        open={feedbackOpen}
-        email={email}
-        onClose={() => setFeedbackOpen(false)}
-      />
     </section>
   );
 }
@@ -79,6 +72,7 @@ function ToolCard({
   icon,
   eyebrow,
   title,
+  subtitle,
   body,
   cta,
   onClick,
@@ -88,6 +82,7 @@ function ToolCard({
   icon: React.ReactNode;
   eyebrow: string;
   title: string;
+  subtitle?: string;
   body: string;
   cta: string;
   onClick: () => void;
@@ -104,7 +99,7 @@ function ToolCard({
         border: "1px solid #E0E7F0",
         boxShadow: "0 4px 14px rgba(20,33,61,0.05)",
         fontFamily: "Inter, sans-serif",
-        minHeight: 180,
+        minHeight: 200,
       }}
     >
       {status === "soon" && (
@@ -132,12 +127,22 @@ function ToolCard({
       <h3 className="text-[15.5px] font-semibold leading-snug" style={{ color: NAVY }}>
         {title}
       </h3>
-      <p
-        className="mt-1.5 text-[12.5px] leading-relaxed flex-1"
-        style={{ color: "#64748B" }}
-      >
-        {body}
-      </p>
+      {subtitle && (
+        <p
+          className="mt-1.5 text-[12.5px] leading-relaxed flex-1"
+          style={{ color: "#475569", fontStyle: "italic" }}
+        >
+          {subtitle}
+        </p>
+      )}
+      {body && (
+        <p
+          className="mt-1.5 text-[12.5px] leading-relaxed flex-1"
+          style={{ color: "#64748B" }}
+        >
+          {body}
+        </p>
+      )}
 
       <div
         className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-semibold transition-transform group-hover:translate-x-0.5"

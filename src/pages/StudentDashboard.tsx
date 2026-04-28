@@ -8,6 +8,8 @@ import BetaCountdownStrip from "@/components/dashboard/BetaCountdownStrip";
 import WelcomeCard from "@/components/dashboard/WelcomeCard";
 import LegacyWelcomeCard from "@/components/dashboard/LegacyWelcomeCard";
 import BetaToolCards from "@/components/dashboard/BetaToolCards";
+import FeedbackToolModal from "@/components/dashboard/FeedbackToolModal";
+import { WelcomeVideoCard, WelcomeVideoModal } from "@/components/dashboard/WelcomeVideoCard";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -55,10 +57,10 @@ async function openFirstAssetForChapter(chapterId: string) {
 /* ─── Navbar ─── */
 
 function DashNavbar({
-  onStart,
+  onFeedback,
   onSignOut,
 }: {
-  onStart: () => void;
+  onFeedback: () => void;
   onSignOut: () => void;
 }) {
   const navigate = useNavigate();
@@ -90,7 +92,7 @@ function DashNavbar({
             Sign out
           </button>
           <button
-            onClick={onStart}
+            onClick={onFeedback}
             className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98]"
             style={{
               background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
@@ -98,7 +100,7 @@ function DashNavbar({
               fontFamily: "Inter, sans-serif",
             }}
           >
-            Start Studying <ArrowRight className="h-3.5 w-3.5" />
+            Submit Feedback <ArrowRight className="h-3.5 w-3.5" />
           </button>
         </div>
       </nav>
@@ -231,6 +233,8 @@ export default function StudentDashboard() {
     welcomed_at: string | null;
   } | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
   const [verifying, setVerifying] = useState<boolean>(() => {
     const p = new URLSearchParams(window.location.search);
     return p.get("just_paid") === "1" || p.get("checkout") === "success";
@@ -383,23 +387,28 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: BG_GRADIENT }}>
       <BetaCountdownStrip />
-      <DashNavbar onStart={openStartStudying} onSignOut={handleSignOut} />
+      <DashNavbar onFeedback={() => setFeedbackOpen(true)} onSignOut={handleSignOut} />
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-10 md:pt-14 pb-16 space-y-10">
-        {/* Welcome heading */}
-        <div className="text-center sm:text-left">
-          <h1
-            className="text-[34px] sm:text-[44px] md:text-[54px] leading-tight"
-            style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
-          >
-            {firstName ? `Welcome back, ${firstName}` : "Welcome back"}
-          </h1>
-          <p
-            className="mt-2 text-[13px] sm:text-[14px]"
-            style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
-          >
-            Access through {expiresStr}
-          </p>
+      <main className="flex-1 max-w-5xl w-full mx-auto px-5 sm:px-8 pt-12 md:pt-16 pb-20 space-y-12">
+        {/* Welcome heading + video */}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 md:gap-10">
+          <div className="text-center md:text-left">
+            <h1
+              className="text-[34px] sm:text-[44px] md:text-[54px] leading-tight"
+              style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
+            >
+              {firstName ? `Thanks for joining, ${firstName}` : "Thanks for joining"}
+            </h1>
+            <p
+              className="mt-2 text-[13px] sm:text-[14px]"
+              style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+            >
+              Access through {expiresStr}
+            </p>
+          </div>
+          <div className="md:shrink-0 flex justify-center md:justify-end">
+            <WelcomeVideoCard onClick={() => setVideoOpen(true)} />
+          </div>
         </div>
 
         {/* Welcome card (beta number or legacy) */}
@@ -423,7 +432,7 @@ export default function StudentDashboard() {
         )}
 
         {/* Beta tools */}
-        <BetaToolCards email={email} />
+        <BetaToolCards email={email} onOpenFeedback={() => setFeedbackOpen(true)} />
 
         {/* Chapter selector + inline Solutions Viewer v2 */}
         <section
@@ -569,6 +578,14 @@ export default function StudentDashboard() {
         chapters={chapters}
         onClose={() => setPickerOpen(false)}
       />
+
+      <FeedbackToolModal
+        open={feedbackOpen}
+        email={email}
+        onClose={() => setFeedbackOpen(false)}
+      />
+
+      <WelcomeVideoModal open={videoOpen} onClose={() => setVideoOpen(false)} />
 
       {needsOnboarding && userId && email && (
         <OnboardingModal
