@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, ArrowUpRight, Check, ChevronDown, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -362,18 +362,11 @@ interface SelectShellProps {
   children: React.ReactNode;
 }
 
-const SelectShell = (() => {
-  const Inner = (
-    {
-      value,
-      onChange,
-      accent,
-      disabled,
-      loading,
-      children,
-    }: SelectShellProps,
-    ref: React.ForwardedRef<HTMLSelectElement>,
-  ) => (
+const SelectShell = forwardRef<HTMLSelectElement, SelectShellProps>(function SelectShell(
+  { value, onChange, accent, disabled, loading, children },
+  ref,
+) {
+  return (
     <div className="relative">
       <select
         ref={ref}
@@ -396,10 +389,4 @@ const SelectShell = (() => {
       />
     </div>
   );
-  // eslint-disable-next-line react/display-name
-  return Object.assign(
-    (props: SelectShellProps & { ref?: React.ForwardedRef<HTMLSelectElement> }) =>
-      Inner(props, props.ref ?? null),
-    {},
-  );
-})();
+});
