@@ -400,10 +400,10 @@ export default function RetroTerminalFrame({
                 />
               </Line>
 
-              {/* Tool menu */}
+              {/* Tool menu — keycap-style rows */}
               {tools && tools.length > 0 && (
                 <div
-                  className="mt-1"
+                  className="mt-3 space-y-2"
                   style={{
                     opacity: bootStep >= 6 ? 1 : 0,
                     transform: bootStep >= 6 ? "translateY(0)" : "translateY(2px)",
@@ -415,6 +415,19 @@ export default function RetroTerminalFrame({
                     const isActive = activeToolKey === tool.key;
                     const isDisabled = !!tool.disabled;
                     const interactable = canPickTool && !isDisabled && !loading;
+
+                    // Keycap colors — embossed phosphor green button
+                    const keycapBgIdle =
+                      "linear-gradient(180deg, rgba(40,72,52,0.95) 0%, rgba(20,42,30,0.95) 100%)";
+                    const keycapBgHover =
+                      "linear-gradient(180deg, rgba(60,108,78,0.98) 0%, rgba(28,60,42,0.98) 100%)";
+                    const keycapBgActive =
+                      "linear-gradient(180deg, rgba(20,42,30,0.98) 0%, rgba(12,28,20,0.98) 100%)";
+                    const keycapShadowIdle =
+                      "inset 0 1px 0 rgba(180,255,210,0.18), inset 0 -2px 0 rgba(0,0,0,0.55), 0 2px 0 rgba(0,0,0,0.6), 0 0 0 1px rgba(124,255,176,0.18)";
+                    const keycapShadowActive =
+                      "inset 0 2px 4px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(124,255,176,0.45), 0 0 10px rgba(124,255,176,0.25)";
+
                     return (
                       <button
                         key={tool.key}
@@ -427,80 +440,104 @@ export default function RetroTerminalFrame({
                           }
                           onSelectTool?.(tool.key);
                         }}
-                        className="group block w-full text-left whitespace-pre-wrap px-1 -mx-1 rounded transition-colors"
+                        className="group flex w-full items-center gap-3 text-left rounded-md transition-all"
                         style={{
-                          color: isDisabled ? PHOSPHOR_MUTED : PHOSPHOR,
+                          padding: "8px 12px",
+                          background: isActive
+                            ? "rgba(124,255,176,0.06)"
+                            : "transparent",
                           cursor: interactable
                             ? "pointer"
                             : isDisabled
                             ? "not-allowed"
                             : "wait",
-                          minHeight: "1.7em",
-                          background: isActive
-                            ? "rgba(124,255,176,0.08)"
-                            : "transparent",
+                          opacity: isDisabled ? 0.5 : 1,
                         }}
                         onMouseEnter={(e) => {
                           if (!interactable) return;
+                          const cap = e.currentTarget.querySelector(
+                            "[data-keycap]",
+                          ) as HTMLElement | null;
+                          if (cap) cap.style.background = keycapBgHover;
                           e.currentTarget.style.background =
-                            "rgba(124,255,176,0.10)";
+                            "rgba(124,255,176,0.05)";
                         }}
                         onMouseLeave={(e) => {
-                          if (isActive) return;
-                          e.currentTarget.style.background = "transparent";
+                          const cap = e.currentTarget.querySelector(
+                            "[data-keycap]",
+                          ) as HTMLElement | null;
+                          if (cap && !isActive) cap.style.background = keycapBgIdle;
+                          if (!isActive)
+                            e.currentTarget.style.background = "transparent";
                         }}
                         disabled={isDisabled}
                         aria-label={`Choose ${tool.label}`}
                       >
-                        <span style={{ color: PHOSPHOR_DIM }}>
-                          {isActive ? " ▶ " : "   "}
-                        </span>
-                        <span style={{ color: PHOSPHOR_DIM }}>[{num}]</span>{" "}
+                        {/* Keycap */}
                         <span
-                          className="group-hover:underline"
-                          style={{ textUnderlineOffset: "3px" }}
+                          data-keycap
+                          aria-hidden
+                          className="inline-flex items-center justify-center select-none"
+                          style={{
+                            minWidth: 34,
+                            height: 30,
+                            borderRadius: 6,
+                            fontFamily:
+                              "'JetBrains Mono', 'IBM Plex Mono', monospace",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: PHOSPHOR,
+                            textShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                            background: isActive ? keycapBgActive : keycapBgIdle,
+                            boxShadow: isActive
+                              ? keycapShadowActive
+                              : keycapShadowIdle,
+                            transform: isActive
+                              ? "translateY(1px)"
+                              : "translateY(0)",
+                            transition:
+                              "background 140ms ease-out, box-shadow 140ms ease-out, transform 80ms ease-out",
+                          }}
+                        >
+                          {num}
+                        </span>
+
+                        {/* Label */}
+                        <span
+                          className="flex-1 group-hover:underline"
+                          style={{
+                            color: isDisabled ? PHOSPHOR_MUTED : PHOSPHOR,
+                            textUnderlineOffset: "3px",
+                          }}
                         >
                           {tool.label}
                         </span>
+
                         {tool.hint && (
                           <span
                             style={{
                               color: PHOSPHOR_MUTED,
                               fontSize: "0.85em",
-                              marginLeft: "0.5em",
                             }}
                           >
                             {tool.hint}
                           </span>
                         )}
+
+                        {isActive && (
+                          <span
+                            aria-hidden
+                            style={{
+                              color: PHOSPHOR,
+                              textShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                            }}
+                          >
+                            ▶
+                          </span>
+                        )}
                       </button>
                     );
                   })}
-
-                  {/* Prompt cursor at the bottom */}
-                  <div
-                    className="mt-2"
-                    style={{
-                      color: PHOSPHOR_DIM,
-                      minHeight: "1.7em",
-                    }}
-                  >
-                    {">"}{" "}
-                    <span style={{ fontSize: "0.85em" }}>
-                      Click a line, or press 1–{tools.length}
-                    </span>
-                    <span
-                      aria-hidden
-                      className="inline-block align-[-2px] ml-2"
-                      style={{
-                        width: "0.55em",
-                        height: "1.05em",
-                        background: PHOSPHOR,
-                        boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
-                        animation: "sa-cursor-blink 1.05s steps(1) infinite",
-                      }}
-                    />
-                  </div>
                 </div>
               )}
 
