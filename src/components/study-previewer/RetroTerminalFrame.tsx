@@ -70,6 +70,9 @@ export default function RetroTerminalFrame({
   isReturning = false,
   notice = null,
   chapterSelector = null,
+  courseSelector = null,
+  canChangeCourse = false,
+  canChangeChapter = false,
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
 
