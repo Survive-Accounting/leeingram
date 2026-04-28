@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-// (useMemo used via useMemoSafe helper at bottom of file)
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ArrowRight, ArrowUpRight } from "lucide-react";
@@ -328,7 +327,7 @@ export default function StudentDashboard() {
     ? (firstName ? `Welcome back, ${firstName}` : "Welcome back")
     : (firstName ? `Thanks for joining, ${firstName}` : "Thanks for joining");
 
-  const selectedChapter = useMemoSafe(
+  const selectedChapter = useMemo(
     () => chapters.find((c) => c.id === selectedChapterId) ?? null,
     [chapters, selectedChapterId],
   );
@@ -592,11 +591,4 @@ export default function StudentDashboard() {
       )}
     </div>
   );
-}
-
-// Tiny inlined `useMemo` shim that takes a deps array — keeps the body tidy.
-import { useMemo as _useMemo } from "react";
-function useMemoSafe<T>(factory: () => T, deps: unknown[]): T {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  return _useMemo(factory, deps);
 }
