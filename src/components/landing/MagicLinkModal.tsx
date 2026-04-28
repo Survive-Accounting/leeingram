@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { X, Loader2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sendMagicLink } from "@/lib/sendMagicLink";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
