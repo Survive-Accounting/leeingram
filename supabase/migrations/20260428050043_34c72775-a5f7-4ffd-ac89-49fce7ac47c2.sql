@@ -1,0 +1,1 @@
+ALTER TABLE public.student_onboarding ADD COLUMN IF NOT EXISTS campus_other text;
