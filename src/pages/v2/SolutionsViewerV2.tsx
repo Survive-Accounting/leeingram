@@ -1699,8 +1699,8 @@ export default function SolutionsViewerV2() {
                     {instructionsOpen && (
                       <>
                         <ul
-                          className="space-y-2 text-[14px] animate-in fade-in slide-in-from-top-1 duration-150"
-                          style={{ lineHeight: 1.6 }}
+                          className="space-y-1.5 text-[13px] animate-in fade-in slide-in-from-top-1 duration-150"
+                          style={{ lineHeight: 1.55 }}
                         >
                           {instructions.map((ins, i) => {
                             const checked = !!checkedTasks[i];
