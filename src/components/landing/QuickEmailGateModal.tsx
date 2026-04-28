@@ -179,7 +179,7 @@ export default function QuickEmailGateModal({
 
       if (hasActive) {
         const res = await sendMagicLink({ email: trimmed });
-        if (!res.ok) throw new Error(res.error);
+        if (!res.ok) throw new Error(res.error || "send_failed");
         setStep("sent");
         setLoading(false);
         return;
