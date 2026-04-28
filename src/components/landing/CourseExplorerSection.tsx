@@ -708,23 +708,6 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
           )}
         </AnimatePresence>
 
-        {/* Empty placeholder when no tool yet (subtle hint) */}
-        {!selectedTool && (
-          <div
-            className="rounded-2xl border border-dashed flex items-center justify-center py-14 px-6"
-            style={{ borderColor: "#D8DBE0", background: "rgba(255,255,255,0.45)" }}
-          >
-            <div className="text-center space-y-2">
-              <BookOpen className="w-8 h-8 mx-auto" style={{ color: "#B7BCC4" }} />
-              <p className="text-[13.5px] font-semibold" style={{ color: NAVY }}>
-                Your live preview will appear here
-              </p>
-              <p className="text-[12.5px]" style={{ color: "#8A92A0" }}>
-                Finish the three steps above to load it.
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Microcopy under flow */}
         <p
