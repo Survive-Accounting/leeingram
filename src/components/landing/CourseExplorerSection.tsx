@@ -654,26 +654,20 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                     <span className="block w-2.5 h-2.5 rounded-full" style={{ background: "#28C840" }} />
                   </div>
                   <div
-                    className="flex-1 mx-2 sm:mx-4 hidden sm:flex items-center justify-center rounded-md px-3 py-1 text-[11.5px] font-medium truncate"
+                    className="flex-1 mx-3 sm:mx-4 flex items-center justify-center rounded-md px-3 py-1 text-[11px] sm:text-[11.5px] font-medium truncate"
                     style={{
                       background: "#fff",
                       border: "1px solid #E2E5EA",
                       color: "#6B7280",
                       fontFamily: "Inter, sans-serif",
-                      maxWidth: 420,
+                      maxWidth: 460,
                     }}
                   >
                     learn.surviveaccounting.com/
                     {selectedTool === "practice" ? "practice" : "journal-entry"}
                   </div>
-                  <button
-                    onClick={() => setQuestionOpen(true)}
-                    className="hidden sm:flex items-center gap-1.5 text-[11.5px] font-medium transition-colors hover:underline"
-                    style={{ color: "#6B7280" }}
-                  >
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    Have questions?
-                  </button>
+                  {/* Spacer to keep URL pill centered against traffic lights */}
+                  <div className="w-[42px] shrink-0" aria-hidden />
                 </div>
 
                 <ScrollArea style={{ maxHeight: 620 }}>
