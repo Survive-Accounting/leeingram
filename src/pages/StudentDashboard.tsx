@@ -181,8 +181,12 @@ function DashNavbar({
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const previewerRef = useRef<HTMLDivElement | null>(null);
+  const shareRef = useRef<HTMLDivElement | null>(null);
   const scrollToPreviewer = () => {
     previewerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const scrollToShare = () => {
+    shareRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   const [email, setEmail] = useState<string | null>(null);
