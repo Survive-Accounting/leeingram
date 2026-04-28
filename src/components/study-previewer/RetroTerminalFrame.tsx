@@ -86,7 +86,10 @@ export default function RetroTerminalFrame({
     ? "> Awaiting chapter selection…"
     : loading
     ? "> Loading chapter assets…"
-    : "> Pick a tool to start studying:";
+    : "> Select a tool to start studying_";
+
+  const LOGO_URL =
+    "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 
   return (
     <div className="w-full flex justify-center px-2 sm:px-6 py-6 sm:py-10 animate-fade-in">
@@ -174,17 +177,35 @@ export default function RetroTerminalFrame({
                 letterSpacing: "0.02em",
               }}
             >
-              {/* Header chrome */}
+              {/* Header chrome — branded logo + readiness status */}
               <div
-                className="flex items-center justify-between mb-4 sm:mb-6 pb-2"
+                className="flex items-center justify-between mb-4 sm:mb-6 pb-2 gap-3"
                 style={{
                   borderBottom: `1px dashed ${PHOSPHOR_DIM}`,
-                  opacity: 0.85,
                 }}
               >
-                <span style={{ fontSize: "0.85em" }}>SA-TERM 80x24</span>
-                <span style={{ fontSize: "0.85em", color: PHOSPHOR_DIM }}>
-                  {loading ? "BUSY" : canPickTool ? "READY" : "WAIT"}
+                <img
+                  src={LOGO_URL}
+                  alt="Survive Accounting"
+                  className="h-5 sm:h-6 w-auto object-contain select-none"
+                  style={{
+                    // Phosphor tint: knock the white logo into the green palette
+                    filter:
+                      "brightness(0) saturate(100%) invert(92%) sepia(38%) saturate(640%) hue-rotate(76deg) brightness(105%) contrast(101%) drop-shadow(0 0 4px rgba(124,255,176,0.45))",
+                    opacity: 0.95,
+                  }}
+                  draggable={false}
+                />
+                <span
+                  style={{
+                    fontSize: "0.78em",
+                    color: PHOSPHOR_DIM,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Ready for Spring '26 finals
                 </span>
               </div>
 
