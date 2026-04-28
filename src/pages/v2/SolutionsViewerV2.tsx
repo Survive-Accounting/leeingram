@@ -1906,6 +1906,8 @@ export default function SolutionsViewerV2() {
     setOriginalLoading(true);
     setOriginalOpen(false);
     setInstructionsOpen(true);
+    setProblemBodyOpen(true);
+    setChunkIndex(0);
   }, [assetCode]);
 
   useEffect(() => {
