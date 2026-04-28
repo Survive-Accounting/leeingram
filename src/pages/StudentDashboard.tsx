@@ -322,33 +322,34 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* Previewer entry header — matches landing for consistent product framing */}
-        <div className="text-center" style={{ maxWidth: 760, margin: "0 auto" }}>
-          <div
-            className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4"
-            style={{ color: RED, letterSpacing: "0.16em" }}
-          >
-            <span
-              className="inline-block rounded-full"
-              style={{ width: 6, height: 6, background: RED }}
-            />
-            FREE BETA · TRY IT NOW
+        {/* Previewer entry — eyebrow + headline + monitor read as one launchpad unit */}
+        <div className="space-y-6">
+          <div className="text-center" style={{ maxWidth: 760, margin: "0 auto" }}>
+            <div
+              className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4"
+              style={{ color: RED, letterSpacing: "0.16em" }}
+            >
+              <span
+                className="inline-block rounded-full"
+                style={{ width: 6, height: 6, background: RED }}
+              />
+              FREE BETA · TRY IT NOW
+            </div>
+            <h2
+              className="text-[28px] sm:text-[38px] leading-[1.1]"
+              style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: NAVY }}
+            >
+              Free accounting study tools for finals.
+            </h2>
           </div>
-          <h2
-            className="text-[28px] sm:text-[38px] leading-[1.1]"
-            style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: NAVY }}
-          >
-            Free accounting study tools for finals.
-          </h2>
-        </div>
 
-        {/* Course + chapter selector + tools + workspace */}
-        <StudyPreviewer
-          chapters={chapters}
-          fixedCourseLabel={courseLabel ?? campusName ?? null}
-          onOpenFeedback={() => setFeedbackOpen(true)}
-          persistChapterKey={SELECTED_CHAPTER_KEY}
-        />
+          <StudyPreviewer
+            chapters={chapters}
+            fixedCourseLabel={courseLabel ?? campusName ?? null}
+            onOpenFeedback={() => setFeedbackOpen(true)}
+            persistChapterKey={SELECTED_CHAPTER_KEY}
+          />
+        </div>
 
         {/* Share with friends */}
         <ShareWithFriendsBand betaNumber={betaNumber} campusName={campusName} />
