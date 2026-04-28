@@ -465,112 +465,107 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
           })}
         </motion.div>
 
-        {/* Step 2: Chapter dropdown */}
-        <div ref={chapterStepRef}>
-          <StepLabel
-            number={2}
-            label="Choose a chapter"
-            active={!!selectedCourseId && !selectedChapterId}
-            done={!!selectedChapterId}
-            disabled={!selectedCourseId}
-          />
-        </div>
-        <motion.div
-          className="max-w-[480px] mx-auto mb-10"
-          initial={false}
-          animate={
-            selectedCourseId
-              ? { opacity: 1, y: 0, filter: "blur(0px)" }
-              : { opacity: 0.55, y: 4, filter: "blur(0.4px)" }
-          }
-          transition={{ duration: 0.4, ease: EASE }}
-        >
-          <div className="relative">
-            <select
-              value={selectedChapterId || ""}
-              onChange={(e) => handleChapterChange(e.target.value)}
-              disabled={!selectedCourse}
-              className="w-full appearance-none rounded-xl px-4 py-3.5 pr-10 text-[14.5px] font-semibold cursor-pointer outline-none transition-all disabled:cursor-not-allowed"
-              style={{
-                background: "#fff",
-                border: `1px solid ${selectedChapterId ? NAVY : "#E5E7EB"}`,
-                color: selectedCourse ? NAVY : "#9CA3AF",
-                fontFamily: "Inter, sans-serif",
-                opacity: selectedCourse ? 1 : 0.55,
-                boxShadow: selectedChapterId
-                  ? "0 4px 14px rgba(20,33,61,0.10)"
-                  : selectedCourseId
-                  ? "0 0 0 4px rgba(20,33,61,0.06), 0 1px 2px rgba(0,0,0,0.03)"
-                  : "0 1px 2px rgba(0,0,0,0.03)",
-              }}
+        {/* Step 2: Chapter dropdown — only after a course is chosen */}
+        <AnimatePresence initial={false}>
+          {selectedCourseId && (
+            <motion.div
+              key="step-2"
+              initial={{ opacity: 0, y: 12, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              transition={{ duration: 0.4, ease: EASE }}
+              style={{ overflow: "hidden" }}
             >
-              <option value="">
-                {selectedCourse ? "Select a chapter…" : "Pick a course first"}
-              </option>
-              {selectedCourse?.chapters.map((ch) => (
-                <option key={ch.id} value={ch.id}>
-                  Ch {ch.number} · {ch.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-              style={{ color: selectedCourse ? NAVY : "#9CA3AF" }}
-            />
-          </div>
-        </motion.div>
+              <div ref={chapterStepRef}>
+                <StepLabel
+                  number={2}
+                  label="Choose a chapter"
+                  active={!selectedChapterId}
+                  done={!!selectedChapterId}
+                />
+              </div>
+              <div className="max-w-[480px] mx-auto mb-10">
+                <div className="relative">
+                  <select
+                    value={selectedChapterId || ""}
+                    onChange={(e) => handleChapterChange(e.target.value)}
+                    className="w-full appearance-none rounded-xl px-4 py-3.5 pr-10 text-[14.5px] font-semibold cursor-pointer outline-none transition-all"
+                    style={{
+                      background: "#fff",
+                      border: `1px solid ${selectedChapterId ? NAVY : "#E5E7EB"}`,
+                      color: NAVY,
+                      fontFamily: "Inter, sans-serif",
+                      boxShadow: selectedChapterId
+                        ? "0 4px 14px rgba(20,33,61,0.10)"
+                        : "0 0 0 4px rgba(20,33,61,0.06), 0 1px 2px rgba(0,0,0,0.03)",
+                    }}
+                  >
+                    <option value="">Select a chapter…</option>
+                    {selectedCourse?.chapters.map((ch) => (
+                      <option key={ch.id} value={ch.id}>
+                        Ch {ch.number} · {ch.name}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                    style={{ color: NAVY }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Step 3: Study tool cards */}
-        <div ref={toolStepRef}>
-          <StepLabel
-            number={3}
-            label="Pick a study tool"
-            active={!!selectedChapterId && !selectedTool}
-            done={!!selectedTool}
-            disabled={!selectedChapterId}
-          />
-        </div>
-        <motion.div
-          className="grid sm:grid-cols-2 gap-5 mb-12"
-          initial={false}
-          animate={selectedChapterId ? "show" : "dim"}
-          variants={{
-            dim: { opacity: 0.5 },
-            show: { opacity: 1, transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
-          }}
-          transition={{ duration: 0.35, ease: EASE }}
-        >
-          <motion.div
-            variants={{
-              dim: { opacity: 0.5, y: 6 },
-              show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE } },
-            }}
-          >
-            <ToolCard
-              title="Practice Problem Helper"
-              description="Practice smarter with walkthroughs, hints, challenge questions, and deeper explanations."
-              icon={<Target className="w-6 h-6" strokeWidth={2.2} />}
-              active={selectedTool === "practice"}
-              disabled={!selectedChapterId}
-              onClick={() => handleToolPick("practice")}
-            />
-          </motion.div>
-          <motion.div
-            variants={{
-              dim: { opacity: 0.5, y: 6 },
-              show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE } },
-            }}
-          >
-            <ToolCard
-              title="Journal Entry Helper"
-              description="Understand debits, credits, accounts, and calculations in a way that actually sticks."
-              icon={<BookOpenCheck className="w-6 h-6" strokeWidth={2.2} />}
-              active={selectedTool === "je"}
-              disabled={!selectedChapterId}
-              onClick={() => handleToolPick("je")}
-            />
-          </motion.div>
-        </motion.div>
+        {/* Step 3: Study tool cards — only after a chapter is chosen */}
+        <AnimatePresence initial={false}>
+          {selectedChapterId && (
+            <motion.div
+              key="step-3"
+              initial={{ opacity: 0, y: 12, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              transition={{ duration: 0.4, ease: EASE }}
+              style={{ overflow: "hidden" }}
+            >
+              <div ref={toolStepRef}>
+                <StepLabel
+                  number={3}
+                  label="Pick a study tool"
+                  active={!selectedTool}
+                  done={!!selectedTool}
+                />
+              </div>
+              <motion.div
+                className="grid sm:grid-cols-2 gap-5 mb-12"
+                initial="hidden"
+                animate="show"
+                variants={stagger(0.05, 0.07)}
+              >
+                <motion.div variants={fadeUp}>
+                  <ToolCard
+                    title="Practice Problem Helper"
+                    description="Practice smarter with walkthroughs, hints, challenge questions, and deeper explanations."
+                    icon={<Target className="w-6 h-6" strokeWidth={2.2} />}
+                    active={selectedTool === "practice"}
+                    disabled={false}
+                    onClick={() => handleToolPick("practice")}
+                  />
+                </motion.div>
+                <motion.div variants={fadeUp}>
+                  <ToolCard
+                    title="Journal Entry Helper"
+                    description="Understand debits, credits, accounts, and calculations in a way that actually sticks."
+                    icon={<BookOpenCheck className="w-6 h-6" strokeWidth={2.2} />}
+                    active={selectedTool === "je"}
+                    disabled={false}
+                    onClick={() => handleToolPick("je")}
+                  />
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Preview pane (only when a tool is chosen) */}
         <AnimatePresence mode="wait">
