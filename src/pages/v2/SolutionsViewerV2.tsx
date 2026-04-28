@@ -2161,6 +2161,31 @@ export default function SolutionsViewerV2() {
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">Reset split (double-click divider)</TooltipContent>
                   </Tooltip>
+
+                  {/* Open in full screen — escapes embedded iframe constraints */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = window.location.pathname + window.location.search;
+                          if (window.top && window.top !== window.self) {
+                            window.open(url, "_blank", "noopener,noreferrer");
+                          } else {
+                            window.open(url, "_blank", "noopener,noreferrer");
+                          }
+                        }}
+                        aria-label="Open in full screen"
+                        className="h-8 w-8 rounded-full inline-flex items-center justify-center transition-all"
+                        style={{ color: "rgba(255,255,255,0.55)" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                      >
+                        <Maximize2 className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Open in full screen</TooltipContent>
+                  </Tooltip>
                 </div>
               </TooltipProvider>
             </div>
