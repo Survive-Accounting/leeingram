@@ -12,6 +12,7 @@ const corsHeaders = {
 interface Payload {
   display_name: string;
   campus_id: string | null;
+  campus_other?: string | null;
   course_id: string | null;
   syllabus_file_path?: string | null;
   is_accounting_major: "yes" | "no" | "definitely_not";
