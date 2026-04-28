@@ -1,79 +1,66 @@
-# Global Course Label Rule
+# Magic Link Modal — Post-Send Cleanup
 
-## The rule (one source of truth)
+## Goal
 
-Whenever we display a course name to a student anywhere in the app:
+Once the user submits their email, the modal should feel calm and helpful — no leftover heading/subhead from the entry step, plus quick links to open their inbox and a clear way to resend or get help.
 
-1. If we know the user's campus AND it's NOT "Catch-All University" (slug `general`) AND that campus has a `local_course_code` for the course → show **`local_course_code`** (e.g. `ACCY 201`).
-2. Otherwise → show **`courses.course_name`** (e.g. `Intro Accounting 1`).
+## Scope
 
-Never combine "code · long name" anymore. Code alone, or name alone.
+Single file: `src/components/landing/MagicLinkModal.tsx`.
 
-## Step 1 — Create shared helper
+## Changes
 
-New file: `src/lib/courseLabel.ts`
+### 1. Hide the entry-step header after sending
 
-```ts
-export const CATCH_ALL_CAMPUS_SLUG = "general";
+Currently the title "Log in to Survive Accounting" and subtitle "Enter your email and we'll send you a secure login link." render above the success state too. Move both inside the `!sent` branch so the success view starts clean at the top of the card (just the close button in the corner).
 
-export interface CourseLabelInput {
-  courseName: string | null | undefined;     // courses.course_name
-  campusSlug?: string | null;                // user's resolved campus slug
-  localCourseCode?: string | null;           // campus_courses.local_course_code for this user's campus + course
-}
+### 2. New success-state layout
 
-export function getCourseLabel(input: CourseLabelInput): string {
-  const { courseName, campusSlug, localCourseCode } = input;
-  const code = (localCourseCode || "").trim();
-  const knowsCampus = !!campusSlug && campusSlug.toLowerCase() !== CATCH_ALL_CAMPUS_SLUG;
-  if (knowsCampus && code) return code;
-  return (courseName || "").trim();
-}
-```
+Replace the current success block with:
 
-This is the only function any component should call to render a course label.
+- 📬 mailbox icon (larger, centered)
+- Heading: **Check your email** (DM Serif Display, navy)
+- Body copy: *"We sent a secure login link to **{email}**. Click it to open your study tools."* (uses the email the user just entered for confirmation)
+- **Quick-open inbox row** — three small buttons side-by-side, auto-selected based on the email domain but all three always shown:
+  - **Open Gmail** → `https://mail.google.com/mail/u/{email}/#search/from%3A%40surviveaccounting.com+newer_than%3A1h`
+  - **Open Outlook** → `https://outlook.live.com/mail/0/inbox`
+  - **Open Apple Mail** → `https://www.icloud.com/mail`
+  - Each opens in a new tab. Styled as outlined chips (navy border, white bg, navy text, small icon).
+  - The button matching the user's email domain (gmail.com → Gmail, outlook/hotmail/live → Outlook, icloud/me/mac → Apple Mail) is visually emphasized (filled navy) and listed first.
+- Primary **Got it** button (unchanged style) closes the modal.
+- Footer line replacing "Didn't see it? Check spam…":
+  > Didn't see it? **Resend email** or **contact Lee**.
+  - "Resend email" is a text link → re-runs `signInWithOtp` with the same email, shows a sonner toast: *"New login link sent."* (or error toast on failure). Disabled / shows spinner while in flight.
+  - "Contact Lee" is a text link → opens a lightweight inline support modal.
 
-## Step 2 — Get campus context where needed
+### 3. Inline support modal
 
-Most call sites already have `useAccessControl` / purchase context returning the user's campus slug. For surfaces that load chapter+course via Supabase, we'll add a join to fetch `local_course_code` for the active campus when one is known:
+Add a small second modal layer (rendered above the magic link modal when `supportOpen` is true) with:
 
-```ts
-// when loading chapter/course for a logged-in or campus-resolved student:
-const { data: cc } = await supabase
-  .from("campus_courses")
-  .select("local_course_code")
-  .eq("course_id", courseId)
-  .eq("campus_id", activeCampusId)
-  .maybeSingle();
-```
+- Heading: **Need help logging in?**
+- Pre-filled subject: "Login help"
+- Fields: Name, Email (pre-filled with the email they just tried), Message
+- Submit writes to `contact_messages` table and fires `send-contact-notification` edge function (same pattern as `ContactForm.tsx`)
+- Success toast: *"Message sent — Lee will reach out shortly."*
+- Cancel / X to close, returns user to the success state of the magic link modal
 
-We'll cache this on the chapter/course object passed to children (e.g. extend `ChapterMeta` with `localCourseCode?: string | null`).
+This keeps the support flow consistent with the existing `ContactForm` component without introducing a new backend path.
 
-## Step 3 — Replace existing label logic
+### 4. Toast wiring
 
-Delete the local `getCourseLabel` + `FRIENDLY_COURSE_NAMES` map in `src/pages/v2/SolutionsViewerV2.tsx` and import the shared helper. Same for any other file currently formatting "code · name" strings:
-
-- `src/pages/v2/SolutionsViewerV2.tsx` (header pill, Jump dialog title, share/PDF metadata)
-- `src/lib/campusProgressions.ts` `formatCourseLabel` (update to follow same rule — code-only when present)
-- Any campus landing / dashboard / chapter page that today renders "ACCY 201 — Intro Accounting 1" or "INTRO1 · Intro Accounting 1"
-
-After this pass, "Jump anywhere in [course]" reads:
-- Ole Miss student → "Jump anywhere in ACCY 201"
-- Catch-All / unknown campus → "Jump anywhere in Intro Accounting 1"
-
-## Step 4 — Remove now-unused code paths
-
-- `FRIENDLY_COURSE_NAMES` map in SolutionsViewerV2 (the `INTRO1 → Intro Accounting 1` lookup) is dead once we rely on `courses.course_name` directly. Delete it.
-- Any "code · name" string concatenation across the app.
+Import `toast` from `sonner` (already used elsewhere in the project) for:
+- Resend success / failure
+- Support message success / failure
 
 ## Out of scope
 
-- No DB migration. `campus_courses.local_course_code` already exists.
-- No change to admin/staff views — they keep showing internal slugs for clarity.
+- No copy changes to the entry step (email input + Send login link button stay as-is).
+- No changes to auth callback or Supabase config.
+- No new tables or edge functions.
 
-## Files touched
+## Technical notes
 
-- **new** `src/lib/courseLabel.ts`
-- `src/pages/v2/SolutionsViewerV2.tsx`
-- `src/lib/campusProgressions.ts`
-- Any other student-facing component currently formatting course names (will sweep with `rg` during build)
+- Track new state: `resending: boolean`, `supportOpen: boolean`.
+- Keep `email` in state after `setSent(true)` so we can show it in the confirmation copy and pre-fill the support form (currently the email is preserved — good).
+- Mail provider detection helper: simple switch on the part after `@`.
+- Support modal can be a small inline component in the same file to avoid a new file for ~40 lines of JSX.
