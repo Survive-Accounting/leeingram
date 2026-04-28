@@ -151,6 +151,9 @@ export default function StudyPreviewer({
       }
       return;
     }
+    // Always reset any open tool — switching chapters returns the user to the
+    // terminal tool-selection state for the new chapter.
+    setActiveTool(null);
     setChapterLoading(true);
     setViewerAssetCode(null);
 
@@ -176,6 +179,18 @@ export default function StudyPreviewer({
     }
 
     if (ch) toast.success(`Ch. ${ch.chapter_number} study tools are loaded!`);
+  };
+
+  // Course changes from the inline terminal selector — reset chapter + tool so
+  // the user is dropped back at the chapter-pick state for the new course.
+  const handleCourseChange = (courseId: string) => {
+    setActiveTool(null);
+    setSelectedChapterId(null);
+    setViewerAssetCode(null);
+    if (persistChapterKey) {
+      try { localStorage.removeItem(persistChapterKey); } catch { /* ignore */ }
+    }
+    onCourseChange?.(courseId);
   };
 
   const handleSelectTool = (key: ToolKey) => {
@@ -591,7 +606,7 @@ export default function StudyPreviewer({
                 welcomeName={welcomeName ?? null}
                 isReturning={!!isReturning}
                 chapterSelector={
-                  courseChosen && !chapterChosen ? (
+                  courseChosen ? (
                     <SelectShell
                       ref={chapterDropdownRef}
                       value={selectedChapterId ?? ""}
@@ -612,6 +627,25 @@ export default function StudyPreviewer({
                     </SelectShell>
                   ) : null
                 }
+                courseSelector={
+                  courses ? (
+                    <SelectShell
+                      value={selectedCourseId ?? ""}
+                      onChange={handleCourseChange}
+                      accent={false}
+                      compact
+                    >
+                      <option value="">Choose course…</option>
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.fullName}
+                        </option>
+                      ))}
+                    </SelectShell>
+                  ) : null
+                }
+                canChangeCourse={!!courses && courses.length > 1}
+                canChangeChapter={chapterChosen && chapters.length > 1}
                 onSelectTool={(key) => {
                   if (key === "feedback") {
                     onOpenFeedback();
