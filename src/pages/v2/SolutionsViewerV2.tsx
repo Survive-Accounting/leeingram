@@ -2021,7 +2021,7 @@ export default function SolutionsViewerV2() {
                 problemText={asset.survive_problem_text}
                 instructions={getInstructions(asset).join("\n")}
                 chapterName={chapter ? `Ch ${chapter.chapter_number}: ${chapter.chapter_name}` : ""}
-                courseName={getCourseLabel(chapter?.course) || ""}
+                courseName={courseLabel}
               />
             </div>
           </div>
