@@ -16,7 +16,7 @@ export async function sendMagicLink(opts: {
   allowNew?: boolean;
   /** Optional post-login redirect path. */
   next?: string | null;
-}): Promise<{ ok: true } | { ok: false; error: string }> {
+}): Promise<{ ok: boolean; error: string | null }> {
   const email = opts.email.trim().toLowerCase();
   if (!email || !email.includes("@")) {
     return { ok: false, error: "Enter a valid email address." };
