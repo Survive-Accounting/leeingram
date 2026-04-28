@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ArrowRight, X, Search } from "lucide-react";
 import { toast } from "sonner";
+import OnboardingModal from "@/components/dashboard/OnboardingModal";
+import BetaCountdownStrip from "@/components/dashboard/BetaCountdownStrip";
+import WelcomeCard from "@/components/dashboard/WelcomeCard";
+import LegacyWelcomeCard from "@/components/dashboard/LegacyWelcomeCard";
+import BetaToolCards from "@/components/dashboard/BetaToolCards";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
