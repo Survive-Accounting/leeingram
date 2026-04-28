@@ -12,7 +12,7 @@ import StagingHero from "@/components/landing/StagingHero";
 import TestFlowToolbar from "@/components/TestFlowToolbar";
 import { StyleExportToolbar } from "@/components/StyleExportToolbar";
 
-import StagingCoursesSection from "@/components/landing/StagingCoursesSection";
+import LandingStudyPreviewerSection from "@/components/landing/LandingStudyPreviewerSection";
 
 import StagingEmailPromptModal, { type CelebrationData } from "@/components/landing/StagingEmailPromptModal";
 
@@ -302,15 +302,9 @@ export default function StagingLandingPage() {
         <StagingTestimonialsSection onCtaClick={() => requestAccess({ course: defaultCourse.slug })} />
       </div>
 
-      <div ref={coursesRef} id="demo-section" data-export-id="courses" data-export-label="Courses Grid">
-        <StagingCoursesSection
-          courses={COURSES}
-          onCardClick={handleCardClick}
-          onChapterClick={handleChapterClick}
-          onGetStartedClick={(slug) => {
-            setGetStartedPreselectedSlug(slug);
-            setGetStartedOpen(true);
-          }}
+      <div ref={coursesRef} id="demo-section" data-export-id="courses" data-export-label="Study Previewer">
+        <LandingStudyPreviewerSection
+          onJoinBeta={(slug) => requestAccess({ course: slug })}
         />
       </div>
 
