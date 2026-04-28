@@ -243,6 +243,17 @@ export default function StudyPreviewer({
     };
   }, [activeTool, iframeReloadKey, viewerAssetCode, iframeLoaded, iframeError]);
 
+  // Release the locked stage height once we leave a tool, or as a safety net
+  // shortly after activation in case onLoad never fires (e.g., placeholder tools).
+  useEffect(() => {
+    if (!activeTool) {
+      setStageLockHeight(null);
+      return;
+    }
+    const safety = window.setTimeout(() => setStageLockHeight(null), 800);
+    return () => window.clearTimeout(safety);
+  }, [activeTool]);
+
   const selectedChapter = useMemo(
     () => chapters.find((c) => c.id === selectedChapterId) ?? null,
     [chapters, selectedChapterId],
