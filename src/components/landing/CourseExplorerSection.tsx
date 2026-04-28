@@ -530,24 +530,47 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
             disabled={!selectedChapterId}
           />
         </div>
-        <div className="grid sm:grid-cols-2 gap-5 mb-12">
-          <ToolCard
-            title="Practice Problem Helper"
-            description="Practice smarter with walkthroughs, hints, challenge questions, and deeper explanations."
-            icon={<Target className="w-6 h-6" strokeWidth={2.2} />}
-            active={selectedTool === "practice"}
-            disabled={!selectedChapterId}
-            onClick={() => handleToolPick("practice")}
-          />
-          <ToolCard
-            title="Journal Entry Helper"
-            description="Understand debits, credits, accounts, and calculations in a way that actually sticks."
-            icon={<BookOpenCheck className="w-6 h-6" strokeWidth={2.2} />}
-            active={selectedTool === "je"}
-            disabled={!selectedChapterId}
-            onClick={() => handleToolPick("je")}
-          />
-        </div>
+        <motion.div
+          className="grid sm:grid-cols-2 gap-5 mb-12"
+          initial={false}
+          animate={selectedChapterId ? "show" : "dim"}
+          variants={{
+            dim: { opacity: 0.5 },
+            show: { opacity: 1, transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+          }}
+          transition={{ duration: 0.35, ease: EASE }}
+        >
+          <motion.div
+            variants={{
+              dim: { opacity: 0.5, y: 6 },
+              show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE } },
+            }}
+          >
+            <ToolCard
+              title="Practice Problem Helper"
+              description="Practice smarter with walkthroughs, hints, challenge questions, and deeper explanations."
+              icon={<Target className="w-6 h-6" strokeWidth={2.2} />}
+              active={selectedTool === "practice"}
+              disabled={!selectedChapterId}
+              onClick={() => handleToolPick("practice")}
+            />
+          </motion.div>
+          <motion.div
+            variants={{
+              dim: { opacity: 0.5, y: 6 },
+              show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE } },
+            }}
+          >
+            <ToolCard
+              title="Journal Entry Helper"
+              description="Understand debits, credits, accounts, and calculations in a way that actually sticks."
+              icon={<BookOpenCheck className="w-6 h-6" strokeWidth={2.2} />}
+              active={selectedTool === "je"}
+              disabled={!selectedChapterId}
+              onClick={() => handleToolPick("je")}
+            />
+          </motion.div>
+        </motion.div>
 
         {/* Preview pane (only when a tool is chosen) */}
         {selectedTool && selectedChapter && (
