@@ -5853,6 +5853,94 @@ export type Database = {
           },
         ]
       }
+      student_onboarding: {
+        Row: {
+          beta_number: number | null
+          campus_beta_number: number | null
+          campus_id: string | null
+          completed_at: string | null
+          confidence_1_10: number | null
+          course_id: string | null
+          created_at: string
+          display_name: string | null
+          email: string
+          greek_org_id: string | null
+          greek_org_other: string | null
+          id: string
+          is_accounting_major: string | null
+          is_in_greek_life: boolean | null
+          is_legacy: boolean
+          syllabus_file_path: string | null
+          updated_at: string
+          user_id: string
+          welcomed_at: string | null
+        }
+        Insert: {
+          beta_number?: number | null
+          campus_beta_number?: number | null
+          campus_id?: string | null
+          completed_at?: string | null
+          confidence_1_10?: number | null
+          course_id?: string | null
+          created_at?: string
+          display_name?: string | null
+          email: string
+          greek_org_id?: string | null
+          greek_org_other?: string | null
+          id?: string
+          is_accounting_major?: string | null
+          is_in_greek_life?: boolean | null
+          is_legacy?: boolean
+          syllabus_file_path?: string | null
+          updated_at?: string
+          user_id: string
+          welcomed_at?: string | null
+        }
+        Update: {
+          beta_number?: number | null
+          campus_beta_number?: number | null
+          campus_id?: string | null
+          completed_at?: string | null
+          confidence_1_10?: number | null
+          course_id?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string
+          greek_org_id?: string | null
+          greek_org_other?: string | null
+          id?: string
+          is_accounting_major?: string | null
+          is_in_greek_life?: boolean | null
+          is_legacy?: boolean
+          syllabus_file_path?: string | null
+          updated_at?: string
+          user_id?: string
+          welcomed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_onboarding_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_onboarding_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_onboarding_greek_org_id_fkey"
+            columns: ["greek_org_id"]
+            isOneToOne: false
+            referencedRelation: "greek_orgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_purchases: {
         Row: {
           campus_id: string | null
@@ -7776,6 +7864,13 @@ export type Database = {
     }
     Functions: {
       calculate_respond_by: { Args: { p_created_at: string }; Returns: string }
+      claim_beta_number: {
+        Args: { p_campus_id: string; p_user_id: string }
+        Returns: {
+          beta_number: number
+          campus_beta_number: number
+        }[]
+      }
       claim_org_seat: {
         Args: { p_email: string; p_org_account_id: string }
         Returns: Json

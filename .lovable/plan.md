@@ -1,88 +1,184 @@
-## Goal
+# Launch-Ready Beta Dashboard + Onboarding
 
-Add an **"Open in Google Sheets"** button next to **Print PDF** in `SolutionsViewerV2`. It creates a fresh sheet in **your** Drive from a template, then opens Google's standard "Make a copy" prompt in a new tab so the tutor/student lands in *their* own copy. We control the template, they get a personal copy.
+A clean beta dashboard with required onboarding, beta-number identity, course chapter cards, and reliable LW enrollment that doesn't slow down login.
 
-## Why this approach works for V0
+---
 
-- You already have **`GOOGLE_SERVICE_ACCOUNT_JSON`**, plus a working pattern in `supabase/functions/create-asset-sheet/` (JWT auth, Drive API, Sheets API helpers).
-- Google Drive exposes a built-in **`/edit?usp=sharing` → swap to `/copy`** URL pattern. When opened, Drive shows the user a "Make a copy" dialog and drops the copy in *their* Drive, signed in as them. No per-user OAuth needed.
-- Since the user just gets a copy, the source sheet stays clean — perfect for iterating the template.
+## What you'll see when it's done
 
-## Scope (V0)
+**1. Smooth post-checkout flow**
+- After paying or claiming free beta, students land on `/my-dashboard` already signed in.
+- LW enrollment happens in the background — login is never blocked on it.
+- A subtle "Setting up your account…" pill clears in <1s.
 
-**Required fields per click:**
-- Problem title / source_ref / asset_code
-- Course name
-- Chapter name + number
-- Problem text
-- Instructions / required tasks
-- Original problem URL (`https://learn.surviveaccounting.com/solutions/{asset_name}`)
+**2. First-time onboarding modal** (blocks dashboard for *all* logged-in students who haven't completed it — including legacy LW users)
 
-**Out of scope:** journal entries, solutions, formulas, anything from the answer key. This is a blank work sheet for live tutoring.
+Single modal, 3 short screens. **Only the syllabus upload is optional.** Everything else is required.
 
-## Steps
+- **Screen 1 — About you**
+  - Name (required)
+  - Campus (prefilled from email/purchase, editable dropdown, required)
+  - Upload syllabus (optional file picker — drops into `chapter-resources` bucket under `syllabi/{user_id}/`)
 
-### 1. Set up the source template (one-time, manual — I'll guide you)
+- **Screen 2 — Your background**
+  - "Are you majoring in accounting?" → Yes / No / Definitely Not (required)
+  - "Are you in a fraternity or sorority?" → Yes / No (required)
+    - If **Yes**: searchable list from `greek_orgs` filtered to their campus, with "Add other" free-text fallback. One must be picked or "Add other" filled.
+    - If **No**: continue.
 
-After this ships, you create one Google Sheet manually in your Drive named `Survive Accounting · Tutoring Template`, share it as **"Anyone with the link → Viewer"**, and paste its file ID into a new Supabase secret `TUTORING_SHEET_TEMPLATE_ID`. The edge function uses this as the source. You can edit the template anytime to refine layout — every future export inherits the latest version.
+- **Screen 3 — Confidence (required)**
+  - 1–10 slider. "How confident are you for your next exam?"
 
-(If you'd rather skip the manual template and have the function build the sheet from scratch each time, say the word — I'll generate it programmatically with batchUpdate. Template approach is cleaner for iterating styling.)
+On submit:
+- Non-legacy users: assigns global beta number + per-campus beta number, dashboard shows celebration.
+- Legacy users: stores responses, no beta number assigned, dashboard shows a quieter "Welcome back, you're all set" card.
 
-### 2. New edge function: `supabase/functions/create-tutoring-sheet/index.ts`
+**3. Welcome moment** (new beta users only)
+> "Welcome to Survive Accounting.
+> You're the **#247th** student to join the beta — and the **#12th** at **Ole Miss**."
+>
+> [ Invite friends · Copy share link ]
 
-- Reuses the `getAccessToken` / `googleFetch` pattern from `create-asset-sheet`.
-- Input: `{ assetId: string }`. Server-side fetches asset + chapter + course from `teaching_assets`/`chapters`/`courses` (no client-trusted payload).
-- Flow:
-  1. Drive API: `POST /files/{TEMPLATE_ID}/copy` with name `Survive Accounting - {course_code} Ch {chapter_number} - {source_ref or asset_code}` into a designated `TUTORING_EXPORTS_FOLDER_ID` (new Drive folder, ID stored as another secret — or reuse `GDRIVE_BACKUP_FOLDER_ID` parent if you want).
-  2. Sheets API: `values:batchUpdate` to write the layout you specified (A1 title, A2 course, A3 chapter, A4 problem, A6/A7 problem text, A12/A13 instructions, A18/A19 work area, A25/A26 link).
-  3. Drive API: `PATCH /files/{newId}` to set `permissions` → "anyone with link, role: reader" (so the copy prompt works without sign-in to your account).
-  4. Build copy URL: `https://docs.google.com/spreadsheets/d/{newId}/copy?title={encoded title}` and return it.
-- Logs to a new lightweight table `export_events` (see step 4).
+Shown once on first dashboard load after onboarding (dismissible card, persisted via `welcomed_at`).
 
-### 3. Frontend button in `src/pages/v2/SolutionsViewerV2.tsx`
-
-- Add `Sheet` icon (lucide `Sheet` or `Table2`) import.
-- Add `exporting` state and `handleOpenInSheets()` handler that:
-  1. Fires `google_sheet_export_clicked` insert into `export_events`.
-  2. Calls `supabase.functions.invoke("create-tutoring-sheet", { body: { assetId: asset.id } })`.
-  3. On success: `window.open(data.copyUrl, "_blank", "noopener")` and toast success. The `export_events` row gets updated with `sheet_url` + `event_name = "google_sheet_export_created"` server-side.
-  4. On failure: `toast.error("Couldn't open Google Sheets — copied problem to your clipboard instead")` and copy a plain-text version (title + course + chapter + problem text + instructions + URL) to clipboard as fallback.
-- Render a second `<Button>` immediately to the right of Print PDF, identical sizing (`size="sm" variant="outline" h-8 px-3 text-xs`), with loading spinner state.
-
-### 4. New table `export_events` (migration)
-
-```sql
-create table public.export_events (
-  id uuid primary key default gen_random_uuid(),
-  event_name text not null,
-  asset_id uuid references public.teaching_assets(id),
-  chapter_id uuid,
-  course_id uuid,
-  user_id uuid,
-  email text,
-  sheet_url text,
-  metadata jsonb default '{}'::jsonb,
-  created_at timestamptz not null default now()
-);
-alter table public.export_events enable row level security;
--- Insert: any authenticated or anon (so unauth previewers still log)
-create policy "anyone can insert export events" on public.export_events for insert with check (true);
--- Read: admins only (use existing has_role helper if present)
-create policy "admins read export events" on public.export_events for select using (public.has_role(auth.uid(), 'admin'));
+**4. Beta dashboard layout**
+```text
+┌─────────────────────────────────────────────────────────┐
+│  Beta · expires May 15, 2026 · 17 days left            │ ← thin top strip
+├─────────────────────────────────────────────────────────┤
+│  Welcome back, Jordan                                   │
+│  Beta #247 · #12 at Ole Miss                            │
+│                                                         │
+│  ┌─ Beta Tools ──────────────────────────────────────┐  │
+│  │  [Practice Problem Helper]   ← active             │  │
+│  │  [Journal Entry Memorizer]   ← coming soon badge  │  │
+│  │  [Help us decide!]           ← feedback form      │  │
+│  └────────────────────────────────────────────────────┘  │
+│                                                         │
+│  Your Course — Intro Accounting 2                       │
+│  ┌──┬──┬──┬──┬──┬──┬──┐                                │
+│  │ 1│ 2│ 3│ 4│ 5│ 6│ 7│ ...  ← 13 chapter cards        │
+│  └──┴──┴──┴──┴──┴──┴──┘   (each opens video archive)   │
+└─────────────────────────────────────────────────────────┘
 ```
 
-### 5. Don't touch
+- **Top countdown strip**: navy bar, "Beta access expires May 15, 2026 · {N} days left".
+- **Welcome line** with beta number badge (pill style, navy bg, red number). Legacy users see no badge — just "Welcome back, Jordan".
+- **3 Beta Tool cards**:
+  - **Practice Problem Helper** → routes to existing `/cram` flow (active).
+  - **Journal Entry Memorizer** → "Coming soon" badge; click opens "We're building this — what would you want?" mini-form.
+  - **Help us decide!** → mock tool styling (real card with empty state) → opens textarea modal posting to `chapter_questions` with `issue_type='feedback'`.
+- **Chapter cards grid** for the student's enrolled course (Intro 1, Intro 2, IA1, or IA2). Each opens `/cram/:chapterId` (existing video archive section).
 
-- Print PDF button, layout, or any other viewer logic.
-- Existing `create-asset-sheet` and related VA workflows.
+**5. Existing LW users (legacy)**
+- Detected on first login: known LW email but no `student_onboarding` row.
+- Marked `is_legacy=true` at row creation.
+- **Still required to complete onboarding** — same modal, same required questions.
+- Do NOT receive a beta number; do NOT count toward beta totals.
+- After onboarding, dashboard shows the legacy welcome card: "Welcome back to the new app. Your course access carried over."
 
-## What I need from you before I build
+---
 
-**One decision:** template-based (you create one sheet manually, paste its ID into a secret) **or** scratch-build (function generates layout + formatting in code each time)?
+## Technical implementation
 
-- **Template** = easier to iterate styling visually, requires one ~2-min manual setup from you.
-- **Scratch** = zero manual setup, but every formatting tweak is a code change.
+### Database (1 migration)
 
-Recommend template for V0 since you said "perfect the template on our end."
+```sql
+-- Beta onboarding capture + identity
+create table student_onboarding (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  email text not null unique,
+  display_name text,
+  campus_id uuid references campuses(id),
+  course_id uuid references courses(id),
+  syllabus_file_path text,                    -- the only optional field
+  is_accounting_major text check (is_accounting_major in ('yes','no','definitely_not')),
+  is_in_greek_life boolean,
+  greek_org_id uuid references greek_orgs(id),
+  greek_org_other text,
+  confidence_1_10 int check (confidence_1_10 between 1 and 10),
+  is_legacy boolean not null default false,
+  beta_number int unique,                      -- global, sequential, null for legacy
+  campus_beta_number int,                      -- per-campus, sequential, null for legacy
+  welcomed_at timestamptz,
+  completed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 
-Once you pick, I'll: add the secret request (template path) → write the edge function → run the migration → add the button. ~3 sequential steps.
+-- Atomic claim function (avoids race on counters)
+create function claim_beta_number(p_email text, p_campus_id uuid)
+returns table(beta_number int, campus_beta_number int)
+language plpgsql security definer set search_path=public as $$ ... $$;
+
+-- RLS: each user reads/writes only their own row
+alter table student_onboarding enable row level security;
+create policy "self read"  on student_onboarding for select using (auth.uid() = user_id);
+create policy "self write" on student_onboarding for insert with check (auth.uid() = user_id);
+create policy "self update" on student_onboarding for update using (auth.uid() = user_id);
+```
+
+- `beta_number` only assigned for **non-legacy** users at onboarding completion → naturally excludes them from totals.
+- Storage bucket `chapter-resources` already exists (public). Add path policy so users can write to `syllabi/{auth.uid()}/...`.
+
+### Edge functions
+
+**New: `enroll-lw-background`**
+- Fire-and-forget from `/auth/callback` and `/checkout/complete` after session is set.
+- Looks up active `student_purchases` for the email; runs the same LW enroll logic `stripe-webhook` already uses (course-level, `course.slug` as LW courseId); updates `lw_enrollment_status`.
+- Idempotent: skips if `lw_enrollment_status='enrolled'`.
+- Returns 202 immediately via `EdgeRuntime.waitUntil` so the round trip is ~50ms.
+
+**New: `complete-onboarding`**
+- Validates payload (zod), determines `is_legacy` (true if user has a `student_purchases` row created before today AND `lw_enrollment_status='enrolled'`), upserts into `student_onboarding`.
+- For non-legacy users: calls `claim_beta_number` RPC and returns `{ beta_number, campus_beta_number, campus_name }`.
+- For legacy users: returns `{ legacy: true, campus_name }`.
+
+**Modified: `claim-free-beta`** — no change. Still redirects to `/my-dashboard`; onboarding modal triggers there.
+
+### Frontend
+
+**Modified: `src/pages/StudentDashboard.tsx`** (the real dashboard at `/my-dashboard`)
+- On mount, fetch `student_onboarding` row for the user.
+- If row missing OR `completed_at IS NULL` → show `<OnboardingModal />` blocking overlay (cannot dismiss; sign-out is the only escape).
+- If row exists with `welcomed_at = null` AND `beta_number IS NOT NULL` → show one-time `<WelcomeCard />` celebration. Legacy users get the quieter legacy welcome.
+- Replace existing "Continue where you left off" + "Chapters" sections with the new layout (top strip, welcome, beta tools, chapter cards).
+- Fire `enroll-lw-background` once per session via `supabase.functions.invoke()` without `await`.
+
+**New components** (`src/components/dashboard/`):
+- `OnboardingModal.tsx` — 3-step wizard, controlled state, posts to `complete-onboarding`. Per-step validation; "Next" disabled until required fields filled.
+- `GreekOrgSearch.tsx` — debounced search against `greek_orgs` filtered by `campus_id`, with "Add other" fallback.
+- `BetaCountdownStrip.tsx` — shows days until 2026-05-15.
+- `WelcomeCard.tsx` — beta number reveal + "Copy share link" (uses `navigator.clipboard`, share URL `https://learn.surviveaccounting.com/?ref={beta_number}`).
+- `LegacyWelcomeCard.tsx` — quieter "Welcome back" card for legacy users.
+- `BetaToolCards.tsx` — 3 tool cards (Practice Helper / JE Memorizer placeholder / Help Us Decide).
+- `FeedbackToolModal.tsx` — textarea, posts to `chapter_questions`.
+- `ChapterCardsGrid.tsx` — chapter grid (extracted from existing dashboard styling), links to `/cram/:chapterId`.
+
+**Modified: `src/pages/CheckoutComplete.tsx`**
+- If `session_id` confirmed and Supabase session exists → redirect to `/my-dashboard?just_paid=1`. Otherwise keep magic-link fallback.
+
+**Modified: `src/pages/AuthCallback.tsx`**
+- After session is set, fire-and-forget `enroll-lw-background`, then redirect to `next` param (default `/my-dashboard`).
+
+### LW enrollment performance pattern
+
+- **Login is never blocked on LW.** Frontend invokes `enroll-lw-background` and immediately navigates.
+- The edge function returns 202 within ~50ms (kicks off work via `EdgeRuntime.waitUntil`).
+- Dashboard surfaces a small "Course access syncing…" pill if `lw_enrollment_status='pending'`, polls once after 8s, disappears when 'enrolled'.
+
+### Out of scope tonight
+- Per-chapter LW course IDs (locked: stay course-level).
+- Mapping chapter cards to dedicated video archive URLs (cards link to `/cram/:chapterId` which already shows videos — same destination).
+- Building the actual JE Memorizer tool (placeholder only).
+- Beta referral attribution from `?ref=N` (share link works; tracking is a follow-up).
+
+---
+
+## Files touched
+
+**New**: 1 migration, 2 edge functions (`enroll-lw-background`, `complete-onboarding`), 8 components.
+**Modified**: `StudentDashboard.tsx`, `CheckoutComplete.tsx`, `AuthCallback.tsx`. No new routes — onboarding is a modal on the dashboard.
+
+Approve and I'll build it straight through.
