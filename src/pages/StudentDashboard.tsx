@@ -174,20 +174,42 @@ export default function StudentDashboard() {
       // Campus name
       let resolvedCampusName: string | null = null;
       const cId = onb?.campus_id ?? (chosen as any).campus_id;
+      let resolvedCampusSlug: string | null = null;
       if (cId) {
-        const { data: c } = await supabase.from("campuses").select("name").eq("id", cId).maybeSingle();
+        const { data: c } = await supabase
+          .from("campuses")
+          .select("name, slug")
+          .eq("id", cId)
+          .maybeSingle();
         resolvedCampusName = c?.name ?? null;
+        resolvedCampusSlug = (c as any)?.slug ?? null;
         setCampusName(resolvedCampusName);
       }
 
-      // Course label
+      // Course label — campus code if we know the campus (and it's not Catch-All), else course name.
       const { data: course } = await supabase
         .from("courses")
-        .select("course_name, code")
+        .select("course_name")
         .eq("id", chosen.course_id)
         .maybeSingle();
+
+      let localCode: string | null = null;
+      if (cId) {
+        const { data: cc } = await supabase
+          .from("campus_courses")
+          .select("local_course_code")
+          .eq("course_id", chosen.course_id)
+          .eq("campus_id", cId)
+          .maybeSingle();
+        localCode = cc?.local_course_code ?? null;
+      }
+
       if (course) {
-        setCourseLabel(course.code ? `${course.code} · ${course.course_name}` : course.course_name);
+        setCourseLabel(getCourseLabel({
+          courseName: course.course_name,
+          campusSlug: resolvedCampusSlug,
+          localCourseCode: localCode,
+        }));
       }
 
       if (!onb || !onb.completed_at) {
