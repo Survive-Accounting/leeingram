@@ -139,13 +139,13 @@ export function ViewerOnboardingModal({
               className="inline-block rounded-full"
               style={{ width: 5, height: 5, background: RED, boxShadow: "0 0 6px rgba(206,17,38,0.6)" }}
             />
-            {isMobile ? "Tip for cramming" : "Best experience"}
+            {isMobile ? "Tip for cramming" : "Pro tip"}
           </div>
           <h2
             className="text-[22px] sm:text-[24px] leading-tight"
             style={{ fontFamily: LOGO_FONT, fontWeight: 400 }}
           >
-            {isMobile ? "Cram better on a laptop." : "Best in full screen."}
+            {isMobile ? "Cram better on a laptop." : "Press F11 for fullscreen."}
           </h2>
           <p
             className="mt-2 text-[13px] leading-relaxed"
@@ -153,7 +153,7 @@ export function ViewerOnboardingModal({
           >
             {isMobile
               ? "The Solutions Viewer is built for a bigger screen. Send yourself a link and pick it up on your laptop."
-              : "The split view shines when the viewer has more room. Open it full screen for a smoother session."}
+              : "Hit F11 to give the viewer the full screen — way better for cramming."}
           </p>
         </div>
 
