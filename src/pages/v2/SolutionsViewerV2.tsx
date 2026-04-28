@@ -2257,51 +2257,7 @@ export default function SolutionsViewerV2() {
     ? `Ch ${chapter.chapter_number}${asset?.source_ref ? ` — ${asset.source_ref}` : ""}`
     : asset?.source_ref || "";
 
-  // ── Reading chunks: split long problem text into Scenario / Facts / Requirements ──
-  // Heuristic: paragraph-level split, then group adjacent paragraphs by signal.
-  const problemChunks = useMemo<{ label: string; text: string }[]>(() => {
-    const raw = asset?.survive_problem_text ? toYouPerspective(asset.survive_problem_text) : "";
-    if (!raw.trim()) return [];
-    const paragraphs = raw
-      .split(/\n\s*\n+/)
-      .map((p) => p.trim())
-      .filter(Boolean);
-    if (paragraphs.length <= 1) return [{ label: "Problem", text: raw }];
 
-    const numericRe = /[\$\d]|\d+%|\b\d{4}\b/;
-    const requirementRe = /\b(required|requirement|instruction|prepare|compute|calculate|determine|journalize|record|what\s+(is|are|amount)|how\s+much|find\b)/i;
-    const tableRe = /\|.*\|/;
-
-    type Bucket = "scenario" | "facts" | "requirements";
-    const classify = (p: string): Bucket => {
-      if (requirementRe.test(p)) return "requirements";
-      if (tableRe.test(p)) return "facts";
-      // Heuristic: short paragraphs heavy with numbers/$ are facts.
-      const numericHits = (p.match(/\$|\d{2,}/g) || []).length;
-      if (numericHits >= 2) return "facts";
-      return "scenario";
-    };
-
-    const groups: { bucket: Bucket; paras: string[] }[] = [];
-    paragraphs.forEach((p) => {
-      const b = classify(p);
-      const last = groups[groups.length - 1];
-      if (last && last.bucket === b) last.paras.push(p);
-      else groups.push({ bucket: b, paras: [p] });
-    });
-
-    const labelMap: Record<Bucket, string> = {
-      scenario: "Scenario",
-      facts: "Facts & numbers",
-      requirements: "What you need to do",
-    };
-    return groups.map((g) => ({ label: labelMap[g.bucket], text: g.paras.join("\n\n") }));
-  }, [asset?.survive_problem_text]);
-
-  // Clamp chunkIndex if chunks shrink (e.g. asset switched to a short problem).
-  useEffect(() => {
-    if (chunkIndex > Math.max(0, problemChunks.length - 1)) setChunkIndex(0);
-  }, [problemChunks.length, chunkIndex]);
 
   // Load persisted task-check state when asset/instructions change.
   const tasksStorageKey = asset ? `sa_tasks_${asset.asset_name}` : null;
