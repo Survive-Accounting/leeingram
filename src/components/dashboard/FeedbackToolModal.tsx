@@ -368,131 +368,172 @@ export default function FeedbackToolModal({
             </div>
           )}
 
-          {/* Section 2: Rank */}
+          {/* Section 2: Rank — framed shaded panel */}
           <div className="mt-6">
             <SectionHeader
               step={2}
               title="Rank your top picks"
               hint="Top 3 is plenty"
             />
-            <p
-              className="mt-1.5 text-[12.5px]"
-              style={{ color: "#64748B" }}
+            <div
+              className="mt-3 rounded-2xl p-3 sm:p-4 relative"
+              style={{
+                background:
+                  "linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)",
+                border: "1px solid #E2E8F0",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+              }}
             >
-              Drag to rank, or use the arrows to move items up and down.
-            </p>
-
-            {order.length === 0 ? (
-              <div
-                className="mt-3 rounded-xl px-4 py-5 text-center text-[12.5px]"
-                style={{
-                  background: "#F8FAFC",
-                  border: "1px dashed #CBD5E1",
-                  color: "#94A3B8",
-                }}
-              >
-                Pick a few ideas above, then drag or use the arrows to rank them.
+              <div className="flex items-center justify-between mb-2 px-1">
+                <p
+                  className="text-[11.5px] inline-flex items-center gap-1.5"
+                  style={{ color: "#64748B" }}
+                >
+                  <Trophy className="h-3 w-3" style={{ color: RED }} />
+                  Drag, or use ▲ ▼ to reorder.
+                </p>
+                {order.length > 0 && (
+                  <span
+                    className="text-[10.5px] uppercase tracking-widest font-semibold"
+                    style={{ color: "#94A3B8" }}
+                  >
+                    {order.length} ranked
+                  </span>
+                )}
               </div>
-            ) : (
-              <ol className="mt-3 space-y-2">
-                {order.map((id, idx) => {
-                  const isTop3 = idx < 3;
-                  return (
-                    <li
-                      key={id}
-                      ref={(el) => {
-                        if (el) itemRefs.current.set(id, el);
-                        else itemRefs.current.delete(id);
-                      }}
-                      draggable={!submitting && !done}
-                      onDragStart={() => setDragId(id)}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        reorderTo(id);
-                      }}
-                      onDragEnd={() => {
-                        setDragId(null);
-                        setTouchOverId(null);
-                      }}
-                      className="flex items-center gap-2 sm:gap-3 rounded-xl px-3 py-2.5 transition-all"
-                      style={{
-                        background: isTop3 ? "#fff" : "#F8FAFC",
-                        border: `1px solid ${
-                          touchOverId === id && dragId !== id
-                            ? NAVY
-                            : isTop3
-                            ? "#D9E0EC"
-                            : "#E2E8F0"
-                        }`,
-                        boxShadow: isTop3
-                          ? "0 4px 12px rgba(20,33,61,0.06)"
-                          : "none",
-                        opacity: dragId === id ? 0.5 : 1,
-                        touchAction: dragId === id ? "none" : "auto",
-                      }}
-                    >
-                      {/* Drag handle — also captures touch drag on mobile */}
-                      <span
-                        onTouchStart={() => setDragId(id)}
-                        onTouchMove={(e) => handleTouchMove(e, id)}
-                        onTouchEnd={() => {
+
+              {order.length === 0 ? (
+                <div
+                  className="rounded-xl px-4 py-7 text-center text-[12.5px]"
+                  style={{
+                    background: "#fff",
+                    border: "1px dashed #CBD5E1",
+                    color: "#94A3B8",
+                  }}
+                >
+                  Pick a few ideas above and they'll line up here.
+                </div>
+              ) : (
+                <ol className="space-y-1.5">
+                  {order.map((id, idx) => {
+                    const isTop3 = idx < 3;
+                    const isDragging = dragId === id;
+                    return (
+                      <li
+                        key={id}
+                        ref={(el) => {
+                          if (el) itemRefs.current.set(id, el);
+                          else itemRefs.current.delete(id);
+                        }}
+                        draggable={!submitting && !done}
+                        onDragStart={() => setDragId(id)}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          reorderTo(id);
+                        }}
+                        onDragEnd={() => {
                           setDragId(null);
                           setTouchOverId(null);
                         }}
-                        className="flex-shrink-0 p-1 -ml-1 cursor-grab active:cursor-grabbing"
-                        style={{ touchAction: "none" }}
-                        aria-label="Drag to reorder"
-                      >
-                        <GripVertical
-                          className="h-4 w-4"
-                          style={{ color: "#94A3B8" }}
-                        />
-                      </span>
-                      <span
-                        className="inline-flex items-center justify-center rounded-md text-[11px] font-bold flex-shrink-0"
+                        className="flex items-center gap-2 sm:gap-3 rounded-xl px-2.5 py-2 transition-all duration-150"
                         style={{
-                          width: 22,
-                          height: 22,
-                          background: isTop3 ? NAVY : "#E2E8F0",
-                          color: isTop3 ? "#fff" : "#64748B",
+                          background: "#fff",
+                          border: `1px solid ${
+                            touchOverId === id && !isDragging
+                              ? NAVY
+                              : isTop3
+                              ? "#D9E0EC"
+                              : "#E5EAF0"
+                          }`,
+                          boxShadow: isDragging
+                            ? "0 8px 20px rgba(20,33,61,0.18)"
+                            : isTop3
+                            ? "0 2px 6px rgba(20,33,61,0.06)"
+                            : "0 1px 2px rgba(20,33,61,0.03)",
+                          opacity: isDragging ? 0.7 : 1,
+                          transform: isDragging ? "scale(1.01)" : "none",
+                          touchAction: isDragging ? "none" : "auto",
                         }}
                       >
-                        {idx + 1}
-                      </span>
-                      <span
-                        className="text-[13px] font-medium flex-1 truncate"
-                        style={{ color: NAVY }}
-                      >
-                        {labelFor(id)}
-                      </span>
-                      <div className="flex items-center gap-0.5 flex-shrink-0">
-                        <ArrowBtn
-                          dir="up"
-                          disabled={idx === 0}
-                          onClick={() => moveBy(id, -1)}
-                        />
-                        <ArrowBtn
-                          dir="down"
-                          disabled={idx === order.length - 1}
-                          onClick={() => moveBy(id, 1)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => toggle(id)}
-                          className="p-1 rounded hover:bg-slate-100"
-                          aria-label="Remove"
+                        {/* Drag handle — also captures touch drag on mobile */}
+                        <span
+                          onTouchStart={() => setDragId(id)}
+                          onTouchMove={(e) => handleTouchMove(e, id)}
+                          onTouchEnd={() => {
+                            setDragId(null);
+                            setTouchOverId(null);
+                          }}
+                          className="flex-shrink-0 p-1 -ml-1 rounded cursor-grab active:cursor-grabbing hover:bg-slate-100 transition-colors"
+                          style={{ touchAction: "none" }}
+                          aria-label="Drag to reorder"
                         >
-                          <X
-                            className="h-3.5 w-3.5"
-                            style={{ color: "#94A3B8" }}
+                          <GripVertical
+                            className="h-4 w-4"
+                            style={{ color: "#CBD5E1" }}
                           />
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
-            )}
+                        </span>
+                        <span
+                          className="inline-flex items-center justify-center rounded-lg text-[11px] font-bold flex-shrink-0"
+                          style={{
+                            width: 24,
+                            height: 24,
+                            background: isTop3
+                              ? `linear-gradient(135deg, ${NAVY} 0%, #1E2F52 100%)`
+                              : "#EEF2F7",
+                            color: isTop3 ? "#fff" : "#64748B",
+                            boxShadow: isTop3
+                              ? "0 2px 4px rgba(20,33,61,0.18)"
+                              : "none",
+                          }}
+                        >
+                          {idx + 1}
+                        </span>
+                        <span
+                          className="text-[13px] font-medium flex-1 truncate"
+                          style={{ color: NAVY }}
+                        >
+                          {labelFor(id)}
+                        </span>
+                        {idx === 0 && (
+                          <span
+                            className="hidden sm:inline-flex text-[9.5px] uppercase tracking-widest font-bold rounded px-1.5 py-0.5"
+                            style={{
+                              color: RED,
+                              background: "rgba(206,17,38,0.08)",
+                            }}
+                          >
+                            Top
+                          </span>
+                        )}
+                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                          <ArrowBtn
+                            dir="up"
+                            disabled={idx === 0}
+                            onClick={() => moveBy(id, -1)}
+                          />
+                          <ArrowBtn
+                            dir="down"
+                            disabled={idx === order.length - 1}
+                            onClick={() => moveBy(id, 1)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => toggle(id)}
+                            className="p-1 rounded hover:bg-slate-100 transition-colors"
+                            aria-label="Remove"
+                          >
+                            <X
+                              className="h-3.5 w-3.5"
+                              style={{ color: "#94A3B8" }}
+                            />
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+            </div>
           </div>
 
           {/* Section 3: Anything we missed */}
