@@ -295,6 +295,150 @@ export default function StudyPreviewer({
           animation: sa-status-pulse 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
           pointer-events: none;
         }
+
+        /* ─── 90s desktop-app window frame ─── */
+        .sa-win-frame {
+          background: #ECECEE;
+          border-radius: 10px;
+          border: 1px solid #C8CAD0;
+          box-shadow:
+            0 16px 40px rgba(0,0,0,0.28),
+            0 4px 10px rgba(0,0,0,0.12),
+            inset 0 1px 0 rgba(255,255,255,0.85),
+            inset 0 -1px 0 rgba(0,0,0,0.06);
+          overflow: hidden;
+          font-family: 'Inter', sans-serif;
+        }
+        .sa-win-titlebar {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 12px;
+          background: linear-gradient(180deg, #E6E8EE 0%, #C8CCD4 100%);
+          border-bottom: 1px solid #A9ADB5;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+          position: relative;
+        }
+        .sa-win-traffic { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .sa-win-dot {
+          width: 12px; height: 12px; border-radius: 50%;
+          border: 1px solid;
+          box-shadow: inset 0 1px 1px rgba(255,255,255,0.4), 0 1px 0 rgba(0,0,0,0.05);
+        }
+        .sa-win-title {
+          flex: 1;
+          text-align: center;
+          font-size: 12px;
+          font-weight: 600;
+          color: #2A2F3A;
+          letter-spacing: 0.01em;
+          text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          padding: 0 8px;
+        }
+        .sa-win-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+        .sa-win-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 22px; height: 18px;
+          font-size: 10px;
+          font-family: 'JetBrains Mono', ui-monospace, monospace;
+          color: #3A3F4A;
+          background: linear-gradient(180deg, #F4F5F8 0%, #D9DCE3 100%);
+          border: 1px solid #A9ADB5;
+          border-radius: 3px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+          line-height: 1;
+        }
+        .sa-win-btn-close { color: #8B1A1A; }
+
+        .sa-win-toolbar {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 6px 10px;
+          background: linear-gradient(180deg, #F2F3F6 0%, #E4E6EC 100%);
+          border-bottom: 1px solid #C8CAD0;
+          font-size: 11.5px;
+        }
+        .sa-win-addr-label {
+          font-weight: 600;
+          color: #5A6070;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          font-size: 10px;
+        }
+        .sa-win-addr {
+          flex: 1;
+          background: #fff;
+          border: 1px solid #B5B9C2;
+          border-radius: 3px;
+          padding: 3px 8px;
+          font-size: 11.5px;
+          color: #14213D;
+          box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
+          font-family: 'JetBrains Mono', ui-monospace, monospace;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .sa-win-tool-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 3px 9px;
+          font-size: 11px;
+          font-weight: 600;
+          color: #14213D;
+          background: linear-gradient(180deg, #FAFBFD 0%, #DDE0E7 100%);
+          border: 1px solid #A9ADB5;
+          border-radius: 3px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+          cursor: pointer;
+          transition: filter 120ms ease-out;
+        }
+        .sa-win-tool-btn:hover { filter: brightness(1.04); }
+        .sa-win-tool-btn:active { box-shadow: inset 0 1px 2px rgba(0,0,0,0.15); }
+
+        .sa-win-content {
+          background: #fff;
+          border-top: 1px solid #fff;
+          box-shadow: inset 0 1px 0 rgba(0,0,0,0.06), inset 0 0 0 1px rgba(0,0,0,0.04);
+          margin: 0 6px;
+          border-radius: 2px;
+          overflow: hidden;
+        }
+
+        .sa-win-statusbar {
+          display: flex;
+          align-items: center;
+          gap: 0;
+          padding: 4px 6px;
+          background: linear-gradient(180deg, #E6E8EE 0%, #D2D5DC 100%);
+          border-top: 1px solid #B5B9C2;
+          font-size: 10.5px;
+          color: #4A4F5A;
+          font-family: 'JetBrains Mono', ui-monospace, monospace;
+          letter-spacing: 0.04em;
+        }
+        .sa-win-status-cell {
+          padding: 2px 10px;
+          border: 1px solid transparent;
+          border-left-color: rgba(255,255,255,0.7);
+          border-right-color: rgba(0,0,0,0.08);
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .sa-win-status-grow { flex: 1; }
+        .sa-win-status-led {
+          width: 7px; height: 7px; border-radius: 50%;
+          background: #4ADE80;
+          box-shadow: 0 0 4px rgba(74,222,128,0.6), inset 0 0 1px rgba(255,255,255,0.5);
+        }
       `}</style>
 
       {/* Navy frame wrapper */}
