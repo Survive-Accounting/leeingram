@@ -928,6 +928,219 @@ function HelperResponseThumbs({
 }
 
 
+// ── Lightweight feedback for the problem text + instructions ─────────
+// Lives at the bottom of the left problem card. Subtle by default;
+// expands to a thin row of optional reason chips on a thumbs-down. The
+// thumb click itself is already saved, so chips are never required.
+type ClarityReason =
+  | "too_long"
+  | "confusing_wording"
+  | "missing_info"
+  | "formatting"
+  | "wrong_problem"
+  | "other";
+
+const CLARITY_REASONS: { value: ClarityReason; label: string }[] = [
+  { value: "too_long", label: "Too long" },
+  { value: "confusing_wording", label: "Confusing wording" },
+  { value: "missing_info", label: "Missing info" },
+  { value: "formatting", label: "Formatting issue" },
+  { value: "wrong_problem", label: "Wrong problem" },
+  { value: "other", label: "Other" },
+];
+
+function ProblemClarityFeedback({
+  asset,
+  chapter,
+  viewMode,
+  instructionsOpen,
+}: {
+  asset: Asset;
+  chapter: ChapterMeta | null;
+  viewMode: "split" | "split-h" | "problem" | "helper";
+  instructionsOpen: boolean;
+}) {
+  const [vote, setVote] = useState<"up" | "down" | null>(null);
+  const [reasonsOpen, setReasonsOpen] = useState(false);
+  const [reasonSent, setReasonSent] = useState(false);
+  const [feedbackId, setFeedbackId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setVote(null);
+    setReasonsOpen(false);
+    setReasonSent(false);
+    setFeedbackId(null);
+  }, [asset.asset_name]);
+
+  const cast = async (helpful: boolean) => {
+    if (vote || submitting) return;
+    setSubmitting(true);
+    try {
+      let userId: string | null = null;
+      try {
+        const { data } = await supabase.auth.getUser();
+        userId = data.user?.id ?? null;
+      } catch {}
+      let email: string | null = null;
+      try {
+        email =
+          localStorage.getItem("v2_student_email") ||
+          localStorage.getItem("sa_free_user_email") ||
+          null;
+      } catch {}
+      const { data, error } = await supabase
+        .from("explanation_feedback")
+        .insert({
+          asset_id: asset.id,
+          asset_name: asset.asset_name,
+          user_email: email,
+          helpful,
+          section: "problem_clarity",
+          context: {
+            user_id: userId,
+            problem_id: asset.id,
+            asset_name: asset.asset_name,
+            source_ref: asset.source_ref ?? null,
+            chapter_number: chapter?.chapter_number ?? null,
+            chapter_name: chapter?.chapter_name ?? null,
+            course_name: chapter?.course?.course_name ?? null,
+            reading_mode: viewMode,
+            instructions_open: instructionsOpen,
+            page_url: typeof window !== "undefined" ? window.location.href : null,
+          },
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      setFeedbackId(data?.id ?? null);
+      setVote(helpful ? "up" : "down");
+      if (!helpful) setReasonsOpen(true);
+      else toast.success("Thanks for the feedback.");
+    } catch {
+      toast.error("Couldn't save that — try again?");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const sendReason = async (value: ClarityReason) => {
+    if (reasonSent || !feedbackId) return;
+    setReasonSent(true);
+    try {
+      await supabase
+        .from("explanation_feedback")
+        .update({ reason: [value] })
+        .eq("id", feedbackId);
+      toast.success("Thanks for the feedback.");
+      setReasonsOpen(false);
+    } catch {
+      setReasonSent(false);
+    }
+  };
+
+  if (vote && !reasonsOpen) {
+    return (
+      <div
+        className="mt-6 pt-4 border-t flex items-center justify-end gap-1.5 text-[11px]"
+        style={{
+          borderColor: "rgba(255,255,255,0.06)",
+          color: "rgba(255,255,255,0.4)",
+        }}
+      >
+        <Check className="h-3 w-3" />
+        Thanks for the feedback.
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="mt-6 pt-4 border-t flex flex-col items-end gap-2"
+      style={{ borderColor: "rgba(255,255,255,0.06)" }}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          className="text-[11px] font-medium"
+          style={{ color: "rgba(255,255,255,0.4)" }}
+        >
+          Problem clear?
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => cast(true)}
+            disabled={!!vote || submitting}
+            aria-label="Mark problem text as clear"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-white/10 disabled:opacity-50 disabled:cursor-default"
+            style={{
+              background: vote === "up" ? "rgba(34,197,94,0.18)" : "transparent",
+              border: vote === "up"
+                ? "1px solid rgba(34,197,94,0.5)"
+                : "1px solid rgba(255,255,255,0.10)",
+              color: vote === "up" ? "#86EFAC" : "rgba(255,255,255,0.6)",
+            }}
+          >
+            <ThumbsUp className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => cast(false)}
+            disabled={!!vote || submitting}
+            aria-label="Mark problem text as confusing"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-white/10 disabled:opacity-50 disabled:cursor-default"
+            style={{
+              background: vote === "down" ? "rgba(206,17,38,0.18)" : "transparent",
+              border: vote === "down"
+                ? "1px solid rgba(206,17,38,0.5)"
+                : "1px solid rgba(255,255,255,0.10)",
+              color: vote === "down" ? "#FFD3D8" : "rgba(255,255,255,0.6)",
+            }}
+          >
+            <ThumbsDown className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {reasonsOpen && (
+        <div className="flex flex-wrap items-center justify-end gap-1.5 max-w-[340px] animate-fade-in">
+          <span
+            className="text-[10px] font-medium uppercase tracking-[0.1em] mr-1"
+            style={{ color: "rgba(255,255,255,0.4)" }}
+          >
+            Why?
+          </span>
+          {CLARITY_REASONS.map((r) => (
+            <button
+              key={r.value}
+              type="button"
+              onClick={() => sendReason(r.value)}
+              disabled={reasonSent}
+              className="inline-flex items-center h-6 px-2 rounded-full text-[11px] font-medium transition-colors hover:bg-white/10 disabled:opacity-40 disabled:cursor-default"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "rgba(255,255,255,0.8)",
+              }}
+            >
+              {r.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setReasonsOpen(false)}
+            className="text-[10px] underline-offset-2 hover:underline ml-1"
+            style={{ color: "rgba(255,255,255,0.4)" }}
+          >
+            Skip
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function ExplanationFeedback({ asset, onShareClick }: { asset: Asset; onShareClick: () => void }) {
   const [helpful, setHelpful] = useState<boolean | null>(null);
   const [stage, setStage] = useState<"ask" | "negative" | "done">("ask");
