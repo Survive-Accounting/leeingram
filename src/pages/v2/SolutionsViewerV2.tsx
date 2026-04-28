@@ -2712,10 +2712,10 @@ export default function SolutionsViewerV2() {
             "bg-card/80 border hover:bg-accent transition-colors",
             "h-9 px-3.5 inline-flex items-center gap-1.5 text-[13px] font-medium",
           )}
-          aria-label="Stuck? Send feedback"
+          aria-label="Share feedback about this problem"
         >
           <MessageCircleQuestion className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Stuck?</span>
+          <span className="hidden sm:inline">Share Feedback</span>
         </button>
       )}
 
