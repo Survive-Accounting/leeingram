@@ -429,7 +429,7 @@ export default function StudentDashboard() {
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-6 items-stretch">
-            <div className="md:col-span-7">
+            <div ref={shareRef} className="md:col-span-7 scroll-mt-24">
               <ShareWithFriendsBand
                 betaNumber={betaNumber}
                 campusName={campusName}
