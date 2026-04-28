@@ -723,6 +723,7 @@ function InlineExplanation({
   setSimplifiedText,
   onShareClick,
   onAdvanceTask,
+  onActiveHelperChange,
 }: {
   asset: Asset;
   chapter: ChapterMeta | null;
@@ -730,6 +731,7 @@ function InlineExplanation({
   setSimplifiedText: (t: string | null) => void;
   onShareClick: () => void;
   onAdvanceTask?: (taskIndex: number) => void;
+  onActiveHelperChange?: (key: string | null) => void;
 }) {
   const [searchParams] = useSearchParams();
   const isEmbed = searchParams.get("embed") === "1";
@@ -744,6 +746,11 @@ function InlineExplanation({
 
   const hasJE = Array.isArray(asset.journal_entry_completed_json?.scenario_sections)
     && asset.journal_entry_completed_json.scenario_sections.length > 0;
+
+  // Mirror activeSection up to parent for support modal context
+  useEffect(() => {
+    onActiveHelperChange?.(activeSection);
+  }, [activeSection, onActiveHelperChange]);
 
   // Reset on asset change
   useEffect(() => {
