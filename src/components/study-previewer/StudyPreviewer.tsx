@@ -337,6 +337,8 @@ export default function StudyPreviewer({
                 activeToolKey={activeTool}
                 canPickTool={chapterChosen}
                 loading={chapterLoading}
+                welcomeName={welcomeName ?? null}
+                isReturning={!!isReturning}
                 onNudgeChapter={handleNudgeChapter}
                 onSelectTool={(key) => {
                   if (key === "feedback") {
