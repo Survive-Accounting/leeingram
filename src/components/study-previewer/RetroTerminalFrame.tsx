@@ -534,7 +534,7 @@ export default function RetroTerminalFrame({
                 />
               </Line>
 
-              {/* Inline chapter selector — appears once a course is chosen, replaced by tools after chapter is set */}
+              {/* Inline chapter selector — appears once a course is chosen */}
               {chapterSelector && (
                 <div
                   style={{
@@ -547,33 +547,62 @@ export default function RetroTerminalFrame({
                 </div>
               )}
 
-              {/* Tool menu — keycap-style rows */}
+              {/* Muted unlock hint — only when chapter not yet chosen */}
+              {!canPickTool && (
+                <Line show={bootStep >= 5}>
+                  <span style={{ color: PHOSPHOR_MUTED }}>
+                    {">"} Choose a chapter to unlock the study tools
+                  </span>
+                  <span
+                    aria-hidden
+                    className="inline-block align-[-2px] ml-1"
+                    style={{
+                      width: "0.5em",
+                      height: "1em",
+                      background: PHOSPHOR_MUTED,
+                      boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                      animation: "sa-cursor-blink 1.05s steps(1) infinite",
+                    }}
+                  />
+                </Line>
+              )}
+
+              {/* Tool grid — 3-column terminal cards */}
               {tools && tools.length > 0 && (
                 <div
-                  className="mt-3 space-y-2"
+                  className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3"
                   style={{
                     opacity: bootStep >= 6 ? 1 : 0,
                     transform: bootStep >= 6 ? "translateY(0)" : "translateY(2px)",
-                    transition: "opacity 240ms ease-out, transform 240ms ease-out",
+                    transition: "opacity 280ms ease-out, transform 280ms ease-out",
                   }}
                 >
-                  {tools.map((tool, i) => {
-                    const num = i + 1;
+                  {tools.map((tool) => {
                     const isActive = activeToolKey === tool.key;
                     const isDisabled = !!tool.disabled;
+                    const locked = !canPickTool || loading;
                     const interactable = canPickTool && !isDisabled && !loading;
+                    const Icon = tool.icon;
 
-                    // Keycap colors — embossed phosphor green button
-                    const keycapBgIdle =
-                      "linear-gradient(180deg, rgba(40,72,52,0.95) 0%, rgba(20,42,30,0.95) 100%)";
-                    const keycapBgHover =
-                      "linear-gradient(180deg, rgba(60,108,78,0.98) 0%, rgba(28,60,42,0.98) 100%)";
-                    const keycapBgActive =
-                      "linear-gradient(180deg, rgba(20,42,30,0.98) 0%, rgba(12,28,20,0.98) 100%)";
-                    const keycapShadowIdle =
-                      "inset 0 1px 0 rgba(180,255,210,0.18), inset 0 -2px 0 rgba(0,0,0,0.55), 0 2px 0 rgba(0,0,0,0.6), 0 0 0 1px rgba(124,255,176,0.18)";
-                    const keycapShadowActive =
-                      "inset 0 2px 4px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(124,255,176,0.45), 0 0 10px rgba(124,255,176,0.25)";
+                    const idleBg =
+                      "linear-gradient(180deg, rgba(8,28,16,0.92) 0%, rgba(4,16,9,0.96) 100%)";
+                    const hoverBg =
+                      "linear-gradient(180deg, rgba(14,46,26,0.95) 0%, rgba(6,22,13,0.98) 100%)";
+                    const activeBg =
+                      "linear-gradient(180deg, rgba(20,60,36,0.95) 0%, rgba(8,28,16,0.98) 100%)";
+
+                    const idleBorder = locked
+                      ? "rgba(124,255,176,0.10)"
+                      : "rgba(124,255,176,0.22)";
+                    const hoverBorder = "rgba(124,255,176,0.55)";
+                    const activeBorder = "rgba(124,255,176,0.75)";
+
+                    const idleShadow =
+                      "inset 0 1px 0 rgba(180,255,210,0.06), inset 0 -1px 0 rgba(0,0,0,0.55), 0 4px 10px rgba(0,0,0,0.45)";
+                    const hoverShadow =
+                      "inset 0 1px 0 rgba(180,255,210,0.10), 0 0 0 1px rgba(124,255,176,0.30), 0 6px 16px rgba(0,0,0,0.55), 0 0 22px rgba(124,255,176,0.18)";
+                    const activeShadow =
+                      "inset 0 0 0 1px rgba(124,255,176,0.55), 0 0 28px rgba(124,255,176,0.30), 0 6px 16px rgba(0,0,0,0.55)";
 
                     return (
                       <button
@@ -588,123 +617,148 @@ export default function RetroTerminalFrame({
                           triggerToolPulse(tool.key);
                           onSelectTool?.(tool.key);
                         }}
-                        className={`group flex w-full items-center gap-3 text-left rounded-md transition-all ${flashedToolKey === tool.key ? "sa-row-flash" : ""}`}
+                        disabled={isDisabled}
+                        aria-label={`Choose ${tool.label}`}
+                        aria-disabled={locked}
+                        className={`group relative text-left rounded-md transition-all ${flashedToolKey === tool.key ? "sa-row-flash" : ""}`}
                         style={{
-                          padding: "8px 12px",
-                          background: isActive
-                            ? "rgba(124,255,176,0.06)"
-                            : "transparent",
+                          padding: "12px 12px 10px",
+                          background: isActive ? activeBg : idleBg,
+                          border: `1px solid ${isActive ? activeBorder : idleBorder}`,
+                          boxShadow: isActive ? activeShadow : idleShadow,
+                          color: PHOSPHOR,
+                          fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace",
                           cursor: interactable
                             ? "pointer"
                             : isDisabled
                             ? "not-allowed"
+                            : locked
+                            ? "not-allowed"
                             : "wait",
-                          opacity: isDisabled ? 0.5 : 1,
+                          opacity: isDisabled ? 0.45 : locked ? 0.55 : 1,
+                          transform: isActive ? "translateY(1px)" : "translateY(0)",
+                          transition:
+                            "background 160ms ease-out, border-color 160ms ease-out, box-shadow 200ms ease-out, transform 120ms ease-out, opacity 200ms ease-out",
+                          minHeight: 122,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 6,
                         }}
                         onMouseEnter={(e) => {
                           if (!interactable) return;
-                          const cap = e.currentTarget.querySelector(
-                            "[data-keycap]",
-                          ) as HTMLElement | null;
-                          if (cap) cap.style.background = keycapBgHover;
-                          e.currentTarget.style.background =
-                            "rgba(124,255,176,0.05)";
+                          const el = e.currentTarget;
+                          el.style.background = hoverBg;
+                          el.style.borderColor = hoverBorder;
+                          el.style.boxShadow = hoverShadow;
+                          el.style.transform = "translateY(-1px)";
                         }}
                         onMouseLeave={(e) => {
-                          const cap = e.currentTarget.querySelector(
-                            "[data-keycap]",
-                          ) as HTMLElement | null;
-                          if (cap && !isActive) cap.style.background = keycapBgIdle;
-                          if (!isActive)
-                            e.currentTarget.style.background = "transparent";
+                          if (isActive) return;
+                          const el = e.currentTarget;
+                          el.style.background = idleBg;
+                          el.style.borderColor = idleBorder;
+                          el.style.boxShadow = idleShadow;
+                          el.style.transform = "translateY(0)";
                         }}
-                        disabled={isDisabled}
-                        aria-label={`Choose ${tool.label}`}
                       >
-                        {/* Keycap */}
-                        <span
-                          data-keycap
-                          aria-hidden
-                          className="inline-flex items-center justify-center select-none"
-                          style={{
-                            minWidth: 34,
-                            height: 30,
-                            borderRadius: 6,
-                            fontFamily:
-                              "'JetBrains Mono', 'IBM Plex Mono', monospace",
-                            fontSize: 13,
-                            fontWeight: 700,
-                            color: PHOSPHOR,
-                            textShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
-                            background: isActive ? keycapBgActive : keycapBgIdle,
-                            boxShadow: isActive
-                              ? keycapShadowActive
-                              : keycapShadowIdle,
-                            transform: isActive
-                              ? "translateY(1px)"
-                              : "translateY(0)",
-                            transition:
-                              "background 140ms ease-out, box-shadow 140ms ease-out, transform 80ms ease-out",
-                          }}
-                        >
-                          {num}
-                        </span>
+                        {/* Header row: icon + lock indicator */}
+                        <div className="flex items-center justify-between">
+                          {Icon ? (
+                            <Icon
+                              size={16}
+                              strokeWidth={1.75}
+                              aria-hidden
+                              style={{
+                                color: locked ? PHOSPHOR_MUTED : PHOSPHOR,
+                                filter: locked
+                                  ? "none"
+                                  : `drop-shadow(0 0 4px ${PHOSPHOR_GLOW})`,
+                              }}
+                            />
+                          ) : (
+                            <span aria-hidden style={{ width: 16, height: 16 }} />
+                          )}
+                          {locked && (
+                            <Lock
+                              size={11}
+                              strokeWidth={2}
+                              aria-hidden
+                              style={{ color: PHOSPHOR_MUTED, opacity: 0.7 }}
+                            />
+                          )}
+                        </div>
 
-                        {/* Label */}
-                        <span
-                          className="flex-1 group-hover:underline"
+                        {/* Title */}
+                        <div
                           style={{
-                            color: isDisabled ? PHOSPHOR_MUTED : PHOSPHOR,
-                            textUnderlineOffset: "3px",
+                            color: locked ? PHOSPHOR_DIM : PHOSPHOR,
+                            fontSize: 12.5,
+                            fontWeight: 700,
+                            lineHeight: 1.25,
+                            letterSpacing: "0.01em",
+                            textShadow: locked ? "none" : `0 0 6px ${PHOSPHOR_GLOW}`,
                           }}
                         >
                           {tool.label}
-                        </span>
+                        </div>
 
-                        {tool.hint && (
-                          <span
+                        {/* Description */}
+                        {tool.description && (
+                          <div
                             style={{
                               color: PHOSPHOR_MUTED,
-                              fontSize: "0.85em",
+                              fontSize: 11,
+                              lineHeight: 1.45,
+                              fontFamily:
+                                "'JetBrains Mono', 'IBM Plex Mono', monospace",
                             }}
                           >
-                            {tool.hint}
-                          </span>
+                            {tool.description}
+                          </div>
                         )}
 
-                        {isActive && (
+                        {/* Action cue */}
+                        <div
+                          className="mt-auto flex items-center gap-1.5"
+                          style={{
+                            paddingTop: 6,
+                            borderTop: `1px dashed ${locked ? "rgba(124,255,176,0.10)" : "rgba(124,255,176,0.22)"}`,
+                            color: locked ? PHOSPHOR_MUTED : PHOSPHOR_DIM,
+                            fontSize: 10.5,
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                            fontWeight: 600,
+                          }}
+                        >
+                          <span>{tool.cta || "Open"}</span>
                           <span
                             aria-hidden
+                            className="transition-transform"
                             style={{
-                              color: PHOSPHOR,
-                              textShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                              color: locked ? PHOSPHOR_MUTED : PHOSPHOR,
+                              textShadow: locked ? "none" : `0 0 6px ${PHOSPHOR_GLOW}`,
                             }}
                           >
-                            ▶
+                            ▸
                           </span>
-                        )}
+                          {tool.hint && (
+                            <span
+                              className="ml-auto"
+                              style={{
+                                color: PHOSPHOR_MUTED,
+                                textTransform: "none",
+                                letterSpacing: 0,
+                                fontSize: 10,
+                              }}
+                            >
+                              {tool.hint}
+                            </span>
+                          )}
+                        </div>
                       </button>
                     );
                   })}
                 </div>
-              )}
-
-              {/* No tools — fall back to a single blinking cursor */}
-              {(!tools || tools.length === 0) && (
-                <Line show={bootStep >= 6}>
-                  {">"}
-                  <span
-                    aria-hidden
-                    className="inline-block align-[-2px] ml-1"
-                    style={{
-                      width: "0.55em",
-                      height: "1.05em",
-                      background: PHOSPHOR,
-                      boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
-                      animation: "sa-cursor-blink 1.05s steps(1) infinite",
-                    }}
-                  />
-                </Line>
               )}
             </div>
           </div>
