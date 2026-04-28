@@ -273,10 +273,10 @@ export default function QuickEmailGateModal({
               Enter your school email
             </h2>
             <p
-              className="mt-2 text-center text-[13px]"
+              className="mt-2 text-center text-[13px] whitespace-pre-line"
               style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
             >
-              Start cramming problems for your course.
+              Join the beta for free study tools.{"\n"}No credit card required.
             </p>
 
             <input
