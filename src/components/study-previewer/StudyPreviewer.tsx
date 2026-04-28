@@ -80,15 +80,29 @@ export default function StudyPreviewer({
     : !!fixedCourseLabel;
   const chapterChosen = !!selectedChapterId && !chapterLoading;
 
-  // Restore from localStorage
+  // Restore from localStorage — also hydrate the first asset code so the
+  // Practice Problem Helper has something to load on first click.
   useEffect(() => {
     if (!persistChapterKey) return;
+    let cancelled = false;
     try {
       const stored = localStorage.getItem(persistChapterKey);
       if (stored && chapters.some((c) => c.id === stored)) {
         setSelectedChapterId(stored);
+        (async () => {
+          const { data } = await supabase
+            .from("teaching_assets")
+            .select("asset_name, source_number")
+            .eq("chapter_id", stored)
+            .order("source_number", { ascending: true, nullsFirst: false })
+            .order("asset_name", { ascending: true })
+            .limit(1);
+          if (cancelled) return;
+          setViewerAssetCode(data?.[0]?.asset_name ?? null);
+        })();
       }
     } catch { /* ignore */ }
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persistChapterKey, chapters.length]);
 
