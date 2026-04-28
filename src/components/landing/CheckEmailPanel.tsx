@@ -56,7 +56,7 @@ export default function CheckEmailPanel({
       setResentAt(Date.now());
       setNow(Date.now());
     } else {
-      setResendErr(res.error || "Couldn't resend right now. Try again in a moment.");
+      setResendErr(res.error);
     }
   };
 
