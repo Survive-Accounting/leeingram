@@ -170,7 +170,7 @@ export default function StudyPreviewer({
   };
 
   const handleNudgeChapter = () => {
-    toast("Pick a chapter first 👇");
+    setTerminalNotice("Pick a chapter first 👇");
     chapterDropdownRef.current?.focus();
     chapterDropdownRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
