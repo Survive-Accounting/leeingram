@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Check, GripVertical, X, Plus } from "lucide-react";
+import { Loader2, Check, GripVertical, X, Plus, Sparkles, Trophy } from "lucide-react";
 import { toast } from "sonner";
 
 const NAVY = "#14213D";
@@ -214,52 +214,69 @@ export default function FeedbackToolModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl rounded-2xl bg-white shadow-2xl overflow-hidden my-auto"
+        className="w-full max-w-xl rounded-2xl bg-white shadow-2xl overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200"
         style={{
           border: "1px solid #E0E7F0",
           fontFamily: "Inter, sans-serif",
           maxHeight: "calc(100vh - 3rem)",
           display: "flex",
           flexDirection: "column",
+          boxShadow:
+            "0 24px 60px -12px rgba(20,33,61,0.35), 0 0 0 1px rgba(20,33,61,0.04)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="px-6 pt-6 pb-4">
-          <p
-            className="text-[11px] uppercase tracking-widest"
-            style={{ color: RED, fontWeight: 700 }}
-          >
-            Help us decide
-          </p>
-          <h3
-            className="mt-1 text-[22px] leading-tight"
-            style={{
-              color: NAVY,
-              fontFamily: "'DM Serif Display', serif",
-              fontWeight: 400,
-            }}
-          >
-            What should we build next?
-          </h3>
-          <p className="mt-1.5 text-[13px]" style={{ color: "#64748B" }}>
-            Pick the tools you'd actually use — then rank your favorites.
-          </p>
+        {/* Header — navy gradient banner */}
+        <div
+          className="relative px-6 pt-6 pb-5 overflow-hidden"
+          style={{
+            background: `linear-gradient(135deg, ${NAVY} 0%, #1E2F52 100%)`,
+            color: "#fff",
+          }}
+        >
+          {/* decorative sparkle */}
+          <Sparkles
+            className="absolute right-5 top-5 opacity-20"
+            style={{ width: 56, height: 56 }}
+          />
+          <div className="relative">
+            <p
+              className="text-[10.5px] uppercase tracking-[0.18em] font-bold"
+              style={{ color: "#FCA5AF" }}
+            >
+              Help shape what we build next
+            </p>
+            <h3
+              className="mt-1.5 text-[22px] sm:text-[24px] leading-tight"
+              style={{
+                fontFamily: "'DM Serif Display', serif",
+                fontWeight: 400,
+              }}
+            >
+              What should we build next?
+            </h3>
+            <p
+              className="mt-1.5 text-[13px]"
+              style={{ color: "rgba(255,255,255,0.72)" }}
+            >
+              Pick the tools you'd actually use — then rank your favorites.
+            </p>
+          </div>
         </div>
 
         {/* Scrollable body */}
-        <div className="px-6 pb-2 overflow-y-auto" style={{ flex: 1 }}>
+        <div className="px-6 pt-5 pb-2 overflow-y-auto" style={{ flex: 1 }}>
           {/* Section 1: Choose */}
           <SectionHeader
             step={1}
             title="Choose anything you'd want"
             hint={
               selected.length
-                ? `${selected.length} selected`
-                : "Tap to select"
+                ? `${selected.length} picked`
+                : "Tap to add"
             }
           />
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-1.5">
             {IDEAS.map((idea) => {
               const active = selected.includes(idea.id);
               return (
@@ -269,17 +286,24 @@ export default function FeedbackToolModal({
                   onClick={() => toggle(idea.id)}
                   disabled={submitting || done}
                   title={idea.description}
-                  className="text-[12.5px] font-medium rounded-full px-3 py-1.5 transition-all inline-flex items-center gap-1.5"
+                  className="text-[12.5px] font-medium rounded-full px-3 py-1.5 transition-all duration-150 inline-flex items-center gap-1.5 hover:-translate-y-px"
                   style={{
-                    background: active ? NAVY : "#F1F5F9",
-                    color: active ? "#fff" : "#475569",
+                    background: active ? NAVY : "#fff",
+                    color: active ? "#fff" : "#334155",
                     border: `1px solid ${active ? NAVY : "#E2E8F0"}`,
                     boxShadow: active
-                      ? "0 4px 10px rgba(20,33,61,0.18)"
-                      : "none",
+                      ? "0 4px 12px rgba(20,33,61,0.22)"
+                      : "0 1px 2px rgba(20,33,61,0.04)",
                   }}
                 >
-                  {active && <Check className="h-3 w-3" />}
+                  {active ? (
+                    <Check className="h-3 w-3" />
+                  ) : (
+                    <Plus
+                      className="h-3 w-3"
+                      style={{ color: "#94A3B8" }}
+                    />
+                  )}
                   {idea.label}
                 </button>
               );
@@ -288,9 +312,11 @@ export default function FeedbackToolModal({
               type="button"
               onClick={() => toggle(OTHER_ID)}
               disabled={submitting || done}
-              className="text-[12.5px] font-medium rounded-full px-3 py-1.5 transition-all inline-flex items-center gap-1.5"
+              className="text-[12.5px] font-medium rounded-full px-3 py-1.5 transition-all duration-150 inline-flex items-center gap-1.5 hover:-translate-y-px"
               style={{
-                background: selected.includes(OTHER_ID) ? NAVY : "#fff",
+                background: selected.includes(OTHER_ID)
+                  ? NAVY
+                  : "rgba(20,33,61,0.03)",
                 color: selected.includes(OTHER_ID) ? "#fff" : NAVY,
                 border: `1.5px dashed ${
                   selected.includes(OTHER_ID) ? NAVY : "#CBD5E1"
@@ -305,156 +331,209 @@ export default function FeedbackToolModal({
           {/* Tutoring Shorts microcopy */}
           {selected.includes("tutoring-shorts") && (
             <p
-              className="mt-2 text-[11.5px]"
-              style={{ color: "#64748B" }}
+              className="mt-2.5 text-[11.5px] inline-flex items-center gap-1.5 rounded-md px-2 py-1"
+              style={{
+                color: "#475569",
+                background: "rgba(20,33,61,0.04)",
+              }}
             >
-              Tutoring Shorts: send Lee a question and get a quick video answer.
+              <Sparkles className="h-3 w-3" style={{ color: RED }} />
+              Send Lee a question and get a quick video answer.
             </p>
           )}
 
-          {/* Other idea inline input */}
+          {/* Other idea inline input — visually secondary */}
           {selected.includes(OTHER_ID) && (
-            <input
-              type="text"
-              value={otherIdea}
-              onChange={(e) => setOtherIdea(e.target.value)}
-              placeholder="Name your idea (e.g., Audio recap)"
-              maxLength={80}
-              className="mt-3 w-full rounded-lg px-3 py-2 text-[13px] outline-none"
-              style={{
-                background: "#F8FAFC",
-                border: "1px solid #E2E8F0",
-                color: NAVY,
-              }}
-              disabled={submitting || done}
-            />
+            <div className="mt-3">
+              <label
+                className="text-[10.5px] uppercase tracking-widest font-semibold block mb-1"
+                style={{ color: "#94A3B8" }}
+              >
+                Your idea
+              </label>
+              <input
+                type="text"
+                value={otherIdea}
+                onChange={(e) => setOtherIdea(e.target.value)}
+                placeholder="e.g., Audio recap of each chapter"
+                maxLength={80}
+                className="w-full rounded-lg px-3 py-2 text-[13px] outline-none focus:ring-2 transition-all"
+                style={{
+                  background: "#F8FAFC",
+                  border: "1px dashed #CBD5E1",
+                  color: NAVY,
+                }}
+                disabled={submitting || done}
+              />
+            </div>
           )}
 
-          {/* Section 2: Rank */}
+          {/* Section 2: Rank — framed shaded panel */}
           <div className="mt-6">
             <SectionHeader
               step={2}
               title="Rank your top picks"
               hint="Top 3 is plenty"
             />
-            <p
-              className="mt-1.5 text-[12.5px]"
-              style={{ color: "#64748B" }}
+            <div
+              className="mt-3 rounded-2xl p-3 sm:p-4 relative"
+              style={{
+                background:
+                  "linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)",
+                border: "1px solid #E2E8F0",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6)",
+              }}
             >
-              Drag to rank, or use the arrows to move items up and down.
-            </p>
-
-            {order.length === 0 ? (
-              <div
-                className="mt-3 rounded-xl px-4 py-5 text-center text-[12.5px]"
-                style={{
-                  background: "#F8FAFC",
-                  border: "1px dashed #CBD5E1",
-                  color: "#94A3B8",
-                }}
-              >
-                Pick a few ideas above, then drag or use the arrows to rank them.
+              <div className="flex items-center justify-between mb-2 px-1">
+                <p
+                  className="text-[11.5px] inline-flex items-center gap-1.5"
+                  style={{ color: "#64748B" }}
+                >
+                  <Trophy className="h-3 w-3" style={{ color: RED }} />
+                  Drag, or use ▲ ▼ to reorder.
+                </p>
+                {order.length > 0 && (
+                  <span
+                    className="text-[10.5px] uppercase tracking-widest font-semibold"
+                    style={{ color: "#94A3B8" }}
+                  >
+                    {order.length} ranked
+                  </span>
+                )}
               </div>
-            ) : (
-              <ol className="mt-3 space-y-2">
-                {order.map((id, idx) => {
-                  const isTop3 = idx < 3;
-                  return (
-                    <li
-                      key={id}
-                      ref={(el) => {
-                        if (el) itemRefs.current.set(id, el);
-                        else itemRefs.current.delete(id);
-                      }}
-                      draggable={!submitting && !done}
-                      onDragStart={() => setDragId(id)}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        reorderTo(id);
-                      }}
-                      onDragEnd={() => {
-                        setDragId(null);
-                        setTouchOverId(null);
-                      }}
-                      className="flex items-center gap-2 sm:gap-3 rounded-xl px-3 py-2.5 transition-all"
-                      style={{
-                        background: isTop3 ? "#fff" : "#F8FAFC",
-                        border: `1px solid ${
-                          touchOverId === id && dragId !== id
-                            ? NAVY
-                            : isTop3
-                            ? "#D9E0EC"
-                            : "#E2E8F0"
-                        }`,
-                        boxShadow: isTop3
-                          ? "0 4px 12px rgba(20,33,61,0.06)"
-                          : "none",
-                        opacity: dragId === id ? 0.5 : 1,
-                        touchAction: dragId === id ? "none" : "auto",
-                      }}
-                    >
-                      {/* Drag handle — also captures touch drag on mobile */}
-                      <span
-                        onTouchStart={() => setDragId(id)}
-                        onTouchMove={(e) => handleTouchMove(e, id)}
-                        onTouchEnd={() => {
+
+              {order.length === 0 ? (
+                <div
+                  className="rounded-xl px-4 py-7 text-center text-[12.5px]"
+                  style={{
+                    background: "#fff",
+                    border: "1px dashed #CBD5E1",
+                    color: "#94A3B8",
+                  }}
+                >
+                  Pick a few ideas above and they'll line up here.
+                </div>
+              ) : (
+                <ol className="space-y-1.5">
+                  {order.map((id, idx) => {
+                    const isTop3 = idx < 3;
+                    const isDragging = dragId === id;
+                    return (
+                      <li
+                        key={id}
+                        ref={(el) => {
+                          if (el) itemRefs.current.set(id, el);
+                          else itemRefs.current.delete(id);
+                        }}
+                        draggable={!submitting && !done}
+                        onDragStart={() => setDragId(id)}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          reorderTo(id);
+                        }}
+                        onDragEnd={() => {
                           setDragId(null);
                           setTouchOverId(null);
                         }}
-                        className="flex-shrink-0 p-1 -ml-1 cursor-grab active:cursor-grabbing"
-                        style={{ touchAction: "none" }}
-                        aria-label="Drag to reorder"
-                      >
-                        <GripVertical
-                          className="h-4 w-4"
-                          style={{ color: "#94A3B8" }}
-                        />
-                      </span>
-                      <span
-                        className="inline-flex items-center justify-center rounded-md text-[11px] font-bold flex-shrink-0"
+                        className="flex items-center gap-2 sm:gap-3 rounded-xl px-2.5 py-2 transition-all duration-150"
                         style={{
-                          width: 22,
-                          height: 22,
-                          background: isTop3 ? NAVY : "#E2E8F0",
-                          color: isTop3 ? "#fff" : "#64748B",
+                          background: "#fff",
+                          border: `1px solid ${
+                            touchOverId === id && !isDragging
+                              ? NAVY
+                              : isTop3
+                              ? "#D9E0EC"
+                              : "#E5EAF0"
+                          }`,
+                          boxShadow: isDragging
+                            ? "0 8px 20px rgba(20,33,61,0.18)"
+                            : isTop3
+                            ? "0 2px 6px rgba(20,33,61,0.06)"
+                            : "0 1px 2px rgba(20,33,61,0.03)",
+                          opacity: isDragging ? 0.7 : 1,
+                          transform: isDragging ? "scale(1.01)" : "none",
+                          touchAction: isDragging ? "none" : "auto",
                         }}
                       >
-                        {idx + 1}
-                      </span>
-                      <span
-                        className="text-[13px] font-medium flex-1 truncate"
-                        style={{ color: NAVY }}
-                      >
-                        {labelFor(id)}
-                      </span>
-                      <div className="flex items-center gap-0.5 flex-shrink-0">
-                        <ArrowBtn
-                          dir="up"
-                          disabled={idx === 0}
-                          onClick={() => moveBy(id, -1)}
-                        />
-                        <ArrowBtn
-                          dir="down"
-                          disabled={idx === order.length - 1}
-                          onClick={() => moveBy(id, 1)}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => toggle(id)}
-                          className="p-1 rounded hover:bg-slate-100"
-                          aria-label="Remove"
+                        {/* Drag handle — also captures touch drag on mobile */}
+                        <span
+                          onTouchStart={() => setDragId(id)}
+                          onTouchMove={(e) => handleTouchMove(e, id)}
+                          onTouchEnd={() => {
+                            setDragId(null);
+                            setTouchOverId(null);
+                          }}
+                          className="flex-shrink-0 p-1 -ml-1 rounded cursor-grab active:cursor-grabbing hover:bg-slate-100 transition-colors"
+                          style={{ touchAction: "none" }}
+                          aria-label="Drag to reorder"
                         >
-                          <X
-                            className="h-3.5 w-3.5"
-                            style={{ color: "#94A3B8" }}
+                          <GripVertical
+                            className="h-4 w-4"
+                            style={{ color: "#CBD5E1" }}
                           />
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
-            )}
+                        </span>
+                        <span
+                          className="inline-flex items-center justify-center rounded-lg text-[11px] font-bold flex-shrink-0"
+                          style={{
+                            width: 24,
+                            height: 24,
+                            background: isTop3
+                              ? `linear-gradient(135deg, ${NAVY} 0%, #1E2F52 100%)`
+                              : "#EEF2F7",
+                            color: isTop3 ? "#fff" : "#64748B",
+                            boxShadow: isTop3
+                              ? "0 2px 4px rgba(20,33,61,0.18)"
+                              : "none",
+                          }}
+                        >
+                          {idx + 1}
+                        </span>
+                        <span
+                          className="text-[13px] font-medium flex-1 truncate"
+                          style={{ color: NAVY }}
+                        >
+                          {labelFor(id)}
+                        </span>
+                        {idx === 0 && (
+                          <span
+                            className="hidden sm:inline-flex text-[9.5px] uppercase tracking-widest font-bold rounded px-1.5 py-0.5"
+                            style={{
+                              color: RED,
+                              background: "rgba(206,17,38,0.08)",
+                            }}
+                          >
+                            Top
+                          </span>
+                        )}
+                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                          <ArrowBtn
+                            dir="up"
+                            disabled={idx === 0}
+                            onClick={() => moveBy(id, -1)}
+                          />
+                          <ArrowBtn
+                            dir="down"
+                            disabled={idx === order.length - 1}
+                            onClick={() => moveBy(id, 1)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => toggle(id)}
+                            className="p-1 rounded hover:bg-slate-100 transition-colors"
+                            aria-label="Remove"
+                          >
+                            <X
+                              className="h-3.5 w-3.5"
+                              style={{ color: "#94A3B8" }}
+                            />
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+            </div>
           </div>
 
           {/* Section 3: Anything we missed */}
