@@ -1594,6 +1594,7 @@ export default function SolutionsViewerV2() {
   const [localCourseCode, setLocalCourseCode] = useState<string | null>(null);
 
   const [helpOpen, setHelpOpen] = useState(false);
+  const [activeHelper, setActiveHelper] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [jumpOpen, setJumpOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
