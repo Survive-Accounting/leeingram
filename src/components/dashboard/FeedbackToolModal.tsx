@@ -86,9 +86,35 @@ export default function FeedbackToolModal({
   };
 
   const toggle = (id: string) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    setSelected((prev) => {
+      if (prev.includes(id)) {
+        // user removed an idea they had selected
+        removedRef.current.add(id);
+        return prev.filter((x) => x !== id);
+      }
+      // re-selecting clears the removed flag
+      removedRef.current.delete(id);
+      return [...prev, id];
+    });
+  };
+
+  // Touch drag — find the item under the touch point and reorder
+  const handleTouchMove = (e: React.TouchEvent, id: string) => {
+    if (!dragId) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    let overId: string | null = null;
+    for (const [otherId, el] of itemRefs.current.entries()) {
+      const r = el.getBoundingClientRect();
+      if (t.clientY >= r.top && t.clientY <= r.bottom) {
+        overId = otherId;
+        break;
+      }
+    }
+    if (overId && overId !== id) {
+      setTouchOverId(overId);
+      reorderTo(overId);
+    }
   };
 
   const reorderTo = (targetId: string) => {
