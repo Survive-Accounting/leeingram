@@ -214,6 +214,7 @@ function ReportIssueModal({
 
 
 // ── Need Help modal ────────────────────────────────────────────────────
+/** @deprecated Replaced by StuckSupportModal. Kept for rollback safety. */
 function NeedHelpModal({
   open,
   onOpenChange,
