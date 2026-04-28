@@ -2535,14 +2535,14 @@ export default function SolutionsViewerV2() {
         <button
           onClick={() => setHelpOpen(true)}
           className={cn(
-            "fixed right-4 bottom-20 z-30 rounded-full shadow-lg",
-            "bg-card border hover:bg-accent transition-colors",
-            "h-11 px-4 inline-flex items-center gap-2 text-sm font-medium",
+            "fixed right-4 bottom-20 z-30 rounded-full shadow-md backdrop-blur",
+            "bg-card/80 border hover:bg-accent transition-colors",
+            "h-9 px-3.5 inline-flex items-center gap-1.5 text-[13px] font-medium",
           )}
-          aria-label="Stuck? Ask Lee"
+          aria-label="Stuck? Send feedback"
         >
-          <MessageCircleQuestion className="h-4 w-4" />
-          <span className="hidden sm:inline">Stuck? Ask Lee</span>
+          <MessageCircleQuestion className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Stuck?</span>
         </button>
       )}
 
