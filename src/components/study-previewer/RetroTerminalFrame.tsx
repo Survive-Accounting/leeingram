@@ -170,6 +170,10 @@ export default function RetroTerminalFrame({
               animation: "sa-crt-flicker 6s ease-in-out infinite",
             }}
           >
+            {/* CRT pulse on value updates */}
+            {crtPulseKey > 0 && (
+              <div key={`crt-pulse-${crtPulseKey}`} className="sa-crt-pulse-overlay" aria-hidden />
+            )}
             {/* Scanlines */}
             <div
               aria-hidden
