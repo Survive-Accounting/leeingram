@@ -56,6 +56,7 @@ const PROMPT_EMOJIS: Record<PromptKey, string> = {
 };
 
 const EXPLORE_KEYS: PromptKey[] = [
+  "challenge",
   "similar_problem",
   "memorize",
   "journal_entries",
@@ -310,28 +311,7 @@ export default function SurviveExplorePanel({
       className="mt-4 rounded-2xl border bg-card p-5 shadow-sm space-y-4"
       data-embed-allow="true"
     >
-      {/* Challenge me — primary CTA */}
-      <button
-        type="button"
-        onClick={() => {
-          if (isEmbed) { logEmbedVoteAndPaywall("challenge"); return; }
-          fetchPrompt("challenge");
-        }}
-        className={cn(
-          "w-full inline-flex items-center justify-center gap-2 rounded-lg h-11 px-4 text-sm font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99]",
-          activeKey === "challenge" && "ring-2 ring-offset-2 ring-amber-400/40"
-        )}
-        style={{
-          background: "linear-gradient(180deg, #FBBF24 0%, #F59E0B 50%, #D97706 100%)",
-          boxShadow:
-            "0 1px 0 rgba(255,255,255,0.18) inset, 0 6px 16px -6px rgba(245,158,11,0.5), 0 2px 4px rgba(0,0,0,0.15)",
-          color: "#14213D",
-        }}
-      >
-        <span aria-hidden>⚡</span>
-        Challenge me
-      </button>
-
+      {/* Challenge me is now an entry inside "Vote on new ideas" — no standalone CTA */}
       {/* Explore toggle — always allowed to open even in embed mode so the
           student can see the prompt menu. Individual prompt clicks then
           trigger the silent-vote + paywall flow. */}
