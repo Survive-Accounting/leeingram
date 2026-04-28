@@ -400,7 +400,9 @@ export default function StudyPreviewer({
             </button>
           </div>
         )}
-      </section>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }
