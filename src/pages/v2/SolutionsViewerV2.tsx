@@ -1550,7 +1550,7 @@ export default function SolutionsViewerV2() {
           </div>
           <Link
             to="/my-dashboard"
-            className="tracking-tight truncate"
+            className="tracking-tight truncate justify-self-center text-center"
             style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, letterSpacing: "-0.01em" }}
             data-embed-allow="true"
           >
@@ -1560,7 +1560,7 @@ export default function SolutionsViewerV2() {
               <sup className="text-[9px] font-normal ml-0.5 opacity-70">™</sup>
             </span>
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-end">
             <button
               type="button"
               onClick={openShareModal}
