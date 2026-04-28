@@ -61,11 +61,22 @@ export default function RetroTerminalFrame({
 
   // CRT pulse: one quick brighten when either value changes (skips the very first mount)
   const [crtPulseKey, setCrtPulseKey] = useState(0);
+  // CRT sweep: stronger phosphor band sweep, fired on tool click / hand-off
+  const [crtSweepKey, setCrtSweepKey] = useState(0);
+  // Track which row was just clicked so it briefly flashes
+  const [flashedToolKey, setFlashedToolKey] = useState<string | null>(null);
   const firstPulseRef = useRef(true);
   useEffect(() => {
     if (firstPulseRef.current) { firstPulseRef.current = false; return; }
     setCrtPulseKey((k) => k + 1);
   }, [courseLabel, chapterLabel]);
+
+  const triggerToolPulse = (toolKey: string) => {
+    setCrtPulseKey((k) => k + 1);
+    setCrtSweepKey((k) => k + 1);
+    setFlashedToolKey(toolKey);
+    window.setTimeout(() => setFlashedToolKey(null), 540);
+  };
 
   // Sequential reveal of the boot lines for a tasteful "entering the system" feel.
   useEffect(() => {
@@ -93,6 +104,7 @@ export default function RetroTerminalFrame({
         onNudgeChapter?.();
         return;
       }
+      triggerToolPulse(tool.key);
       onSelectTool(tool.key);
     };
     window.addEventListener("keydown", handler);
@@ -141,6 +153,36 @@ export default function RetroTerminalFrame({
           position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
           animation: sa-crt-pulse 520ms ease-out both;
         }
+        /* Phosphor scanline sweep — a soft band that travels top→bottom once */
+        @keyframes sa-crt-sweep {
+          0%   { transform: translateY(-40%); opacity: 0; }
+          15%  { opacity: 0.9; }
+          100% { transform: translateY(140%); opacity: 0; }
+        }
+        .sa-crt-sweep-overlay {
+          position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+          overflow: hidden;
+        }
+        .sa-crt-sweep-overlay::before {
+          content: ""; position: absolute; left: 0; right: 0; top: 0;
+          height: 38%;
+          background: linear-gradient(
+            180deg,
+            rgba(124,255,176,0) 0%,
+            rgba(124,255,176,0.10) 45%,
+            rgba(180,255,210,0.18) 50%,
+            rgba(124,255,176,0.10) 55%,
+            rgba(124,255,176,0) 100%
+          );
+          filter: blur(2px);
+          animation: sa-crt-sweep 620ms cubic-bezier(0.22,1,0.36,1) both;
+        }
+        /* Brief row highlight when a tool is activated */
+        @keyframes sa-row-flash {
+          0%   { background: rgba(124,255,176,0.22); box-shadow: inset 0 0 0 1px rgba(124,255,176,0.45); }
+          100% { background: rgba(124,255,176,0); box-shadow: inset 0 0 0 1px rgba(124,255,176,0); }
+        }
+        .sa-row-flash { animation: sa-row-flash 520ms ease-out both; }
       `}</style>
 
       <div className="w-full" style={{ maxWidth: 980 }}>
@@ -175,6 +217,10 @@ export default function RetroTerminalFrame({
             {/* CRT pulse on value updates */}
             {crtPulseKey > 0 && (
               <div key={`crt-pulse-${crtPulseKey}`} className="sa-crt-pulse-overlay" aria-hidden />
+            )}
+            {/* CRT sweep on tool launch / hand-off to viewer */}
+            {crtSweepKey > 0 && (
+              <div key={`crt-sweep-${crtSweepKey}`} className="sa-crt-sweep-overlay" aria-hidden />
             )}
             {/* Scanlines */}
             <div
@@ -438,9 +484,10 @@ export default function RetroTerminalFrame({
                             onNudgeChapter?.();
                             return;
                           }
+                          triggerToolPulse(tool.key);
                           onSelectTool?.(tool.key);
                         }}
-                        className="group flex w-full items-center gap-3 text-left rounded-md transition-all"
+                        className={`group flex w-full items-center gap-3 text-left rounded-md transition-all ${flashedToolKey === tool.key ? "sa-row-flash" : ""}`}
                         style={{
                           padding: "8px 12px",
                           background: isActive
