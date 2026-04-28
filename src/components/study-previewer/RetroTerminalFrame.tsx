@@ -44,7 +44,12 @@ interface RetroTerminalFrameProps {
   notice?: string | null;
   /** Optional inline chapter selector rendered inside the terminal once a course is chosen. */
   chapterSelector?: React.ReactNode;
-}
+  /** Optional inline course selector rendered inside the terminal when "Change" is clicked. */
+  courseSelector?: React.ReactNode;
+  /** When true, course is changeable via inline "Change" affordance. */
+  canChangeCourse?: boolean;
+  /** When true, chapter is changeable via inline "Change" affordance. */
+  canChangeChapter?: boolean;
 
 /**
  * Retro CRT-in-a-laptop. Acts as the launchpad: shows boot lines for the
