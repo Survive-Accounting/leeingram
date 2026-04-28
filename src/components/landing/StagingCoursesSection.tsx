@@ -558,8 +558,8 @@ function ScreenContent({ detail, loading, onPaywall, isStaff }: LaptopViewerProp
         style={{ border: 0, background: "#FFFFFF" }}
         sandbox="allow-scripts allow-same-origin allow-forms"
       />
-      {/* Top-center status badge — staff sees neutral "Admin Preview", students see red "Live Preview · Free Beta" */}
-      {isStaff ? (
+      {/* Staff-only neutral badge — students see no top-center indicator. */}
+      {isStaff && (
         <div
           className="absolute top-3 left-1/2 -translate-x-1/2 z-20 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-white shadow-lg pointer-events-none"
           style={{
@@ -572,20 +572,6 @@ function ScreenContent({ detail, loading, onPaywall, isStaff }: LaptopViewerProp
         >
           Admin Preview
         </div>
-      ) : (
-        <button
-          type="button"
-          onClick={onPaywall}
-          className="absolute top-3 left-1/2 -translate-x-1/2 z-20 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-white shadow-lg"
-          style={{
-            background: RED,
-            letterSpacing: "0.06em",
-            fontFamily: "Inter, sans-serif",
-          }}
-          aria-label="Free Beta preview"
-        >
-          Live Preview · Free Beta
-        </button>
       )}
     </div>
   );
