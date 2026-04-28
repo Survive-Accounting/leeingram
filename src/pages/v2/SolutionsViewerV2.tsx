@@ -476,20 +476,53 @@ function ExplanationFeedback({ asset, onShareClick }: { asset: Asset; onShareCli
   );
 }
 
-// Section keys for the "Get unstuck fast" toolbox.
-// `lees_approach` is reused for the "How to start" button.
-type ToolboxKey = "lees_approach" | "how_to_solve" | "why_it_works" | "lock_it_in";
+// Primary toolbox keys map directly to `survive-this` edge function prompt types.
+type ToolboxKey = "walk_through" | "hint" | "setup" | "full_solution";
 
-// Student-brain labels: how a stressed student actually thinks about getting help.
 const TOOLBOX_META: Record<ToolboxKey, { label: string; emoji: string; subtitle: string }> = {
-  lees_approach: { label: "Start me off",     emoji: "🧭", subtitle: "Just the first step — no spoilers" },
-  how_to_solve: { label: "Walk me through it", emoji: "📌", subtitle: "Full step-by-step solution" },
-  why_it_works: { label: "Explain the rule",   emoji: "⚖️", subtitle: "The concept behind it" },
-  lock_it_in:   { label: "Show the setup",     emoji: "🧱", subtitle: "Tables, formulas, structure" },
+  walk_through:  { label: "Walk me through it", emoji: "🚀", subtitle: "Full step-by-step solution" },
+  hint:          { label: "Give me a hint",     emoji: "💡", subtitle: "One nudge — no spoilers" },
+  setup:         { label: "Show the setup",     emoji: "📄", subtitle: "Tables, formulas, structure" },
+  full_solution: { label: "Full solution",      emoji: "✅", subtitle: "Just the answer" },
 };
 
-// Secondary buttons (primary "Walk me through it" is rendered separately above the grid).
-const TOOLBOX_ORDER: ToolboxKey[] = ["lees_approach", "lock_it_in", "why_it_works"];
+// Inline HTML detection + sanitizer — mirrors SurviveExplorePanel's renderer
+// so survive-this responses with tables/lists render cleanly here too.
+const INLINE_AI_HTML_STYLE = `<style>
+.sa-inline-ai table { width:100%; border-collapse:collapse; font-size:13px; margin:10px 0 14px; }
+.sa-inline-ai th { text-align:left; color:#6B7280; font-weight:600; border-bottom:1px solid #E5E7EB; padding:6px 10px; background:#FAFAFA; }
+.sa-inline-ai td { padding:6px 10px; border-bottom:1px solid #F3F4F6; color:#14213D; font-size:13px; }
+.sa-inline-ai tr.total td { font-weight:700; border-top:1px solid #D1D5DB; border-bottom:none; background:#F8F9FA; }
+.sa-inline-ai ul, .sa-inline-ai ol { margin:8px 0 12px 20px; padding:0; }
+.sa-inline-ai li { margin:4px 0; line-height:1.55; }
+.sa-inline-ai p { margin:8px 0; line-height:1.65; }
+.sa-inline-ai strong { color:#14213D; font-weight:700; }
+.sa-inline-ai em { color:#6B7280; }
+</style>`;
+const INLINE_HTML_DETECT = /<(table|strong|ul|ol|li|br|h[1-6]|div|span|p|em|thead|tbody|tr|th|td)\b/i;
+
+function InlineResponseBlock({ text }: { text: string }) {
+  const isHtml = INLINE_HTML_DETECT.test(text);
+  if (isHtml) {
+    // Lazy import DOMPurify only when needed
+    const DOMPurify = require("isomorphic-dompurify");
+    const cleaned = DOMPurify.sanitize(text, {
+      ALLOWED_TAGS: ["table", "thead", "tbody", "tr", "th", "td", "strong", "em", "b", "i", "ul", "ol", "li", "p", "br", "div", "span", "h1", "h2", "h3", "h4", "h5", "h6"],
+      ALLOWED_ATTR: ["class"],
+    });
+    return (
+      <div
+        className="text-[14px] leading-relaxed"
+        dangerouslySetInnerHTML={{ __html: INLINE_AI_HTML_STYLE + `<div class="sa-inline-ai">${cleaned}</div>` }}
+      />
+    );
+  }
+  return (
+    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
+      <ReactMarkdown>{text}</ReactMarkdown>
+    </div>
+  );
+}
 
 function InlineExplanation({
   asset,
@@ -506,49 +539,52 @@ function InlineExplanation({
   onShareClick: () => void;
   onAdvanceTask?: (taskIndex: number) => void;
 }) {
+  const [searchParams] = useSearchParams();
+  const isEmbed = searchParams.get("embed") === "1";
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sections, setSections] = useState<ExplanationSections | null>(null);
+  const [responses, setResponses] = useState<Partial<Record<ToolboxKey, string>>>({});
   const [activeSection, setActiveSection] = useState<ToolboxKey | null>(null);
   const [printing, setPrinting] = useState(false);
   const [exportingSheet, setExportingSheet] = useState(false);
   const [jeOpen, setJeOpen] = useState(false);
-  // Bite-sized walkthrough state — index into sections.walkthrough
-  const [walkStep, setWalkStep] = useState(0);
-  const [walkShowAll, setWalkShowAll] = useState(false);
-
-  // Reset walkthrough whenever asset changes or user re-opens "Walk me through"
-  useEffect(() => {
-    setWalkStep(0);
-    setWalkShowAll(false);
-  }, [asset.asset_name]);
 
   const hasJE = Array.isArray(asset.journal_entry_completed_json?.scenario_sections)
     && asset.journal_entry_completed_json.scenario_sections.length > 0;
 
   // Reset on asset change
   useEffect(() => {
-    setSections(null);
+    setResponses({});
     setActiveSection(null);
     setError(null);
   }, [asset.asset_name]);
 
-  // Background prefetch — silently warm the explanation cache so the red
-  // "Walk me through this problem" CTA opens instantly. Uses requestIdleCallback
-  // when available; falls back to a small setTimeout. Stays silent on errors.
+  const buildContext = () => ({
+    problem_text: asset.survive_problem_text || "",
+    instructions: [asset.instruction_1, asset.instruction_2, asset.instruction_3, asset.instruction_4, asset.instruction_5, asset.instruction_list]
+      .filter(Boolean)
+      .join("\n"),
+    chapter_name: chapter ? `Ch ${chapter.chapter_number}: ${chapter.chapter_name}` : "",
+    course_name: getCourseLabel(chapter?.course) || "",
+  });
+
+  // Background prefetch for "Walk me through it" — survive-this caches in
+  // survive_ai_responses by (asset_id, prompt_type) so a later click is instant.
   useEffect(() => {
-    if (sections || loading) return;
+    if (responses.walk_through || loading || isEmbed) return;
     let cancelled = false;
     const prefetch = () => {
-      if (cancelled || sections || loading) return;
-      // Fire-and-forget; don't toggle the visible loading state.
+      if (cancelled || responses.walk_through) return;
       supabase.functions
-        .invoke("explain-this-solution", { body: { asset_code: asset.asset_name } })
-        .then(({ data, error }) => {
-          if (cancelled || error || !data?.success || !data?.sections) return;
-          setSections(data.sections as ExplanationSections);
+        .invoke("survive-this", {
+          body: { asset_id: asset.id, prompt_type: "walk_through", context: buildContext() },
         })
-        .catch(() => { /* silent — student will retry on click */ });
+        .then(({ data, error }) => {
+          if (cancelled || error || !data?.success) return;
+          setResponses((p) => ({ ...p, walk_through: data.response || "" }));
+        })
+        .catch(() => { /* silent */ });
     };
     const ric = (window as any).requestIdleCallback as
       | ((cb: () => void, opts?: { timeout: number }) => number)
@@ -570,42 +606,44 @@ function InlineExplanation({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asset.asset_name]);
 
-  const ensureSections = async (): Promise<ExplanationSections | null> => {
-    if (sections) return sections;
-    setLoading(true);
-    setError(null);
+  // Embed mode: silently log a vote and trigger the parent's beta paywall.
+  const logEmbedVoteAndPaywall = (key: ToolboxKey) => {
     try {
-      const { data, error } = await supabase.functions.invoke("explain-this-solution", {
-        body: { asset_code: asset.asset_name },
-      });
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || "Failed to load explanation");
-      setSections(data.sections);
-      return data.sections as ExplanationSections;
-    } catch (e: any) {
-      console.error("[explain-this-solution] failed:", e);
-      setError("Lee's tools are taking a breather. Try again in a moment — if it keeps happening, hit \"Need help?\" and we'll get on it.");
-      return null;
-    } finally {
-      setLoading(false);
-    }
+      (supabase as any)
+        .rpc("increment_survive_helpful", { p_asset_id: asset.id, p_prompt_type: key })
+        .then(() => {})
+        .catch(() => {});
+    } catch { /* silent */ }
+    try { window.parent?.postMessage({ type: "sa-embed-paywall" }, "*"); } catch { /* silent */ }
   };
 
   const handleToolboxClick = async (key: ToolboxKey) => {
-    // Activity counter for the magic-wand feedback widget
     bumpWandCounter(WAND_KEY_HELP_CLICKS);
-    // Toggle off if same button clicked
+    if (isEmbed) {
+      logEmbedVoteAndPaywall(key);
+      return;
+    }
     if (activeSection === key) {
       setActiveSection(null);
       return;
     }
     setActiveSection(key);
-    // Reset bite-sized walkthrough each time "Walk me through it" is opened
-    if (key === "how_to_solve") {
-      setWalkStep(0);
-      setWalkShowAll(false);
+    if (responses[key]) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("survive-this", {
+        body: { asset_id: asset.id, prompt_type: key, context: buildContext() },
+      });
+      if (fnError) throw fnError;
+      if (!data?.success) throw new Error(data?.error || "No response");
+      setResponses((p) => ({ ...p, [key]: data.response || "" }));
+    } catch (e: any) {
+      console.error("[survive-this]", key, e);
+      setError("Lee's tools are taking a breather. Try again in a moment — if it keeps happening, hit \"Need help?\" and we'll get on it.");
+    } finally {
+      setLoading(false);
     }
-    if (!sections) await ensureSections();
   };
 
   // Print PDF — reuses simplify-problem cache + generateSimplifiedPracticePdf
@@ -626,10 +664,7 @@ function InlineExplanation({
       doc.save(`${safeRef}-practice.pdf`);
     };
 
-    if (simplifiedText) {
-      buildPdf(simplifiedText);
-      return;
-    }
+    if (simplifiedText) { buildPdf(simplifiedText); return; }
     setPrinting(true);
     try {
       const { data, error } = await supabase.functions.invoke("simplify-problem", {
@@ -641,83 +676,23 @@ function InlineExplanation({
       buildPdf(data.simplified_text);
     } catch (e: any) {
       console.error("[simplify-problem] failed:", e);
-      setError("Couldn't build the PDF right now. Try again in a sec — if it keeps failing, ping us via \"Need help?\".");
+      setError("Couldn't build the PDF right now.");
     } finally {
       setPrinting(false);
     }
   };
 
-  // Open in Google Sheets — creates a fresh sheet and opens Google's "Make a copy" prompt
-  const handleOpenInSheets = async () => {
-    setError(null);
-    let userEmail: string | null = null;
-    try {
-      userEmail = localStorage.getItem("v2_student_email") || localStorage.getItem("sa_free_user_email") || null;
-    } catch {}
-
-    // Fire click event (best-effort, fire-and-forget)
-    void supabase.from("export_events").insert({
-      event_name: "google_sheet_export_clicked",
-      asset_id: asset.id,
-      asset_code: asset.asset_name,
-      chapter_id: chapter?.id ?? null,
-      course_id: chapter?.course_id ?? null,
-      email: userEmail,
-    });
-
-    setExportingSheet(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("create-tutoring-sheet", {
-        body: { assetId: asset.id, email: userEmail },
-      });
-      if (error) throw error;
-      if (!data?.success || !data?.copyUrl) throw new Error(data?.error || "Failed to create sheet");
-      window.open(data.copyUrl, "_blank", "noopener,noreferrer");
-      toast.success("Opened in Google Sheets — click \"Make a copy\" to save your own.");
-    } catch (e: any) {
-      console.error("[create-tutoring-sheet] failed:", e);
-      // Clipboard fallback
-      const fallback = [
-        `Survive Accounting — ${asset.source_ref || asset.asset_name}`,
-        chapter ? `Ch ${chapter.chapter_number}: ${chapter.chapter_name}` : "",
-        "",
-        "PROBLEM TEXT",
-        asset.survive_problem_text || "",
-        "",
-        "INSTRUCTIONS",
-        (asset as any).problem_context || "See problem text above.",
-        "",
-        `Original: https://learn.surviveaccounting.com/v2/solutions/${asset.asset_name}`,
-      ].filter(Boolean).join("\n");
-      try {
-        await navigator.clipboard.writeText(fallback);
-        toast.error("Couldn't open Google Sheets — problem copied to your clipboard instead.");
-      } catch {
-        toast.error("Couldn't open Google Sheets. Try again in a moment.");
-      }
-    } finally {
-      setExportingSheet(false);
-    }
-  };
-
   return (
     <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-5">
-      {/* Top: heading */}
-      <div className="pb-4 border-b border-border/60">
-        <div className="text-sm font-semibold text-foreground">
-          Choose how you want help
-        </div>
-      </div>
-
-      {/* Toolbox */}
-      <div className="space-y-3">
-        {/* PRIMARY: Walk me through it — big red CTA */}
+      {/* Toolbox — opens directly to buttons, no heading */}
+      <div className="space-y-3 pt-1">
+        {/* Row 1 — Walk me through it (full width, red) */}
         <button
           type="button"
-          onClick={() => handleToolboxClick("how_to_solve")}
+          onClick={() => handleToolboxClick("walk_through")}
           className={cn(
             "w-full inline-flex items-center justify-center gap-2 rounded-lg h-12 px-4 text-sm font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99]",
-            activeSection === "how_to_solve" && "ring-2 ring-offset-2 ring-[#CE1126]/40"
+            activeSection === "walk_through" && "ring-2 ring-offset-2 ring-[#CE1126]/40"
           )}
           style={{
             background: "linear-gradient(180deg, #E63950 0%, #CE1126 50%, #A30E1F 100%)",
@@ -725,13 +700,13 @@ function InlineExplanation({
               "0 1px 0 rgba(255,255,255,0.18) inset, 0 6px 16px -6px rgba(206,17,38,0.5), 0 2px 4px rgba(0,0,0,0.2)",
           }}
         >
-          <span aria-hidden>📌</span>
-          Walk me through this problem
+          <span aria-hidden>{TOOLBOX_META.walk_through.emoji}</span>
+          {TOOLBOX_META.walk_through.label}
         </button>
 
-        {/* Secondary buttons */}
+        {/* Row 2 — Hint + Setup (two equal columns) */}
         <div className="grid grid-cols-2 gap-2">
-          {TOOLBOX_ORDER.map((k) => {
+          {(["hint", "setup"] as ToolboxKey[]).map((k) => {
             const isActive = activeSection === k;
             return (
               <Button
@@ -747,18 +722,19 @@ function InlineExplanation({
               </Button>
             );
           })}
-          {hasJE && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setJeOpen(true)}
-              className="justify-start gap-2 h-9 text-xs sm:text-sm font-medium col-span-2"
-            >
-              <BookOpen className="h-3.5 w-3.5" />
-              Journal Entries
-            </Button>
-          )}
         </div>
+
+        {/* Row 3 — Full solution (full width, secondary) */}
+        <Button
+          variant={activeSection === "full_solution" ? "default" : "outline"}
+          size="sm"
+          onClick={() => handleToolboxClick("full_solution")}
+          className="w-full justify-start gap-2 h-9 text-xs sm:text-sm font-medium"
+          title={TOOLBOX_META.full_solution.subtitle}
+        >
+          <span aria-hidden>{TOOLBOX_META.full_solution.emoji}</span>
+          {TOOLBOX_META.full_solution.label}
+        </Button>
       </div>
 
       {hasJE && (
@@ -777,7 +753,6 @@ function InlineExplanation({
         </Dialog>
       )}
 
-      {/* Active section content */}
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           {error}
@@ -789,181 +764,22 @@ function InlineExplanation({
           key={activeSection}
           className="rounded-lg border border-border bg-muted/30 p-4 animate-in fade-in slide-in-from-top-1 duration-200"
         >
-          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground mb-2">
-            Your Study Workspace
-          </div>
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5">
             <span aria-hidden>{TOOLBOX_META[activeSection].emoji}</span>
             {TOOLBOX_META[activeSection].label}
           </h3>
-          {loading && !sections ? (
-            <div className="space-y-3 animate-in fade-in duration-200">
-              {/* Step header skeleton */}
-              <div className="flex items-baseline justify-between gap-3">
-                <div className="flex items-baseline gap-2">
-                  <div className="h-3 w-16 rounded bg-muted-foreground/15 animate-pulse" />
-                  <div className="h-3.5 w-40 rounded bg-muted-foreground/20 animate-pulse" />
-                </div>
-              </div>
-              {/* Restate callout skeleton */}
-              <div
-                className="rounded-md px-3 py-2"
-                style={{ background: "rgba(250,204,21,0.08)", borderLeft: "2px solid #FACC15" }}
-              >
-                <div className="h-3 w-11/12 rounded bg-muted-foreground/15 animate-pulse" />
-              </div>
-              {/* Content lines skeleton */}
-              <div className="space-y-2">
-                <div className="h-3 w-full rounded bg-muted-foreground/15 animate-pulse" />
-                <div className="h-3 w-5/6 rounded bg-muted-foreground/15 animate-pulse" />
-                <div className="h-3 w-2/3 rounded bg-muted-foreground/15 animate-pulse" />
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                We're unpacking part (a)… first step lands in a few seconds.
-              </div>
+          {loading && !responses[activeSection] ? (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              We're working on it…
             </div>
-          ) : sections ? (
-            (() => {
-              const wt = sections.walkthrough;
-              const showStepped =
-                activeSection === "how_to_solve" &&
-                Array.isArray(wt) && wt.length > 0 && !walkShowAll;
-
-              if (showStepped) {
-                const total = wt!.length;
-                const idx = Math.min(walkStep, total - 1);
-                const step = wt![idx];
-                const isLast = idx === total - 1;
-                const advance = () => {
-                  if (onAdvanceTask) onAdvanceTask(idx);
-                  if (!isLast) setWalkStep(idx + 1);
-                };
-                return (
-                  <div key={`walk-step-${idx}`} className="space-y-3 animate-in fade-in slide-in-from-right-1 duration-150">
-                    {/* Step header */}
-                    <div className="flex items-baseline justify-between gap-3">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                          Step ({step.part}) of {total}
-                        </span>
-                        <span className="text-[13px] font-semibold text-foreground">
-                          {step.title}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setWalkShowAll(true)}
-                        className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-                      >
-                        Show me everything
-                      </button>
-                    </div>
-
-                    {/* Plain-English restate callout */}
-                    {step.restate && (
-                      <div
-                        className="rounded-md px-3 py-2 text-[13px] italic"
-                        style={{
-                          background: "rgba(250,204,21,0.08)",
-                          borderLeft: "2px solid #FACC15",
-                          color: "rgba(255,255,255,0.85)",
-                        }}
-                      >
-                        {step.restate}
-                      </div>
-                    )}
-
-                    {/* The actual bite-sized content */}
-                    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
-                      <ReactMarkdown>{step.content}</ReactMarkdown>
-                    </div>
-
-                    {/* Progress dots */}
-                    <div className="flex items-center justify-center gap-1.5 pt-1">
-                      {wt!.map((_, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          aria-label={`Go to step ${i + 1}`}
-                          onClick={() => setWalkStep(i)}
-                          className="h-1.5 rounded-full transition-all"
-                          style={{
-                            width: i === idx ? 18 : 6,
-                            background:
-                              i < idx
-                                ? "#CE1126"
-                                : i === idx
-                                  ? "#FACC15"
-                                  : "rgba(255,255,255,0.18)",
-                          }}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Nav buttons */}
-                    <div className="flex items-center justify-between gap-2 pt-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setWalkStep(Math.max(0, idx - 1))}
-                        disabled={idx === 0}
-                        className="h-8 text-xs"
-                      >
-                        <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-                        Back
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={advance}
-                        className="h-8 text-xs font-semibold gap-1"
-                        style={{
-                          background: isLast
-                            ? "linear-gradient(180deg, #16A34A 0%, #15803D 100%)"
-                            : "linear-gradient(180deg, #E63950 0%, #CE1126 100%)",
-                          color: "#fff",
-                        }}
-                      >
-                        {isLast ? (
-                          <>
-                            <Check className="h-3.5 w-3.5" />
-                            I got it
-                          </>
-                        ) : (
-                          <>
-                            Continue to part ({wt![idx + 1].part})
-                            <ArrowRight className="h-3.5 w-3.5" />
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                );
-              }
-
-              // Fallback: full markdown blob (legacy or "Show me everything")
-              return (
-                <div className="space-y-2">
-                  {activeSection === "how_to_solve" && Array.isArray(wt) && wt.length > 0 && walkShowAll && (
-                    <button
-                      type="button"
-                      onClick={() => { setWalkShowAll(false); setWalkStep(0); }}
-                      className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-                    >
-                      ← Back to step-by-step
-                    </button>
-                  )}
-                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
-                    <ReactMarkdown>{sections[activeSection]}</ReactMarkdown>
-                  </div>
-                </div>
-              );
-            })()
+          ) : responses[activeSection] ? (
+            <InlineResponseBlock text={responses[activeSection]!} />
           ) : null}
         </section>
       )}
 
-      {sections && activeSection && (
+      {activeSection && responses[activeSection] && (
         <div className="pt-3 border-t border-border">
           <ExplanationFeedback asset={asset} onShareClick={onShareClick} />
         </div>
