@@ -39,7 +39,7 @@ const TERMINAL_TOOLS: TerminalTool[] = [
     key: "feedback",
     label: "Help shape what's next",
     description: "Rank ideas or suggest a tool we should build.",
-    cta: "Open feedback",
+    cta: "Share Feedback",
     icon: Lightbulb,
   },
 ];
