@@ -1670,6 +1670,19 @@ export default function SolutionsViewerV2() {
   const [isDragging, setIsDragging] = useState(false);
   const splitContainerRef = React.useRef<HTMLDivElement>(null);
 
+  // Current user (for onboarding modal + share strip)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data }) => {
+      if (cancelled) return;
+      setCurrentUserId(data.user?.id ?? null);
+      setCurrentUserEmail(data.user?.email ?? null);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   React.useEffect(() => {
     if (!isDragging) return;
     const handleMove = (clientX: number) => {
