@@ -56,6 +56,7 @@ const PROMPT_EMOJIS: Record<PromptKey, string> = {
 };
 
 const EXPLORE_KEYS: PromptKey[] = [
+  "challenge",
   "similar_problem",
   "memorize",
   "journal_entries",
