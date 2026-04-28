@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Check, GripVertical, X, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -46,8 +46,14 @@ export default function FeedbackToolModal({
   const [otherIdea, setOtherIdea] = useState("");
   const [extraNote, setExtraNote] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
+  const [touchOverId, setTouchOverId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+
+  // Track ideas the user explicitly removed (after selecting them) for analytics
+  const removedRef = useRef<Set<string>>(new Set());
+  // Touch drag refs
+  const itemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
 
   // Reset state when modal closes
   useEffect(() => {
@@ -58,6 +64,7 @@ export default function FeedbackToolModal({
         setOtherIdea("");
         setExtraNote("");
         setDone(false);
+        removedRef.current = new Set();
       }, 200);
     }
   }, [open]);
@@ -79,9 +86,35 @@ export default function FeedbackToolModal({
   };
 
   const toggle = (id: string) => {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    setSelected((prev) => {
+      if (prev.includes(id)) {
+        // user removed an idea they had selected
+        removedRef.current.add(id);
+        return prev.filter((x) => x !== id);
+      }
+      // re-selecting clears the removed flag
+      removedRef.current.delete(id);
+      return [...prev, id];
+    });
+  };
+
+  // Touch drag — find the item under the touch point and reorder
+  const handleTouchMove = (e: React.TouchEvent, id: string) => {
+    if (!dragId) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    let overId: string | null = null;
+    for (const [otherId, el] of itemRefs.current.entries()) {
+      const r = el.getBoundingClientRect();
+      if (t.clientY >= r.top && t.clientY <= r.bottom) {
+        overId = otherId;
+        break;
+      }
+    }
+    if (overId && overId !== id) {
+      setTouchOverId(overId);
+      reorderTo(overId);
+    }
   };
 
   const reorderTo = (targetId: string) => {
@@ -122,11 +155,29 @@ export default function FeedbackToolModal({
     setSubmitting(true);
     try {
       const ranked = order.map((id, i) => `${i + 1}. ${labelFor(id)}`);
+      const removed = Array.from(removedRef.current)
+        .filter((id) => !selected.includes(id))
+        .map(labelFor);
+      const customIdea =
+        selected.includes(OTHER_ID) && otherIdea.trim()
+          ? otherIdea.trim()
+          : null;
+
       const lines: string[] = [];
       lines.push("[Beta · Build-Next Prioritization]");
       lines.push("");
+      lines.push(`Selected (${selected.length}): ${selected.map(labelFor).join(", ") || "(none)"}`);
+      lines.push("");
       lines.push("Ranked picks:");
       lines.push(ranked.length ? ranked.join("\n") : "(none ranked)");
+      if (customIdea) {
+        lines.push("");
+        lines.push(`Custom idea: ${customIdea}`);
+      }
+      if (removed.length) {
+        lines.push("");
+        lines.push(`Removed after selecting: ${removed.join(", ")}`);
+      }
       if (extraNote.trim()) {
         lines.push("");
         lines.push("Anything we missed:");
@@ -290,7 +341,7 @@ export default function FeedbackToolModal({
               className="mt-1.5 text-[12.5px]"
               style={{ color: "#64748B" }}
             >
-              Drag to rank the ones you'd want most.
+              Drag to rank, or use the arrows to move items up and down.
             </p>
 
             {order.length === 0 ? (
@@ -302,7 +353,7 @@ export default function FeedbackToolModal({
                   color: "#94A3B8",
                 }}
               >
-                Pick a few ideas above, then drag to rank them here.
+                Pick a few ideas above, then drag or use the arrows to rank them.
               </div>
             ) : (
               <ol className="mt-3 space-y-2">
@@ -311,27 +362,54 @@ export default function FeedbackToolModal({
                   return (
                     <li
                       key={id}
+                      ref={(el) => {
+                        if (el) itemRefs.current.set(id, el);
+                        else itemRefs.current.delete(id);
+                      }}
                       draggable={!submitting && !done}
                       onDragStart={() => setDragId(id)}
                       onDragOver={(e) => {
                         e.preventDefault();
                         reorderTo(id);
                       }}
-                      onDragEnd={() => setDragId(null)}
-                      className="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all cursor-grab active:cursor-grabbing"
+                      onDragEnd={() => {
+                        setDragId(null);
+                        setTouchOverId(null);
+                      }}
+                      className="flex items-center gap-2 sm:gap-3 rounded-xl px-3 py-2.5 transition-all"
                       style={{
                         background: isTop3 ? "#fff" : "#F8FAFC",
-                        border: `1px solid ${isTop3 ? "#D9E0EC" : "#E2E8F0"}`,
+                        border: `1px solid ${
+                          touchOverId === id && dragId !== id
+                            ? NAVY
+                            : isTop3
+                            ? "#D9E0EC"
+                            : "#E2E8F0"
+                        }`,
                         boxShadow: isTop3
                           ? "0 4px 12px rgba(20,33,61,0.06)"
                           : "none",
                         opacity: dragId === id ? 0.5 : 1,
+                        touchAction: dragId === id ? "none" : "auto",
                       }}
                     >
-                      <GripVertical
-                        className="h-4 w-4 flex-shrink-0"
-                        style={{ color: "#94A3B8" }}
-                      />
+                      {/* Drag handle — also captures touch drag on mobile */}
+                      <span
+                        onTouchStart={() => setDragId(id)}
+                        onTouchMove={(e) => handleTouchMove(e, id)}
+                        onTouchEnd={() => {
+                          setDragId(null);
+                          setTouchOverId(null);
+                        }}
+                        className="flex-shrink-0 p-1 -ml-1 cursor-grab active:cursor-grabbing"
+                        style={{ touchAction: "none" }}
+                        aria-label="Drag to reorder"
+                      >
+                        <GripVertical
+                          className="h-4 w-4"
+                          style={{ color: "#94A3B8" }}
+                        />
+                      </span>
                       <span
                         className="inline-flex items-center justify-center rounded-md text-[11px] font-bold flex-shrink-0"
                         style={{
@@ -349,7 +427,7 @@ export default function FeedbackToolModal({
                       >
                         {labelFor(id)}
                       </span>
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
                         <ArrowBtn
                           dir="up"
                           disabled={idx === 0}
