@@ -78,7 +78,7 @@ export default function FeedbackToolModal({
     });
   }, [selected]);
 
-  if (!open) return null;
+  // Note: early return moved below useMemo to keep hook order stable
 
   const labelFor = (id: string) => {
     if (id === OTHER_ID) return otherIdea.trim() || "Other Idea";
@@ -146,6 +146,8 @@ export default function FeedbackToolModal({
     if (selected.includes(OTHER_ID) && otherIdea.trim().length >= 2) return true;
     return false;
   }, [selected, extraNote, otherIdea]);
+
+  if (!open) return null;
 
   const handleSubmit = async () => {
     if (!canSubmit) {
