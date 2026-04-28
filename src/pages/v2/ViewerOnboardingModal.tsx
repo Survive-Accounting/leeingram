@@ -36,6 +36,7 @@ export function ViewerOnboardingModal({
   const [email, setEmail] = useState(userEmail ?? "");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
