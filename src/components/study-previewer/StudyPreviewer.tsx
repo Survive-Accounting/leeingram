@@ -586,25 +586,24 @@ export default function StudyPreviewer({
                 isReturning={!!isReturning}
                 chapterSelector={
                   courseChosen && !chapterChosen ? (
-                    <div className="mt-3 max-w-sm">
-                      <SelectShell
-                        ref={chapterDropdownRef}
-                        value={selectedChapterId ?? ""}
-                        onChange={handleChapterChange}
-                        accent={false}
-                        disabled={chapterLoading || chapters.length === 0}
-                        loading={chapterLoading}
-                      >
-                        <option value="">
-                          {chapters.length === 0 ? "Loading chapters…" : "Choose chapter…"}
+                    <SelectShell
+                      ref={chapterDropdownRef}
+                      value={selectedChapterId ?? ""}
+                      onChange={handleChapterChange}
+                      accent={false}
+                      compact
+                      disabled={chapterLoading || chapters.length === 0}
+                      loading={chapterLoading}
+                    >
+                      <option value="">
+                        {chapters.length === 0 ? "Loading chapters…" : "Choose chapter…"}
+                      </option>
+                      {chapters.map((ch) => (
+                        <option key={ch.id} value={ch.id}>
+                          Ch {ch.chapter_number} — {ch.chapter_name}
                         </option>
-                        {chapters.map((ch) => (
-                          <option key={ch.id} value={ch.id}>
-                            Ch {ch.chapter_number} — {ch.chapter_name}
-                          </option>
-                        ))}
-                      </SelectShell>
-                    </div>
+                      ))}
+                    </SelectShell>
                   ) : null
                 }
                 onSelectTool={(key) => {
