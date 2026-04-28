@@ -175,25 +175,36 @@ export default function StudyPreviewer({
     [courses, selectedCourseId],
   );
 
-  const stepLabel = (n: number, label: string, complete: boolean) => (
-    <div className="flex items-center gap-2">
-      <span
-        className="inline-flex items-center justify-center rounded-full text-[10.5px] font-bold transition-colors"
-        style={{
-          width: 20,
-          height: 20,
-          background: complete ? NAVY : "#E2E8F0",
-          color: complete ? "#fff" : "#64748B",
-        }}
-      >
-        {complete ? <Check className="h-3 w-3" strokeWidth={3} /> : n}
-      </span>
-      <span
-        className="text-[11px] uppercase tracking-[0.14em] font-semibold"
-        style={{ color: complete ? NAVY : "#94A3B8" }}
-      >
-        {label}
-      </span>
+  const moduleHeader = (label: string, active: boolean, complete: boolean) => (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span
+          className="inline-block rounded-full transition-all"
+          style={{
+            width: 7,
+            height: 7,
+            background: active ? PHOSPHOR : "#3A3A42",
+            boxShadow: active ? `0 0 8px ${PHOSPHOR_GLOW}` : "none",
+          }}
+        />
+        <span
+          className="text-[10.5px] uppercase font-semibold"
+          style={{
+            color: active ? PHOSPHOR_DIM : "#6B7280",
+            letterSpacing: "0.22em",
+            fontFamily: "'JetBrains Mono', 'SF Mono', ui-monospace, monospace",
+          }}
+        >
+          {label}
+        </span>
+      </div>
+      {complete && (
+        <Check
+          className="h-3 w-3"
+          strokeWidth={3}
+          style={{ color: PHOSPHOR, filter: `drop-shadow(0 0 3px ${PHOSPHOR_GLOW})` }}
+        />
+      )}
     </div>
   );
 
