@@ -93,11 +93,14 @@ function buildUserPrompt(asset: any): string {
   return parts.join("\n");
 }
 
+type WalkStep = { part: string; title: string; restate: string; content: string };
+
 type Sections = {
   lees_approach: string;
   how_to_solve: string;
   why_it_works: string;
   lock_it_in: string;
+  walkthrough?: WalkStep[];
 };
 
 function isValidSections(s: any): s is Sections {
@@ -108,6 +111,11 @@ function isValidSections(s: any): s is Sections {
     typeof s.why_it_works === "string" &&
     typeof s.lock_it_in === "string"
   );
+}
+
+function hasWalkthrough(s: any): boolean {
+  return Array.isArray(s?.walkthrough) && s.walkthrough.length > 0
+    && s.walkthrough.every((w: any) => w && typeof w.part === "string" && typeof w.content === "string");
 }
 
 Deno.serve(async (req) => {
