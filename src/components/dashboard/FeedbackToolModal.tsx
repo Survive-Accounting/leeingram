@@ -353,7 +353,7 @@ export default function FeedbackToolModal({
                   color: "#94A3B8",
                 }}
               >
-                Pick a few ideas above, then drag to rank them here.
+                Pick a few ideas above, then drag or use the arrows to rank them.
               </div>
             ) : (
               <ol className="mt-3 space-y-2">
