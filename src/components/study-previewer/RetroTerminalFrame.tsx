@@ -280,11 +280,49 @@ export default function RetroTerminalFrame({
               )}
               <Line show={bootStep >= 2}>
                 {">"} Course selected:{" "}
-                <span style={{ color: "#E8FFF1" }}>{safeCourse}</span>
+                <span
+                  key={`course-${courseTyped.pulseKey}`}
+                  className={courseTyped.pulseKey > 0 ? "sa-value-pulse" : undefined}
+                  style={{ color: "#E8FFF1" }}
+                >
+                  {courseTyped.text || safeCourse}
+                  {courseTyped.typing && (
+                    <span
+                      aria-hidden
+                      className="inline-block align-[-2px] ml-0.5"
+                      style={{
+                        width: "0.5em",
+                        height: "1em",
+                        background: PHOSPHOR,
+                        boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                        animation: "sa-cursor-blink 0.6s steps(1) infinite",
+                      }}
+                    />
+                  )}
+                </span>
               </Line>
               <Line show={bootStep >= 3}>
                 {">"} Chapter selected:{" "}
-                <span style={{ color: "#E8FFF1" }}>{safeChapter}</span>
+                <span
+                  key={`chapter-${chapterTyped.pulseKey}`}
+                  className={chapterTyped.pulseKey > 0 ? "sa-value-pulse" : undefined}
+                  style={{ color: "#E8FFF1" }}
+                >
+                  {chapterTyped.text || safeChapter}
+                  {chapterTyped.typing && (
+                    <span
+                      aria-hidden
+                      className="inline-block align-[-2px] ml-0.5"
+                      style={{
+                        width: "0.5em",
+                        height: "1em",
+                        background: PHOSPHOR,
+                        boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                        animation: "sa-cursor-blink 0.6s steps(1) infinite",
+                      }}
+                    />
+                  )}
+                </span>
               </Line>
               <Line show={bootStep >= 4}>{">"}</Line>
               <Line show={bootStep >= 5}>
