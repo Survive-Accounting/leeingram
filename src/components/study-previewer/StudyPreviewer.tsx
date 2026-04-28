@@ -505,25 +505,30 @@ const SelectShell = forwardRef<HTMLSelectElement, SelectShellProps>(function Sel
   ref,
 ) {
   return (
-    <div className="relative">
+    <div className="relative group">
       <select
         ref={ref}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="w-full appearance-none rounded-lg px-4 py-2.5 pr-10 text-[14px] font-medium outline-none transition-all disabled:opacity-60"
+        className="w-full appearance-none rounded-md px-3 py-2.5 pr-9 text-[13.5px] font-medium outline-none transition-all disabled:opacity-60 focus:outline-none"
         style={{
-          background: disabled ? "#F1F5F9" : "#F8FAFC",
-          border: `1px solid ${accent ? NAVY : "#E2E8F0"}`,
-          color: NAVY,
+          background: disabled ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.35)",
+          border: `1px solid ${accent ? PHOSPHOR_DIM : CHASSIS_BORDER}`,
+          color: accent ? PHOSPHOR : "#E8FFF1",
+          fontFamily: MONO_FONT,
+          letterSpacing: "0.01em",
           cursor: disabled ? "not-allowed" : loading ? "wait" : "pointer",
+          boxShadow: accent
+            ? `inset 0 0 0 1px ${PHOSPHOR_GLOW}, 0 0 12px -4px ${PHOSPHOR_GLOW}`
+            : "inset 0 1px 2px rgba(0,0,0,0.4)",
         }}
       >
         {children}
       </select>
       <ChevronDown
-        className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
-        style={{ color: "#94A3B8" }}
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none transition-colors"
+        style={{ color: accent ? PHOSPHOR : "#6B7280" }}
       />
     </div>
   );
