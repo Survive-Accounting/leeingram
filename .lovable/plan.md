@@ -1,38 +1,37 @@
-## Dashboard Refinements
+## SEO Quick Wins + Headshot Favicon
 
-Polish the `/my-dashboard` hero, Beta Tools section, and the feedback modal copy. Repurpose the navbar CTA into a feedback launcher and add a welcome video placeholder.
+The current `index.html` is hardcoded to ACCY 304 only. We're now multi-course (Intro 1/2, IA1, IA2) and multi-campus, so the title, description, OG tags, and favicon all need to broaden out.
 
-### 1. Hero (`StudentDashboard.tsx`)
-- Change heading from "Welcome back, {name}" to **"Thanks for joining, {name}"**.
-- Add a **welcome video placeholder** in the top-right of the hero row:
-  - A clickable card (~280×160) with a play icon, "Watch the welcome video" caption, navy gradient background.
-  - Opens a modal with a centered 16:9 video frame (placeholder iframe / "Video coming soon" panel for now).
-  - Stack vertically below the heading on mobile.
-- Add more breathing room: increase top/bottom padding on `<main>` and gap between hero, welcome card, and beta tools.
+### 1. Favicon → Lee's headshot
+- Copy `src/assets/lee-headshot-original.png` (the same headshot used in the Landing hero) to:
+  - `public/favicon.png` — main browser tab icon
+  - `public/apple-touch-icon.png` — iOS home-screen / bookmark icon
+- Confirm the legacy `public/favicon.ico` is no longer referenced (already absent from repo).
+- Update `index.html` `<link rel="icon">` to point at `/favicon.png` (replaces the LearnWorlds-hosted JPG).
 
-### 2. Navbar CTA (`StudentDashboard.tsx`)
-- Replace **Start Studying** button with **Submit Feedback** button (same red gradient styling).
-- Clicking it opens the existing `FeedbackToolModal` (lifted to dashboard state, or triggered via prop).
-- Keep the chapter picker accessible via the existing "Jump to a chapter" section below.
+### 2. Page title + meta description
+Replace the ACCY 304-specific copy with course-agnostic messaging:
+- **Title**: `Survive Accounting — Pass Your Accounting Exam, Stress-Free` (under 60 chars, brand-first, action verb).
+- **Description**: `Step-by-step solutions, journal entries, formulas, and exam traps for college accounting. 2,500+ worked problems by Lee Ingram, tutor since 2015.` (~155 chars).
+- Add `<meta name="keywords">` covering core course codes (ACCY 201/202/303/304), "accounting tutor", "journal entries", etc. (low-impact, but cheap).
+- Add `<meta name="theme-color" content="#14213D">` for mobile address-bar branding.
 
-### 3. Beta Tools (`BetaToolCards.tsx`)
-- Tool 01 body: "Get instant help for any problem in your chapter." (replaces "Your live tutor…")
-- Tool 02 body: "Drill the JEs for deeper understanding." (replaces "Drill the JEs you keep getting wrong. Coming soon.")
-- Tool 03 title stays "Help us decide". Add a subline directly under the title:
-  > "If we could build you the perfect study tool, what all would it do?"
-- Section eyebrow "You're shaping these" → replace with **"Your feedback is implemented in real time"** rendered as a clickable link (same small uppercase style) that opens the feedback modal.
-- Lift `feedbackOpen` state up to the dashboard so the navbar button, the tool 03 card, and the eyebrow link all share one modal instance.
+### 3. Crawler + canonical
+- Add `<meta name="robots" content="index, follow, max-image-preview:large">`.
+- Add `<link rel="canonical" href="https://learn.surviveaccounting.com/">` so preview/staging URLs don't outrank the real domain.
 
-### 4. Feedback Modal (`FeedbackToolModal.tsx`)
-- Keep the headline "What should we build next?" but make the modal more general (it now also handles Practice Problem Helper / JE Memorizer / suggestions).
-- Subtitle: "Share thoughts about the Practice Problem Helper, Journal Entry Memorizer, or any idea."
-- Add a small radio/segmented selector for **Topic**: `Practice Problem Helper · Journal Entry Memorizer · General suggestion` (defaults to General). Prefix the message sent to `send-contact-notification` with `[Beta · {topic}]`.
-- Textarea placeholder: **"Your feedback is invaluable to us."**
+### 4. Open Graph + Twitter cards
+- Update `og:title`, `og:description`, `twitter:title`, `twitter:description` to match the new course-agnostic copy.
+- Add `og:site_name`, `og:url`, and `og:image:alt` (small lift, materially better link previews in iMessage/Slack/X).
 
-### Technical notes
-- All copy/UX changes; no schema or edge-function changes.
-- Files touched:
-  - `src/pages/StudentDashboard.tsx` — hero copy, video placeholder + modal, lifted feedback state, navbar CTA swap, padding.
-  - `src/components/dashboard/BetaToolCards.tsx` — body copy, tool 03 subline, eyebrow link, accept `onOpenFeedback` prop, drop internal modal.
-  - `src/components/dashboard/FeedbackToolModal.tsx` — topic selector, subtitle, placeholder, message prefix.
-- Welcome video modal uses a simple `<div>` placeholder (no video URL yet); ready to swap an `<iframe>` later.
+### 5. Structured data (JSON-LD)
+- Add a single `EducationalOrganization` schema block referencing Lee Ingram as founder. Helps Google show a richer brand panel and ties the site to a named tutor.
+
+### Out of scope (flag for later, not doing now)
+- A real `sitemap.xml` (robots.txt already references one but the file doesn't exist — worth a follow-up sprint).
+- Per-route `<title>` updates via `react-helmet-async` for `/solutions/:assetCode`, campus pages, etc. — bigger lift, separate task.
+
+### Files touched
+- `index.html` — full rewrite of `<head>`.
+- `public/favicon.png` — new (copied from `src/assets/lee-headshot-original.png`).
+- `public/apple-touch-icon.png` — new (same source).
