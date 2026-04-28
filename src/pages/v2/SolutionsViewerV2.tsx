@@ -304,6 +304,222 @@ function NeedHelpModal({
   );
 }
 
+// ── Stuck? Support modal ───────────────────────────────────────────────
+type StuckIssueType = "question" | "problem_text_issue" | "walkthrough_issue" | "general_feedback";
+
+const STUCK_OPTIONS: { value: StuckIssueType; label: string; description: string }[] = [
+  { value: "question",            label: "Question about this problem",      description: "I'm confused and need help understanding it." },
+  { value: "problem_text_issue",  label: "Problem text / instructions issue", description: "Something looks wrong, missing, or unclear." },
+  { value: "walkthrough_issue",   label: "Walkthrough / solution issue",      description: "The explanation, math, or setup seems off." },
+  { value: "general_feedback",    label: "Something else",                    description: "Share general feedback or another issue." },
+];
+
+const stuckSchema = z.object({
+  issue_type: z.enum(["question", "problem_text_issue", "walkthrough_issue", "general_feedback"]),
+  note: z.string().trim().min(3, "Add a quick note (at least 3 characters)").max(2000, "Note is too long"),
+  email: z.string().trim().email("Add a valid email").max(255),
+});
+
+function StuckSupportModal({
+  open,
+  onOpenChange,
+  asset,
+  chapter,
+  courseLabel,
+  viewMode,
+  simplifiedText,
+  activeHelper,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  asset: Asset | null;
+  chapter: ChapterMeta | null;
+  courseLabel: string | null;
+  viewMode: "split" | "problem" | "helper";
+  simplifiedText: string | null;
+  activeHelper: string | null;
+}) {
+  const [issueType, setIssueType] = useState<StuckIssueType>("question");
+  const [note, setNote] = useState("");
+  const [includeProblem, setIncludeProblem] = useState(true);
+  const [email, setEmail] = useState("");
+  const [hasStoredEmail, setHasStoredEmail] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setIssueType("question");
+    setNote("");
+    setIncludeProblem(true);
+    try {
+      const stored = localStorage.getItem("v2_student_email");
+      if (stored) {
+        setEmail(stored);
+        setHasStoredEmail(true);
+      } else {
+        setEmail("");
+        setHasStoredEmail(false);
+      }
+    } catch {
+      setHasStoredEmail(false);
+    }
+  }, [open]);
+
+  const buildContextBlock = (): string => {
+    const lines: string[] = [
+      "---",
+      "Context (auto-captured):",
+      `- Course: ${courseLabel || "—"}`,
+      chapter ? `- Chapter: Ch ${chapter.chapter_number} · ${chapter.chapter_name}` : "- Chapter: —",
+      asset ? `- Problem: ${asset.asset_name}${asset.source_ref ? ` (ref ${asset.source_ref})` : ""}` : "- Problem: —",
+      `- View mode: ${viewMode}`,
+      `- Active helper: ${activeHelper || "none"}`,
+      `- Page URL: ${typeof window !== "undefined" ? window.location.href : "—"}`,
+      `- Device: ${typeof navigator !== "undefined" ? navigator.userAgent : "—"}`,
+      `- Timestamp: ${new Date().toISOString()}`,
+    ];
+    if (includeProblem && asset?.survive_problem_text) {
+      const snap = asset.survive_problem_text.slice(0, 800);
+      lines.push("- Problem text snapshot:");
+      lines.push(snap.split("\n").map((l) => `    ${l}`).join("\n"));
+    }
+    const helperState = simplifiedText
+      ? "Simplified text shown"
+      : activeHelper
+      ? `${activeHelper} open`
+      : "—";
+    lines.push(`- Helper state: ${helperState}`);
+    return lines.join("\n");
+  };
+
+  const submit = async () => {
+    if (!asset) return;
+    const parsed = stuckSchema.safeParse({ issue_type: issueType, note, email });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message || "Please check your input");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const composedQuestion = includeProblem
+        ? `${parsed.data.note.trim()}\n\n${buildContextBlock()}`
+        : parsed.data.note.trim();
+
+      const { error } = await supabase.from("chapter_questions").insert({
+        chapter_id: asset.chapter_id,
+        student_email: parsed.data.email.toLowerCase(),
+        question: composedQuestion,
+        issue_type: parsed.data.issue_type,
+        asset_name: asset.asset_name,
+        source_ref: asset.source_ref,
+      });
+      if (error) throw error;
+
+      try { localStorage.setItem("v2_student_email", parsed.data.email.toLowerCase()); } catch { /* ignore */ }
+      void attachReferrerOnConversion(parsed.data.email);
+
+      toast.success("Thanks — we'll review this ASAP.");
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error(e?.message || "Could not send");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>What's going on?</DialogTitle>
+          <DialogDescription>
+            Help us fix it or point you in the right direction.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <RadioGroup
+            value={issueType}
+            onValueChange={(v) => setIssueType(v as StuckIssueType)}
+            className="space-y-2"
+          >
+            {STUCK_OPTIONS.map((opt) => {
+              const selected = issueType === opt.value;
+              return (
+                <label
+                  key={opt.value}
+                  htmlFor={`stuck-${opt.value}`}
+                  className={cn(
+                    "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all",
+                    selected
+                      ? "border-[#CE1126]/60 bg-[#CE1126]/5"
+                      : "border-border hover:bg-accent/50",
+                  )}
+                >
+                  <RadioGroupItem id={`stuck-${opt.value}`} value={opt.value} className="mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold leading-tight">{opt.label}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{opt.description}</div>
+                  </div>
+                </label>
+              );
+            })}
+          </RadioGroup>
+
+          {!hasStoredEmail && (
+            <div>
+              <Label htmlFor="stuck-email" className="text-xs">Your email</Label>
+              <Input
+                id="stuck-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@school.edu"
+                className="mt-1"
+                maxLength={255}
+              />
+            </div>
+          )}
+
+          <div>
+            <Label htmlFor="stuck-note" className="text-xs">Tell us what happened.</Label>
+            <Textarea
+              id="stuck-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="What confused you, what looked wrong, or what would make this better?"
+              rows={4}
+              maxLength={2000}
+              className="mt-1 text-sm"
+            />
+          </div>
+
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+            <Checkbox
+              checked={includeProblem}
+              onCheckedChange={(v) => setIncludeProblem(v === true)}
+            />
+            Include this problem with my report
+          </label>
+
+          <Button
+            onClick={submit}
+            disabled={submitting || note.trim().length < 3}
+            className="w-full"
+          >
+            {submitting ? "Sending…" : "Send feedback"}
+          </Button>
+          <p className="text-[11px] text-center text-muted-foreground -mt-1">
+            Beta feedback — replies come by email.
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 // ── Explanation panel (Sheet from right, full-screen on mobile) ────────
 // (Legacy `ExplanationSections` / `SectionKey` types removed — InlineExplanation
 //  now talks to the `survive-this` edge function directly.)
