@@ -90,15 +90,15 @@ export default function StagingNavbar({
         className="relative w-full px-5 sm:px-8 h-16 flex items-center justify-between"
         style={{ background: "transparent" }}
       >
-        {/* Solid layer — fades in on scroll/hover */}
+        {/* Solid layer — fades in on scroll/hover (navy so the white wordmark + amber dot stay legible) */}
         <div
           aria-hidden
           className="absolute inset-0 border-b pointer-events-none"
           style={{
             background:
-              "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,249,254,0.96) 100%)",
-            borderColor: "rgba(20,33,61,0.08)",
-            boxShadow: "0 4px 16px rgba(20,33,61,0.06), 0 1px 0 rgba(20,33,61,0.04)",
+              "linear-gradient(180deg, rgba(20,33,61,0.96) 0%, rgba(16,26,49,0.96) 100%)",
+            borderColor: "rgba(255,255,255,0.08)",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.25), 0 1px 0 rgba(255,255,255,0.04) inset",
             backdropFilter: "blur(14px)",
             WebkitBackdropFilter: "blur(14px)",
             opacity: isSolid ? 1 : 0,
