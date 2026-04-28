@@ -491,8 +491,6 @@ const INLINE_HTML_DETECT = /<(table|strong|ul|ol|li|br|h[1-6]|div|span|p|em|thea
 function InlineResponseBlock({ text }: { text: string }) {
   const isHtml = INLINE_HTML_DETECT.test(text);
   if (isHtml) {
-    // Lazy import DOMPurify only when needed
-    const DOMPurify = require("isomorphic-dompurify");
     const cleaned = DOMPurify.sanitize(text, {
       ALLOWED_TAGS: ["table", "thead", "tbody", "tr", "th", "td", "strong", "em", "b", "i", "ul", "ol", "li", "p", "br", "div", "span", "h1", "h2", "h3", "h4", "h5", "h6"],
       ALLOWED_ATTR: ["class"],
