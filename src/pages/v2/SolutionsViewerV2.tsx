@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { buildShareUrl, captureRefFromUrl, logShareClick, attachReferrerOnConversion } from "@/lib/referralTracking";
 import { toYouPerspective } from "@/utils/youPerspective";
+import leeHeadshotImg from "@/assets/lee-headshot-original.png";
 
 type Asset = {
   id: string;
