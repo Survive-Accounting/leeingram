@@ -103,10 +103,10 @@ export default function RetroTerminalFrame({
   const safeChapter = chapterLabel?.trim() || "—";
 
   const promptLabel = !canPickTool
-    ? "> Awaiting chapter selection…"
+    ? "> Awaiting chapter selection"
     : loading
-    ? "> Loading chapter assets…"
-    : "> Select a tool to start studying_";
+    ? "> Loading chapter assets"
+    : "> Select a tool to start studying";
 
   const LOGO_URL =
     "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
