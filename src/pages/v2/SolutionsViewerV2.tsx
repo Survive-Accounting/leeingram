@@ -1518,17 +1518,21 @@ export default function SolutionsViewerV2() {
         }}
       >
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between gap-6">
-          <Link
-            to="/my-dashboard"
-            className="inline-flex items-center gap-1.5 text-sm rounded-md px-2 py-1.5 -ml-2 transition-all hover:bg-white/5"
-            style={{ color: "rgba(255,255,255,0.55)" }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.95)")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.55)")}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Back to dashboard</span>
-            <span className="sm:hidden">Dashboard</span>
-          </Link>
+          {isEmbed ? (
+            <span aria-hidden />
+          ) : (
+            <Link
+              to="/my-dashboard"
+              className="inline-flex items-center gap-1.5 text-sm rounded-md px-2 py-1.5 -ml-2 transition-all hover:bg-white/5"
+              style={{ color: "rgba(255,255,255,0.55)" }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.95)")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.55)")}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Back to dashboard</span>
+              <span className="sm:hidden">Dashboard</span>
+            </Link>
+          )}
           <Link
             to="/my-dashboard"
             className="tracking-tight truncate"
