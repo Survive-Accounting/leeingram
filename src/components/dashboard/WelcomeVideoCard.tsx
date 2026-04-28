@@ -3,16 +3,22 @@ import { Play, X } from "lucide-react";
 const NAVY = "#14213D";
 const RED = "#CE1126";
 
-export function WelcomeVideoCard({ onClick }: { onClick: () => void }) {
+export function WelcomeVideoCard({
+  onClick,
+  fullWidth = false,
+}: {
+  onClick: () => void;
+  fullWidth?: boolean;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl text-left transition-all hover:-translate-y-0.5 hover:shadow-xl"
+      className="group relative overflow-hidden rounded-2xl text-left transition-all hover:-translate-y-0.5 hover:shadow-xl h-full"
       style={{
         width: "100%",
-        maxWidth: 320,
-        aspectRatio: "16 / 9",
+        maxWidth: fullWidth ? undefined : 320,
+        ...(fullWidth ? { minHeight: 220 } : { aspectRatio: "16 / 9" }),
         background:
           "linear-gradient(135deg, #14213D 0%, #1E3A66 60%, #14213D 100%)",
         border: "1px solid rgba(20,33,61,0.12)",
