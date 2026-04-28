@@ -118,7 +118,7 @@ export default function LandingStudyPreviewerSection({
               className="inline-block rounded-full"
               style={{ width: 6, height: 6, background: RED }}
             />
-            Free Beta · Try it now
+            FREE BETA · TRY IT NOW
           </div>
           <h2
             className="text-[30px] sm:text-[42px] leading-[1.1] sa-hero-in"
