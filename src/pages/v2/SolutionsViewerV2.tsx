@@ -697,6 +697,156 @@ const INLINE_AI_HTML_STYLE = `<style>
 </style>`;
 const INLINE_HTML_DETECT = /<(table|strong|ul|ol|li|br|h[1-6]|div|span|p|em|thead|tbody|tr|th|td)\b/i;
 
+/**
+ * Renders a multi-step walkthrough one step at a time.
+ * The AI returns all steps separated by `<!--STEP-->` (case-insensitive, optional whitespace).
+ * If no delimiter is present, falls back to rendering the full text as a single step.
+ */
+function WalkthroughStepper({
+  text,
+  onReviewFullSolution,
+}: {
+  text: string;
+  onReviewFullSolution: () => void;
+}) {
+  const steps = useMemo(() => {
+    const parts = text
+      .split(/<!--\s*STEP\s*-->/i)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    return parts.length > 0 ? parts : [text];
+  }, [text]);
+
+  const total = steps.length;
+  const [current, setCurrent] = useState(0);
+  const [showAll, setShowAll] = useState(false);
+
+  // Reset when text changes (new asset / refetch)
+  useEffect(() => {
+    setCurrent(0);
+    setShowAll(false);
+  }, [text]);
+
+  const isLast = current >= total - 1;
+  const stepLabel = total > 1 ? `Step ${current + 1} of ${total}` : "Walkthrough";
+
+  // Single-step (or fallback) — render plain
+  if (total <= 1) {
+    return <InlineResponseBlock text={steps[0]} />;
+  }
+
+  if (showAll) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+            All {total} steps
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowAll(false)}
+            className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline transition-colors"
+          >
+            Show one at a time
+          </button>
+        </div>
+        {steps.map((s, i) => (
+          <div key={i} className={i > 0 ? "pt-4 border-t border-border/50" : ""}>
+            <InlineResponseBlock text={s} />
+          </div>
+        ))}
+        <div className="pt-3 border-t border-border/50 flex justify-end">
+          <button
+            type="button"
+            onClick={onReviewFullSolution}
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md text-sm font-semibold bg-[#CE1126] text-white hover:bg-[#b50f22] transition-colors shadow-sm"
+          >
+            Review full solution →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Progress header */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold whitespace-nowrap">
+            {stepLabel}
+          </span>
+          <div className="flex items-center gap-1" aria-hidden>
+            {steps.map((_, i) => (
+              <span
+                key={i}
+                className="block h-1.5 rounded-full transition-all duration-200"
+                style={{
+                  width: i === current ? 16 : 6,
+                  background:
+                    i < current
+                      ? "rgba(206,17,38,0.85)"
+                      : i === current
+                      ? "#CE1126"
+                      : "rgba(255,255,255,0.18)",
+                }}
+              />
+            ))}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline transition-colors whitespace-nowrap"
+        >
+          Show all steps
+        </button>
+      </div>
+
+      {/* Step body — keyed so React replaces it cleanly with a subtle fade */}
+      <div
+        key={current}
+        className="animate-in fade-in duration-200"
+      >
+        <InlineResponseBlock text={steps[current]} />
+      </div>
+
+      {/* Footer controls */}
+      <div className="pt-3 border-t border-border/50 flex items-center justify-between gap-3">
+        {current > 0 ? (
+          <button
+            type="button"
+            onClick={() => setCurrent((c) => Math.max(0, c - 1))}
+            className="inline-flex items-center gap-1 h-8 px-2 -ml-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            ← Step {current}
+          </button>
+        ) : (
+          <span aria-hidden />
+        )}
+
+        {isLast ? (
+          <button
+            type="button"
+            onClick={onReviewFullSolution}
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md text-sm font-semibold bg-[#CE1126] text-white hover:bg-[#b50f22] transition-colors shadow-sm"
+          >
+            Review full solution →
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setCurrent((c) => Math.min(total - 1, c + 1))}
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md text-sm font-semibold bg-[#CE1126] text-white hover:bg-[#b50f22] transition-colors shadow-sm"
+          >
+            Continue to Step {current + 2} →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function InlineResponseBlock({ text }: { text: string }) {
   const isHtml = INLINE_HTML_DETECT.test(text);
   if (isHtml) {
@@ -979,7 +1129,14 @@ function InlineExplanation({
               We're working on it…
             </div>
           ) : responses[activeSection] ? (
-            <InlineResponseBlock text={responses[activeSection]!} />
+            activeSection === "walk_through" ? (
+              <WalkthroughStepper
+                text={responses.walk_through!}
+                onReviewFullSolution={() => handleToolboxClick("full_solution")}
+              />
+            ) : (
+              <InlineResponseBlock text={responses[activeSection]!} />
+            )
           ) : null}
         </section>
       )}

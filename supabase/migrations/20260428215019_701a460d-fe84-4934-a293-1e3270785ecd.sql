@@ -1,0 +1,1 @@
+DELETE FROM public.survive_ai_responses WHERE prompt_type = 'walk_through';
