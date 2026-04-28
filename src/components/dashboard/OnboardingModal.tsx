@@ -198,12 +198,12 @@ export default function OnboardingModal({
         <div className="px-6 pb-6 space-y-5">
           {step === 1 && (
             <>
-              <Field label="Your first name" required>
+              <Field label="Your full name" required>
                 <input
                   autoFocus
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Jordan"
+                  placeholder="e.g. Lee Ingram"
                   className="w-full rounded-lg px-3 py-2.5 text-[15px] outline-none focus:ring-2"
                   style={{
                     background: "#F8FAFC",
@@ -213,11 +213,32 @@ export default function OnboardingModal({
                 />
               </Field>
 
-              {isCatchAll ? (
+              {prefilledCampus && !isCatchAll && !editCampus ? (
+                <Field label="Your campus">
+                  <div
+                    className="flex items-center justify-between rounded-lg px-3 py-2.5 text-[14px]"
+                    style={{
+                      background: "#F8FAFC",
+                      border: "1px solid #E2E8F0",
+                      color: NAVY,
+                    }}
+                  >
+                    <span className="font-medium">{prefilledCampus.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditCampus(true)}
+                      className="text-[12px] underline"
+                      style={{ color: "#64748B" }}
+                    >
+                      Not right?
+                    </button>
+                  </div>
+                </Field>
+              ) : (!prefilledCampus || isCatchAll) ? (
                 <Field
                   label="Your campus"
                   optional
-                  hint="We don't have your school in the system yet — type it in or skip."
+                  hint="We don't have your school in the system yet — type it in or skip. We'll clean it up later."
                 >
                   <input
                     value={campusWriteIn}
@@ -254,57 +275,6 @@ export default function OnboardingModal({
                   </select>
                 </Field>
               )}
-
-              <Field label="Upload your syllabus" optional>
-                {syllabusPath ? (
-                  <div
-                    className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-[13.5px]"
-                    style={{
-                      background: "#ECFDF5",
-                      border: "1px solid #A7F3D0",
-                      color: "#065F46",
-                    }}
-                  >
-                    <Check className="h-4 w-4" />
-                    <span className="flex-1 truncate">{syllabusName}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSyllabusPath(null);
-                        setSyllabusName(null);
-                      }}
-                      className="opacity-60 hover:opacity-100"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <label
-                    className="flex items-center gap-2 rounded-lg px-3 py-2.5 cursor-pointer transition-colors text-[13.5px]"
-                    style={{
-                      background: "#F8FAFC",
-                      border: "1px dashed #CBD5E1",
-                      color: "#64748B",
-                    }}
-                  >
-                    {uploading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Upload className="h-4 w-4" />
-                    )}
-                    <span>{uploading ? "Uploading…" : "Choose a file (PDF, DOCX, image)"}</span>
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleSyllabusUpload(f);
-                      }}
-                    />
-                  </label>
-                )}
-              </Field>
             </>
           )}
 
