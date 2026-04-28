@@ -46,8 +46,14 @@ export default function FeedbackToolModal({
   const [otherIdea, setOtherIdea] = useState("");
   const [extraNote, setExtraNote] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
+  const [touchOverId, setTouchOverId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+
+  // Track ideas the user explicitly removed (after selecting them) for analytics
+  const removedRef = useRef<Set<string>>(new Set());
+  // Touch drag refs
+  const itemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
 
   // Reset state when modal closes
   useEffect(() => {
@@ -58,6 +64,7 @@ export default function FeedbackToolModal({
         setOtherIdea("");
         setExtraNote("");
         setDone(false);
+        removedRef.current = new Set();
       }, 200);
     }
   }, [open]);
