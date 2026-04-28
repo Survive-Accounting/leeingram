@@ -579,6 +579,14 @@ export default function StudentDashboard() {
         onClose={() => setPickerOpen(false)}
       />
 
+      <FeedbackToolModal
+        open={feedbackOpen}
+        email={email}
+        onClose={() => setFeedbackOpen(false)}
+      />
+
+      <WelcomeVideoModal open={videoOpen} onClose={() => setVideoOpen(false)} />
+
       {needsOnboarding && userId && email && (
         <OnboardingModal
           userId={userId}
