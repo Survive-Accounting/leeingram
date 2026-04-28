@@ -11,7 +11,7 @@ interface Props {
   compact?: boolean;
 }
 
-export default function ShareWithFriendsBand({ betaNumber, campusName }: Props) {
+export default function ShareWithFriendsBand({ betaNumber, campusName, compact = false }: Props) {
   const [copied, setCopied] = useState(false);
 
   const shareUrl = betaNumber
