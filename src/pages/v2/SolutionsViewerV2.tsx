@@ -2546,7 +2546,16 @@ export default function SolutionsViewerV2() {
         </button>
       )}
 
-      <NeedHelpModal open={helpOpen} onOpenChange={setHelpOpen} asset={asset} />
+      <StuckSupportModal
+        open={helpOpen}
+        onOpenChange={setHelpOpen}
+        asset={asset}
+        chapter={chapter}
+        courseLabel={courseLabel}
+        viewMode={viewMode}
+        simplifiedText={simplifiedText}
+        activeHelper={activeHelper}
+      />
       <MagicWandFeedback onTriggerShare={openShareModal} />
       <ReportIssueModal open={reportOpen} onOpenChange={setReportOpen} asset={asset} />
       <NavigatePanel
