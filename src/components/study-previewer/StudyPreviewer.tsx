@@ -330,7 +330,7 @@ export default function StudyPreviewer({
                 transition: "box-shadow 280ms ease-out, border-color 280ms ease-out",
               }}
             >
-              {moduleHeader("Course", courseChosen, courseChosen)}
+              {moduleHeader("Course", courseChosen, courseChosen, selectedCourseId ?? "")}
               {courses ? (
                 <SelectShell
                   value={selectedCourseId ?? ""}
@@ -386,7 +386,7 @@ export default function StudyPreviewer({
                   "box-shadow 280ms ease-out, border-color 280ms ease-out, opacity 280ms ease-out",
               }}
             >
-              {moduleHeader("Chapter", chapterChosen, chapterChosen)}
+              {moduleHeader("Chapter", chapterChosen, chapterChosen, selectedChapterId ?? "")}
               <SelectShell
                 ref={chapterDropdownRef}
                 value={selectedChapterId ?? ""}
