@@ -343,9 +343,9 @@ Deno.serve(async (req) => {
             { role: "user", content: userPrompt },
           ],
           // o3 is a reasoning model — most tokens go to internal reasoning.
-          // 2000 gives table-heavy responses (full_solution, financial_statements,
-          // walk_through step 1) enough headroom not to truncate.
-          max_completion_tokens: 2000,
+          // walk_through now returns ALL steps in one call (split client-side),
+          // so we need more headroom for multi-step + tables.
+          max_completion_tokens: prompt_type === "walk_through" ? 4500 : 2000,
           response_format: { type: "text" },
         }),
       });
