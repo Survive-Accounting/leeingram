@@ -3,20 +3,47 @@ import { useEffect, useState } from "react";
 const PHOSPHOR = "#7CFFB0";
 const PHOSPHOR_DIM = "rgba(124,255,176,0.55)";
 const PHOSPHOR_GLOW = "rgba(124,255,176,0.45)";
+const PHOSPHOR_MUTED = "rgba(124,255,176,0.35)";
+
+export interface TerminalTool {
+  key: string;
+  label: string;
+  /** Optional small caption shown after the label, e.g. "(coming soon)" */
+  hint?: string;
+  disabled?: boolean;
+}
 
 interface RetroTerminalFrameProps {
   courseLabel: string | null;
   chapterLabel: string | null;
+  /** Optional tool list — when present, renders selectable lines inside the terminal. */
+  tools?: TerminalTool[];
+  /** Called when a user clicks a tool line or hits its number key. */
+  onSelectTool?: (key: string) => void;
+  /** Currently active tool key (highlighted with ▶). */
+  activeToolKey?: string | null;
+  /** Whether tool selection is allowed yet. */
+  canPickTool?: boolean;
+  /** True while the chapter data is loading. */
+  loading?: boolean;
+  /** Called when a user attempts to pick a tool before a chapter is chosen. */
+  onNudgeChapter?: () => void;
 }
 
 /**
- * A subtle retro CRT-in-a-laptop entry state. Shown only before the user
- * picks a study tool. Once a tool is selected the parent swaps this out
- * for the real workspace.
+ * Retro CRT-in-a-laptop. Acts as the launchpad: shows boot lines for the
+ * selected course/chapter and (when tools are passed in) lets the user
+ * pick a study tool directly inside the terminal.
  */
 export default function RetroTerminalFrame({
   courseLabel,
   chapterLabel,
+  tools,
+  onSelectTool,
+  activeToolKey,
+  canPickTool = true,
+  loading = false,
+  onNudgeChapter,
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
 
@@ -24,18 +51,45 @@ export default function RetroTerminalFrame({
   useEffect(() => {
     setBootStep(0);
     const timers: number[] = [];
-    const steps = [220, 480, 740, 980, 1220];
+    const steps = [180, 380, 580, 760, 940, 1120];
     steps.forEach((delay, i) => {
       timers.push(window.setTimeout(() => setBootStep(i + 1), delay));
     });
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [courseLabel, chapterLabel]);
+  }, [courseLabel, chapterLabel, tools?.length]);
+
+  // Number-key shortcuts (1..9)
+  useEffect(() => {
+    if (!tools || !onSelectTool) return;
+    const handler = (e: KeyboardEvent) => {
+      // ignore when user is typing in inputs
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      const n = parseInt(e.key, 10);
+      if (!Number.isFinite(n) || n < 1 || n > tools.length) return;
+      const tool = tools[n - 1];
+      if (!tool || tool.disabled) return;
+      if (!canPickTool) {
+        onNudgeChapter?.();
+        return;
+      }
+      onSelectTool(tool.key);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [tools, onSelectTool, canPickTool, onNudgeChapter]);
 
   const safeCourse = courseLabel?.trim() || "—";
   const safeChapter = chapterLabel?.trim() || "—";
 
+  const promptLabel = !canPickTool
+    ? "> Awaiting chapter selection…"
+    : loading
+    ? "> Loading chapter assets…"
+    : "> Pick a tool to start studying:";
+
   return (
-    <div className="w-full flex justify-center px-2 sm:px-6 py-8 sm:py-12 animate-fade-in">
+    <div className="w-full flex justify-center px-2 sm:px-6 py-6 sm:py-10 animate-fade-in">
       <style>{`
         @keyframes sa-cursor-blink {
           0%, 49% { opacity: 1; }
@@ -49,7 +103,7 @@ export default function RetroTerminalFrame({
         }
       `}</style>
 
-      <div className="w-full" style={{ maxWidth: 880 }}>
+      <div className="w-full" style={{ maxWidth: 980 }}>
         {/* Laptop lid */}
         <div
           className="relative rounded-t-[18px] p-3 sm:p-4"
@@ -74,7 +128,7 @@ export default function RetroTerminalFrame({
               background:
                 "radial-gradient(120% 80% at 50% 30%, #052810 0%, #03130A 60%, #010904 100%)",
               border: "1px solid #0A1A12",
-              aspectRatio: "16 / 10",
+              minHeight: "clamp(380px, 56vw, 560px)",
               animation: "sa-crt-flicker 6s ease-in-out infinite",
             }}
           >
@@ -114,7 +168,7 @@ export default function RetroTerminalFrame({
                 fontFamily:
                   "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
                 color: PHOSPHOR,
-                fontSize: "clamp(11px, 1.4vw, 15px)",
+                fontSize: "clamp(12px, 1.45vw, 15px)",
                 lineHeight: 1.7,
                 textShadow: `0 0 1px ${PHOSPHOR_GLOW}, 0 0 8px ${PHOSPHOR_GLOW}`,
                 letterSpacing: "0.02em",
@@ -130,7 +184,7 @@ export default function RetroTerminalFrame({
               >
                 <span style={{ fontSize: "0.85em" }}>SA-TERM 80x24</span>
                 <span style={{ fontSize: "0.85em", color: PHOSPHOR_DIM }}>
-                  READY
+                  {loading ? "BUSY" : canPickTool ? "READY" : "WAIT"}
                 </span>
               </div>
 
@@ -147,19 +201,130 @@ export default function RetroTerminalFrame({
               </Line>
               <Line show={bootStep >= 4}>{">"}</Line>
               <Line show={bootStep >= 5}>
-                {">"} Pick a tool to start studying
-                <span
-                  aria-hidden
-                  className="inline-block align-[-2px] ml-1"
-                  style={{
-                    width: "0.55em",
-                    height: "1.05em",
-                    background: PHOSPHOR,
-                    boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
-                    animation: "sa-cursor-blink 1.05s steps(1) infinite",
-                  }}
-                />
+                <span style={{ color: PHOSPHOR_DIM }}>{promptLabel}</span>
               </Line>
+
+              {/* Tool menu */}
+              {tools && tools.length > 0 && (
+                <div
+                  className="mt-1"
+                  style={{
+                    opacity: bootStep >= 6 ? 1 : 0,
+                    transform: bootStep >= 6 ? "translateY(0)" : "translateY(2px)",
+                    transition: "opacity 240ms ease-out, transform 240ms ease-out",
+                  }}
+                >
+                  {tools.map((tool, i) => {
+                    const num = i + 1;
+                    const isActive = activeToolKey === tool.key;
+                    const isDisabled = !!tool.disabled;
+                    const interactable = canPickTool && !isDisabled && !loading;
+                    return (
+                      <button
+                        key={tool.key}
+                        type="button"
+                        onClick={() => {
+                          if (isDisabled) return;
+                          if (!canPickTool) {
+                            onNudgeChapter?.();
+                            return;
+                          }
+                          onSelectTool?.(tool.key);
+                        }}
+                        className="group block w-full text-left whitespace-pre-wrap px-1 -mx-1 rounded transition-colors"
+                        style={{
+                          color: isDisabled ? PHOSPHOR_MUTED : PHOSPHOR,
+                          cursor: interactable
+                            ? "pointer"
+                            : isDisabled
+                            ? "not-allowed"
+                            : "wait",
+                          minHeight: "1.7em",
+                          background: isActive
+                            ? "rgba(124,255,176,0.08)"
+                            : "transparent",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!interactable) return;
+                          e.currentTarget.style.background =
+                            "rgba(124,255,176,0.10)";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (isActive) return;
+                          e.currentTarget.style.background = "transparent";
+                        }}
+                        disabled={isDisabled}
+                        aria-label={`Choose ${tool.label}`}
+                      >
+                        <span style={{ color: PHOSPHOR_DIM }}>
+                          {isActive ? " ▶ " : "   "}
+                        </span>
+                        <span style={{ color: PHOSPHOR_DIM }}>[{num}]</span>{" "}
+                        <span
+                          className="group-hover:underline"
+                          style={{ textUnderlineOffset: "3px" }}
+                        >
+                          {tool.label}
+                        </span>
+                        {tool.hint && (
+                          <span
+                            style={{
+                              color: PHOSPHOR_MUTED,
+                              fontSize: "0.85em",
+                              marginLeft: "0.5em",
+                            }}
+                          >
+                            {tool.hint}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+
+                  {/* Prompt cursor at the bottom */}
+                  <div
+                    className="mt-2"
+                    style={{
+                      color: PHOSPHOR_DIM,
+                      minHeight: "1.7em",
+                    }}
+                  >
+                    {">"}{" "}
+                    <span style={{ fontSize: "0.85em" }}>
+                      Click a line, or press 1–{tools.length}
+                    </span>
+                    <span
+                      aria-hidden
+                      className="inline-block align-[-2px] ml-2"
+                      style={{
+                        width: "0.55em",
+                        height: "1.05em",
+                        background: PHOSPHOR,
+                        boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                        animation: "sa-cursor-blink 1.05s steps(1) infinite",
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* No tools — fall back to a single blinking cursor */}
+              {(!tools || tools.length === 0) && (
+                <Line show={bootStep >= 6}>
+                  {">"}
+                  <span
+                    aria-hidden
+                    className="inline-block align-[-2px] ml-1"
+                    style={{
+                      width: "0.55em",
+                      height: "1.05em",
+                      background: PHOSPHOR,
+                      boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                      animation: "sa-cursor-blink 1.05s steps(1) infinite",
+                    }}
+                  />
+                </Line>
+              )}
             </div>
           </div>
         </div>
