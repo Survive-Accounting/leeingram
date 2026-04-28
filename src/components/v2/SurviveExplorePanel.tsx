@@ -387,7 +387,10 @@ export default function SurviveExplorePanel({
           {!ideaOpen ? (
             <button
               type="button"
-              onClick={() => setIdeaOpen(true)}
+              onClick={() => {
+                if (isEmbed) { logEmbedVoteAndPaywall(null); return; }
+                setIdeaOpen(true);
+              }}
               className="text-[12px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
             >
               + suggest your own idea
