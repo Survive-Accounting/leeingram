@@ -65,18 +65,16 @@ export function ViewerOnboardingModal({
     if (userEmail && !email) setEmail(userEmail);
   }, [userEmail, email]);
 
-  const handleClose = () => setOpen(false);
+  const handleClose = () => {
+    if (dontShowAgain) {
+      try { localStorage.setItem(PERMANENT_FLAG, "1"); } catch { /* ignore */ }
+    }
+    setOpen(false);
+  };
 
   const handleDismissPermanent = () => {
     try { localStorage.setItem(PERMANENT_FLAG, "1"); } catch { /* ignore */ }
     setOpen(false);
-  };
-
-  const handleOpenFullScreen = () => {
-    if (!assetCode) return;
-    const url = `/v2/solutions/${encodeURIComponent(assetCode)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-    handleClose();
   };
 
   const handleSendLink = async () => {
