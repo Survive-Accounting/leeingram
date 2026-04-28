@@ -509,7 +509,7 @@ export default function RetroTerminalFrame({
                 </div>
               ) : (
                 <Line show={bootStep >= 1}>
-                  {">"} Survive Accounting Beta v1.0
+                  {">"} Survive Accounting: Spring '26 Beta
                 </Line>
               )}
               {chapterLabel && (
