@@ -1921,6 +1921,8 @@ export default function SolutionsViewerV2() {
 
       {/* Floating help button */}
       {!loading && asset && !isEmbed && (
+        <button
+          onClick={() => setHelpOpen(true)}
           className={cn(
             "fixed right-4 bottom-20 z-30 rounded-full shadow-lg",
             "bg-card border hover:bg-accent transition-colors",
