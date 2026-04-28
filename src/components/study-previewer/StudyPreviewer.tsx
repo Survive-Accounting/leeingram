@@ -517,18 +517,6 @@ export default function StudyPreviewer({
                   <Lock className="h-3.5 w-3.5 shrink-0 ml-2" style={{ color: "#6B7280" }} />
                 </div>
               )}
-              {/* I/O port label */}
-              <span
-                aria-hidden
-                className="absolute right-3 top-3 text-[9px] font-semibold"
-                style={{
-                  color: "#4B5563",
-                  letterSpacing: "0.18em",
-                  fontFamily: MONO_FONT,
-                }}
-              >
-                IN/01
-              </span>
             </div>
 
             {/* Module 2 — Chapter */}
@@ -567,18 +555,6 @@ export default function StudyPreviewer({
                   </option>
                 ))}
               </SelectShell>
-              {/* I/O port label */}
-              <span
-                aria-hidden
-                className="absolute right-3 top-3 text-[9px] font-semibold"
-                style={{
-                  color: "#4B5563",
-                  letterSpacing: "0.18em",
-                  fontFamily: MONO_FONT,
-                }}
-              >
-                IN/02
-              </span>
             </div>
           </section>
 
