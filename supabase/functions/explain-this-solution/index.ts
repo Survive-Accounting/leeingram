@@ -195,16 +195,31 @@ Deno.serve(async (req) => {
             type: "function",
             function: {
               name: "return_explanation",
-              description: "Return the four explanation sections.",
+              description: "Return the explanation sections + per-part walkthrough.",
               parameters: {
                 type: "object",
                 properties: {
                   lees_approach: { type: "string", description: "2-4 bullets on HOW TO THINK / where to start. No calculations." },
-                  how_to_solve: { type: "string", description: "Numbered steps, 3-5 max" },
+                  how_to_solve: { type: "string", description: "Numbered steps, 3-5 max (full solution)" },
                   why_it_works: { type: "string", description: "1-2 sentences max" },
                   lock_it_in: { type: "string", description: "1-2 bullets, 'if you see X → think Y'" },
+                  walkthrough: {
+                    type: "array",
+                    description: "One entry per lettered instruction part (a, b, c, ...). Same solution as how_to_solve, just split per part for bite-sized delivery.",
+                    items: {
+                      type: "object",
+                      properties: {
+                        part: { type: "string", description: "Letter: a, b, c, ..." },
+                        title: { type: "string", description: "5-7 word task title" },
+                        restate: { type: "string", description: "One short sentence in tutor voice translating what this part is asking." },
+                        content: { type: "string", description: "2-4 short numbered steps with specific numbers/accounts. Markdown allowed." },
+                      },
+                      required: ["part", "title", "restate", "content"],
+                      additionalProperties: false,
+                    },
+                  },
                 },
-                required: ["lees_approach", "how_to_solve", "why_it_works", "lock_it_in"],
+                required: ["lees_approach", "how_to_solve", "why_it_works", "lock_it_in", "walkthrough"],
                 additionalProperties: false,
               },
             },
