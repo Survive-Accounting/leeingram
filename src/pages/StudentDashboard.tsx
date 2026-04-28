@@ -8,6 +8,8 @@ import BetaCountdownStrip from "@/components/dashboard/BetaCountdownStrip";
 import WelcomeCard from "@/components/dashboard/WelcomeCard";
 import LegacyWelcomeCard from "@/components/dashboard/LegacyWelcomeCard";
 import BetaToolCards from "@/components/dashboard/BetaToolCards";
+import FeedbackToolModal from "@/components/dashboard/FeedbackToolModal";
+import { WelcomeVideoCard, WelcomeVideoModal } from "@/components/dashboard/WelcomeVideoCard";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
