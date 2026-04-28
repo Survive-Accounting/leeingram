@@ -1367,6 +1367,11 @@ export default function SolutionsViewerV2() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
+  // Campus context for the active user (if any). Drives whether we show the
+  // campus course code (e.g. "ACCY 201") vs the generic course name.
+  const [campusSlug, setCampusSlug] = useState<string | null>(null);
+  const [localCourseCode, setLocalCourseCode] = useState<string | null>(null);
+
   const [helpOpen, setHelpOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [jumpOpen, setJumpOpen] = useState(false);
