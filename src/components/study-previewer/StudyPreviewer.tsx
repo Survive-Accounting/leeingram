@@ -783,26 +783,11 @@ export default function StudyPreviewer({
                       >
                         {activeTool === "practice" && viewerAssetCode && !iframeError && (
                           <>
-                            <iframe
-                              key={`${viewerAssetCode}-${iframeReloadKey}`}
-                              src={`/v2/solutions/${encodeURIComponent(viewerAssetCode)}`}
-                              title="Practice Problem Helper"
-                              className="w-full block border-0"
-                              style={{
-                                height: "min(85vh, 980px)",
-                                background: "#fff",
-                                opacity: iframeLoaded ? 1 : 0,
-                                transition: "opacity 200ms ease-out",
-                              }}
-                              onLoad={() => setIframeLoaded(true)}
-                              onError={() => setIframeError(true)}
-                            />
-
-                            {/* Skeleton — only after 500ms of loading */}
+                            {/* Skeleton sits behind the iframe and is covered as the iframe paints */}
                             {!iframeLoaded && showSkeleton && (
                               <div
                                 aria-hidden
-                                className="absolute inset-0 flex flex-col gap-3 px-6 py-6"
+                                className="absolute inset-0 flex flex-col gap-3 px-6 py-6 z-0"
                                 style={{ background: "#fff" }}
                               >
                                 <div className="h-4 w-1/3 rounded bg-slate-100 animate-pulse" />
@@ -814,10 +799,22 @@ export default function StudyPreviewer({
                               </div>
                             )}
 
-                            {/* Subtle status — only if loading exceeds 2s */}
+                            <iframe
+                              key={`${viewerAssetCode}-${iframeReloadKey}`}
+                              src={`/v2/solutions/${encodeURIComponent(viewerAssetCode)}`}
+                              title="Practice Problem Helper"
+                              className="w-full block border-0 relative z-10"
+                              style={{
+                                height: "min(85vh, 980px)",
+                                background: "#fff",
+                              }}
+                              onLoad={() => setIframeLoaded(true)}
+                              onError={() => setIframeError(true)}
+                            />
+
                             {!iframeLoaded && showSlowStatus && (
                               <div
-                                className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] tracking-wide"
+                                className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] tracking-wide z-20"
                                 style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
                                 role="status"
                               >
