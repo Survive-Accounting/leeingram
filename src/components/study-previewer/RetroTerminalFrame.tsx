@@ -484,6 +484,7 @@ export default function RetroTerminalFrame({
                             onNudgeChapter?.();
                             return;
                           }
+                          triggerToolPulse(tool.key);
                           onSelectTool?.(tool.key);
                         }}
                         className="group flex w-full items-center gap-3 text-left rounded-md transition-all"
