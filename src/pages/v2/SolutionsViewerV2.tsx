@@ -645,46 +645,10 @@ function InlineExplanation({
 
   return (
     <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-5">
-      {/* Top: heading + Print PDF */}
-      <div className="flex items-start justify-between gap-3 pb-4 border-b border-border/60">
-        <div className="min-w-0">
-          <div className="text-sm font-semibold text-foreground">
-            Choose how you want help
-          </div>
-          <div className="text-xs text-muted-foreground mt-0.5">
-            Get a hint, see the setup, or walk through the full solution.
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleOpenInSheets}
-            disabled={exportingSheet}
-            className="gap-1.5 h-8 px-3 text-xs font-medium"
-            title="Create a Google Sheet of this problem and open the 'Make a copy' prompt"
-          >
-            {exportingSheet ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <SheetIcon className="h-3.5 w-3.5" />
-            )}
-            Open in Google Sheets
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handlePrintPdf}
-            disabled={printing}
-            className="gap-1.5 h-8 px-3 text-xs font-medium"
-          >
-            {printing ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Printer className="h-3.5 w-3.5" />
-            )}
-            Print PDF
-          </Button>
+      {/* Top: heading */}
+      <div className="pb-4 border-b border-border/60">
+        <div className="text-sm font-semibold text-foreground">
+          Choose how you want help
         </div>
       </div>
 
