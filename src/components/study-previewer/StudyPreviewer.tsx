@@ -606,7 +606,7 @@ export default function StudyPreviewer({
                 welcomeName={welcomeName ?? null}
                 isReturning={!!isReturning}
                 chapterSelector={
-                  courseChosen && !chapterChosen ? (
+                  courseChosen ? (
                     <SelectShell
                       ref={chapterDropdownRef}
                       value={selectedChapterId ?? ""}
@@ -627,6 +627,25 @@ export default function StudyPreviewer({
                     </SelectShell>
                   ) : null
                 }
+                courseSelector={
+                  courses ? (
+                    <SelectShell
+                      value={selectedCourseId ?? ""}
+                      onChange={handleCourseChange}
+                      accent={false}
+                      compact
+                    >
+                      <option value="">Choose course…</option>
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.fullName}
+                        </option>
+                      ))}
+                    </SelectShell>
+                  ) : null
+                }
+                canChangeCourse={!!courses && courses.length > 1}
+                canChangeChapter={chapterChosen && chapters.length > 1}
                 onSelectTool={(key) => {
                   if (key === "feedback") {
                     onOpenFeedback();
