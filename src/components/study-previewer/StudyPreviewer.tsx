@@ -185,7 +185,7 @@ export default function StudyPreviewer({
       try { localStorage.setItem(persistChapterKey, chId); } catch { /* ignore */ }
     }
 
-    if (ch) toast.success(`Ch. ${ch.chapter_number} study tools are loaded!`);
+    
   };
 
   // Course changes from the inline terminal selector — reset chapter + tool so
@@ -207,7 +207,9 @@ export default function StudyPreviewer({
     // Reset viewer load state for the new tool
     setIframeLoaded(false);
     setIframeError(false);
-    setShowSkeleton(false);
+    // Show skeleton immediately so the chassis paints with content the moment
+    // the retro layer hides — no perceived "monitor disappeared" gap.
+    setShowSkeleton(true);
     setShowSlowStatus(false);
     // Fire the CRT refresh pulse on the retro layer
     setCrtPulseKey((k) => k + 1);
@@ -223,21 +225,18 @@ export default function StudyPreviewer({
     }, 60);
   };
 
-  // Skeleton at >500ms, subtle status at >2s, error at >12s
+  // Subtle status at >2s, error at >12s. Skeleton renders immediately on click.
   useEffect(() => {
     if (!activeTool || iframeLoaded || iframeError) return;
-    const t1 = window.setTimeout(() => setShowSkeleton(true), 500);
     const t2 = window.setTimeout(() => setShowSlowStatus(true), 2000);
     const t3 = window.setTimeout(() => {
       if (!iframeLoaded) setIframeError(true);
     }, 12000);
     return () => {
-      window.clearTimeout(t1);
       window.clearTimeout(t2);
       window.clearTimeout(t3);
     };
   }, [activeTool, iframeReloadKey, viewerAssetCode, iframeLoaded, iframeError]);
-
 
   const selectedChapter = useMemo(
     () => chapters.find((c) => c.id === selectedChapterId) ?? null,
@@ -326,14 +325,13 @@ export default function StudyPreviewer({
         .sa-rise { animation: sa-rise-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
         /* Crossfade stage: retro terminal ↔ modern viewer share the same frame.
-           Tuned for fast/premium feel — total perceived transition under ~250ms. */
-        .sa-stage { position: relative; }
+           Tuned to feel instant — no perceptible "monitor disappeared" gap. */
+        .sa-stage { position: relative; min-height: clamp(420px, 60vw, 620px); }
         .sa-stage-layer {
           transition:
-            opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
-            filter 220ms cubic-bezier(0.22, 1, 0.36, 1),
-            transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-          will-change: opacity, filter, transform;
+            opacity 90ms linear,
+            transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: opacity, transform;
         }
         .sa-stage-overlay {
           position: absolute;
@@ -341,13 +339,11 @@ export default function StudyPreviewer({
         }
         .sa-stage-hidden {
           opacity: 0;
-          filter: blur(4px);
-          transform: scale(0.992);
+          transform: scale(0.998);
           pointer-events: none;
         }
         .sa-stage-visible {
           opacity: 1;
-          filter: blur(0);
           transform: scale(1);
         }
 
