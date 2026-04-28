@@ -157,9 +157,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Cache (new structured shape only)
+    // Cache hit only if the cached sections also include the new walkthrough shape.
+    // Old cached rows (no walkthrough) get regenerated once on next view.
     const cache = asset.survive_solution_explanation_cache as any;
-    if (!force && cache?.sections && isValidSections(cache.sections)) {
+    if (!force && cache?.sections && isValidSections(cache.sections) && hasWalkthrough(cache.sections)) {
       return new Response(
         JSON.stringify({
           success: true,
