@@ -312,11 +312,13 @@ function NeedHelpModal({
 }
 
 // ── Explanation panel (Sheet from right, full-screen on mobile) ────────
+type WalkStep = { part: string; title: string; restate: string; content: string };
 type ExplanationSections = {
   lees_approach: string;
   how_to_solve: string;
   why_it_works: string;
   lock_it_in: string;
+  walkthrough?: WalkStep[];
 };
 
 type SectionKey = "how_to_solve" | "why_it_works" | "lock_it_in";
@@ -494,12 +496,14 @@ function InlineExplanation({
   simplifiedText,
   setSimplifiedText,
   onShareClick,
+  onAdvanceTask,
 }: {
   asset: Asset;
   chapter: ChapterMeta | null;
   simplifiedText: string | null;
   setSimplifiedText: (t: string | null) => void;
   onShareClick: () => void;
+  onAdvanceTask?: (taskIndex: number) => void;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -508,6 +512,15 @@ function InlineExplanation({
   const [printing, setPrinting] = useState(false);
   const [exportingSheet, setExportingSheet] = useState(false);
   const [jeOpen, setJeOpen] = useState(false);
+  // Bite-sized walkthrough state — index into sections.walkthrough
+  const [walkStep, setWalkStep] = useState(0);
+  const [walkShowAll, setWalkShowAll] = useState(false);
+
+  // Reset walkthrough whenever asset changes or user re-opens "Walk me through"
+  useEffect(() => {
+    setWalkStep(0);
+    setWalkShowAll(false);
+  }, [asset.asset_name]);
 
   const hasJE = Array.isArray(asset.journal_entry_completed_json?.scenario_sections)
     && asset.journal_entry_completed_json.scenario_sections.length > 0;
@@ -549,6 +562,11 @@ function InlineExplanation({
       return;
     }
     setActiveSection(key);
+    // Reset bite-sized walkthrough each time "Walk me through it" is opened
+    if (key === "how_to_solve") {
+      setWalkStep(0);
+      setWalkShowAll(false);
+    }
     if (!sections) await ensureSections();
   };
 
@@ -746,9 +764,141 @@ function InlineExplanation({
               Survive Accounting is thinking…
             </div>
           ) : sections ? (
-            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
-              <ReactMarkdown>{sections[activeSection]}</ReactMarkdown>
-            </div>
+            (() => {
+              const wt = sections.walkthrough;
+              const showStepped =
+                activeSection === "how_to_solve" &&
+                Array.isArray(wt) && wt.length > 0 && !walkShowAll;
+
+              if (showStepped) {
+                const total = wt!.length;
+                const idx = Math.min(walkStep, total - 1);
+                const step = wt![idx];
+                const isLast = idx === total - 1;
+                const advance = () => {
+                  if (onAdvanceTask) onAdvanceTask(idx);
+                  if (!isLast) setWalkStep(idx + 1);
+                };
+                return (
+                  <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                    {/* Step header */}
+                    <div className="flex items-baseline justify-between gap-3">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                          Step ({step.part}) of {total}
+                        </span>
+                        <span className="text-[13px] font-semibold text-foreground">
+                          {step.title}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setWalkShowAll(true)}
+                        className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                      >
+                        Show me everything
+                      </button>
+                    </div>
+
+                    {/* Plain-English restate callout */}
+                    {step.restate && (
+                      <div
+                        className="rounded-md px-3 py-2 text-[13px] italic"
+                        style={{
+                          background: "rgba(250,204,21,0.08)",
+                          borderLeft: "2px solid #FACC15",
+                          color: "rgba(255,255,255,0.85)",
+                        }}
+                      >
+                        {step.restate}
+                      </div>
+                    )}
+
+                    {/* The actual bite-sized content */}
+                    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
+                      <ReactMarkdown>{step.content}</ReactMarkdown>
+                    </div>
+
+                    {/* Progress dots */}
+                    <div className="flex items-center justify-center gap-1.5 pt-1">
+                      {wt!.map((_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          aria-label={`Go to step ${i + 1}`}
+                          onClick={() => setWalkStep(i)}
+                          className="h-1.5 rounded-full transition-all"
+                          style={{
+                            width: i === idx ? 18 : 6,
+                            background:
+                              i < idx
+                                ? "#CE1126"
+                                : i === idx
+                                  ? "#FACC15"
+                                  : "rgba(255,255,255,0.18)",
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Nav buttons */}
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setWalkStep(Math.max(0, idx - 1))}
+                        disabled={idx === 0}
+                        className="h-8 text-xs"
+                      >
+                        <ArrowLeft className="h-3.5 w-3.5 mr-1" />
+                        Back
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={advance}
+                        className="h-8 text-xs font-semibold gap-1"
+                        style={{
+                          background: isLast
+                            ? "linear-gradient(180deg, #16A34A 0%, #15803D 100%)"
+                            : "linear-gradient(180deg, #E63950 0%, #CE1126 100%)",
+                          color: "#fff",
+                        }}
+                      >
+                        {isLast ? (
+                          <>
+                            <Check className="h-3.5 w-3.5" />
+                            I got it
+                          </>
+                        ) : (
+                          <>
+                            Continue to part ({wt![idx + 1].part})
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Fallback: full markdown blob (legacy or "Show me everything")
+              return (
+                <div className="space-y-2">
+                  {activeSection === "how_to_solve" && Array.isArray(wt) && wt.length > 0 && walkShowAll && (
+                    <button
+                      type="button"
+                      onClick={() => { setWalkShowAll(false); setWalkStep(0); }}
+                      className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                    >
+                      ← Back to step-by-step
+                    </button>
+                  )}
+                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 text-[14px] leading-relaxed">
+                    <ReactMarkdown>{sections[activeSection]}</ReactMarkdown>
+                  </div>
+                </div>
+              );
+            })()
           ) : null}
         </section>
       )}
@@ -1461,6 +1611,20 @@ export default function SolutionsViewerV2() {
     });
   };
 
+  // Idempotent setter — used by the bite-sized walkthrough's Continue button.
+  // Marks a task as done without toggling it back off.
+  const markTaskDone = (i: number) => {
+    setCheckedTasks((prev) => {
+      const base = prev.length === instructions.length ? [...prev] : new Array(instructions.length).fill(false);
+      if (base[i]) return prev; // already done — no-op
+      base[i] = true;
+      if (tasksStorageKey) {
+        try { localStorage.setItem(tasksStorageKey, JSON.stringify(base)); } catch {/* ignore */}
+      }
+      return base;
+    });
+  };
+
   const resetTasks = () => {
     if (!tasksStorageKey) return;
     try { localStorage.removeItem(tasksStorageKey); } catch {/* ignore */}
@@ -1819,6 +1983,7 @@ export default function SolutionsViewerV2() {
                 simplifiedText={simplifiedText}
                 setSimplifiedText={setSimplifiedText}
                 onShareClick={openShareModal}
+                onAdvanceTask={markTaskDone}
               />
             </div>
           </div>

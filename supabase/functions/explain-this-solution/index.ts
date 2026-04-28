@@ -35,6 +35,12 @@ how_to_solve
 - each step is a short imperative phrase
 - include the specific accounts/amounts when relevant
 
+walkthrough (NEW — bite-sized, one entry per lettered instruction part)
+- Return an array. One object per instruction part (a, b, c, …) in the same order as the Instructions list.
+- Each entry MUST have: { "part": "a", "title": "<5-7 word task title>", "restate": "<one short sentence in your tutor voice translating what this part is asking — like 'Just figure out: sale price minus cost.'>", "content": "<2-4 short numbered steps with specific numbers/accounts. Markdown allowed. NO restating the textbook prompt.>" }
+- If there is only ONE instruction (or none), still return a single-entry array with part "a".
+- The walkthrough is the SAME solution as how_to_solve, just split per part. Don't add new info.
+
 why_it_works
 - 1-2 sentences max
 - the conceptual reason the approach is correct
@@ -45,7 +51,7 @@ lock_it_in
 - pattern recognition: "if you see X → think Y"
 - the trigger-to-move mapping a student should memorize
 
-Format: each field is a markdown string (bullets/numbers allowed). No headers inside the fields.`;
+Format: each text field is a markdown string (bullets/numbers allowed). No headers inside the fields.`;
 
 function buildUserPrompt(asset: any): string {
   const parts: string[] = [];
@@ -87,11 +93,14 @@ function buildUserPrompt(asset: any): string {
   return parts.join("\n");
 }
 
+type WalkStep = { part: string; title: string; restate: string; content: string };
+
 type Sections = {
   lees_approach: string;
   how_to_solve: string;
   why_it_works: string;
   lock_it_in: string;
+  walkthrough?: WalkStep[];
 };
 
 function isValidSections(s: any): s is Sections {
@@ -102,6 +111,11 @@ function isValidSections(s: any): s is Sections {
     typeof s.why_it_works === "string" &&
     typeof s.lock_it_in === "string"
   );
+}
+
+function hasWalkthrough(s: any): boolean {
+  return Array.isArray(s?.walkthrough) && s.walkthrough.length > 0
+    && s.walkthrough.every((w: any) => w && typeof w.part === "string" && typeof w.content === "string");
 }
 
 Deno.serve(async (req) => {
@@ -143,9 +157,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Cache (new structured shape only)
+    // Cache hit only if the cached sections also include the new walkthrough shape.
+    // Old cached rows (no walkthrough) get regenerated once on next view.
     const cache = asset.survive_solution_explanation_cache as any;
-    if (!force && cache?.sections && isValidSections(cache.sections)) {
+    if (!force && cache?.sections && isValidSections(cache.sections) && hasWalkthrough(cache.sections)) {
       return new Response(
         JSON.stringify({
           success: true,
@@ -180,16 +195,31 @@ Deno.serve(async (req) => {
             type: "function",
             function: {
               name: "return_explanation",
-              description: "Return the four explanation sections.",
+              description: "Return the explanation sections + per-part walkthrough.",
               parameters: {
                 type: "object",
                 properties: {
                   lees_approach: { type: "string", description: "2-4 bullets on HOW TO THINK / where to start. No calculations." },
-                  how_to_solve: { type: "string", description: "Numbered steps, 3-5 max" },
+                  how_to_solve: { type: "string", description: "Numbered steps, 3-5 max (full solution)" },
                   why_it_works: { type: "string", description: "1-2 sentences max" },
                   lock_it_in: { type: "string", description: "1-2 bullets, 'if you see X → think Y'" },
+                  walkthrough: {
+                    type: "array",
+                    description: "One entry per lettered instruction part (a, b, c, ...). Same solution as how_to_solve, just split per part for bite-sized delivery.",
+                    items: {
+                      type: "object",
+                      properties: {
+                        part: { type: "string", description: "Letter: a, b, c, ..." },
+                        title: { type: "string", description: "5-7 word task title" },
+                        restate: { type: "string", description: "One short sentence in tutor voice translating what this part is asking." },
+                        content: { type: "string", description: "2-4 short numbered steps with specific numbers/accounts. Markdown allowed." },
+                      },
+                      required: ["part", "title", "restate", "content"],
+                      additionalProperties: false,
+                    },
+                  },
                 },
-                required: ["lees_approach", "how_to_solve", "why_it_works", "lock_it_in"],
+                required: ["lees_approach", "how_to_solve", "why_it_works", "lock_it_in", "walkthrough"],
                 additionalProperties: false,
               },
             },
