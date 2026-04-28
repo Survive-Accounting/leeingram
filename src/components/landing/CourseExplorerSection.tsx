@@ -399,37 +399,53 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
     <section className="py-16 sm:py-24 px-4 sm:px-6" style={{ background: "#EDEEF1" }}>
       <div className="mx-auto max-w-[1000px]">
         {/* Header */}
-        <div className="text-center mb-10 sm:mb-14">
-          <h2
+        <motion.div
+          className="text-center mb-10 sm:mb-14"
+          initial="hidden"
+          animate="show"
+          variants={stagger(0, 0.08)}
+        >
+          <motion.h2
+            variants={fadeUp}
             className="text-[26px] sm:text-[34px] font-bold tracking-tight mb-3"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
           >
             Built for last-minute accounting studying.
-          </h2>
-          <p
+          </motion.h2>
+          <motion.p
+            variants={fadeUp}
             className="text-[14px] sm:text-[16px] max-w-[620px] mx-auto"
             style={{ color: "#4B5563", fontFamily: "Inter, sans-serif" }}
           >
             Pick a course, choose a chapter, and explore the tools built to help you cram smarter for finals.
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
 
         {/* Step 1: Course pills */}
         <StepLabel number={1} label="Choose your course" active={!selectedCourseId} done={!!selectedCourseId} />
-        <div className="flex flex-wrap justify-center gap-2.5 mb-10">
+        <motion.div
+          className="flex flex-wrap justify-center gap-2.5 mb-10"
+          initial="hidden"
+          animate="show"
+          variants={stagger(0.1, 0.05)}
+        >
           {COURSE_DATA.map((c) => {
             const isActive = selectedCourseId === c.id;
             return (
-              <button
+              <motion.button
+                variants={fadeUp}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.97 }}
                 key={c.id}
                 onClick={() => handleCourseChange(c.id)}
-                className="rounded-full px-5 py-2.5 text-[13.5px] font-semibold transition-all"
+                className="rounded-full px-5 py-2.5 text-[13.5px] font-semibold"
                 style={{
                   background: isActive ? NAVY : "#fff",
                   color: isActive ? "#fff" : NAVY,
                   border: `1px solid ${isActive ? NAVY : "#E5E7EB"}`,
                   boxShadow: isActive ? "0 6px 16px rgba(20,33,61,0.18)" : "0 1px 2px rgba(0,0,0,0.03)",
                   fontFamily: "Inter, sans-serif",
+                  transition: "background 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease",
                 }}
               >
                 {c.shortName}
@@ -444,10 +460,10 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                     Soon
                   </span>
                 )}
-              </button>
+              </motion.button>
             );
           })}
-        </div>
+        </motion.div>
 
         {/* Step 2: Chapter dropdown */}
         <div ref={chapterStepRef}>
