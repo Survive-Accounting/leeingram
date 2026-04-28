@@ -536,10 +536,40 @@ export default function StudyPreviewer({
             />
           </div>
 
+          {/* Bridge line — soft helper between the selector and the monitor */}
+          {!activeTool && (
+            <div
+              className="text-center mt-10 sm:mt-14 mb-3 sm:mb-4 sa-rise"
+              style={{ animationDelay: "180ms" }}
+            >
+              <span
+                className="inline-flex items-center gap-2 text-[11px] sm:text-[12px]"
+                style={{
+                  color: "rgba(255,255,255,0.55)",
+                  fontFamily: "Inter, system-ui, sans-serif",
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="inline-block"
+                  style={{ width: 24, height: 1, background: "rgba(255,255,255,0.25)" }}
+                />
+                Preview the study console below
+                <span
+                  aria-hidden
+                  className="inline-block"
+                  style={{ width: 24, height: 1, background: "rgba(255,255,255,0.25)" }}
+                />
+              </span>
+            </div>
+          )}
+
           {/* Workspace stage — retro terminal + modern viewer crossfade in the same frame */}
           <div
             ref={workspaceRef}
-            className="sa-stage sa-rise mt-2"
+            className="sa-stage sa-rise"
             style={{ animationDelay: "240ms" }}
           >
             {/* Layer 1 — Retro terminal launchpad (in flow when no tool, overlay when transitioning out) */}
