@@ -290,13 +290,14 @@ export default function StudyPreviewer({
         }
         .sa-rise { animation: sa-rise-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-        /* Crossfade stage: retro terminal ↔ modern viewer share the same frame */
+        /* Crossfade stage: retro terminal ↔ modern viewer share the same frame.
+           Tuned for fast/premium feel — total perceived transition under ~250ms. */
         .sa-stage { position: relative; }
         .sa-stage-layer {
           transition:
-            opacity 520ms cubic-bezier(0.22, 1, 0.36, 1),
-            filter 520ms cubic-bezier(0.22, 1, 0.36, 1),
-            transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+            opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
+            filter 220ms cubic-bezier(0.22, 1, 0.36, 1),
+            transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
           will-change: opacity, filter, transform;
         }
         .sa-stage-overlay {
@@ -305,14 +306,54 @@ export default function StudyPreviewer({
         }
         .sa-stage-hidden {
           opacity: 0;
-          filter: blur(8px);
-          transform: scale(0.985);
+          filter: blur(4px);
+          transform: scale(0.992);
           pointer-events: none;
         }
         .sa-stage-visible {
           opacity: 1;
           filter: blur(0);
           transform: scale(1);
+        }
+
+        /* One-shot CRT refresh pulse — a quick scanline sweep + soft flash on the retro layer */
+        @keyframes sa-crt-pulse-flash {
+          0%   { opacity: 0; }
+          25%  { opacity: 0.55; }
+          100% { opacity: 0; }
+        }
+        @keyframes sa-crt-pulse-sweep {
+          0%   { transform: translateY(-100%); opacity: 0.0; }
+          15%  { opacity: 0.7; }
+          100% { transform: translateY(100%); opacity: 0.0; }
+        }
+        .sa-crt-pulse {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 5;
+          overflow: hidden;
+          border-radius: inherit;
+        }
+        .sa-crt-pulse::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: rgba(124,255,176,0.12);
+          mix-blend-mode: screen;
+          animation: sa-crt-pulse-flash 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .sa-crt-pulse::after {
+          content: "";
+          position: absolute;
+          left: 0; right: 0;
+          height: 28%;
+          background: linear-gradient(180deg,
+            rgba(124,255,176,0) 0%,
+            rgba(124,255,176,0.18) 50%,
+            rgba(124,255,176,0) 100%);
+          mix-blend-mode: screen;
+          animation: sa-crt-pulse-sweep 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
         /* One-shot status LED ring pulse on selector change */
