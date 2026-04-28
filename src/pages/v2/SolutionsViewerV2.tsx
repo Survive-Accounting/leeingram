@@ -388,6 +388,49 @@ function FeedbackChooserModal({
   );
 }
 
+// ── Feature ideas voting modal ─────────────────────────────────────────
+// Hosts the SHARED `FeatureIdeasVoting` component (also rendered inline by
+// SurviveExplorePanel). Opened from the "Suggest a new feature" card in
+// the Share Feedback chooser. Same component, same vote counts, same
+// "Suggest your own idea" flow — no duplicated voting system.
+function FeatureIdeasModal({
+  open,
+  onOpenChange,
+  asset,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  asset: Asset | null;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-1">
+          <DialogTitle className="text-base flex items-center gap-1.5">
+            <Sparkles className="h-4 w-4" style={{ color: "#FCD34D" }} />
+            Suggest a new feature
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            Help us decide what to build next. Tap an idea to see what it would do, then vote — or suggest your own.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="pt-1">
+          {asset ? (
+            <FeatureIdeasVoting
+              assetId={asset.id}
+              assetCode={asset.asset_name}
+              showHeader={false}
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground">Loading…</p>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Stuck? Support modal ───────────────────────────────────────────────
 type StuckIssueType = "question" | "problem_text_issue" | "walkthrough_issue" | "general_feedback";
 
