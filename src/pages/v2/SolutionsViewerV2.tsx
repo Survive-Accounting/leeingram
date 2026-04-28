@@ -6,6 +6,7 @@ import { StructuredJEDisplay } from "@/components/StructuredJEDisplay";
 import SmartTextRenderer from "@/components/SmartTextRenderer";
 import { generateSimplifiedPracticePdf } from "@/lib/generateSimplifiedPracticePdf";
 import ReactMarkdown from "react-markdown";
+import SurviveExplorePanel from "@/components/v2/SurviveExplorePanel";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -2043,6 +2044,14 @@ export default function SolutionsViewerV2() {
                 setSimplifiedText={setSimplifiedText}
                 onShareClick={openShareModal}
                 onAdvanceTask={markTaskDone}
+              />
+              <SurviveExplorePanel
+                assetId={asset.id}
+                assetCode={asset.asset_name}
+                problemText={asset.survive_problem_text}
+                instructions={getInstructions(asset).join("\n")}
+                chapterName={chapter ? `Ch ${chapter.chapter_number}: ${chapter.chapter_name}` : ""}
+                courseName={getCourseLabel(chapter?.course) || ""}
               />
             </div>
           </div>
