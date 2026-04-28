@@ -782,7 +782,7 @@ function ResponseView({
       <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 4, background: "transparent", border: 0, color: NAVY, fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 8, padding: 0 }}>
         <ArrowLeft size={14} /> Back
       </button>
-      <h3 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 600, color: NAVY }}>{card.emoji} {card.title}</h3>
+      <h3 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 600, color: NAVY }}>{PROMPT_EMOJIS[promptKey]} {PROMPT_LABELS[promptKey]}</h3>
 
       {loading && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 20, justifyContent: "center" }}>
@@ -832,7 +832,7 @@ function ResponseView({
             </div>
           )}
 
-          {revealedAll && promptKey === "study_strategy" && onDownloadPdf && (
+          {revealedAll && promptKey === "full_solution" && onDownloadPdf && (
             <button
               onClick={onDownloadPdf}
               style={{ marginTop: 16, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "transparent", color: NAVY, border: `1.5px solid ${NAVY}`, borderRadius: 8, padding: "10px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}
