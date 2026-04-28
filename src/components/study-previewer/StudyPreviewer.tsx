@@ -121,6 +121,7 @@ export default function StudyPreviewer({
     setSelectedChapterId(null);
     setActiveTool(null);
     setViewerAssetCode(null);
+    setTerminalNotice(null);
   }, [resetSignal]);
 
   const handleChapterChange = async (chId: string) => {
