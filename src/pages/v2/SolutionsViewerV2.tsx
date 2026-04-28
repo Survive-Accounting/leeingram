@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { buildShareUrl, captureRefFromUrl, logShareClick, attachReferrerOnConversion } from "@/lib/referralTracking";
 import { toYouPerspective } from "@/utils/youPerspective";
 import leeHeadshotImg from "@/assets/lee-headshot-original.png";
+import { ViewerOnboardingModal } from "@/pages/v2/ViewerOnboardingModal";
 
 type Asset = {
   id: string;
