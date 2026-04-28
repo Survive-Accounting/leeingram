@@ -359,7 +359,10 @@ export default function SurviveExplorePanel({
                   key={k}
                   variant={isActive ? "default" : "outline"}
                   size="sm"
-                  onClick={() => fetchPrompt(k)}
+                  onClick={() => {
+                    if (isEmbed) { logEmbedVoteAndPaywall(k); return; }
+                    fetchPrompt(k);
+                  }}
                   className="justify-between gap-2 h-9 text-xs font-medium"
                   title={PROMPT_LABELS[k]}
                 >
