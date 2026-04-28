@@ -731,6 +731,14 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
           </div>
         )}
 
+        {/* Microcopy under flow */}
+        <p
+          className="mt-6 text-center text-[12.5px]"
+          style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
+        >
+          Free during finals. No credit card needed. Help us improve it with your feedback.
+        </p>
+
         {/* Questions modal */}
         {questionOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.4)" }}>
