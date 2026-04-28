@@ -407,7 +407,7 @@ export default function RetroTerminalFrame({
                         </button>
                       </TooltipTrigger>
                       <TooltipContent
-                        side="bottom"
+                        side="top"
                         align="start"
                         sideOffset={8}
                         className="border max-w-[280px] p-3"
