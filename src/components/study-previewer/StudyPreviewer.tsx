@@ -278,20 +278,22 @@ export default function StudyPreviewer({
           }}
         />
 
-        <div className="relative space-y-6 sm:space-y-8">
+        <div className="relative">
           {/* Setup panels — dark control modules above the monitor */}
           <section
-            className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 sa-rise"
+            className="relative grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 sa-rise"
             style={{ animationDelay: "120ms" }}
           >
             {/* Module 1 — Course */}
             <div
-              className="rounded-xl p-3.5 sm:p-4 space-y-2.5"
+              className="relative rounded-xl p-3.5 sm:p-4 space-y-2.5"
               style={{
                 background: `linear-gradient(180deg, ${CHASSIS_TOP} 0%, ${CHASSIS_BOTTOM} 100%)`,
-                border: `1px solid ${CHASSIS_BORDER}`,
-                boxShadow:
-                  "0 8px 20px -10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
+                border: `1px solid ${courseChosen ? "rgba(124,255,176,0.30)" : CHASSIS_BORDER}`,
+                boxShadow: courseChosen
+                  ? "0 8px 20px -10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04), 0 0 14px -4px rgba(124,255,176,0.30)"
+                  : "0 8px 20px -10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
+                transition: "box-shadow 280ms ease-out, border-color 280ms ease-out",
               }}
             >
               {moduleHeader("Course", courseChosen, courseChosen)}
@@ -322,17 +324,32 @@ export default function StudyPreviewer({
                   <Lock className="h-3.5 w-3.5 shrink-0 ml-2" style={{ color: "#6B7280" }} />
                 </div>
               )}
+              {/* I/O port label */}
+              <span
+                aria-hidden
+                className="absolute right-3 top-3 text-[9px] font-semibold"
+                style={{
+                  color: "#4B5563",
+                  letterSpacing: "0.18em",
+                  fontFamily: MONO_FONT,
+                }}
+              >
+                IN/01
+              </span>
             </div>
 
             {/* Module 2 — Chapter */}
             <div
-              className="rounded-xl p-3.5 sm:p-4 space-y-2.5 transition-opacity"
+              className="relative rounded-xl p-3.5 sm:p-4 space-y-2.5"
               style={{
                 background: `linear-gradient(180deg, ${CHASSIS_TOP} 0%, ${CHASSIS_BOTTOM} 100%)`,
-                border: `1px solid ${CHASSIS_BORDER}`,
-                boxShadow:
-                  "0 8px 20px -10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
-                opacity: courseChosen ? 1 : 0.55,
+                border: `1px solid ${chapterChosen ? "rgba(124,255,176,0.30)" : CHASSIS_BORDER}`,
+                boxShadow: chapterChosen
+                  ? "0 8px 20px -10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04), 0 0 14px -4px rgba(124,255,176,0.30)"
+                  : "0 8px 20px -10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
+                opacity: courseChosen ? 1 : 0.6,
+                transition:
+                  "box-shadow 280ms ease-out, border-color 280ms ease-out, opacity 280ms ease-out",
               }}
             >
               {moduleHeader("Chapter", chapterChosen, chapterChosen)}
@@ -357,8 +374,99 @@ export default function StudyPreviewer({
                   </option>
                 ))}
               </SelectShell>
+              {/* I/O port label */}
+              <span
+                aria-hidden
+                className="absolute right-3 top-3 text-[9px] font-semibold"
+                style={{
+                  color: "#4B5563",
+                  letterSpacing: "0.18em",
+                  fontFamily: MONO_FONT,
+                }}
+              >
+                IN/02
+              </span>
             </div>
           </section>
+
+          {/* Signal bus — visually connects the modules to the monitor below */}
+          <div
+            aria-hidden
+            className="relative mx-auto sa-rise"
+            style={{ width: "60%", maxWidth: 420, height: 18, animationDelay: "200ms" }}
+          >
+            {/* Two short risers from each module */}
+            <span
+              className="absolute top-0"
+              style={{
+                left: "16%",
+                width: 1,
+                height: 9,
+                background: courseChosen ? PHOSPHOR_DIM : CHASSIS_BORDER,
+                boxShadow: courseChosen ? `0 0 6px ${PHOSPHOR_GLOW}` : "none",
+                transition: "background 280ms ease-out, box-shadow 280ms ease-out",
+              }}
+            />
+            <span
+              className="absolute top-0"
+              style={{
+                right: "16%",
+                width: 1,
+                height: 9,
+                background: chapterChosen ? PHOSPHOR_DIM : CHASSIS_BORDER,
+                boxShadow: chapterChosen ? `0 0 6px ${PHOSPHOR_GLOW}` : "none",
+                transition: "background 280ms ease-out, box-shadow 280ms ease-out",
+              }}
+            />
+            {/* Horizontal bus */}
+            <span
+              className="absolute"
+              style={{
+                left: "16%",
+                right: "16%",
+                top: 9,
+                height: 1,
+                background:
+                  courseChosen && chapterChosen
+                    ? `linear-gradient(90deg, ${PHOSPHOR_DIM} 0%, ${PHOSPHOR} 50%, ${PHOSPHOR_DIM} 100%)`
+                    : courseChosen || chapterChosen
+                    ? `linear-gradient(90deg, ${PHOSPHOR_DIM} 0%, ${CHASSIS_BORDER} 100%)`
+                    : CHASSIS_BORDER,
+                boxShadow:
+                  courseChosen && chapterChosen ? `0 0 8px ${PHOSPHOR_GLOW}` : "none",
+                transition: "background 280ms ease-out, box-shadow 280ms ease-out",
+              }}
+            />
+            {/* Center riser into the monitor */}
+            <span
+              className="absolute left-1/2 -translate-x-1/2"
+              style={{
+                top: 9,
+                width: 1,
+                height: 9,
+                background:
+                  courseChosen && chapterChosen ? PHOSPHOR : CHASSIS_BORDER,
+                boxShadow:
+                  courseChosen && chapterChosen ? `0 0 8px ${PHOSPHOR_GLOW}` : "none",
+                transition: "background 280ms ease-out, box-shadow 280ms ease-out",
+              }}
+            />
+            {/* Center node */}
+            <span
+              className="absolute left-1/2 -translate-x-1/2 rounded-full"
+              style={{
+                top: 14,
+                width: 5,
+                height: 5,
+                background:
+                  courseChosen && chapterChosen ? PHOSPHOR : "#3A3A42",
+                boxShadow:
+                  courseChosen && chapterChosen ? `0 0 8px ${PHOSPHOR_GLOW}` : "none",
+                transition: "background 280ms ease-out, box-shadow 280ms ease-out",
+              }}
+            />
+          </div>
+        </div>
 
           {/* Workspace stage — retro terminal + modern viewer crossfade in the same frame */}
           <div
