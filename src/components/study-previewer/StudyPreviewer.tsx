@@ -325,14 +325,13 @@ export default function StudyPreviewer({
         .sa-rise { animation: sa-rise-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
         /* Crossfade stage: retro terminal ↔ modern viewer share the same frame.
-           Tuned for fast/premium feel — total perceived transition under ~250ms. */
-        .sa-stage { position: relative; }
+           Tuned to feel instant — no perceptible "monitor disappeared" gap. */
+        .sa-stage { position: relative; min-height: clamp(420px, 60vw, 620px); }
         .sa-stage-layer {
           transition:
-            opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
-            filter 220ms cubic-bezier(0.22, 1, 0.36, 1),
-            transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-          will-change: opacity, filter, transform;
+            opacity 90ms linear,
+            transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: opacity, transform;
         }
         .sa-stage-overlay {
           position: absolute;
@@ -340,13 +339,11 @@ export default function StudyPreviewer({
         }
         .sa-stage-hidden {
           opacity: 0;
-          filter: blur(4px);
-          transform: scale(0.992);
+          transform: scale(0.998);
           pointer-events: none;
         }
         .sa-stage-visible {
           opacity: 1;
-          filter: blur(0);
           transform: scale(1);
         }
 
