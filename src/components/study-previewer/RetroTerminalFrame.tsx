@@ -472,29 +472,31 @@ export default function RetroTerminalFrame({
                   {">"} Survive Accounting Beta v1.0
                 </Line>
               )}
-              <Line show={bootStep >= 2} flashKey={courseTyped.pulseKey}>
-                {">"} Course selected:{" "}
-                <span
-                  key={`course-${courseTyped.pulseKey}`}
-                  className={courseTyped.pulseKey > 0 ? "sa-value-pulse" : undefined}
-                  style={{ color: "#E8FFF1" }}
-                >
-                  {courseTyped.text || safeCourse}
-                  {courseTyped.typing && (
-                    <span
-                      aria-hidden
-                      className="inline-block align-[-2px] ml-0.5"
-                      style={{
-                        width: "0.5em",
-                        height: "1em",
-                        background: PHOSPHOR,
-                        boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
-                        animation: "sa-cursor-blink 0.6s steps(1) infinite",
-                      }}
-                    />
-                  )}
-                </span>
-              </Line>
+              {chapterLabel && (
+                <Line show={bootStep >= 2} flashKey={courseTyped.pulseKey}>
+                  {">"} Course selected:{" "}
+                  <span
+                    key={`course-${courseTyped.pulseKey}`}
+                    className={courseTyped.pulseKey > 0 ? "sa-value-pulse" : undefined}
+                    style={{ color: "#E8FFF1" }}
+                  >
+                    {courseTyped.text || safeCourse}
+                    {courseTyped.typing && (
+                      <span
+                        aria-hidden
+                        className="inline-block align-[-2px] ml-0.5"
+                        style={{
+                          width: "0.5em",
+                          height: "1em",
+                          background: PHOSPHOR,
+                          boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                          animation: "sa-cursor-blink 0.6s steps(1) infinite",
+                        }}
+                      />
+                    )}
+                  </span>
+                </Line>
+              )}
               <Line show={bootStep >= 3} flashKey={chapterTyped.pulseKey}>
                 {">"} Chapter selected:{" "}
                 {chapterLabel ? (
