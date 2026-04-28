@@ -214,6 +214,9 @@ export default function StudentDashboard() {
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [lastViewed, setLastViewed] = useState<LastViewed | null>(null);
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+  const [viewerAssetCode, setViewerAssetCode] = useState<string | null>(null);
+  const [viewerLoading, setViewerLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
