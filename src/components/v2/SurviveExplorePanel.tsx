@@ -339,7 +339,8 @@ export default function SurviveExplorePanel({
 
   return (
     <div
-      className="mt-4 rounded-2xl border bg-card p-5 shadow-sm space-y-4"
+      id="vote-on-new-ideas"
+      className="mt-4 rounded-2xl border bg-card p-5 shadow-sm space-y-4 scroll-mt-24"
       data-embed-allow="true"
     >
       {/* "Vote on new ideas" — secondary by default. These are FUTURE feature
