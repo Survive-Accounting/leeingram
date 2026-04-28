@@ -105,6 +105,7 @@ export default function StudyPreviewer({
   const [iframeReloadKey, setIframeReloadKey] = useState(0);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [showSlowStatus, setShowSlowStatus] = useState(false);
+  const [stageLockHeight, setStageLockHeight] = useState<number | null>(null);
   
 
   const chapterDropdownRef = useRef<HTMLSelectElement>(null);
@@ -204,6 +205,10 @@ export default function StudyPreviewer({
     if (key === "practice" && onRequestUnlock && !onRequestUnlock("open_workspace")) {
       return;
     }
+    // Lock the stage to the retro terminal's current height so the new viewer
+    // takes over IN PLACE without pushing the page down.
+    const currentHeight = workspaceRef.current?.offsetHeight ?? null;
+    if (currentHeight) setStageLockHeight(currentHeight);
     // Reset viewer load state for the new tool
     setIframeLoaded(false);
     setIframeError(false);
@@ -237,6 +242,17 @@ export default function StudyPreviewer({
       window.clearTimeout(t3);
     };
   }, [activeTool, iframeReloadKey, viewerAssetCode, iframeLoaded, iframeError]);
+
+  // Release the locked stage height once we leave a tool, or as a safety net
+  // shortly after activation in case onLoad never fires (e.g., placeholder tools).
+  useEffect(() => {
+    if (!activeTool) {
+      setStageLockHeight(null);
+      return;
+    }
+    const safety = window.setTimeout(() => setStageLockHeight(null), 800);
+    return () => window.clearTimeout(safety);
+  }, [activeTool]);
 
   const selectedChapter = useMemo(
     () => chapters.find((c) => c.id === selectedChapterId) ?? null,
@@ -326,7 +342,7 @@ export default function StudyPreviewer({
 
         /* Crossfade stage: retro terminal ↔ modern viewer share the same frame.
            Tuned to feel instant — no perceptible "monitor disappeared" gap. */
-        .sa-stage { position: relative; min-height: clamp(420px, 60vw, 620px); }
+        .sa-stage { position: relative; }
         .sa-stage-layer {
           transition:
             opacity 90ms linear,
@@ -657,7 +673,10 @@ export default function StudyPreviewer({
           <div
             ref={workspaceRef}
             className="sa-stage sa-rise"
-            style={{ animationDelay: "240ms" }}
+            style={{
+              animationDelay: "240ms",
+              minHeight: stageLockHeight ? `${stageLockHeight}px` : undefined,
+            }}
           >
             {/* Prefetch the v2 viewer route once we know the asset, so click feels instant */}
             {viewerAssetCode && !activeTool && (
@@ -805,7 +824,7 @@ export default function StudyPreviewer({
                                 height: "min(85vh, 980px)",
                                 background: "#fff",
                               }}
-                              onLoad={() => setIframeLoaded(true)}
+                              onLoad={() => { setIframeLoaded(true); setStageLockHeight(null); }}
                               onError={() => setIframeError(true)}
                             />
 
