@@ -700,7 +700,7 @@ export default function RetroTerminalFrame({
                         style={{
                           padding: "12px 12px 10px",
                           background: isActive ? activeBg : idleBg,
-                          border: `1px solid ${isActive ? activeBorder : idleBorder}`,
+                          border: `1px ${borderStyle} ${isActive ? activeBorder : idleBorder}`,
                           boxShadow: isActive ? activeShadow : idleShadow,
                           color: PHOSPHOR,
                           fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace",
@@ -711,7 +711,7 @@ export default function RetroTerminalFrame({
                             : locked
                             ? "not-allowed"
                             : "wait",
-                          opacity: isDisabled ? 0.45 : locked ? 0.55 : 1,
+                          opacity: isDisabled ? 0.45 : locked ? 0.55 : isGhost ? 0.72 : 1,
                           transform: isActive ? "translateY(1px)" : "translateY(0)",
                           transition:
                             "background 160ms ease-out, border-color 160ms ease-out, box-shadow 200ms ease-out, transform 120ms ease-out, opacity 200ms ease-out",
