@@ -2850,20 +2850,28 @@ export default function SolutionsViewerV2() {
         }}
       >
         <div className="max-w-6xl mx-auto px-6 h-14 grid grid-cols-3 items-center gap-4">
-          {/* LEFT — Current course name (contextual, replaces brand logo) */}
+          {/* LEFT — Subtle "Built by Lee Ingram" attribution. Course name
+              now lives above the viewer (e.g., the COURSE • ACTIVE pill on
+              the landing mockup), so the header stays calm and personal. */}
           <div className="flex items-center justify-start min-w-0">
             <Link
               to="/my-dashboard"
               className="group inline-flex items-center min-w-0 max-w-full"
               data-embed-allow="true"
-              aria-label={courseLabel ? `${courseLabel} — back to dashboard` : "Back to dashboard"}
-              title={courseLabel || "Back to dashboard"}
+              aria-label="Built by Lee Ingram — back to dashboard"
+              title="Built by Lee Ingram"
             >
               <span
-                className="truncate text-[13px] sm:text-sm font-semibold tracking-tight transition-colors group-hover:text-white"
-                style={{ color: "rgba(255,255,255,0.88)" }}
+                className="truncate text-[11px] sm:text-[12px] font-medium tracking-wide transition-colors"
+                style={{ color: "rgba(255,255,255,0.45)" }}
               >
-                {courseLabel || "Survive Accounting"}
+                Built by{" "}
+                <span
+                  className="font-semibold transition-colors group-hover:text-white"
+                  style={{ color: "rgba(255,255,255,0.78)" }}
+                >
+                  Lee Ingram
+                </span>
               </span>
             </Link>
           </div>
