@@ -1010,6 +1010,7 @@ function NavigatePanel({
   const [loadingChapters, setLoadingChapters] = useState(false);
   const [loadingProblems, setLoadingProblems] = useState(false);
   const [isIntro, setIsIntro] = useState(false);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
 
   // Sync selection to current chapter when panel opens or current changes.
   useEffect(() => {
