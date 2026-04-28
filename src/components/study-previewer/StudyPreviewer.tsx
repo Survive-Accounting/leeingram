@@ -184,20 +184,42 @@ export default function StudyPreviewer({
     [courses, selectedCourseId],
   );
 
-  const moduleHeader = (label: string, active: boolean, complete: boolean) => (
+  const moduleHeader = (
+    label: string,
+    active: boolean,
+    complete: boolean,
+    pulseKey: string | number = "",
+  ) => (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
         <span
-          className="inline-block rounded-full transition-all"
-          style={{
-            width: 7,
-            height: 7,
-            background: active ? PHOSPHOR : "#3A3A42",
-            boxShadow: active ? `0 0 8px ${PHOSPHOR_GLOW}` : "none",
-          }}
-        />
+          aria-hidden
+          className="relative inline-flex items-center justify-center"
+          style={{ width: 9, height: 9 }}
+        >
+          {/* One-shot pulse ring on change */}
+          {active && (
+            <span
+              key={`pulse-${label}-${pulseKey}`}
+              className="absolute inset-0 rounded-full sa-status-pulse"
+              style={{ background: PHOSPHOR }}
+            />
+          )}
+          {/* Core LED */}
+          <span
+            className="relative inline-block rounded-full transition-all duration-300"
+            style={{
+              width: 7,
+              height: 7,
+              background: active ? PHOSPHOR : "#3A3A42",
+              boxShadow: active
+                ? `0 0 8px ${PHOSPHOR_GLOW}, inset 0 0 2px rgba(255,255,255,0.35)`
+                : "inset 0 0 2px rgba(0,0,0,0.4)",
+            }}
+          />
+        </span>
         <span
-          className="text-[10.5px] uppercase font-semibold"
+          className="text-[10.5px] uppercase font-semibold transition-colors duration-300"
           style={{
             color: active ? PHOSPHOR_DIM : "#6B7280",
             letterSpacing: "0.22em",
@@ -205,6 +227,18 @@ export default function StudyPreviewer({
           }}
         >
           {label}
+        </span>
+        <span
+          className="text-[9px] font-semibold transition-opacity duration-300"
+          style={{
+            color: active ? PHOSPHOR : "#4B5563",
+            opacity: active ? 1 : 0.55,
+            letterSpacing: "0.18em",
+            fontFamily: "'JetBrains Mono', 'SF Mono', ui-monospace, monospace",
+            textShadow: active ? `0 0 4px ${PHOSPHOR_GLOW}` : "none",
+          }}
+        >
+          {active ? "● ACTIVE" : "○ STANDBY"}
         </span>
       </div>
       {complete && (
