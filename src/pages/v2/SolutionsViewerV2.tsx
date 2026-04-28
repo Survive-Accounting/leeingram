@@ -1611,6 +1611,20 @@ export default function SolutionsViewerV2() {
     });
   };
 
+  // Idempotent setter — used by the bite-sized walkthrough's Continue button.
+  // Marks a task as done without toggling it back off.
+  const markTaskDone = (i: number) => {
+    setCheckedTasks((prev) => {
+      const base = prev.length === instructions.length ? [...prev] : new Array(instructions.length).fill(false);
+      if (base[i]) return prev; // already done — no-op
+      base[i] = true;
+      if (tasksStorageKey) {
+        try { localStorage.setItem(tasksStorageKey, JSON.stringify(base)); } catch {/* ignore */}
+      }
+      return base;
+    });
+  };
+
   const resetTasks = () => {
     if (!tasksStorageKey) return;
     try { localStorage.removeItem(tasksStorageKey); } catch {/* ignore */}
