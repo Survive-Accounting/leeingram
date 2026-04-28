@@ -72,8 +72,8 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
         .from("students").select("id").eq("email", trimmed).maybeSingle();
 
       if (student) {
-        const { error } = await supabase.auth.signInWithOtp({ email: trimmed });
-        if (error) throw error;
+        const res = await sendMagicLink({ email: trimmed });
+        if (!res.ok) throw new Error(res.error || "send_failed");
         setStep("magic-link-sent");
       } else {
         setStep("course-select");
