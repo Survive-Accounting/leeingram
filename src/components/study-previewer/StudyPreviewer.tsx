@@ -184,6 +184,31 @@ export default function StudyPreviewer({
           100% { opacity: 1; transform: translateY(0) scale(1); }
         }
         .sa-rise { animation: sa-rise-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+        /* Crossfade stage: retro terminal ↔ modern viewer share the same frame */
+        .sa-stage { position: relative; }
+        .sa-stage-layer {
+          transition:
+            opacity 520ms cubic-bezier(0.22, 1, 0.36, 1),
+            filter 520ms cubic-bezier(0.22, 1, 0.36, 1),
+            transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: opacity, filter, transform;
+        }
+        .sa-stage-overlay {
+          position: absolute;
+          inset: 0;
+        }
+        .sa-stage-hidden {
+          opacity: 0;
+          filter: blur(8px);
+          transform: scale(0.985);
+          pointer-events: none;
+        }
+        .sa-stage-visible {
+          opacity: 1;
+          filter: blur(0);
+          transform: scale(1);
+        }
       `}</style>
 
       {/* Navy frame wrapper */}
