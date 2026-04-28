@@ -78,7 +78,7 @@ export default function FeedbackToolModal({
     });
   }, [selected]);
 
-  if (!open) return null;
+  // Note: early return moved below useMemo to keep hook order stable
 
   const labelFor = (id: string) => {
     if (id === OTHER_ID) return otherIdea.trim() || "Other Idea";
