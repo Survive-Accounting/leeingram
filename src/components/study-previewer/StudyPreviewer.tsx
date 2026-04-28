@@ -207,7 +207,9 @@ export default function StudyPreviewer({
     // Reset viewer load state for the new tool
     setIframeLoaded(false);
     setIframeError(false);
-    setShowSkeleton(false);
+    // Show skeleton immediately so the chassis paints with content the moment
+    // the retro layer hides — no perceived "monitor disappeared" gap.
+    setShowSkeleton(true);
     setShowSlowStatus(false);
     // Fire the CRT refresh pulse on the retro layer
     setCrtPulseKey((k) => k + 1);
@@ -222,6 +224,19 @@ export default function StudyPreviewer({
       }
     }, 60);
   };
+
+  // Subtle status at >2s, error at >12s. Skeleton renders immediately on click.
+  useEffect(() => {
+    if (!activeTool || iframeLoaded || iframeError) return;
+    const t2 = window.setTimeout(() => setShowSlowStatus(true), 2000);
+    const t3 = window.setTimeout(() => {
+      if (!iframeLoaded) setIframeError(true);
+    }, 12000);
+    return () => {
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+    };
+  }, [activeTool, iframeReloadKey, viewerAssetCode, iframeLoaded, iframeError]);
 
   // Skeleton at >500ms, subtle status at >2s, error at >12s
   useEffect(() => {
