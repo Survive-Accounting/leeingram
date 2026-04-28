@@ -2990,6 +2990,11 @@ export default function SolutionsViewerV2() {
         onReportIssue={openReportIssue}
         onSuggestFeature={openSuggestFeature}
       />
+      <FeatureIdeasModal
+        open={featureIdeasOpen}
+        onOpenChange={setFeatureIdeasOpen}
+        asset={asset}
+      />
       <StuckSupportModal
         open={helpOpen}
         onOpenChange={setHelpOpen}
