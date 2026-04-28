@@ -141,7 +141,24 @@ export default function StagingNavbar({
         </button>
 
         {/* Right side */}
-        <div className="relative flex items-center gap-4 sm:gap-5">
+        <div className="relative flex items-center gap-3 sm:gap-5">
+          <button
+            onClick={() => {
+              const el = document.getElementById("demo-section") || document.getElementById("courses-section");
+              if (el) {
+                const top = el.getBoundingClientRect().top + window.scrollY - 24;
+                window.scrollTo({ top, behavior: "smooth" });
+              }
+            }}
+            className="hidden sm:inline-block text-[13px] font-semibold hover:opacity-70"
+            style={{
+              color: isSolid ? NAVY : "rgba(255,255,255,0.85)",
+              fontFamily: "Inter, sans-serif",
+              transition: `color ${TRANSITION}`,
+            }}
+          >
+            How it works
+          </button>
           <button
             onClick={handleCourses}
             className="hidden sm:inline-block text-[13px] font-semibold hover:opacity-70"
@@ -151,62 +168,38 @@ export default function StagingNavbar({
               transition: `color ${TRANSITION}`,
             }}
           >
-            Courses
-          </button>
-          <button
-            onClick={() => {
-              const el = document.getElementById("demo-section") || document.getElementById("courses-section");
-              if (el) {
-                const top = el.getBoundingClientRect().top + window.scrollY - 24;
-                window.scrollTo({ top, behavior: "smooth" });
-              }
-            }}
-            className="text-[13px] font-semibold hover:opacity-70"
-            style={{
-              color: isSolid ? NAVY : "rgba(255,255,255,0.85)",
-              fontFamily: "Inter, sans-serif",
-              transition: `color ${TRANSITION}`,
-            }}
-          >
-            How it works
+            What's inside
           </button>
 
-          {/* Log In — wrap two visual states and crossfade between them */}
+          {/* Log in — quiet secondary link */}
           <button
             onClick={() => setLoginOpen(true)}
-            className="group relative text-[13px] font-semibold active:scale-[0.98] inline-flex items-center"
+            className="text-[13px] font-medium hover:opacity-100"
             style={{
-              borderRadius: 8,
-              padding: "9px 18px",
+              color: isSolid ? "rgba(20,33,61,0.65)" : "rgba(255,255,255,0.7)",
               fontFamily: "Inter, sans-serif",
-              color: "#FFFFFF",
-              background: "transparent",
-              border: "1px solid transparent",
+              transition: `color ${TRANSITION}`,
+              opacity: 0.95,
             }}
           >
-            {/* Transparent-state ring */}
-            <span
-              aria-hidden
-              className="absolute inset-0 rounded-[8px]"
-              style={{
-                border: "1px solid rgba(255,255,255,0.85)",
-                opacity: isSolid ? 0 : 1,
-                transition: `opacity ${TRANSITION}`,
-              }}
-            />
-            {/* Solid-state navy fill */}
-            <span
-              aria-hidden
-              className="absolute inset-0 rounded-[8px]"
-              style={{
-                background: NAVY,
-                boxShadow: "0 2px 8px rgba(20,33,61,0.25)",
-                opacity: isSolid ? 1 : 0,
-                transition: `opacity ${TRANSITION}`,
-              }}
-            />
+            Log in
+          </button>
+
+          {/* Primary CTA — Get free access */}
+          <button
+            onClick={onCtaClick}
+            className="group relative text-[13px] font-semibold active:scale-[0.98] inline-flex items-center text-white"
+            style={{
+              borderRadius: 8,
+              padding: "9px 16px",
+              fontFamily: "Inter, sans-serif",
+              background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+              boxShadow: "0 4px 14px rgba(206,17,38,0.30), inset 0 1px 0 rgba(255,255,255,0.18)",
+              border: "1px solid rgba(0,0,0,0.08)",
+            }}
+          >
             <span className="relative inline-flex items-center group-hover:brightness-110">
-              Log In <AnimatedArrow />
+              Get free access <AnimatedArrow />
             </span>
           </button>
         </div>
