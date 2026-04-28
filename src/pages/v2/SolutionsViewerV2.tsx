@@ -1040,6 +1040,21 @@ function NavigatePanel({
     return () => { cancelled = true; };
   }, [open, courseId]);
 
+  // Load total problem count for the course (cached after first open).
+  useEffect(() => {
+    if (!open || !courseId || totalCount !== null) return;
+    let cancelled = false;
+    (async () => {
+      const { count } = await supabase
+        .from("teaching_assets")
+        .select("id", { count: "exact", head: true })
+        .eq("course_id", courseId);
+      if (cancelled) return;
+      setTotalCount(count || 0);
+    })();
+    return () => { cancelled = true; };
+  }, [open, courseId, totalCount]);
+
   // Load problems for selected chapter (cached per chapter).
   useEffect(() => {
     if (!open || !selectedChapterId) return;
