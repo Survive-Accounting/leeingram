@@ -33,9 +33,10 @@ export function AdminToolsMenu() {
 
   const { pos, dragHandlers } = useDraggable(POS_STORAGE_KEY, defaultPos(), SIZE);
 
-  // Ctrl+Shift+A or Ctrl+Alt+A toggles the bar (works even when hidden)
+  // Ctrl+Shift+A or Ctrl+Alt+A toggles the bar (works even when hidden).
+  // Register regardless of staff status — auth may load late, and we want the
+  // shortcut to be reliable across every page.
   useEffect(() => {
-    if (!isStaff) return;
     const onKey = (e: KeyboardEvent) => {
       const isToggle =
         e.ctrlKey &&
