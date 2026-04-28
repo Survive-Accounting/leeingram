@@ -170,13 +170,22 @@ export default function StudyPreviewer({
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif" }}>
+      <style>{`
+        @keyframes sa-rise-in {
+          0% { opacity: 0; transform: translateY(14px) scale(0.985); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .sa-rise { animation: sa-rise-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+      `}</style>
+
       {/* Navy frame wrapper */}
       <div
-        className="relative rounded-[28px] p-5 sm:p-8 lg:p-10"
+        className="relative rounded-[28px] p-5 sm:p-8 lg:p-10 sa-rise"
         style={{
           background: `linear-gradient(180deg, ${NAVY} 0%, #1A2A4F 55%, #20335E 100%)`,
           boxShadow:
             "0 30px 60px -25px rgba(20,33,61,0.45), 0 10px 24px -10px rgba(20,33,61,0.25)",
+          animationDelay: "0ms",
         }}
       >
         {/* Red accent bar */}
@@ -198,11 +207,12 @@ export default function StudyPreviewer({
         <div className="relative space-y-6 sm:space-y-8">
           {/* Stepper: Course + Chapter */}
           <section
-            className="rounded-2xl overflow-hidden"
+            className="rounded-2xl overflow-hidden sa-rise"
             style={{
               background: "#fff",
               boxShadow:
                 "0 12px 28px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08)",
+              animationDelay: "120ms",
             }}
           >
             {/* Header strip */}
@@ -299,14 +309,16 @@ export default function StudyPreviewer({
           </section>
 
           {/* Tool cards */}
-          <StudyToolCards
-            active={activeTool}
-            loading={chapterLoading}
-            chapterChosen={chapterChosen}
-            onSelect={handleSelectTool}
-            onOpenFeedback={onOpenFeedback}
-            onNudgeChapter={handleNudgeChapter}
-          />
+          <div className="sa-rise" style={{ animationDelay: "240ms" }}>
+            <StudyToolCards
+              active={activeTool}
+              loading={chapterLoading}
+              chapterChosen={chapterChosen}
+              onSelect={handleSelectTool}
+              onOpenFeedback={onOpenFeedback}
+              onNudgeChapter={handleNudgeChapter}
+            />
+          </div>
 
           {/* Workspace pane — retro terminal entry state OR loaded tool */}
           {!activeTool ? (
