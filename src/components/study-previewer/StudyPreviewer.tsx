@@ -603,14 +603,8 @@ export default function StudyPreviewer({
 
                 {activeTool === "je" && (
                   <div className="px-6 py-16 sm:py-20 max-w-2xl mx-auto text-center">
-                    <div
-                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-widest"
-                      style={{ background: "#FEF3C7", color: "#92400E" }}
-                    >
-                      Coming soon
-                    </div>
                     <h3
-                      className="mt-3 text-[26px] leading-tight"
+                      className="text-[26px] leading-tight"
                       style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
                     >
                       Journal Entry Helper is being built
