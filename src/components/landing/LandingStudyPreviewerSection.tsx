@@ -139,11 +139,10 @@ export default function LandingStudyPreviewerSection({
           selectedCourseId={selectedCourseId}
           onCourseChange={handleCourseClick}
           onOpenFeedback={() => setFeedbackOpen(true)}
-          onRequestUnlock={(action) => {
-            if (action === "open_workspace") {
-              setPaywallOpen(true);
-              return false;
-            }
+          onRequestUnlock={() => {
+            // Demo mode: let visitors open any tool on the landing page so they
+            // can see what they're getting. Action-level paywalls live inside
+            // the product itself.
             return true;
           }}
           persistChapterKey={null}
