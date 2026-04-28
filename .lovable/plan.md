@@ -1,184 +1,90 @@
-# Launch-Ready Beta Dashboard + Onboarding
+# Returning-user "Check your email" + device-bound magic links
 
-A clean beta dashboard with required onboarding, beta-number identity, course chapter cards, and reliable LW enrollment that doesn't slow down login.
+Tonight's launch goal: when a known student enters their email, the modal should clearly say "you already have an account, we just sent a login link", let them resend, and the link itself should be tied to the device that requested it so a forwarded link doesn't grant access on someone else's phone.
 
----
+## 1. Reframe the "sent" screen (QuickEmailGateModal + SmartEmailModal)
 
-## What you'll see when it's done
+Replace the current generic "Check your email / secure access link" copy with a returning-user message:
 
-**1. Smooth post-checkout flow**
-- After paying or claiming free beta, students land on `/my-dashboard` already signed in.
-- LW enrollment happens in the background — login is never blocked on it.
-- A subtle "Setting up your account…" pill clears in <1s.
-
-**2. First-time onboarding modal** (blocks dashboard for *all* logged-in students who haven't completed it — including legacy LW users)
-
-Single modal, 3 short screens. **Only the syllabus upload is optional.** Everything else is required.
-
-- **Screen 1 — About you**
-  - Name (required)
-  - Campus (prefilled from email/purchase, editable dropdown, required)
-  - Upload syllabus (optional file picker — drops into `chapter-resources` bucket under `syllabi/{user_id}/`)
-
-- **Screen 2 — Your background**
-  - "Are you majoring in accounting?" → Yes / No / Definitely Not (required)
-  - "Are you in a fraternity or sorority?" → Yes / No (required)
-    - If **Yes**: searchable list from `greek_orgs` filtered to their campus, with "Add other" free-text fallback. One must be picked or "Add other" filled.
-    - If **No**: continue.
-
-- **Screen 3 — Confidence (required)**
-  - 1–10 slider. "How confident are you for your next exam?"
-
-On submit:
-- Non-legacy users: assigns global beta number + per-campus beta number, dashboard shows celebration.
-- Legacy users: stores responses, no beta number assigned, dashboard shows a quieter "Welcome back, you're all set" card.
-
-**3. Welcome moment** (new beta users only)
-> "Welcome to Survive Accounting.
-> You're the **#247th** student to join the beta — and the **#12th** at **Ole Miss**."
->
-> [ Invite friends · Copy share link ]
-
-Shown once on first dashboard load after onboarding (dismissible card, persisted via `welcomed_at`).
-
-**4. Beta dashboard layout**
 ```text
-┌─────────────────────────────────────────────────────────┐
-│  Beta · expires May 15, 2026 · 17 days left            │ ← thin top strip
-├─────────────────────────────────────────────────────────┤
-│  Welcome back, Jordan                                   │
-│  Beta #247 · #12 at Ole Miss                            │
-│                                                         │
-│  ┌─ Beta Tools ──────────────────────────────────────┐  │
-│  │  [Practice Problem Helper]   ← active             │  │
-│  │  [Journal Entry Memorizer]   ← coming soon badge  │  │
-│  │  [Help us decide!]           ← feedback form      │  │
-│  └────────────────────────────────────────────────────┘  │
-│                                                         │
-│  Your Course — Intro Accounting 2                       │
-│  ┌──┬──┬──┬──┬──┬──┬──┐                                │
-│  │ 1│ 2│ 3│ 4│ 5│ 6│ 7│ ...  ← 13 chapter cards        │
-│  └──┴──┴──┴──┴──┴──┴──┘   (each opens video archive)   │
-└─────────────────────────────────────────────────────────┘
+Welcome back!
+We sent a login link to {email}.
+It expires in 15 minutes — open it on this device to sign in.
+
+[ Open my email app ]                  ← optional helper button
+[ Resend login link ]                  ← 30s cooldown, shows "Sent ✓" on success
+[ Use a different email ]              ← goes back to the email step
 ```
 
-- **Top countdown strip**: navy bar, "Beta access expires May 15, 2026 · {N} days left".
-- **Welcome line** with beta number badge (pill style, navy bg, red number). Legacy users see no badge — just "Welcome back, Jordan".
-- **3 Beta Tool cards**:
-  - **Practice Problem Helper** → routes to existing `/cram` flow (active).
-  - **Journal Entry Memorizer** → "Coming soon" badge; click opens "We're building this — what would you want?" mini-form.
-  - **Help us decide!** → mock tool styling (real card with empty state) → opens textarea modal posting to `chapter_questions` with `issue_type='feedback'`.
-- **Chapter cards grid** for the student's enrolled course (Intro 1, Intro 2, IA1, or IA2). Each opens `/cram/:chapterId` (existing video archive section).
+- Keep navy + red brand styling, DM Serif heading.
+- Show the email address back to the user (lowercased, masked-friendly).
+- Resend calls `supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: <callback w/ fp+nonce> } })` again, with a 30-second client-side cooldown and a small inline "Login link resent ✓" confirmation.
+- Apply the same reframe to `SmartEmailModal`'s `magic-link-sent` step (it already says "Welcome back!" — extend with the same expiry + resend pattern) and to `StudentLoginModal` / `MagicLinkModal` / `StagingEmailPromptModal` for consistency.
 
-**5. Existing LW users (legacy)**
-- Detected on first login: known LW email but no `student_onboarding` row.
-- Marked `is_legacy=true` at row creation.
-- **Still required to complete onboarding** — same modal, same required questions.
-- Do NOT receive a beta number; do NOT count toward beta totals.
-- After onboarding, dashboard shows the legacy welcome card: "Welcome back to the new app. Your course access carried over."
+Only the `QuickEmailGateModal` flow already knows the user is returning vs new (the `SmartEmailModal` checks `students` table). For modals that fire OTP unconditionally, we still show the same "we sent your login link" copy — the wording works for both new and returning since the action is identical.
 
----
+## 2. Device-bound magic links (prevent link sharing)
 
-## Technical implementation
+We already have `student_devices` with a stable browser fingerprint via `getStoredFingerprint()`. We'll bind each magic link to the requesting device using a short-lived nonce stored server-side.
 
-### Database (1 migration)
-
-```sql
--- Beta onboarding capture + identity
-create table student_onboarding (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) on delete cascade,
-  email text not null unique,
-  display_name text,
-  campus_id uuid references campuses(id),
-  course_id uuid references courses(id),
-  syllabus_file_path text,                    -- the only optional field
-  is_accounting_major text check (is_accounting_major in ('yes','no','definitely_not')),
-  is_in_greek_life boolean,
-  greek_org_id uuid references greek_orgs(id),
-  greek_org_other text,
-  confidence_1_10 int check (confidence_1_10 between 1 and 10),
-  is_legacy boolean not null default false,
-  beta_number int unique,                      -- global, sequential, null for legacy
-  campus_beta_number int,                      -- per-campus, sequential, null for legacy
-  welcomed_at timestamptz,
-  completed_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
--- Atomic claim function (avoids race on counters)
-create function claim_beta_number(p_email text, p_campus_id uuid)
-returns table(beta_number int, campus_beta_number int)
-language plpgsql security definer set search_path=public as $$ ... $$;
-
--- RLS: each user reads/writes only their own row
-alter table student_onboarding enable row level security;
-create policy "self read"  on student_onboarding for select using (auth.uid() = user_id);
-create policy "self write" on student_onboarding for insert with check (auth.uid() = user_id);
-create policy "self update" on student_onboarding for update using (auth.uid() = user_id);
+### New table: `magic_link_nonces`
+```text
+id uuid pk
+email text not null
+nonce text not null unique           -- random 32-byte url-safe string
+device_fingerprint text not null     -- captured at request time
+user_agent text
+ip text
+created_at timestamptz default now()
+expires_at timestamptz not null      -- now() + 15 min
+consumed_at timestamptz
 ```
+RLS: no client access; only edge functions (service role) read/write.
 
-- `beta_number` only assigned for **non-legacy** users at onboarding completion → naturally excludes them from totals.
-- Storage bucket `chapter-resources` already exists (public). Add path policy so users can write to `syllabi/{auth.uid()}/...`.
+### New edge function: `request-magic-link`
+- Input: `{ email, fingerprint, deviceName, userAgent }`
+- Generates a nonce, inserts a row, then calls `supabase.auth.admin.generateLink({ type: 'magiclink', email, options: { redirectTo: '<site>/auth/callback?n=<nonce>' } })`
+- Sends the email via the existing auth email path (the link returned by `generateLink` is what gets emailed; we just intercept the `redirectTo` to carry our nonce).
+- Returns `{ ok: true }` so the modal can show the "sent" screen.
 
-### Edge functions
+All modals (`QuickEmailGateModal`, `SmartEmailModal`, `MagicLinkModal`, `StudentLoginModal`, `Login.tsx`, `StagingEmailPromptModal`, `JoinOrg.tsx`) switch from `supabase.auth.signInWithOtp` to invoking `request-magic-link` with the current `getStoredFingerprint()`.
 
-**New: `enroll-lw-background`**
-- Fire-and-forget from `/auth/callback` and `/checkout/complete` after session is set.
-- Looks up active `student_purchases` for the email; runs the same LW enroll logic `stripe-webhook` already uses (course-level, `course.slug` as LW courseId); updates `lw_enrollment_status`.
-- Idempotent: skips if `lw_enrollment_status='enrolled'`.
-- Returns 202 immediately via `EdgeRuntime.waitUntil` so the round trip is ~50ms.
+### `AuthCallback.tsx` — verify device binding
+After `getSession()` succeeds, before navigating:
+1. Read `?n=<nonce>` from the URL.
+2. If missing → treat as legacy/manual login, allow through (back-compat).
+3. If present, call new edge function `verify-magic-link` with `{ nonce, fingerprint: getStoredFingerprint() }`.
+4. The function looks up the nonce row, checks: not consumed, not expired, and `device_fingerprint === submitted fingerprint`.
+5. Outcomes:
+   - **Match** → mark `consumed_at`, return `ok`. Continue normal flow (LW enrollment, dashboard redirect).
+   - **Foreign device** → `supabase.auth.signOut()`, automatically call `request-magic-link` again for the original email and the *new* device's fingerprint, then redirect to `/login?message=device_mismatch&resent=1`.
+   - **Expired / consumed** → sign out, redirect to `/login?message=link_expired`.
 
-**New: `complete-onboarding`**
-- Validates payload (zod), determines `is_legacy` (true if user has a `student_purchases` row created before today AND `lw_enrollment_status='enrolled'`), upserts into `student_onboarding`.
-- For non-legacy users: calls `claim_beta_number` RPC and returns `{ beta_number, campus_beta_number, campus_name }`.
-- For legacy users: returns `{ legacy: true, campus_name }`.
+### `/login` messaging
+Add handling for the new query messages:
+- `device_mismatch` → "Looks like that link was opened on a different device. We just sent a fresh link to your email — open it on this device to sign in."
+- `link_expired` → "That login link expired. Enter your email to get a new one (links last 15 minutes)."
 
-**Modified: `claim-free-beta`** — no change. Still redirects to `/my-dashboard`; onboarding modal triggers there.
+## 3. Small supporting changes
+- 15-minute expiry is enforced by our nonce row (Supabase OTP itself defaults to 1h; our nonce is the gate).
+- Add a tiny `lastSentAt` state in the modals so the Resend button shows a 30s countdown (`Resend in 24s…`) to discourage spam.
+- Telemetry: log `magic_link_requested`, `magic_link_consumed`, `magic_link_device_mismatch` rows in an existing `auth_events` style table if available, otherwise console-only for tonight (low priority — can add post-launch).
 
-### Frontend
+## Technical detail summary
 
-**Modified: `src/pages/StudentDashboard.tsx`** (the real dashboard at `/my-dashboard`)
-- On mount, fetch `student_onboarding` row for the user.
-- If row missing OR `completed_at IS NULL` → show `<OnboardingModal />` blocking overlay (cannot dismiss; sign-out is the only escape).
-- If row exists with `welcomed_at = null` AND `beta_number IS NOT NULL` → show one-time `<WelcomeCard />` celebration. Legacy users get the quieter legacy welcome.
-- Replace existing "Continue where you left off" + "Chapters" sections with the new layout (top strip, welcome, beta tools, chapter cards).
-- Fire `enroll-lw-background` once per session via `supabase.functions.invoke()` without `await`.
+**New files**
+- `supabase/functions/request-magic-link/index.ts`
+- `supabase/functions/verify-magic-link/index.ts`
+- Migration: `magic_link_nonces` table + RLS (deny-all) + index on `(nonce)` and `(email, created_at desc)`.
 
-**New components** (`src/components/dashboard/`):
-- `OnboardingModal.tsx` — 3-step wizard, controlled state, posts to `complete-onboarding`. Per-step validation; "Next" disabled until required fields filled.
-- `GreekOrgSearch.tsx` — debounced search against `greek_orgs` filtered by `campus_id`, with "Add other" fallback.
-- `BetaCountdownStrip.tsx` — shows days until 2026-05-15.
-- `WelcomeCard.tsx` — beta number reveal + "Copy share link" (uses `navigator.clipboard`, share URL `https://learn.surviveaccounting.com/?ref={beta_number}`).
-- `LegacyWelcomeCard.tsx` — quieter "Welcome back" card for legacy users.
-- `BetaToolCards.tsx` — 3 tool cards (Practice Helper / JE Memorizer placeholder / Help Us Decide).
-- `FeedbackToolModal.tsx` — textarea, posts to `chapter_questions`.
-- `ChapterCardsGrid.tsx` — chapter grid (extracted from existing dashboard styling), links to `/cram/:chapterId`.
+**Edited files**
+- `src/components/landing/QuickEmailGateModal.tsx` — new `sent` screen copy, resend button, fingerprint-aware request.
+- `src/components/landing/SmartEmailModal.tsx` — same treatment for `magic-link-sent` step.
+- `src/components/landing/MagicLinkModal.tsx`, `StudentLoginModal.tsx`, `StagingEmailPromptModal.tsx`, `src/pages/Login.tsx`, `src/pages/JoinOrg.tsx` — swap `signInWithOtp` for `request-magic-link` invoke; add resend + 15-min copy.
+- `src/pages/AuthCallback.tsx` — nonce verification step before redirect; auto re-issue on mismatch.
+- `src/pages/Login.tsx` — render `device_mismatch` / `link_expired` toast/banner.
 
-**Modified: `src/pages/CheckoutComplete.tsx`**
-- If `session_id` confirmed and Supabase session exists → redirect to `/my-dashboard?just_paid=1`. Otherwise keep magic-link fallback.
-
-**Modified: `src/pages/AuthCallback.tsx`**
-- After session is set, fire-and-forget `enroll-lw-background`, then redirect to `next` param (default `/my-dashboard`).
-
-### LW enrollment performance pattern
-
-- **Login is never blocked on LW.** Frontend invokes `enroll-lw-background` and immediately navigates.
-- The edge function returns 202 within ~50ms (kicks off work via `EdgeRuntime.waitUntil`).
-- Dashboard surfaces a small "Course access syncing…" pill if `lw_enrollment_status='pending'`, polls once after 8s, disappears when 'enrolled'.
-
-### Out of scope tonight
-- Per-chapter LW course IDs (locked: stay course-level).
-- Mapping chapter cards to dedicated video archive URLs (cards link to `/cram/:chapterId` which already shows videos — same destination).
-- Building the actual JE Memorizer tool (placeholder only).
-- Beta referral attribution from `?ref=N` (share link works; tracking is a follow-up).
-
----
-
-## Files touched
-
-**New**: 1 migration, 2 edge functions (`enroll-lw-background`, `complete-onboarding`), 8 components.
-**Modified**: `StudentDashboard.tsx`, `CheckoutComplete.tsx`, `AuthCallback.tsx`. No new routes — onboarding is a modal on the dashboard.
-
-Approve and I'll build it straight through.
+**Out of scope tonight**
+- Geo/IP heuristics — fingerprint mismatch is sufficient for v1.
+- Limiting how many active nonces a single email can have (we'll just always honor the latest; old ones still expire on their own).
+- Touching the existing `student_devices` 5-device flagging logic.

@@ -4229,6 +4229,42 @@ export type Database = {
           },
         ]
       }
+      magic_link_nonces: {
+        Row: {
+          consumed_at: string | null
+          created_at: string
+          device_fingerprint: string
+          email: string
+          expires_at: string
+          id: string
+          ip: string | null
+          nonce: string
+          user_agent: string | null
+        }
+        Insert: {
+          consumed_at?: string | null
+          created_at?: string
+          device_fingerprint: string
+          email: string
+          expires_at: string
+          id?: string
+          ip?: string | null
+          nonce: string
+          user_agent?: string | null
+        }
+        Update: {
+          consumed_at?: string | null
+          created_at?: string
+          device_fingerprint?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          ip?: string | null
+          nonce?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       music_links: {
         Row: {
           created_at: string
