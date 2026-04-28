@@ -7,7 +7,7 @@ const RED = "#CE1126";
 
 interface CheckEmailPanelProps {
   email: string;
-  /** Optional — called when the user clicks "Use a different email". */
+  /** @deprecated No longer used — kept for backward compatibility with callers. */
   onChangeEmail?: () => void;
   /** Label/click for the bottom dismiss button. */
   onDismiss?: () => void;
@@ -120,16 +120,6 @@ export default function CheckEmailPanel({
           </p>
         )}
 
-        {onChangeEmail && (
-          <button
-            type="button"
-            onClick={onChangeEmail}
-            className="text-[12px] font-medium hover:underline"
-            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
-          >
-            Use a different email
-          </button>
-        )}
       </div>
 
       {onDismiss && (
