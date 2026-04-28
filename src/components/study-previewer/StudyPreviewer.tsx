@@ -185,7 +185,7 @@ export default function StudyPreviewer({
       try { localStorage.setItem(persistChapterKey, chId); } catch { /* ignore */ }
     }
 
-    if (ch) toast.success(`Ch. ${ch.chapter_number} study tools are loaded!`);
+    
   };
 
   // Course changes from the inline terminal selector — reset chapter + tool so
