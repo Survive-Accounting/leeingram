@@ -241,6 +241,18 @@ export default function RetroTerminalFrame({
           50%      { opacity: 0.55; transform: translateY(-1px); }
         }
         .sa-notice-blink { animation: sa-notice-blink 1.05s ease-in-out infinite; }
+        /* Polished staggered reveal for the tool cards once a chapter is selected */
+        @keyframes sa-tool-reveal {
+          0%   { opacity: 0; transform: translateY(6px) scale(0.985); filter: blur(3px); }
+          60%  { filter: blur(0); }
+          100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+        .sa-toolgrid-reveal > * {
+          animation: sa-tool-reveal 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .sa-toolgrid-reveal > *:nth-child(1) { animation-delay: 60ms; }
+        .sa-toolgrid-reveal > *:nth-child(2) { animation-delay: 160ms; }
+        .sa-toolgrid-reveal > *:nth-child(3) { animation-delay: 260ms; }
       `}</style>
 
       <div className="w-full" style={{ maxWidth: 980 }}>
