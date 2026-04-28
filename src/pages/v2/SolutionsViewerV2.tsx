@@ -783,7 +783,9 @@ function InlineExplanation({
         })
         .then(({ data, error }) => {
           if (cancelled || error || !data?.success) return;
-          setResponses((p) => ({ ...p, walk_through: data.response || "" }));
+          const text = data.response_text || data.response || "";
+          if (!text) return;
+          setResponses((p) => ({ ...p, walk_through: text }));
         })
         .catch(() => { /* silent */ });
     };
@@ -838,7 +840,9 @@ function InlineExplanation({
       });
       if (fnError) throw fnError;
       if (!data?.success) throw new Error(data?.error || "No response");
-      setResponses((p) => ({ ...p, [key]: data.response || "" }));
+      const text = data.response_text || data.response || "";
+      if (!text) throw new Error("Empty response from helper");
+      setResponses((p) => ({ ...p, [key]: text }));
     } catch (e: any) {
       console.error("[survive-this]", key, e);
       setError("Lee's tools are taking a breather. Try again in a moment — if it keeps happening, hit \"Need help?\" and we'll get on it.");
