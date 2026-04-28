@@ -34,6 +34,8 @@ interface RetroTerminalFrameProps {
   welcomeName?: string | null;
   /** When true, greets as returning ("Welcome back"); otherwise as new ("Welcome"). */
   isReturning?: boolean;
+  /** Transient header notice (e.g. "Pick a chapter first"). When set, replaces the readiness badge and blinks. */
+  notice?: string | null;
 }
 
 /**
@@ -52,6 +54,7 @@ export default function RetroTerminalFrame({
   onNudgeChapter,
   welcomeName,
   isReturning = false,
+  notice = null,
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
 
@@ -196,6 +199,12 @@ export default function RetroTerminalFrame({
           100% { background: rgba(124,255,176,0); box-shadow: inset 0 0 0 1px rgba(124,255,176,0); }
         }
         .sa-row-flash { animation: sa-row-flash 520ms ease-out both; }
+        /* Blinking attention notice — sits just outside the CRT palette */
+        @keyframes sa-notice-blink {
+          0%, 100% { opacity: 1; transform: translateY(0); }
+          50%      { opacity: 0.55; transform: translateY(-1px); }
+        }
+        .sa-notice-blink { animation: sa-notice-blink 1.05s ease-in-out infinite; }
       `}</style>
 
       <div className="w-full" style={{ maxWidth: 980 }}>
@@ -384,17 +393,44 @@ export default function RetroTerminalFrame({
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <span
-                  style={{
-                    fontSize: "0.78em",
-                    color: PHOSPHOR_DIM,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Ready for Spring '26 finals
-                </span>
+                {notice ? (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className="sa-notice-blink"
+                    style={{
+                      // Sit just outside the green CRT palette so it pops
+                      fontFamily: "Inter, system-ui, sans-serif",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      color: "#FFFFFF",
+                      background: "linear-gradient(180deg, #E11D2E 0%, #B30E1E 100%)",
+                      padding: "6px 12px",
+                      borderRadius: 6,
+                      border: "1px solid rgba(255,255,255,0.25)",
+                      boxShadow:
+                        "0 0 0 1px rgba(0,0,0,0.35), 0 6px 18px rgba(225,29,46,0.45), 0 0 22px rgba(225,29,46,0.55)",
+                      textShadow: "0 1px 0 rgba(0,0,0,0.35)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {notice}
+                  </div>
+                ) : (
+                  <span
+                    style={{
+                      fontSize: "0.78em",
+                      color: PHOSPHOR_DIM,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Ready for Spring '26 finals
+                  </span>
+                )}
               </div>
 
               {welcomeName ? (

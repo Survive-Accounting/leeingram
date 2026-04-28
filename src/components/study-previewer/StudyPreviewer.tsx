@@ -80,6 +80,7 @@ export default function StudyPreviewer({
   const [chapterLoading, setChapterLoading] = useState(false);
   const [activeTool, setActiveTool] = useState<ToolKey | null>(null);
   const [viewerAssetCode, setViewerAssetCode] = useState<string | null>(null);
+  const [terminalNotice, setTerminalNotice] = useState<string | null>(null);
 
   const chapterDropdownRef = useRef<HTMLSelectElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -120,6 +121,7 @@ export default function StudyPreviewer({
     setSelectedChapterId(null);
     setActiveTool(null);
     setViewerAssetCode(null);
+    setTerminalNotice(null);
   }, [resetSignal]);
 
   const handleChapterChange = async (chId: string) => {
@@ -151,6 +153,7 @@ export default function StudyPreviewer({
     setSelectedChapterId(chId);
     setViewerAssetCode(first);
     setChapterLoading(false);
+    setTerminalNotice(null);
     if (persistChapterKey) {
       try { localStorage.setItem(persistChapterKey, chId); } catch { /* ignore */ }
     }
@@ -169,7 +172,7 @@ export default function StudyPreviewer({
   };
 
   const handleNudgeChapter = () => {
-    toast("Pick a chapter first 👇");
+    setTerminalNotice("Pick a chapter first 👇");
     chapterDropdownRef.current?.focus();
     chapterDropdownRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
@@ -681,6 +684,7 @@ export default function StudyPreviewer({
                 loading={chapterLoading}
                 welcomeName={welcomeName ?? null}
                 isReturning={!!isReturning}
+                notice={terminalNotice}
                 onNudgeChapter={handleNudgeChapter}
                 onSelectTool={(key) => {
                   if (key === "feedback") {
