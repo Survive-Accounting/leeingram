@@ -205,6 +205,10 @@ export default function StudyPreviewer({
     if (key === "practice" && onRequestUnlock && !onRequestUnlock("open_workspace")) {
       return;
     }
+    // Lock the stage to the retro terminal's current height so the new viewer
+    // takes over IN PLACE without pushing the page down.
+    const currentHeight = workspaceRef.current?.offsetHeight ?? null;
+    if (currentHeight) setStageLockHeight(currentHeight);
     // Reset viewer load state for the new tool
     setIframeLoaded(false);
     setIframeError(false);
