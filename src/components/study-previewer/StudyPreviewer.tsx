@@ -184,6 +184,31 @@ export default function StudyPreviewer({
           100% { opacity: 1; transform: translateY(0) scale(1); }
         }
         .sa-rise { animation: sa-rise-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+        /* Crossfade stage: retro terminal ↔ modern viewer share the same frame */
+        .sa-stage { position: relative; }
+        .sa-stage-layer {
+          transition:
+            opacity 520ms cubic-bezier(0.22, 1, 0.36, 1),
+            filter 520ms cubic-bezier(0.22, 1, 0.36, 1),
+            transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+          will-change: opacity, filter, transform;
+        }
+        .sa-stage-overlay {
+          position: absolute;
+          inset: 0;
+        }
+        .sa-stage-hidden {
+          opacity: 0;
+          filter: blur(8px);
+          transform: scale(0.985);
+          pointer-events: none;
+        }
+        .sa-stage-visible {
+          opacity: 1;
+          filter: blur(0);
+          transform: scale(1);
+        }
       `}</style>
 
       {/* Navy frame wrapper */}
@@ -283,12 +308,16 @@ export default function StudyPreviewer({
             </div>
           </section>
 
-          {/* Workspace pane — retro terminal launchpad OR loaded tool */}
-          {!activeTool ? (
+          {/* Workspace stage — retro terminal + modern viewer crossfade in the same frame */}
+          <div
+            ref={workspaceRef}
+            className="sa-stage sa-rise"
+            style={{ animationDelay: "240ms" }}
+          >
+            {/* Layer 1 — Retro terminal launchpad (in flow when no tool, overlay when transitioning out) */}
             <div
-              ref={workspaceRef}
-              className="sa-rise"
-              style={{ animationDelay: "240ms" }}
+              className={`sa-stage-layer ${activeTool ? "sa-stage-overlay sa-stage-hidden" : "sa-stage-visible"}`}
+              aria-hidden={!!activeTool}
             >
               <RetroTerminalFrame
                 courseLabel={fixedCourseLabel ?? selectedCourseLabel ?? null}
@@ -311,94 +340,95 @@ export default function StudyPreviewer({
                 }}
               />
             </div>
-          ) : (
-            <section
-              ref={workspaceRef}
-              className="rounded-2xl overflow-hidden sa-rise"
-              style={{
-                background: "#fff",
-                boxShadow:
-                  "0 16px 40px rgba(0,0,0,0.22), 0 4px 10px rgba(0,0,0,0.10)",
-                minHeight: 600,
-                animationDelay: "0ms",
-              }}
-            >
-              {activeTool === "practice" && viewerAssetCode && (
-                <div className="relative">
-                  <div
-                    className="px-5 py-2.5 flex items-center justify-between gap-3 text-[12px]"
-                    style={{ background: "#fff", borderBottom: "1px solid #EEF2F7", color: "#64748B" }}
-                  >
-                    <span className="truncate font-medium" style={{ color: NAVY }}>
-                      {selectedChapter
-                        ? `Ch ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}`
-                        : "Practice Problem Helper"}
-                    </span>
-                    <button
-                      onClick={() =>
-                        window.open(
-                          `/v2/solutions/${encodeURIComponent(viewerAssetCode)}`,
-                          "_blank",
-                          "noopener,noreferrer",
-                        )
-                      }
-                      className="inline-flex items-center gap-1 hover:underline"
-                      style={{ color: NAVY, fontWeight: 600 }}
+
+            {/* Layer 2 — Modern V2 viewer (mounted only when a tool is active, fades in over the same frame) */}
+            {activeTool && (
+              <section
+                className="sa-stage-layer sa-stage-visible rounded-2xl overflow-hidden"
+                style={{
+                  background: "#fff",
+                  boxShadow:
+                    "0 16px 40px rgba(0,0,0,0.22), 0 4px 10px rgba(0,0,0,0.10)",
+                  minHeight: 600,
+                }}
+              >
+                {activeTool === "practice" && viewerAssetCode && (
+                  <div className="relative">
+                    <div
+                      className="px-5 py-2.5 flex items-center justify-between gap-3 text-[12px]"
+                      style={{ background: "#fff", borderBottom: "1px solid #EEF2F7", color: "#64748B" }}
                     >
-                      Open in new tab <ArrowUpRight className="h-3 w-3" />
+                      <span className="truncate font-medium" style={{ color: NAVY }}>
+                        {selectedChapter
+                          ? `Ch ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}`
+                          : "Practice Problem Helper"}
+                      </span>
+                      <button
+                        onClick={() =>
+                          window.open(
+                            `/v2/solutions/${encodeURIComponent(viewerAssetCode)}`,
+                            "_blank",
+                            "noopener,noreferrer",
+                          )
+                        }
+                        className="inline-flex items-center gap-1 hover:underline"
+                        style={{ color: NAVY, fontWeight: 600 }}
+                      >
+                        Open in new tab <ArrowUpRight className="h-3 w-3" />
+                      </button>
+                    </div>
+                    <iframe
+                      key={viewerAssetCode}
+                      src={`/v2/solutions/${encodeURIComponent(viewerAssetCode)}`}
+                      title="Practice Problem Helper"
+                      className="w-full block border-0"
+                      style={{ height: "min(85vh, 980px)", background: "#fff" }}
+                    />
+                  </div>
+                )}
+
+                {activeTool === "practice" && !viewerAssetCode && (
+                  <div className="flex items-center justify-center text-center px-6 py-24">
+                    <p className="text-[14px]" style={{ color: "#64748B" }}>
+                      This chapter is being finalized — check back soon.
+                    </p>
+                  </div>
+                )}
+
+                {activeTool === "je" && (
+                  <div className="px-6 py-16 sm:py-20 max-w-2xl mx-auto text-center">
+                    <div
+                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-widest"
+                      style={{ background: "#FEF3C7", color: "#92400E" }}
+                    >
+                      Coming soon
+                    </div>
+                    <h3
+                      className="mt-3 text-[26px] leading-tight"
+                      style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
+                    >
+                      Journal Entry Helper is being built
+                    </h3>
+                    <p className="mt-2 text-[14px]" style={{ color: "#64748B" }}>
+                      Tell us exactly how you'd want this to work and we'll build it
+                      straight from your feedback.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={onOpenFeedback}
+                      className="mt-5 inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-[13px] font-semibold text-white transition-all hover:brightness-110"
+                      style={{
+                        background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+                        boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
+                      }}
+                    >
+                      Tell us what you'd want <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  <iframe
-                    key={viewerAssetCode}
-                    src={`/v2/solutions/${encodeURIComponent(viewerAssetCode)}`}
-                    title="Practice Problem Helper"
-                    className="w-full block border-0"
-                    style={{ height: "min(85vh, 980px)", background: "#fff" }}
-                  />
-                </div>
-              )}
-
-              {activeTool === "practice" && !viewerAssetCode && (
-                <div className="flex items-center justify-center text-center px-6 py-24">
-                  <p className="text-[14px]" style={{ color: "#64748B" }}>
-                    This chapter is being finalized — check back soon.
-                  </p>
-                </div>
-              )}
-
-              {activeTool === "je" && (
-                <div className="px-6 py-16 sm:py-20 max-w-2xl mx-auto text-center">
-                  <div
-                    className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-widest"
-                    style={{ background: "#FEF3C7", color: "#92400E" }}
-                  >
-                    Coming soon
-                  </div>
-                  <h3
-                    className="mt-3 text-[26px] leading-tight"
-                    style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
-                  >
-                    Journal Entry Helper is being built
-                  </h3>
-                  <p className="mt-2 text-[14px]" style={{ color: "#64748B" }}>
-                    Tell us exactly how you'd want this to work and we'll build it
-                    straight from your feedback.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={onOpenFeedback}
-                    className="mt-5 inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-[13px] font-semibold text-white transition-all hover:brightness-110"
-                    style={{
-                      background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-                      boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
-                    }}
-                  >
-                    Tell us what you'd want <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )}
-            </section>
-          )}
+                )}
+              </section>
+            )}
+          </div>
         </div>
       </div>
     </div>
