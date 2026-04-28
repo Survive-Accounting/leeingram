@@ -207,7 +207,7 @@ export default function StudyPreviewer({
         <div className="relative space-y-6 sm:space-y-8">
           {/* Stepper: Course + Chapter */}
           <section
-            className="rounded-2xl overflow-hidden sa-rise"
+            className="rounded-2xl sa-rise p-5 sm:p-6"
             style={{
               background: "#fff",
               boxShadow:
@@ -215,95 +215,62 @@ export default function StudyPreviewer({
               animationDelay: "120ms",
             }}
           >
-            {/* Header strip */}
-            <div
-              className="px-5 sm:px-6 py-3 flex items-center justify-between gap-3"
-              style={{
-                background: "#F8FAFC",
-                borderBottom: "1px solid #E2E8F0",
-              }}
-            >
-              <p
-                className="text-[10.5px] uppercase tracking-[0.18em] font-bold"
-                style={{ color: NAVY }}
-              >
-                Set up your session
-              </p>
-              <span
-                className="hidden sm:inline-flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.16em] font-semibold"
-                style={{ color: "#94A3B8" }}
-              >
-                <span
-                  className="inline-block rounded-full"
-                  style={{ width: 5, height: 5, background: RED }}
-                />
-                Free Beta
-              </span>
-            </div>
-
-            <div className="p-5 sm:p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
-                {/* Step 1 — Course */}
-                <div className="space-y-2.5">
-                  {stepLabel(1, "Course", courseChosen)}
-                  {courses ? (
-                    <SelectShell
-                      value={selectedCourseId ?? ""}
-                      onChange={(v) => onCourseChange?.(v)}
-                      accent={!!selectedCourseId}
-                    >
-                      <option value="">Choose course…</option>
-                      {courses.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.fullName}
-                        </option>
-                      ))}
-                    </SelectShell>
-                  ) : (
-                    <div
-                      className="w-full rounded-lg px-4 py-2.5 text-[14px] font-semibold flex items-center justify-between"
-                      style={{
-                        background: "#F8FAFC",
-                        border: "1px solid #E2E8F0",
-                        color: NAVY,
-                      }}
-                    >
-                      <span className="truncate">{fixedCourseLabel ?? "—"}</span>
-                      <Lock className="h-3.5 w-3.5" style={{ color: "#94A3B8" }} />
-                    </div>
-                  )}
-                </div>
-
-                {/* Step 2 — Chapter */}
-                <div className="space-y-2.5">
-                  {stepLabel(2, "Chapter", chapterChosen)}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+              {/* Step 1 — Course */}
+              <div className="space-y-2.5">
+                {stepLabel(1, "Course", courseChosen)}
+                {courses ? (
                   <SelectShell
-                    ref={chapterDropdownRef}
-                    value={selectedChapterId ?? ""}
-                    onChange={handleChapterChange}
-                    accent={!!selectedChapterId}
-                    disabled={!courseChosen || chapterLoading || chapters.length === 0}
-                    loading={chapterLoading}
+                    value={selectedCourseId ?? ""}
+                    onChange={(v) => onCourseChange?.(v)}
+                    accent={!!selectedCourseId}
                   >
-                    <option value="">
-                      {!courseChosen
-                        ? "Pick a course first"
-                        : chapters.length === 0
-                        ? "Loading chapters…"
-                        : "Choose chapter…"}
-                    </option>
-                    {chapters.map((ch) => (
-                      <option key={ch.id} value={ch.id}>
-                        Ch {ch.chapter_number} — {ch.chapter_name}
+                    <option value="">Choose course…</option>
+                    {courses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.fullName}
                       </option>
                     ))}
                   </SelectShell>
-                </div>
+                ) : (
+                  <div
+                    className="w-full rounded-lg px-4 py-2.5 text-[14px] font-semibold flex items-center justify-between"
+                    style={{
+                      background: "#F8FAFC",
+                      border: "1px solid #E2E8F0",
+                      color: NAVY,
+                    }}
+                  >
+                    <span className="truncate">{fixedCourseLabel ?? "—"}</span>
+                    <Lock className="h-3.5 w-3.5" style={{ color: "#94A3B8" }} />
+                  </div>
+                )}
               </div>
 
-              {/* Step 3 — Tool hint */}
-              <div className="mt-6 pt-5 border-t" style={{ borderColor: "#EEF2F7" }}>
-                {stepLabel(3, "Pick a tool below", !!activeTool)}
+              {/* Step 2 — Chapter */}
+              <div className="space-y-2.5">
+                {stepLabel(2, "Chapter", chapterChosen)}
+                <SelectShell
+                  ref={chapterDropdownRef}
+                  value={selectedChapterId ?? ""}
+                  onChange={handleChapterChange}
+                  accent={!!selectedChapterId}
+                  disabled={!courseChosen || chapterLoading || chapters.length === 0}
+                  loading={chapterLoading}
+                >
+                  <option value="">
+                    {!courseChosen
+                      ? "Pick a course first"
+                      : chapters.length === 0
+                      ? "Loading chapters…"
+                      : "Choose chapter…"}
+                  </option>
+                  {chapters.map((ch) => (
+                    <option key={ch.id} value={ch.id}>
+                      Ch {ch.chapter_number} — {ch.chapter_name}
+                    </option>
+                  ))}
+                </SelectShell>
               </div>
             </div>
           </section>
