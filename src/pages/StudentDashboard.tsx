@@ -90,7 +90,11 @@ function DashNavbar({
 /* ─── Main Page ─── */
 
 export default function StudentDashboard() {
-  const navigate = useNavigate();
+  const previewerRef = useRef<HTMLDivElement | null>(null);
+  const scrollToPreviewer = () => {
+    previewerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const [email, setEmail] = useState<string | null>(null);
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
