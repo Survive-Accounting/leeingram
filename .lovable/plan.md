@@ -1,37 +1,97 @@
-## SEO Quick Wins + Headshot Favicon
 
-The current `index.html` is hardcoded to ACCY 304 only. We're now multi-course (Intro 1/2, IA1, IA2) and multi-campus, so the title, description, OG tags, and favicon all need to broaden out.
+# Bite-Sized "Walk Me Through It" — One Part at a Time
 
-### 1. Favicon → Lee's headshot
-- Copy `src/assets/lee-headshot-original.png` (the same headshot used in the Landing hero) to:
-  - `public/favicon.png` — main browser tab icon
-  - `public/apple-touch-icon.png` — iOS home-screen / bookmark icon
-- Confirm the legacy `public/favicon.ico` is no longer referenced (already absent from repo).
-- Update `index.html` `<link rel="icon">` to point at `/favicon.png` (replaces the LearnWorlds-hosted JPG).
+## The Goal
 
-### 2. Page title + meta description
-Replace the ACCY 304-specific copy with course-agnostic messaging:
-- **Title**: `Survive Accounting — Pass Your Accounting Exam, Stress-Free` (under 60 chars, brand-first, action verb).
-- **Description**: `Step-by-step solutions, journal entries, formulas, and exam traps for college accounting. 2,500+ worked problems by Lee Ingram, tutor since 2015.` (~155 chars).
-- Add `<meta name="keywords">` covering core course codes (ACCY 201/202/303/304), "accounting tutor", "journal entries", etc. (low-impact, but cheap).
-- Add `<meta name="theme-color" content="#14213D">` for mobile address-bar branding.
+Big multi-part word problems are overwhelming. Today, "Walk me through this problem" dumps the entire solution at once. We'll generate it once in the background, but **deliver it one part at a time** with a "Continue to part (b) →" button. Students can also choose **"Show me everything"** to dump the full thing if they want.
 
-### 3. Crawler + canonical
-- Add `<meta name="robots" content="index, follow, max-image-preview:large">`.
-- Add `<link rel="canonical" href="https://learn.surviveaccounting.com/">` so preview/staging URLs don't outrank the real domain.
+This makes a 5-part problem feel like 5 small, winnable steps instead of one wall of text.
 
-### 4. Open Graph + Twitter cards
-- Update `og:title`, `og:description`, `twitter:title`, `twitter:description` to match the new course-agnostic copy.
-- Add `og:site_name`, `og:url`, and `og:image:alt` (small lift, materially better link previews in iMessage/Slack/X).
+---
 
-### 5. Structured data (JSON-LD)
-- Add a single `EducationalOrganization` schema block referencing Lee Ingram as founder. Helps Google show a richer brand panel and ties the site to a named tutor.
+## Approach
 
-### Out of scope (flag for later, not doing now)
-- A real `sitemap.xml` (robots.txt already references one but the file doesn't exist — worth a follow-up sprint).
-- Per-route `<title>` updates via `react-helmet-async` for `/solutions/:assetCode`, campus pages, etc. — bigger lift, separate task.
+### 1. Restructure the AI output (the key unlock)
 
-### Files touched
-- `index.html` — full rewrite of `<head>`.
-- `public/favicon.png` — new (copied from `src/assets/lee-headshot-original.png`).
-- `public/apple-touch-icon.png` — new (same source).
+Today `how_to_solve` is one markdown blob. We change the edge function `explain-this-solution` to return a structured `walkthrough` array — one entry per instruction part:
+
+```json
+{
+  "walkthrough": [
+    { "part": "a", "title": "Calculate gross profit", "content": "..." },
+    { "part": "b", "title": "Net amount to settle invoice", "content": "..." },
+    ...
+  ]
+}
+```
+
+The AI generates **all parts at once** in a single call (same cost as today — no extra API hits). We just ask it to split by instruction letter. Caching stays the same (whole asset cached once).
+
+Backwards-compatible: keep `how_to_solve` (the legacy markdown blob) as a fallback so existing cached rows still render.
+
+### 2. Bite-sized UI in the Solutions Viewer
+
+When a student clicks **"Walk me through this problem"**, instead of dumping everything, show:
+
+```text
+┌─────────────────────────────────────────┐
+│ Step (a) of 5  ·  Calculate gross profit│
+│                                         │
+│ [bite-sized explanation for part a]     │
+│                                         │
+│ ─────────────────────────────────       │
+│  ◉ ◯ ◯ ◯ ◯   ← progress dots           │
+│                                         │
+│  [ Show me everything ]  [ Continue → ] │
+└─────────────────────────────────────────┘
+```
+
+- **Continue to part (b) →**: advances one step. Auto-checks the corresponding task in "Your Tasks" so the checklist stays synced.
+- **Show me everything**: collapses into the old single-scroll view for power users.
+- **Back**: lets them re-read a previous part.
+- On the **last** part, the button becomes **"I got it ✓"** which marks all tasks done and surfaces the feedback prompt.
+
+Why this works: it matches how the existing instructions checklist already works (one task at a time, current-task highlight). The walkthrough now mirrors that rhythm — read part (a), do part (a), continue.
+
+### 3. Quick-win companions (same night, low effort)
+
+Three small changes that compound the "easier to digest" goal:
+
+- **Auto-scroll the matching task into view** when you advance — the checklist on the left highlights part (b) at the same moment the explanation reveals part (b). Cause-and-effect.
+- **"What's this part asking?" plain-English restate** at the top of each step — one sentence in Lee's voice that translates the textbook instruction (e.g., *"Just figure out: sale price minus cost. That's it."*). The AI already produces this naturally; we just surface it as a styled callout.
+- **Estimated time per part** (e.g., *"~30 sec"*) as a subtle muted-text hint. Tiny psychological win — students see "30 seconds" and start, instead of seeing a wall and bouncing.
+
+---
+
+## Technical Details
+
+**Files touched:**
+- `supabase/functions/explain-this-solution/index.ts` — add `walkthrough` array to the schema; keep `how_to_solve` for back-compat.
+- `src/pages/v2/SolutionsViewerV2.tsx` (`InlineExplanation` component, ~line 491) — add `currentStep` state; render stepped view by default; add "Show me everything" toggle; wire `onAdvance` to call `toggleTask(i)` so the left checklist stays in sync.
+
+**State:**
+```ts
+const [currentStep, setCurrentStep] = useState(0);
+const [showAll, setShowAll] = useState(false);
+```
+
+**Caching:** Existing `explanation_cache` row is invalidated naturally — first load after deploy will regenerate with the new shape. Old cached rows still render via the `how_to_solve` fallback.
+
+**Prompt change:** Add to the existing system prompt:
+> "Split your step-by-step solution by instruction letter. For each lettered part (a, b, c…), produce: a one-sentence plain-English restate, then 2–4 short steps. Return as a `walkthrough` array."
+
+---
+
+## What This Doesn't Change
+
+- "Start me off", "Explain the rule", "Show the setup" stay as-is (they're already concise by design).
+- Pricing, paywall, JE display, and chapter content all untouched.
+- No DB migration needed.
+
+---
+
+## Future Enhancements (not tonight)
+
+- Streaming reveal (type-on effect per part) — feels alive but adds complexity.
+- "Stuck on this part?" inline button per step that fires a smaller, cheaper "just this part" AI call.
+- Track which parts students re-read most → signal for content QA.
