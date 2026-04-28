@@ -1965,7 +1965,7 @@ export default function SolutionsViewerV2() {
   const [originalOpen, setOriginalOpen] = useState(false);
 
   // "Your Tasks" accordion — open by default so students see what to do.
-  const [instructionsOpen, setInstructionsOpen] = useState(true);
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
   // Per-task checked state, persisted to localStorage per asset.
   const [checkedTasks, setCheckedTasks] = useState<boolean[]>([]);
 
