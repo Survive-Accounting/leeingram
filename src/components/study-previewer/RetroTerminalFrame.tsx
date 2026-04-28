@@ -50,6 +50,7 @@ interface RetroTerminalFrameProps {
   canChangeCourse?: boolean;
   /** When true, chapter is changeable via inline "Change" affordance. */
   canChangeChapter?: boolean;
+}
 
 /**
  * Retro CRT-in-a-laptop. Acts as the launchpad: shows boot lines for the
