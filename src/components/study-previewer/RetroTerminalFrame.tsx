@@ -122,6 +122,23 @@ export default function RetroTerminalFrame({
           50% { opacity: 0.93; }
           52% { opacity: 0.99; }
         }
+        /* Quick phosphor glow pulse on a refreshed value */
+        @keyframes sa-phosphor-pulse {
+          0%   { color: #FFFFFF; text-shadow: 0 0 6px #7CFFB0, 0 0 18px rgba(124,255,176,0.85); }
+          60%  { color: #EAFFF2; text-shadow: 0 0 3px rgba(124,255,176,0.6), 0 0 10px rgba(124,255,176,0.5); }
+          100% { color: #E8FFF1; text-shadow: 0 0 1px rgba(124,255,176,0.45), 0 0 8px rgba(124,255,176,0.45); }
+        }
+        .sa-value-pulse { animation: sa-phosphor-pulse 720ms cubic-bezier(0.22,1,0.36,1) both; }
+        /* Soft scanline brightness pulse on the whole CRT after an update */
+        @keyframes sa-crt-pulse {
+          0%   { box-shadow: inset 0 0 0 0 rgba(124,255,176,0); filter: brightness(1); }
+          25%  { box-shadow: inset 0 0 80px 4px rgba(124,255,176,0.10); filter: brightness(1.06); }
+          100% { box-shadow: inset 0 0 0 0 rgba(124,255,176,0); filter: brightness(1); }
+        }
+        .sa-crt-pulse-overlay {
+          position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+          animation: sa-crt-pulse 520ms ease-out both;
+        }
       `}</style>
 
       <div className="w-full" style={{ maxWidth: 980 }}>
