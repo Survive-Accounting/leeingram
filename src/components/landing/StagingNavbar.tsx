@@ -151,7 +151,7 @@ export default function StagingNavbar({
               transition: `color ${TRANSITION}`,
             }}
           >
-            what's inside
+            What's inside
           </button>
 
           {/* Log in — quiet secondary link */}
