@@ -6,15 +6,26 @@ import { toast } from "sonner";
 const NAVY = "#14213D";
 const RED = "#CE1126";
 
+type Topic = "Practice Problem Helper" | "Journal Entry Memorizer" | "General suggestion";
+
+const TOPICS: Topic[] = [
+  "Practice Problem Helper",
+  "Journal Entry Memorizer",
+  "General suggestion",
+];
+
 export default function FeedbackToolModal({
   open,
   email,
   onClose,
+  defaultTopic = "General suggestion",
 }: {
   open: boolean;
   email: string | null;
   onClose: () => void;
+  defaultTopic?: Topic;
 }) {
+  const [topic, setTopic] = useState<Topic>(defaultTopic);
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -31,8 +42,8 @@ export default function FeedbackToolModal({
       const { error } = await supabase.functions.invoke("send-contact-notification", {
         body: {
           email: email || "anonymous@beta",
-          message: `[Beta · Help us decide] ${text.trim().slice(0, 4000)}`,
-          subject: "Beta tool idea",
+          message: `[Beta · ${topic}] ${text.trim().slice(0, 4000)}`,
+          subject: `Beta feedback · ${topic}`,
         },
       });
       if (error) throw error;
@@ -75,8 +86,38 @@ export default function FeedbackToolModal({
             What should we build next?
           </h3>
           <p className="mt-1.5 text-[13px]" style={{ color: "#64748B" }}>
-            Be specific. The most useful idea ships first.
+            Share thoughts about the Practice Problem Helper, Journal Entry Memorizer, or any idea.
           </p>
+        </div>
+
+        <div className="px-6 pb-3">
+          <p
+            className="text-[10.5px] uppercase tracking-widest font-semibold mb-1.5"
+            style={{ color: "#94A3B8" }}
+          >
+            Topic
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {TOPICS.map((t) => {
+              const active = topic === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTopic(t)}
+                  className="text-[12px] font-medium rounded-full px-3 py-1.5 transition-all"
+                  style={{
+                    background: active ? NAVY : "#F1F5F9",
+                    color: active ? "#fff" : "#475569",
+                    border: `1px solid ${active ? NAVY : "#E2E8F0"}`,
+                  }}
+                  disabled={submitting || done}
+                >
+                  {t}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="px-6 pb-5">
@@ -84,7 +125,7 @@ export default function FeedbackToolModal({
             autoFocus
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="e.g. A flashcard mode that quizzes me on the journal entries I keep getting wrong…"
+            placeholder="Your feedback is invaluable to us."
             className="w-full min-h-[140px] rounded-lg px-3 py-2.5 text-[14px] outline-none resize-y"
             style={{
               background: "#F8FAFC",
