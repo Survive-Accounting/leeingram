@@ -52,11 +52,11 @@ export default function CheckEmailPanel({
     setResendErr(null);
     const res = await sendMagicLink({ email, allowNew });
     setResending(false);
-    if (res.ok === true) {
+    if (res.ok) {
       setResentAt(Date.now());
       setNow(Date.now());
     } else {
-      setResendErr(res.error);
+      setResendErr(res.error || "Couldn't resend right now. Try again in a moment.");
     }
   };
 
