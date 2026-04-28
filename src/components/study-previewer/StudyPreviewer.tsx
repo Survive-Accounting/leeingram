@@ -98,6 +98,12 @@ export default function StudyPreviewer({
   const [chapterLoading, setChapterLoading] = useState(false);
   const [activeTool, setActiveTool] = useState<ToolKey | null>(null);
   const [viewerAssetCode, setViewerAssetCode] = useState<string | null>(null);
+  const [crtPulseKey, setCrtPulseKey] = useState(0);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
+  const [iframeReloadKey, setIframeReloadKey] = useState(0);
+  const [showSkeleton, setShowSkeleton] = useState(false);
+  const [showSlowStatus, setShowSlowStatus] = useState(false);
   
 
   const chapterDropdownRef = useRef<HTMLSelectElement>(null);
@@ -197,11 +203,39 @@ export default function StudyPreviewer({
     if (key === "practice" && onRequestUnlock && !onRequestUnlock("open_workspace")) {
       return;
     }
+    // Reset viewer load state for the new tool
+    setIframeLoaded(false);
+    setIframeError(false);
+    setShowSkeleton(false);
+    setShowSlowStatus(false);
+    // Fire the CRT refresh pulse on the retro layer
+    setCrtPulseKey((k) => k + 1);
     setActiveTool(key);
+    // Gentle conditional scroll — only if the workspace top is off-screen.
     setTimeout(() => {
-      workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
+      const el = workspaceRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top < 0 || rect.top > window.innerHeight * 0.6) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 60);
   };
+
+  // Skeleton at >500ms, subtle status at >2s, error at >12s
+  useEffect(() => {
+    if (!activeTool || iframeLoaded || iframeError) return;
+    const t1 = window.setTimeout(() => setShowSkeleton(true), 500);
+    const t2 = window.setTimeout(() => setShowSlowStatus(true), 2000);
+    const t3 = window.setTimeout(() => {
+      if (!iframeLoaded) setIframeError(true);
+    }, 12000);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+    };
+  }, [activeTool, iframeReloadKey, viewerAssetCode, iframeLoaded, iframeError]);
 
 
   const selectedChapter = useMemo(
@@ -290,13 +324,14 @@ export default function StudyPreviewer({
         }
         .sa-rise { animation: sa-rise-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-        /* Crossfade stage: retro terminal ↔ modern viewer share the same frame */
+        /* Crossfade stage: retro terminal ↔ modern viewer share the same frame.
+           Tuned for fast/premium feel — total perceived transition under ~250ms. */
         .sa-stage { position: relative; }
         .sa-stage-layer {
           transition:
-            opacity 520ms cubic-bezier(0.22, 1, 0.36, 1),
-            filter 520ms cubic-bezier(0.22, 1, 0.36, 1),
-            transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+            opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
+            filter 220ms cubic-bezier(0.22, 1, 0.36, 1),
+            transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
           will-change: opacity, filter, transform;
         }
         .sa-stage-overlay {
@@ -305,14 +340,54 @@ export default function StudyPreviewer({
         }
         .sa-stage-hidden {
           opacity: 0;
-          filter: blur(8px);
-          transform: scale(0.985);
+          filter: blur(4px);
+          transform: scale(0.992);
           pointer-events: none;
         }
         .sa-stage-visible {
           opacity: 1;
           filter: blur(0);
           transform: scale(1);
+        }
+
+        /* One-shot CRT refresh pulse — a quick scanline sweep + soft flash on the retro layer */
+        @keyframes sa-crt-pulse-flash {
+          0%   { opacity: 0; }
+          25%  { opacity: 0.55; }
+          100% { opacity: 0; }
+        }
+        @keyframes sa-crt-pulse-sweep {
+          0%   { transform: translateY(-100%); opacity: 0.0; }
+          15%  { opacity: 0.7; }
+          100% { transform: translateY(100%); opacity: 0.0; }
+        }
+        .sa-crt-pulse {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 5;
+          overflow: hidden;
+          border-radius: inherit;
+        }
+        .sa-crt-pulse::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: rgba(124,255,176,0.12);
+          mix-blend-mode: screen;
+          animation: sa-crt-pulse-flash 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .sa-crt-pulse::after {
+          content: "";
+          position: absolute;
+          left: 0; right: 0;
+          height: 28%;
+          background: linear-gradient(180deg,
+            rgba(124,255,176,0) 0%,
+            rgba(124,255,176,0.18) 50%,
+            rgba(124,255,176,0) 100%);
+          mix-blend-mode: screen;
+          animation: sa-crt-pulse-sweep 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
         /* One-shot status LED ring pulse on selector change */
@@ -587,11 +662,24 @@ export default function StudyPreviewer({
             className="sa-stage sa-rise"
             style={{ animationDelay: "240ms" }}
           >
+            {/* Prefetch the v2 viewer route once we know the asset, so click feels instant */}
+            {viewerAssetCode && !activeTool && (
+              <link
+                rel="prefetch"
+                href={`/v2/solutions/${encodeURIComponent(viewerAssetCode)}`}
+              />
+            )}
+
             {/* Layer 1 — Retro terminal launchpad (in flow when no tool, overlay when transitioning out) */}
             <div
               className={`sa-stage-layer ${activeTool ? "sa-stage-overlay sa-stage-hidden" : "sa-stage-visible"}`}
               aria-hidden={!!activeTool}
+              style={{ position: "relative" }}
             >
+              {/* One-shot CRT refresh pulse triggered on tool selection */}
+              {crtPulseKey > 0 && (
+                <div key={`crt-${crtPulseKey}`} className="sa-crt-pulse" aria-hidden />
+              )}
               <RetroTerminalFrame
                 courseLabel={fixedCourseLabel ?? selectedCourseLabel ?? null}
                 chapterLabel={
@@ -693,14 +781,80 @@ export default function StudyPreviewer({
                           minHeight: "clamp(380px, 56vw, 560px)",
                         }}
                       >
-                        {activeTool === "practice" && viewerAssetCode && (
-                          <iframe
-                            key={viewerAssetCode}
-                            src={`/v2/solutions/${encodeURIComponent(viewerAssetCode)}`}
-                            title="Practice Problem Helper"
-                            className="w-full block border-0"
-                            style={{ height: "min(85vh, 980px)", background: "#fff" }}
-                          />
+                        {activeTool === "practice" && viewerAssetCode && !iframeError && (
+                          <>
+                            <iframe
+                              key={`${viewerAssetCode}-${iframeReloadKey}`}
+                              src={`/v2/solutions/${encodeURIComponent(viewerAssetCode)}`}
+                              title="Practice Problem Helper"
+                              className="w-full block border-0"
+                              style={{
+                                height: "min(85vh, 980px)",
+                                background: "#fff",
+                                opacity: iframeLoaded ? 1 : 0,
+                                transition: "opacity 200ms ease-out",
+                              }}
+                              onLoad={() => setIframeLoaded(true)}
+                              onError={() => setIframeError(true)}
+                            />
+
+                            {/* Skeleton — only after 500ms of loading */}
+                            {!iframeLoaded && showSkeleton && (
+                              <div
+                                aria-hidden
+                                className="absolute inset-0 flex flex-col gap-3 px-6 py-6"
+                                style={{ background: "#fff" }}
+                              >
+                                <div className="h-4 w-1/3 rounded bg-slate-100 animate-pulse" />
+                                <div className="h-3 w-2/3 rounded bg-slate-100 animate-pulse" />
+                                <div className="h-3 w-1/2 rounded bg-slate-100 animate-pulse" />
+                                <div className="mt-4 h-40 w-full rounded bg-slate-100 animate-pulse" />
+                                <div className="h-3 w-2/5 rounded bg-slate-100 animate-pulse" />
+                                <div className="h-3 w-1/3 rounded bg-slate-100 animate-pulse" />
+                              </div>
+                            )}
+
+                            {/* Subtle status — only if loading exceeds 2s */}
+                            {!iframeLoaded && showSlowStatus && (
+                              <div
+                                className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] tracking-wide"
+                                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                                role="status"
+                              >
+                                Preparing tool…
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {activeTool === "practice" && viewerAssetCode && iframeError && (
+                          <div
+                            className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 gap-3"
+                            style={{ background: "#fff" }}
+                            role="alert"
+                          >
+                            <p className="text-[13.5px]" style={{ color: "#475569" }}>
+                              Tool didn't load. Try again.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIframeError(false);
+                                setIframeLoaded(false);
+                                setShowSkeleton(false);
+                                setShowSlowStatus(false);
+                                setIframeReloadKey((k) => k + 1);
+                              }}
+                              className="inline-flex items-center rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors"
+                              style={{
+                                color: "#14213D",
+                                background: "#F1F5F9",
+                                border: "1px solid #E2E8F0",
+                              }}
+                            >
+                              Retry
+                            </button>
+                          </div>
                         )}
 
                         {activeTool === "practice" && !viewerAssetCode && (
