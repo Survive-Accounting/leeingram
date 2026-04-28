@@ -118,7 +118,7 @@ export default function LandingStudyPreviewerSection({
           .sa-hero-in { animation: sa-hero-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
         `}</style>
         {/* Header */}
-        <div className="text-center mb-16 sm:mb-20" style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div className="text-center mb-24 sm:mb-32" style={{ maxWidth: 760, margin: "0 auto" }}>
           <div
             className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4 sa-hero-in"
             style={{ color: "#FF6B7A", letterSpacing: "0.16em", animationDelay: "0ms" }}
@@ -139,7 +139,15 @@ export default function LandingStudyPreviewerSection({
             className="mt-4 text-[15px] sm:text-[16px] sa-hero-in"
             style={{ color: "rgba(255,255,255,0.72)", fontFamily: "Inter, sans-serif", animationDelay: "200ms" }}
           >
-            Create a free account to unlock the beta tools and start studying.
+            <button
+              type="button"
+              onClick={() => setPaywallOpen(true)}
+              className="underline underline-offset-4 transition-colors hover:text-white focus:outline-none focus:text-white"
+              style={{ color: "#FFFFFF", textDecorationColor: RED, textDecorationThickness: "2px" }}
+            >
+              Create a free account
+            </button>
+            {" "}to unlock the beta tools and start studying.
           </p>
         </div>
 
