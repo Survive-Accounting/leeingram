@@ -257,7 +257,7 @@ export default function StudentDashboard() {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.email) {
-        navigate("/login", { replace: true });
+        navigate("/?login=1", { replace: true });
         return;
       }
 
@@ -272,7 +272,7 @@ export default function StudentDashboard() {
         .order("created_at", { ascending: false });
 
       if (!rows || rows.length === 0) {
-        navigate("/login?message=no_purchase", { replace: true });
+        navigate("/?login=1&reason=no_purchase", { replace: true });
         return;
       }
 
@@ -349,7 +349,7 @@ export default function StudentDashboard() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate("/login", { replace: true });
+    navigate("/", { replace: true });
   };
 
   const openStartStudying = () => {
