@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Upload, X, Check } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import GreekOrgSearch from "./GreekOrgSearch";
+import { useIsStaff } from "@/hooks/useIsStaff";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
