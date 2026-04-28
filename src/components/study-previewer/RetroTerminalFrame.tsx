@@ -599,6 +599,13 @@ export default function RetroTerminalFrame({
                 )}
               </Line>
               <Line show={bootStep >= 4}>{">"}</Line>
+              {!canPickTool && (
+                <Line show={bootStep >= 5}>
+                  <span style={{ color: PHOSPHOR_MUTED, fontStyle: "italic" }}>
+                    {"> Awaiting chapter selection…"}
+                  </span>
+                </Line>
+              )}
               <Line show={bootStep >= 5}>
                 <span style={{ color: PHOSPHOR_DIM }}>{promptLabel}</span>
                 <span
@@ -614,15 +621,17 @@ export default function RetroTerminalFrame({
                 />
               </Line>
 
-              {/* Tool grid — 3-column terminal cards */}
-              {tools && tools.length > 0 && (
+              {/* Tool grid — 3-column terminal cards. Hidden entirely until a chapter is chosen. */}
+              {tools && tools.length > 0 && canPickTool && (
                 <div
-                  className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3"
+                  key={`toolgrid-${activeToolKey ?? "idle"}-${canPickTool ? "ready" : "wait"}`}
+                  className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 sa-toolgrid-reveal"
                   style={{
                     opacity: bootStep >= 6 ? 1 : 0,
-                    transform: bootStep >= 6 ? "translateY(0)" : "translateY(2px)",
-                    transition: "opacity 280ms ease-out, transform 280ms ease-out",
+                    transition: "opacity 280ms ease-out",
                   }}
+                >
+
                 >
                   {tools.map((tool) => {
                     const isActive = activeToolKey === tool.key;
