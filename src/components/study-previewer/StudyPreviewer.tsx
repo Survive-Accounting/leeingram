@@ -163,101 +163,155 @@ export default function StudyPreviewer({
   );
 
   return (
-    <div className="space-y-8 sm:space-y-10" style={{ fontFamily: "Inter, sans-serif" }}>
-      {/* Stepper: Course + Chapter */}
-      <section
-        className="rounded-2xl p-5 sm:p-6"
+    <div style={{ fontFamily: "Inter, sans-serif" }}>
+      {/* Navy frame wrapper */}
+      <div
+        className="relative rounded-[28px] p-5 sm:p-8 lg:p-10"
         style={{
-          background: "#fff",
-          border: "1px solid #E0E7F0",
-          boxShadow: "0 4px 14px rgba(20,33,61,0.05)",
+          background: `linear-gradient(180deg, ${NAVY} 0%, #1A2A4F 55%, #20335E 100%)`,
+          boxShadow:
+            "0 30px 60px -25px rgba(20,33,61,0.45), 0 10px 24px -10px rgba(20,33,61,0.25)",
         }}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
-          {/* Step 1 — Course */}
-          <div className="space-y-2.5">
-            {stepLabel(1, "Course", courseChosen)}
-            {courses ? (
-              <SelectShell
-                value={selectedCourseId ?? ""}
-                onChange={(v) => onCourseChange?.(v)}
-                accent={!!selectedCourseId}
-              >
-                <option value="">Choose course…</option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.fullName}
-                  </option>
-                ))}
-              </SelectShell>
-            ) : (
-              <div
-                className="w-full rounded-lg px-4 py-2.5 text-[14px] font-semibold flex items-center justify-between"
-                style={{
-                  background: "#F8FAFC",
-                  border: "1px solid #E2E8F0",
-                  color: NAVY,
-                }}
-              >
-                <span className="truncate">{fixedCourseLabel ?? "—"}</span>
-                <Lock className="h-3.5 w-3.5" style={{ color: "#94A3B8" }} />
-              </div>
-            )}
-          </div>
+        {/* Red accent bar */}
+        <div
+          aria-hidden
+          className="absolute left-1/2 -translate-x-1/2 -top-px rounded-b-full"
+          style={{ width: 96, height: 4, background: RED }}
+        />
+        {/* Subtle inner glow */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-[28px]"
+          style={{
+            background:
+              "radial-gradient(120% 60% at 50% 0%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 60%)",
+          }}
+        />
 
-          {/* Step 2 — Chapter */}
-          <div className="space-y-2.5">
-            {stepLabel(2, "Chapter", chapterChosen)}
-            <SelectShell
-              ref={chapterDropdownRef}
-              value={selectedChapterId ?? ""}
-              onChange={handleChapterChange}
-              accent={!!selectedChapterId}
-              disabled={!courseChosen || chapterLoading || chapters.length === 0}
-              loading={chapterLoading}
+        <div className="relative space-y-6 sm:space-y-8">
+          {/* Stepper: Course + Chapter */}
+          <section
+            className="rounded-2xl overflow-hidden"
+            style={{
+              background: "#fff",
+              boxShadow:
+                "0 12px 28px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08)",
+            }}
+          >
+            {/* Header strip */}
+            <div
+              className="px-5 sm:px-6 py-3 flex items-center justify-between gap-3"
+              style={{
+                background: "#F8FAFC",
+                borderBottom: "1px solid #E2E8F0",
+              }}
             >
-              <option value="">
-                {!courseChosen
-                  ? "Pick a course first"
-                  : chapters.length === 0
-                  ? "Loading chapters…"
-                  : "Choose chapter…"}
-              </option>
-              {chapters.map((ch) => (
-                <option key={ch.id} value={ch.id}>
-                  Ch {ch.chapter_number} — {ch.chapter_name}
-                </option>
-              ))}
-            </SelectShell>
-          </div>
-        </div>
+              <p
+                className="text-[10.5px] uppercase tracking-[0.18em] font-bold"
+                style={{ color: NAVY }}
+              >
+                Set up your session
+              </p>
+              <span
+                className="hidden sm:inline-flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.16em] font-semibold"
+                style={{ color: "#94A3B8" }}
+              >
+                <span
+                  className="inline-block rounded-full"
+                  style={{ width: 5, height: 5, background: RED }}
+                />
+                Free Beta
+              </span>
+            </div>
 
-        {/* Step 3 — Tool hint */}
-        <div className="mt-6 pt-5 border-t" style={{ borderColor: "#EEF2F7" }}>
-          {stepLabel(3, "Pick a tool below", !!activeTool)}
-        </div>
-      </section>
+            <div className="p-5 sm:p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+                {/* Step 1 — Course */}
+                <div className="space-y-2.5">
+                  {stepLabel(1, "Course", courseChosen)}
+                  {courses ? (
+                    <SelectShell
+                      value={selectedCourseId ?? ""}
+                      onChange={(v) => onCourseChange?.(v)}
+                      accent={!!selectedCourseId}
+                    >
+                      <option value="">Choose course…</option>
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.fullName}
+                        </option>
+                      ))}
+                    </SelectShell>
+                  ) : (
+                    <div
+                      className="w-full rounded-lg px-4 py-2.5 text-[14px] font-semibold flex items-center justify-between"
+                      style={{
+                        background: "#F8FAFC",
+                        border: "1px solid #E2E8F0",
+                        color: NAVY,
+                      }}
+                    >
+                      <span className="truncate">{fixedCourseLabel ?? "—"}</span>
+                      <Lock className="h-3.5 w-3.5" style={{ color: "#94A3B8" }} />
+                    </div>
+                  )}
+                </div>
 
-      {/* Tool cards */}
-      <StudyToolCards
-        active={activeTool}
-        loading={chapterLoading}
-        chapterChosen={chapterChosen}
-        onSelect={handleSelectTool}
-        onOpenFeedback={onOpenFeedback}
-        onNudgeChapter={handleNudgeChapter}
-      />
+                {/* Step 2 — Chapter */}
+                <div className="space-y-2.5">
+                  {stepLabel(2, "Chapter", chapterChosen)}
+                  <SelectShell
+                    ref={chapterDropdownRef}
+                    value={selectedChapterId ?? ""}
+                    onChange={handleChapterChange}
+                    accent={!!selectedChapterId}
+                    disabled={!courseChosen || chapterLoading || chapters.length === 0}
+                    loading={chapterLoading}
+                  >
+                    <option value="">
+                      {!courseChosen
+                        ? "Pick a course first"
+                        : chapters.length === 0
+                        ? "Loading chapters…"
+                        : "Choose chapter…"}
+                    </option>
+                    {chapters.map((ch) => (
+                      <option key={ch.id} value={ch.id}>
+                        Ch {ch.chapter_number} — {ch.chapter_name}
+                      </option>
+                    ))}
+                  </SelectShell>
+                </div>
+              </div>
 
-      {/* Workspace pane */}
-      <section
-        ref={workspaceRef}
-        className="rounded-2xl overflow-hidden"
-        style={{
-          background: "#fff",
-          border: "1px solid #E0E7F0",
-          boxShadow: "0 8px 24px rgba(20,33,61,0.06), 0 2px 6px rgba(20,33,61,0.04)",
-          minHeight: 600,
-        }}
+              {/* Step 3 — Tool hint */}
+              <div className="mt-6 pt-5 border-t" style={{ borderColor: "#EEF2F7" }}>
+                {stepLabel(3, "Pick a tool below", !!activeTool)}
+              </div>
+            </div>
+          </section>
+
+          {/* Tool cards */}
+          <StudyToolCards
+            active={activeTool}
+            loading={chapterLoading}
+            chapterChosen={chapterChosen}
+            onSelect={handleSelectTool}
+            onOpenFeedback={onOpenFeedback}
+            onNudgeChapter={handleNudgeChapter}
+          />
+
+          {/* Workspace pane */}
+          <section
+            ref={workspaceRef}
+            className="rounded-2xl overflow-hidden"
+            style={{
+              background: "#fff",
+              boxShadow:
+                "0 16px 40px rgba(0,0,0,0.22), 0 4px 10px rgba(0,0,0,0.10)",
+              minHeight: 600,
+            }}
       >
         {!activeTool && (
           <div className="flex items-center justify-center text-center px-6 py-24">
@@ -346,7 +400,9 @@ export default function StudyPreviewer({
             </button>
           </div>
         )}
-      </section>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

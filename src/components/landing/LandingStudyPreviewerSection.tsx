@@ -93,8 +93,12 @@ export default function LandingStudyPreviewerSection({
 
   return (
     <section
-      className="relative px-4 sm:px-6 py-20 sm:py-24"
-      style={{ background: "#F8FAFC", borderTop: "1px solid #E5E7EB" }}
+      className="relative px-4 sm:px-6 py-20 sm:py-28"
+      style={{
+        background:
+          "radial-gradient(80% 60% at 50% 0%, #EEF2F7 0%, #F8FAFC 55%, #F8FAFC 100%)",
+        borderTop: "1px solid #E5E7EB",
+      }}
     >
       <div className="mx-auto" style={{ maxWidth: 1080 }}>
         {/* Header */}
