@@ -306,6 +306,87 @@ function NeedHelpModal({
   );
 }
 
+// ── Share Feedback chooser modal ───────────────────────────────────────
+// Lightweight two-card chooser shown when the student clicks "Share
+// Feedback". Routes them to either the existing issue-report flow or to
+// the "Vote on new ideas" section of the right panel.
+function FeedbackChooserModal({
+  open,
+  onOpenChange,
+  onReportIssue,
+  onSuggestFeature,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onReportIssue: () => void;
+  onSuggestFeature: () => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Share feedback</DialogTitle>
+          <DialogDescription>
+            What would you like to share with us?
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 gap-3 pt-1">
+          <button
+            type="button"
+            onClick={onReportIssue}
+            className="group text-left rounded-xl border p-4 transition-all hover:-translate-y-px hover:shadow-md hover:border-[#CE1126]/50 focus:outline-none focus:ring-2 focus:ring-[#CE1126]/40"
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0"
+                style={{
+                  background: "rgba(206,17,38,0.10)",
+                  border: "1px solid rgba(206,17,38,0.35)",
+                  color: "#FCA5A5",
+                }}
+              >
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold leading-tight">Report an issue</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Something is confusing, incorrect, unclear, or not working.
+                </div>
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={onSuggestFeature}
+            className="group text-left rounded-xl border p-4 transition-all hover:-translate-y-px hover:shadow-md hover:border-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-400/40"
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0"
+                style={{
+                  background: "rgba(251,191,36,0.12)",
+                  border: "1px solid rgba(251,191,36,0.45)",
+                  color: "#FCD34D",
+                }}
+              >
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold leading-tight">Suggest a new feature</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Vote on or suggest tools and features that would make this better.
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Stuck? Support modal ───────────────────────────────────────────────
 type StuckIssueType = "question" | "problem_text_issue" | "walkthrough_issue" | "general_feedback";
 
@@ -1764,6 +1845,19 @@ export default function SolutionsViewerV2() {
   const [localCourseCode, setLocalCourseCode] = useState<string | null>(null);
 
   const [helpOpen, setHelpOpen] = useState(false);
+  const [feedbackChooserOpen, setFeedbackChooserOpen] = useState(false);
+
+  const openReportIssue = () => {
+    setFeedbackChooserOpen(false);
+    // Defer slightly so the chooser unmount doesn't race the second dialog.
+    setTimeout(() => setHelpOpen(true), 80);
+  };
+  const openSuggestFeature = () => {
+    setFeedbackChooserOpen(false);
+    setTimeout(() => {
+      try { window.dispatchEvent(new Event("sa:open-vote-ideas")); } catch { /* ignore */ }
+    }, 80);
+  };
   const [activeHelper, setActiveHelper] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [jumpOpen, setJumpOpen] = useState(false);
@@ -2253,18 +2347,20 @@ export default function SolutionsViewerV2() {
           <div className="flex items-center gap-2 justify-end">
             <button
               type="button"
-              onClick={() => setHelpOpen(true)}
+              onClick={() => setFeedbackChooserOpen(true)}
               data-embed-allow="true"
               aria-label="Share feedback about this problem"
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-xs font-semibold transition-colors hover:brightness-110"
+              className="group relative inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-xs font-semibold transition-all hover:brightness-110 hover:-translate-y-px"
               style={{
-                background: "rgba(206,17,38,0.14)",
-                border: "1px solid rgba(206,17,38,0.45)",
-                color: "#FFD3D8",
-                boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset",
+                background:
+                  "linear-gradient(180deg, rgba(251,191,36,0.18) 0%, rgba(245,158,11,0.12) 100%)",
+                border: "1px solid rgba(251,191,36,0.55)",
+                color: "#FDE68A",
+                boxShadow:
+                  "0 0 0 1px rgba(251,191,36,0.08), 0 6px 18px -8px rgba(251,191,36,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
               }}
             >
-              <MessageCircleQuestion className="h-3.5 w-3.5" />
+              <Sparkles className="h-3.5 w-3.5" style={{ color: "#FCD34D" }} />
               <span className="hidden sm:inline">Share Feedback</span>
             </button>
           </div>
@@ -2860,7 +2956,7 @@ export default function SolutionsViewerV2() {
       {/* Floating help button */}
       {!loading && asset && !isEmbed && (
         <button
-          onClick={() => setHelpOpen(true)}
+          onClick={() => setFeedbackChooserOpen(true)}
           className={cn(
             "fixed right-4 bottom-20 z-30 rounded-full shadow-md backdrop-blur",
             "bg-card/80 border hover:bg-accent transition-colors",
@@ -2873,6 +2969,12 @@ export default function SolutionsViewerV2() {
         </button>
       )}
 
+      <FeedbackChooserModal
+        open={feedbackChooserOpen}
+        onOpenChange={setFeedbackChooserOpen}
+        onReportIssue={openReportIssue}
+        onSuggestFeature={openSuggestFeature}
+      />
       <StuckSupportModal
         open={helpOpen}
         onOpenChange={setHelpOpen}
