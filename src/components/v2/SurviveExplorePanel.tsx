@@ -381,39 +381,42 @@ export default function SurviveExplorePanel({
                 </Button>
               );
             })}
-          </div>
 
-          {/* Suggest your own idea */}
-          {!ideaOpen ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (isEmbed) { logEmbedVoteAndPaywall(null); return; }
-                setIdeaOpen(true);
-              }}
-              className="text-[12px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
-            >
-              + suggest your own idea
-            </button>
-          ) : (
-            <div className="space-y-2">
-              <Textarea
-                value={idea}
-                onChange={(e) => setIdea(e.target.value.slice(0, 120))}
-                placeholder="What button would help you study this? (max 120 chars)"
-                rows={2}
-                className="text-[13px] resize-none"
-              />
-              <div className="flex items-center justify-end gap-2">
-                <Button size="sm" variant="ghost" onClick={() => { setIdeaOpen(false); setIdea(""); }} disabled={submittingIdea}>
-                  Cancel
-                </Button>
-                <Button size="sm" onClick={submitIdea} disabled={submittingIdea || !idea.trim()}>
-                  {submittingIdea ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send"}
-                </Button>
+            {/* 8th card — suggest your own idea (dashed placeholder) */}
+            {!ideaOpen ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (isEmbed) { logEmbedVoteAndPaywall(null); return; }
+                  setIdeaOpen(true);
+                }}
+                className="group h-9 rounded-md border border-dashed border-muted-foreground/40 bg-transparent text-xs font-medium text-muted-foreground hover:border-[#CE1126]/60 hover:text-[#CE1126] hover:bg-[#CE1126]/5 transition-all inline-flex items-center justify-center gap-1.5 px-3"
+                title="Suggest your own idea"
+              >
+                <span aria-hidden className="text-sm leading-none">+</span>
+                <span>suggest your own idea</span>
+              </button>
+            ) : (
+              <div className="sm:col-span-2 space-y-2 rounded-md border border-dashed border-[#CE1126]/50 bg-[#CE1126]/5 p-3">
+                <Textarea
+                  value={idea}
+                  onChange={(e) => setIdea(e.target.value.slice(0, 120))}
+                  placeholder="What button would help you study this? (max 120 chars)"
+                  rows={2}
+                  className="text-[13px] resize-none"
+                  autoFocus
+                />
+                <div className="flex items-center justify-end gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => { setIdeaOpen(false); setIdea(""); }} disabled={submittingIdea}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={submitIdea} disabled={submittingIdea || !idea.trim()}>
+                    {submittingIdea ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send"}
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
