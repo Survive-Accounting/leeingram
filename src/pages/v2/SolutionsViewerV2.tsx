@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { buildShareUrl, captureRefFromUrl, logShareClick, attachReferrerOnConversion } from "@/lib/referralTracking";
+import { toYouPerspective } from "@/utils/youPerspective";
 
 type Asset = {
   id: string;
@@ -1661,7 +1662,7 @@ export default function SolutionsViewerV2() {
                       className="text-[14px] max-w-[68ch] space-y-3 [&_p]:whitespace-pre-wrap [&_p]:text-[14px]"
                       style={{ color: "rgba(255,255,255,0.9)", lineHeight: 1.65 }}
                     >
-                      <SmartTextRenderer text={asset.survive_problem_text} />
+                      <SmartTextRenderer text={toYouPerspective(asset.survive_problem_text)} />
                     </div>
                   </div>
                 )}
@@ -1764,7 +1765,7 @@ export default function SolutionsViewerV2() {
                                     fontWeight: isCurrent ? 500 : 400,
                                   }}
                                 >
-                                  {highlightTerms(ins)}
+                                  {highlightTerms(toYouPerspective(ins))}
                                 </span>
                               </li>
                             );
