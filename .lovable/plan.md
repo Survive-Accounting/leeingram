@@ -1,62 +1,121 @@
-## Goal
+# Resizable Split-View Controls — Solutions Viewer V2
 
-Make the study previewer on `/` (StagingLandingPage) **identical** to the one on `/my-dashboard` (StudentDashboard), so future tool changes flow to both pages. The `/` version is gated by the existing beta paywall; `/my-dashboard` stays ungated. Admins viewing `/` behave like a normal logged-out user (so beta walls are testable).
+## What this changes
 
-## What's actually live today
+Add a subtle floating control bar + draggable divider to the **problem viewer page** (`/v2/solutions/:assetCode` — `src/pages/v2/SolutionsViewerV2.tsx`). This is the page rendered inside the iframe in the screenshot — left = Problem + Your Tasks, right = Walk me through / Hint / Setup / Full solution / Challenge me / Vote.
 
-- `/my-dashboard` renders the new flow: course/chapter selector card → `StudyToolCards` (Practice / JE / "Add a tool") → workspace pane that loads the Practice Problem Helper iframe (`/v2/solutions/:assetCode`) or the JE "coming soon" panel.
-- `/` renders `StagingLandingPage`, which uses the **older** `StagingCoursesSection` (laptop preview + chapter dropdown + `BetaPaywallModal`). The newer `CourseExplorerSection.tsx` exists in the repo but is unused — that explains why none of the recent prompts showed up on `/`.
-- `BetaPaywallModal` already exists (`src/components/landing/BetaPaywallModal.tsx`) — single CTA "Start Studying" that triggers `onJoinBeta`.
+Today that layout is a fixed `grid lg:grid-cols-2 gap-6`. We'll replace that with a controlled split so users can:
 
-## Plan
+- Drag a vertical divider to resize left vs right
+- Snap to one of three modes via icon-only toolbar: **Problem only · Split · Helper only**
+- Reset to 50/50 with a fourth icon (and via double-clicking the divider)
+- On mobile, swap the split for a simple **Problem / Helper** tab toggle
 
-### 1. Extract a shared `StudyPreviewer` component
+Nothing else on the page changes — same problem card, same `InlineExplanation` + `SurviveExplorePanel`, same sticky bottom nav.
 
-Create `src/components/study-previewer/StudyPreviewer.tsx`. Lift the dashboard's previewer block (everything between the welcome heading and Share band) into it:
+## Desktop UX
 
-- Course/chapter selector card (the white rounded card with "Your course" + chapter dropdown)
-- `StudyToolCards` (already a component — keep as-is)
-- Workspace pane (header strip + iframe for Practice; "coming soon" panel for JE; empty-state message)
-- Internal state: `selectedChapterId`, `activeTool`, `viewerAssetCode`, `chapterLoading`
-- Internal handlers: `handleChapterChange`, `handleSelectTool`, `handleNudgeChapter`
-- Receives via props:
-  - `chapters: Chapter[]` (already-loaded chapter list)
-  - `campusName?: string | null`, `courseLabel?: string | null` (for the header)
-  - `onRequestUnlock?: (action: "select_tool" | "select_chapter" | "open_workspace") => boolean` — when provided AND it returns `false`, the action is blocked and the parent shows the paywall (used on `/`). When omitted (dashboard), everything works normally.
-  - `onOpenFeedback: () => void`
-  - `assetUrlBuilder?: (assetCode) => string` — defaults to `/v2/solutions/:code` (kept as-is for both pages so behavior is identical).
-  - `persistChapterKey?: string` — passes the localStorage key through (dashboard keeps its key; landing uses a separate key or none).
+```text
+┌── max-w-6xl main ───────────────────────────────────────────┐
+│  ┌─ floating control bar (top-right, sticky-ish) ───┐      │
+│  │  [▮▯ Problem]  [▮▮ Split]  [▯▮ Helper]  │ [↺]    │      │
+│  └──────────────────────────────────────────────────┘      │
+│                                                             │
+│  ┌────── Problem (resizable) ──┃─── Helper (resizable) ──┐ │
+│  │  Course chip · Ch chip       ┃   Walk me through it    │ │
+│  │  Problem text                ┃   Hint  /  Setup        │ │
+│  │  Your Tasks                  ┃   Full solution         │ │
+│  │                              ┃   Challenge me          │ │
+│  │                              ┃   Vote on new ideas     │ │
+│  └──────────────────────────────┴──────────────────────────┘│
+│                                  ↑ draggable divider         │
+└─────────────────────────────────────────────────────────────┘
+```
 
-### 2. Refactor `StudentDashboard.tsx`
+- Default split: 50/50
+- Min widths: each panel ≥ 320px (the helper buttons + the problem card both need this)
+- Drag handle: 8px hit-target with a 1px visible rule, `GripVertical` icon centered, `cursor-col-resize`, hover/active states tinted with brand red
+- Double-click the handle → reset to 50/50
+- Last drag ratio persists for the session via `sessionStorage` (key per asset is overkill — one global key `sa.viewer.splitRatio` is enough)
 
-Replace the inline selector + StudyToolCards + workspace section with `<StudyPreviewer chapters={chapters} campusName={campusName} courseLabel={courseLabel} onOpenFeedback={() => setFeedbackOpen(true)} persistChapterKey="sa.dashboard.chapterId" />`. No behavior change.
+## View-mode toolbar
 
-### 3. Mount `StudyPreviewer` on `/` (StagingLandingPage)
+A small pill, top-right of the main area, sits just above the cards. Icons only, with `Tooltip` from shadcn and `aria-label` on each button:
 
-Add a new section between the existing `StagingCoursesSection` and `AskAnythingSection` (or replace the laptop area entirely — see Question A below). On `/`:
+- `PanelLeftClose` → **Problem only** (helper hidden, problem 100%)
+- `Columns2` → **Split view** (restores last custom ratio, fallback 50/50)
+- `PanelRightClose` → **Helper only** (problem hidden, helper 100%)
+- `RotateCcw` → **Reset split** (forces 50/50, only enabled in Split mode; subtle/secondary)
 
-- Show a **course pill row** (Intro 1 / Intro 2 / Intermediate 1 / Intermediate 2) above the previewer so visitors can pick which course's chapters to load.
-- Once a course is picked, fetch chapters for that course (same query the dashboard runs) and pass to `<StudyPreviewer>`.
-- Pass an `onRequestUnlock` that always returns `false` for unauthenticated users (and for admins when the test-mode toggle below is on). When it returns `false`, open the existing `BetaPaywallModal`. Its "Start Studying" CTA calls the existing `requestAccess({ course: defaultCourse.slug })` flow (same one already wired on the page).
-- Allow free **browsing** of chapters/courses on `/` (so the previewer feels alive). Gate only the meaningful interactions: clicking a study tool card and loading the workspace iframe. This matches the previous laptop-preview pattern where chapter selection was free but unlocking content showed the paywall.
+Active mode = filled navy background `#14213D` + white icon. Inactive = transparent + `text-muted-foreground`, hover lifts to `bg-white/5`. Keep total height ~36px so it doesn't dominate.
 
-### 4. Admin-as-normal-user on `/`
+Keyboard: `[`, `]`, `\` shortcuts (problem-only / split / helper-only) — nice-to-have, included.
 
-In `StagingLandingPage`, do **not** branch on `useIsStaff` for the previewer — admins see the same gating as anonymous visitors. (Admins can still reach the real workspace via `/my-dashboard` or `/admin`.) This guarantees the beta wall can be QA'd live.
+## Mobile UX (< `lg` breakpoint)
 
-If we want an explicit override for admins to bypass when needed, gate it behind a `?preview_unlock=1` query param rather than the staff hook — keeps default admin experience identical to a student.
+No drag, no split. Replace the toolbar with a 2-segment toggle pinned at the top of the cards:
 
-### 5. Cleanup
+```text
+┌──────────────────────────────┐
+│  [ Problem ] [ Helper ]      │   ← segmented control
+└──────────────────────────────┘
+```
 
-- Keep `CourseExplorerSection.tsx` for now (unused) — leave a note for later removal. Do **not** wire it; the dashboard previewer is the source of truth.
-- Keep `StagingCoursesSection` mounted on `/` as the course-cards section it currently is (the four big course cards with chapter accordions). The new `StudyPreviewer` lives **above or below** it — see Question A.
+- Default: **Problem** selected
+- Tap to switch — only the active panel renders
+- Sticky bottom problem-nav (Previous / N of M / Next) stays unchanged
 
-## Technical notes
+## Technical changes
 
-- Files added: `src/components/study-previewer/StudyPreviewer.tsx` (~250 lines lifted from StudentDashboard).
-- Files edited: `src/pages/StudentDashboard.tsx` (replace inline section with component), `src/pages/StagingLandingPage.tsx` (mount previewer + paywall wiring).
-- No DB or edge-function changes. No new dependencies. The iframe target `/v2/solutions/:assetCode` already works for any visitor (DRM enforced at the viewer layer), so paywall gating only needs to block the user-action level (clicking a tool card / opening workspace) rather than the iframe URL.
+**Single file edit:** `src/pages/v2/SolutionsViewerV2.tsx`
 
-## Questions before I build
+1. **State**
+   ```ts
+   type ViewMode = "split" | "problem" | "helper";
+   const [viewMode, setViewMode] = useState<ViewMode>("split");
+   const [splitRatio, setSplitRatio] = useState<number>(() => {
+     const v = Number(sessionStorage.getItem("sa.viewer.splitRatio"));
+     return v >= 0.25 && v <= 0.75 ? v : 0.5;
+   });
+   const isMobile = useIsMobile(); // existing hook
+   const [mobileTab, setMobileTab] = useState<"problem" | "helper">("problem");
+   ```
 
-I'll ask these next so I can build the right thing.
+2. **Replace the wrapper** at line ~1774
+   - Desktop: container becomes `relative flex` with two children sized via inline `style={{ flexBasis: \`${ratio*100}%\` }}` (and `flexBasis: 100%` when in problem-only / helper-only modes), each with `minWidth: 320`.
+   - The drag handle is a sibling `<div>` between them with mouse + touch handlers.
+   - Mobile: render just one branch based on `mobileTab`.
+
+3. **Drag logic** — inline, no new dep needed
+   - `onMouseDown` / `onTouchStart` on the handle captures pointer, attaches `mousemove` / `mouseup` listeners to `window`, computes `(clientX - container.left) / container.width`, clamps to `[0.25, 0.75]`, calls `setSplitRatio` and writes to `sessionStorage` on release.
+   - `onDoubleClick` → `setSplitRatio(0.5)`.
+   - Use `useRef` for the container to read its bounding rect; add `userSelect: 'none'` + `cursor: 'col-resize'` on `<body>` while dragging via a small effect.
+   - No external lib (avoids `react-resizable-panels` since the file is already heavy and we only need one divider).
+
+4. **Toolbar**
+   - New small component inside the file, `ViewModeToolbar`, rendered just above the split (still inside `<main>`, after the `notFound` check). Hidden on mobile.
+   - Uses the existing `Tooltip`/`TooltipProvider` from shadcn (already imported elsewhere — verify; if not, add the standard import).
+   - Reset button is greyed out unless `viewMode === "split"`.
+
+5. **Mobile segmented control**
+   - Renders only on `< lg` (use `useIsMobile` or a CSS-only `lg:hidden` wrapper). Two buttons, equal width, navy fill on active.
+
+6. **Behavioral guards**
+   - When `viewMode === "problem"`, don't render the helper subtree at all (saves the `SurviveExplorePanel` re-mount cost on toggle? — actually, re-mounting `InlineExplanation` would lose its internal state. **Mitigation:** keep both panels mounted and use `display: none` + `aria-hidden` for the hidden one. This preserves prefetched walkthrough content and simplified text.)
+   - The right panel keeps `lg:sticky lg:top-20` only when in split mode; in helper-only mode it should be a normal block (sticky on a 100%-wide column looks odd).
+
+## Out of scope
+
+- No persistence across sessions (session-only is enough; the user explicitly said "preserve … during the session if possible")
+- No changes to `StudyPreviewer.tsx` or any other page — this lives entirely on the v2 viewer that the iframe loads
+- No changes to copy, no new content, no new modals
+
+## QA checklist before shipping
+
+- Drag clamps at 25% / 75%; no overlap with course chip or buttons
+- Double-click resets cleanly
+- Switching modes doesn't lose: simplified text state, prefetched walkthrough, checked tasks
+- Mobile tab toggle defaults to Problem and switches without scroll jump
+- Sticky bottom nav still works; floating "Stuck? Ask Lee" still works
+- Toolbar invisible on `< lg`; tab toggle invisible on `≥ lg`
+- Tooltips appear on hover; `aria-label`s present on every icon button

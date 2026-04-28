@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp, Sheet as SheetIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp, Sheet as SheetIcon, PanelLeftClose, PanelRightClose, Columns2, RotateCcw, GripVertical } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { StructuredJEDisplay } from "@/components/StructuredJEDisplay";
 import SmartTextRenderer from "@/components/SmartTextRenderer";
 import { generateSimplifiedPracticePdf } from "@/lib/generateSimplifiedPracticePdf";
@@ -1424,6 +1426,68 @@ export default function SolutionsViewerV2() {
   // Per-task checked state, persisted to localStorage per asset.
   const [checkedTasks, setCheckedTasks] = useState<boolean[]>([]);
 
+  // ── Split-view controls ──────────────────────────────────────────────
+  const isMobileViewport = useIsMobile();
+  type ViewMode = "split" | "problem" | "helper";
+  const [viewMode, setViewMode] = useState<ViewMode>("split");
+  const [mobileTab, setMobileTab] = useState<"problem" | "helper">("problem");
+  const [splitRatio, setSplitRatio] = useState<number>(() => {
+    try {
+      const v = Number(sessionStorage.getItem("sa.viewer.splitRatio"));
+      if (Number.isFinite(v) && v >= 0.25 && v <= 0.75) return v;
+    } catch { /* ignore */ }
+    return 0.5;
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const splitContainerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!isDragging) return;
+    const handleMove = (clientX: number) => {
+      const el = splitContainerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      let ratio = (clientX - rect.left) / rect.width;
+      ratio = Math.max(0.25, Math.min(0.75, ratio));
+      setSplitRatio(ratio);
+    };
+    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX);
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches[0]) handleMove(e.touches[0].clientX);
+    };
+    const stop = () => {
+      setIsDragging(false);
+      try { sessionStorage.setItem("sa.viewer.splitRatio", String(splitRatio)); } catch { /* ignore */ }
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", stop);
+    window.addEventListener("touchmove", onTouchMove);
+    window.addEventListener("touchend", stop);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", stop);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", stop);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isDragging, splitRatio]);
+
+  React.useEffect(() => {
+    if (isMobileViewport) return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable) return;
+      if (e.key === "[") setViewMode("problem");
+      else if (e.key === "]") setViewMode("helper");
+      else if (e.key === "\\") setViewMode("split");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isMobileViewport]);
+
   // Reset on asset change
   useEffect(() => {
     setSimplifiedText(null);
@@ -1771,9 +1835,127 @@ export default function SolutionsViewerV2() {
         )}
 
         {!loading && asset && (
-          <div className="grid lg:grid-cols-2 gap-6">
+          <>
+            {/* Mobile: Problem / Helper segmented toggle */}
+            <div className="lg:hidden mb-4">
+              <div
+                className="inline-flex rounded-lg p-1 w-full"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                role="tablist"
+                aria-label="Switch between problem and helper"
+              >
+                {(["problem", "helper"] as const).map((tab) => {
+                  const active = mobileTab === tab;
+                  return (
+                    <button
+                      key={tab}
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setMobileTab(tab)}
+                      className="flex-1 h-9 rounded-md text-[13px] font-semibold transition-all"
+                      style={{
+                        background: active ? "#14213D" : "transparent",
+                        color: active ? "#fff" : "rgba(255,255,255,0.6)",
+                        boxShadow: active ? "0 2px 8px rgba(0,0,0,0.25)" : "none",
+                      }}
+                    >
+                      {tab === "problem" ? "Problem" : "Helper"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Desktop: floating view-mode toolbar */}
+            <div className="hidden lg:flex justify-end mb-3">
+              <TooltipProvider delayDuration={200}>
+                <div
+                  className="inline-flex items-center gap-1 rounded-full p-1"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    backdropFilter: "blur(8px)",
+                  }}
+                  role="toolbar"
+                  aria-label="View mode"
+                >
+                  {([
+                    { mode: "problem" as const, Icon: PanelLeftClose, label: "Problem only", hint: "[" },
+                    { mode: "split" as const,   Icon: Columns2,        label: "Split view",   hint: "\\" },
+                    { mode: "helper" as const,  Icon: PanelRightClose, label: "Helper only",  hint: "]" },
+                  ]).map(({ mode, Icon, label, hint }) => {
+                    const active = viewMode === mode;
+                    return (
+                      <Tooltip key={mode}>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => setViewMode(mode)}
+                            aria-label={label}
+                            aria-pressed={active}
+                            className="h-8 w-8 rounded-full inline-flex items-center justify-center transition-all"
+                            style={{
+                              background: active ? "#14213D" : "transparent",
+                              color: active ? "#fff" : "rgba(255,255,255,0.55)",
+                              boxShadow: active ? "0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06) inset" : "none",
+                            }}
+                            onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                            onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                          >
+                            <Icon className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs">
+                          {label} <span className="opacity-50 ml-1">{hint}</span>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                  <div className="w-px h-5 mx-1" style={{ background: "rgba(255,255,255,0.08)" }} />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSplitRatio(0.5);
+                          try { sessionStorage.setItem("sa.viewer.splitRatio", "0.5"); } catch { /* ignore */ }
+                          setViewMode("split");
+                        }}
+                        disabled={viewMode !== "split"}
+                        aria-label="Reset split to 50/50"
+                        className="h-8 w-8 rounded-full inline-flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        style={{ color: "rgba(255,255,255,0.55)" }}
+                        onMouseEnter={(e) => { if (viewMode === "split") e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Reset split (double-click divider)</TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
+            </div>
+
+            <div
+              ref={splitContainerRef}
+              className="flex flex-col lg:flex-row lg:items-stretch gap-6 lg:gap-0 relative"
+            >
             {/* LEFT: Problem + What you need to solve */}
-            <div className="space-y-4 min-w-0">
+            <div
+              className="space-y-4 min-w-0"
+              style={
+                isMobileViewport
+                  ? { display: mobileTab === "problem" ? "block" : "none", width: "100%" }
+                  : {
+                      display: viewMode === "helper" ? "none" : "block",
+                      flexBasis: viewMode === "problem" ? "100%" : `${splitRatio * 100}%`,
+                      flexShrink: 0,
+                      minWidth: viewMode === "problem" ? undefined : 320,
+                      paddingRight: viewMode === "split" ? 12 : 0,
+                    }
+              }
+            >
               {/* Card 1: Problem */}
               <section
                 className="rounded-2xl p-8"
@@ -2005,8 +2187,58 @@ export default function SolutionsViewerV2() {
               </div>
             </div>
 
+            {/* Draggable divider — desktop split mode only */}
+            {!isMobileViewport && viewMode === "split" && (
+              <div
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize panels (double-click to reset)"
+                tabIndex={0}
+                onMouseDown={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onTouchStart={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDoubleClick={() => {
+                  setSplitRatio(0.5);
+                  try { sessionStorage.setItem("sa.viewer.splitRatio", "0.5"); } catch { /* ignore */ }
+                }}
+                className="hidden lg:flex items-center justify-center group relative shrink-0"
+                style={{ width: 12, cursor: "col-resize", marginLeft: -6, marginRight: -6 }}
+              >
+                <div
+                  className="h-full w-px transition-colors"
+                  style={{ background: isDragging ? "rgba(206,17,38,0.6)" : "rgba(255,255,255,0.08)" }}
+                />
+                <div
+                  className="absolute inline-flex items-center justify-center rounded-md transition-all"
+                  style={{
+                    width: 22, height: 36,
+                    background: isDragging ? "rgba(206,17,38,0.18)" : "rgba(255,255,255,0.04)",
+                    border: `1px solid ${isDragging ? "rgba(206,17,38,0.5)" : "rgba(255,255,255,0.1)"}`,
+                    color: isDragging ? "#FFB8C0" : "rgba(255,255,255,0.5)",
+                  }}
+                >
+                  <GripVertical className="h-3.5 w-3.5" />
+                </div>
+              </div>
+            )}
+
             {/* RIGHT: Get unstuck fast toolbox */}
-            <div className="lg:sticky lg:top-20 lg:self-start min-w-0">
+            <div
+              className="min-w-0"
+              style={
+                isMobileViewport
+                  ? { display: mobileTab === "helper" ? "block" : "none", width: "100%" }
+                  : {
+                      display: viewMode === "problem" ? "none" : "block",
+                      flexBasis: viewMode === "helper" ? "100%" : `${(1 - splitRatio) * 100}%`,
+                      flexShrink: 0,
+                      minWidth: viewMode === "helper" ? undefined : 320,
+                      paddingLeft: viewMode === "split" ? 12 : 0,
+                      position: viewMode === "split" ? "sticky" : "static",
+                      top: viewMode === "split" ? 80 : undefined,
+                      alignSelf: viewMode === "split" ? "flex-start" : undefined,
+                    }
+              }
+            >
               <InlineExplanation
                 asset={asset}
                 chapter={chapter}
@@ -2024,7 +2256,8 @@ export default function SolutionsViewerV2() {
                 courseName={courseLabel}
               />
             </div>
-          </div>
+            </div>
+          </>
         )}
       </main>
 
