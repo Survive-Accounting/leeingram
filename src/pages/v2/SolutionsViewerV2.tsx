@@ -2144,55 +2144,73 @@ export default function SolutionsViewerV2() {
           boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 20px -8px rgba(0,0,0,0.4)",
         }}
       >
-        <div className="max-w-6xl mx-auto px-6 h-14 grid grid-cols-3 items-center gap-6">
+        <div className="max-w-6xl mx-auto px-6 h-14 grid grid-cols-3 items-center gap-4">
+          {/* LEFT — Survive Accounting brand */}
           <div className="flex items-center justify-start min-w-0">
-            {isEmbed ? (
-              <button
-                type="button"
-                onClick={() => setHelpOpen(true)}
-                data-embed-allow="true"
-                aria-label="Stuck? Send feedback"
-                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-sm font-medium transition-all hover:bg-white/10"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  color: "rgba(255,255,255,0.9)",
-                }}
-              >
-                <MessageCircleQuestion className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Stuck?</span>
-              </button>
-            ) : (
-              <div />
-            )}
+            <Link
+              to="/my-dashboard"
+              className="tracking-tight truncate inline-flex items-baseline"
+              style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, letterSpacing: "-0.01em" }}
+              data-embed-allow="true"
+            >
+              <span style={{ color: "#CE1126", fontWeight: 800 }}>Survive</span>
+              <span style={{ color: "#FFFFFF", fontWeight: 400 }}>
+                {" "}Accounting
+                <sup className="text-[9px] font-normal ml-0.5 opacity-70">™</sup>
+              </span>
+            </Link>
           </div>
-          <Link
-            to="/my-dashboard"
-            className="tracking-tight truncate justify-self-center text-center"
-            style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, letterSpacing: "-0.01em" }}
-            data-embed-allow="true"
-          >
-            <span style={{ color: "#CE1126", fontWeight: 800 }}>Survive</span>
-            <span style={{ color: "#FFFFFF", fontWeight: 400 }}>
-              {" "}Accounting
-              <sup className="text-[9px] font-normal ml-0.5 opacity-70">™</sup>
-            </span>
-          </Link>
-          <div className="flex items-center gap-2 justify-end">
+
+          {/* CENTER — Switch Problem (primary nav) */}
+          <div className="flex items-center justify-center min-w-0">
             <button
               type="button"
               onClick={() => setJumpOpen(true)}
               data-embed-allow="true"
-              title={courseLabel || "Navigate"}
-              aria-label={courseLabel ? `Open ${courseLabel} navigation` : "Open navigation panel"}
-              className="group inline-flex items-center gap-2 h-10 px-3 rounded-lg text-left transition-all hover:bg-white/10 hover:border-[#CE1126]/50"
+              aria-label="Switch to a different problem"
+              title={chapter ? `Ch ${chapter.chapter_number} · ${chapter.chapter_name}` : "Switch problem"}
+              className="group inline-flex items-center gap-2 h-10 pl-3 pr-4 rounded-full text-sm font-semibold transition-all hover:border-[#CE1126]/60 hover:bg-white/[0.07] max-w-full"
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                color: "rgba(255,255,255,0.95)",
+                boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 16px -8px rgba(0,0,0,0.5)",
+              }}
+            >
+              <span
+                className="inline-flex items-center justify-center h-6 w-6 rounded-full shrink-0"
+                style={{ background: "rgba(206,17,38,0.18)", color: "#FF8A95" }}
+              >
+                <Menu className="h-3.5 w-3.5" />
+              </span>
+              <span className="leading-tight whitespace-nowrap">Switch Problem</span>
+              {chapter && (
+                <span
+                  className="hidden md:inline text-[11px] font-medium truncate max-w-[160px]"
+                  style={{ color: "rgba(255,255,255,0.55)" }}
+                >
+                  · Ch {chapter.chapter_number}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* RIGHT — Stuck? utility */}
+          <div className="flex items-center gap-2 justify-end">
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              data-embed-allow="true"
+              aria-label="Stuck? Send feedback"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium transition-all hover:bg-white/10"
               style={{
                 background: "rgba(255,255,255,0.04)",
                 border: "1px solid rgba(255,255,255,0.1)",
-                color: "rgba(255,255,255,0.9)",
+                color: "rgba(255,255,255,0.85)",
               }}
             >
-              <Menu className="h-4 w-4 shrink-0 opacity-80 group-hover:opacity-100" />
+              <MessageCircleQuestion className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Stuck?</span>
             </button>
           </div>
         </div>
