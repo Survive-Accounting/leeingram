@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -27,7 +27,7 @@ export default function BetaPaywallModal({ open, onOpenChange, onJoinBeta }: Bet
               className="text-[10px] font-bold uppercase tracking-widest mb-2"
               style={{ color: RED }}
             >
-              Free Beta
+              Built by Survive Accounting
             </div>
 
             <DialogHeader className="space-y-2 text-left">
@@ -41,13 +41,6 @@ export default function BetaPaywallModal({ open, onOpenChange, onJoinBeta }: Bet
               >
                 Join the free beta to unlock this.
               </DialogTitle>
-              <DialogDescription
-                className="text-[14px]"
-                style={{ color: "#6B7280", lineHeight: 1.55 }}
-              >
-                This is a live preview of the cram tool. Help walkthroughs, practice PDFs,
-                and Ask Lee are turned on for beta students.
-              </DialogDescription>
             </DialogHeader>
 
             <div className="mt-6 flex flex-col gap-2.5">
@@ -63,15 +56,8 @@ export default function BetaPaywallModal({ open, onOpenChange, onJoinBeta }: Bet
                     "0 1px 0 rgba(255,255,255,0.18) inset, 0 6px 16px -6px rgba(206,17,38,0.45)",
                 }}
               >
-                Join the Free Beta
+                Start Studying
                 <span aria-hidden>→</span>
-              </button>
-              <button
-                onClick={() => onOpenChange(false)}
-                className="w-full text-[13px] font-medium py-2"
-                style={{ color: "#6B7280" }}
-              >
-                Maybe later
               </button>
             </div>
 
@@ -79,7 +65,7 @@ export default function BetaPaywallModal({ open, onOpenChange, onJoinBeta }: Bet
               className="text-center mt-4 text-[12px]"
               style={{ color: "#9CA3AF" }}
             >
-              Free during beta · No credit card required
+              100% free · No credit card required
             </p>
           </div>
         </div>
