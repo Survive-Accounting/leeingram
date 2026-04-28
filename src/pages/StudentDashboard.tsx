@@ -369,19 +369,21 @@ export default function StudentDashboard() {
       })
     : "the current semester";
 
-  const firstName = (() => {
+  const fallbackFirstName = (() => {
     if (!email) return "";
     const local = email.split("@")[0].split("+")[0];
     const raw = local.split(/[._-]/)[0] || local;
     return raw ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase() : "";
   })();
+  const firstName = (onboarding?.display_name?.trim().split(/\s+/)[0]) || fallbackFirstName;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: BG_GRADIENT }}>
+      <BetaCountdownStrip />
       <DashNavbar onStart={openStartStudying} onSignOut={handleSignOut} />
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-12 md:pt-16 pb-16 space-y-10">
-        {/* Welcome */}
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-10 md:pt-14 pb-16 space-y-10">
+        {/* Welcome heading */}
         <div className="text-center sm:text-left">
           <h1
             className="text-[34px] sm:text-[44px] md:text-[54px] leading-tight"
@@ -396,6 +398,29 @@ export default function StudentDashboard() {
             Access through {expiresStr}
           </p>
         </div>
+
+        {/* Welcome card (beta number or legacy) */}
+        {showWelcome && onboarding && userId && (
+          onboarding.is_legacy ? (
+            <LegacyWelcomeCard
+              userId={userId}
+              firstName={firstName}
+              onDismiss={() => setShowWelcome(false)}
+            />
+          ) : onboarding.beta_number ? (
+            <WelcomeCard
+              userId={userId}
+              firstName={firstName}
+              betaNumber={onboarding.beta_number}
+              campusBetaNumber={onboarding.campus_beta_number}
+              campusName={onboarding.campus_name}
+              onDismiss={() => setShowWelcome(false)}
+            />
+          ) : null
+        )}
+
+        {/* Beta tools */}
+        <BetaToolCards email={email} />
 
         {/* Continue where you left off */}
         {lastViewed && (
