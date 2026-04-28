@@ -12,6 +12,7 @@ import SmartTextRenderer from "@/components/SmartTextRenderer";
 import { generateSimplifiedPracticePdf } from "@/lib/generateSimplifiedPracticePdf";
 import ReactMarkdown from "react-markdown";
 import SurviveExplorePanel from "@/components/v2/SurviveExplorePanel";
+import FeatureIdeasVoting from "@/components/v2/FeatureIdeasVoting";
 import DOMPurify from "isomorphic-dompurify";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -381,6 +382,49 @@ function FeedbackChooserModal({
               </div>
             </div>
           </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Feature ideas voting modal ─────────────────────────────────────────
+// Hosts the SHARED `FeatureIdeasVoting` component (also rendered inline by
+// SurviveExplorePanel). Opened from the "Suggest a new feature" card in
+// the Share Feedback chooser. Same component, same vote counts, same
+// "Suggest your own idea" flow — no duplicated voting system.
+function FeatureIdeasModal({
+  open,
+  onOpenChange,
+  asset,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  asset: Asset | null;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-1">
+          <DialogTitle className="text-base flex items-center gap-1.5">
+            <Sparkles className="h-4 w-4" style={{ color: "#FCD34D" }} />
+            Suggest a new feature
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            Help us decide what to build next. Tap an idea to see what it would do, then vote — or suggest your own.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="pt-1">
+          {asset ? (
+            <FeatureIdeasVoting
+              assetId={asset.id}
+              assetCode={asset.asset_name}
+              showHeader={false}
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground">Loading…</p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -1860,6 +1904,7 @@ export default function SolutionsViewerV2() {
 
   const [helpOpen, setHelpOpen] = useState(false);
   const [feedbackChooserOpen, setFeedbackChooserOpen] = useState(false);
+  const [featureIdeasOpen, setFeatureIdeasOpen] = useState(false);
 
   const openReportIssue = () => {
     setFeedbackChooserOpen(false);
@@ -1868,9 +1913,9 @@ export default function SolutionsViewerV2() {
   };
   const openSuggestFeature = () => {
     setFeedbackChooserOpen(false);
-    setTimeout(() => {
-      try { window.dispatchEvent(new Event("sa:open-vote-ideas")); } catch { /* ignore */ }
-    }, 80);
+    // Open the shared feature voting modal — same component used by the
+    // "Vote on new ideas" accordion in the right helper panel.
+    setTimeout(() => setFeatureIdeasOpen(true), 80);
   };
   const [activeHelper, setActiveHelper] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
@@ -2988,6 +3033,11 @@ export default function SolutionsViewerV2() {
         onOpenChange={setFeedbackChooserOpen}
         onReportIssue={openReportIssue}
         onSuggestFeature={openSuggestFeature}
+      />
+      <FeatureIdeasModal
+        open={featureIdeasOpen}
+        onOpenChange={setFeatureIdeasOpen}
+        asset={asset}
       />
       <StuckSupportModal
         open={helpOpen}
