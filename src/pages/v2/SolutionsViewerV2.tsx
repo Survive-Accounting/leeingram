@@ -2145,19 +2145,24 @@ export default function SolutionsViewerV2() {
         }}
       >
         <div className="max-w-6xl mx-auto px-6 h-14 grid grid-cols-3 items-center gap-4">
-          {/* LEFT — Survive Accounting brand */}
+          {/* LEFT — Survive Accounting brand (logo from retro console) */}
           <div className="flex items-center justify-start min-w-0">
             <Link
               to="/my-dashboard"
-              className="tracking-tight truncate inline-flex items-baseline"
-              style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, letterSpacing: "-0.01em" }}
+              className="inline-flex items-center gap-2 group"
               data-embed-allow="true"
+              aria-label="Survive Accounting — back to dashboard"
             >
-              <span style={{ color: "#CE1126", fontWeight: 800 }}>Survive</span>
-              <span style={{ color: "#FFFFFF", fontWeight: 400 }}>
-                {" "}Accounting
-                <sup className="text-[9px] font-normal ml-0.5 opacity-70">™</sup>
-              </span>
+              <img
+                src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
+                alt="Survive Accounting"
+                className="h-6 w-auto object-contain select-none transition-opacity group-hover:opacity-95"
+                style={{
+                  filter: "brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
+                  opacity: 0.92,
+                }}
+                draggable={false}
+              />
             </Link>
           </div>
 
@@ -2169,25 +2174,24 @@ export default function SolutionsViewerV2() {
               data-embed-allow="true"
               aria-label="Switch to a different problem"
               title={chapter ? `Ch ${chapter.chapter_number} · ${chapter.chapter_name}` : "Switch problem"}
-              className="group inline-flex items-center gap-2 h-10 pl-3 pr-4 rounded-full text-sm font-semibold transition-all hover:border-[#CE1126]/60 hover:bg-white/[0.07] max-w-full"
+              className="group inline-flex items-center gap-2 h-9 pl-2.5 pr-3.5 rounded-md text-sm font-semibold transition-colors hover:border-[#CE1126]/60 hover:bg-white/[0.07] max-w-full"
               style={{
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.12)",
                 color: "rgba(255,255,255,0.95)",
-                boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 16px -8px rgba(0,0,0,0.5)",
               }}
             >
               <span
-                className="inline-flex items-center justify-center h-6 w-6 rounded-full shrink-0"
-                style={{ background: "rgba(206,17,38,0.18)", color: "#FF8A95" }}
+                className="inline-flex items-center justify-center h-5 w-5 rounded shrink-0"
+                style={{ background: "rgba(206,17,38,0.2)", color: "#FF8A95" }}
               >
-                <Menu className="h-3.5 w-3.5" />
+                <Menu className="h-3 w-3" />
               </span>
               <span className="leading-tight whitespace-nowrap">Switch Problem</span>
               {chapter && (
                 <span
-                  className="hidden md:inline text-[11px] font-medium truncate max-w-[160px]"
-                  style={{ color: "rgba(255,255,255,0.55)" }}
+                  className="hidden md:inline text-[11px] font-medium truncate max-w-[160px] pl-0.5"
+                  style={{ color: "rgba(255,255,255,0.5)" }}
                 >
                   · Ch {chapter.chapter_number}
                 </span>
@@ -2202,7 +2206,7 @@ export default function SolutionsViewerV2() {
               onClick={() => setHelpOpen(true)}
               data-embed-allow="true"
               aria-label="Stuck? Send feedback"
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-medium transition-all hover:bg-white/10"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-xs font-medium transition-colors hover:bg-white/10"
               style={{
                 background: "rgba(255,255,255,0.04)",
                 border: "1px solid rgba(255,255,255,0.1)",
@@ -2220,7 +2224,7 @@ export default function SolutionsViewerV2() {
         className="relative max-w-6xl mx-auto px-4 pt-6 pb-32"
         style={{
           backgroundImage:
-            "radial-gradient(ellipse 70% 50% at 30% 20%, rgba(99,52,180,0.07) 0%, transparent 60%), radial-gradient(ellipse 60% 45% at 75% 60%, rgba(80,130,255,0.06) 0%, transparent 65%)",
+            "radial-gradient(ellipse 60% 40% at 30% 15%, rgba(99,52,180,0.035) 0%, transparent 65%), radial-gradient(ellipse 50% 35% at 75% 60%, rgba(80,130,255,0.03) 0%, transparent 70%)",
         }}>
         {loading && (
           <div className="space-y-3 max-w-3xl">
@@ -2249,11 +2253,10 @@ export default function SolutionsViewerV2() {
             <div className="hidden md:flex justify-end mb-3">
               <TooltipProvider delayDuration={200}>
                 <div
-                  className="inline-flex items-center gap-1 rounded-full p-1"
+                  className="inline-flex items-center gap-0.5 rounded-md p-0.5"
                   style={{
-                    background: "rgba(255,255,255,0.04)",
+                    background: "rgba(255,255,255,0.03)",
                     border: "1px solid rgba(255,255,255,0.08)",
-                    backdropFilter: "blur(8px)",
                   }}
                   role="toolbar"
                   aria-label="View mode"
@@ -2273,11 +2276,11 @@ export default function SolutionsViewerV2() {
                             onClick={() => setViewMode(mode)}
                             aria-label={label}
                             aria-pressed={active}
-                            className="h-8 w-8 rounded-full inline-flex items-center justify-center transition-all"
+                            className="h-8 w-8 rounded inline-flex items-center justify-center transition-colors"
                             style={{
                               background: active ? "#14213D" : "transparent",
                               color: active ? "#fff" : "rgba(255,255,255,0.55)",
-                              boxShadow: active ? "0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06) inset" : "none",
+                              boxShadow: active ? "0 0 0 1px rgba(255,255,255,0.06) inset" : "none",
                             }}
                             onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
                             onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
@@ -2303,7 +2306,7 @@ export default function SolutionsViewerV2() {
                         }}
                         disabled={viewMode !== "split"}
                         aria-label="Reset split to 50/50"
-                        className="h-8 w-8 rounded-full inline-flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="h-8 w-8 rounded inline-flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         style={{ color: "rgba(255,255,255,0.55)" }}
                         onMouseEnter={(e) => { if (viewMode === "split") e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
@@ -2328,7 +2331,7 @@ export default function SolutionsViewerV2() {
                           }
                         }}
                         aria-label="Open in full screen"
-                        className="h-8 w-8 rounded-full inline-flex items-center justify-center transition-all"
+                        className="h-8 w-8 rounded inline-flex items-center justify-center transition-colors"
                         style={{ color: "rgba(255,255,255,0.55)" }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
@@ -2365,12 +2368,12 @@ export default function SolutionsViewerV2() {
             >
               {/* Card 1: Problem */}
               <section
-                className="rounded-2xl p-8"
+                className="rounded-[10px] p-8"
                 style={{
                   background: "#1A2B5C",
-                  border: "1px solid rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.08)",
                   boxShadow:
-                    "0 1px 0 rgba(255,255,255,0.04) inset, 0 20px 40px -20px rgba(0,0,0,0.5), 0 0 60px -20px rgba(99,52,180,0.25)",
+                    "0 1px 0 rgba(255,255,255,0.04) inset, 0 12px 28px -16px rgba(0,0,0,0.55)",
                   color: "rgba(255,255,255,0.92)",
                 }}
               >
