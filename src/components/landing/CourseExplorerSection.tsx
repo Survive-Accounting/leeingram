@@ -475,7 +475,16 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
             disabled={!selectedCourseId}
           />
         </div>
-        <div className="max-w-[480px] mx-auto mb-10">
+        <motion.div
+          className="max-w-[480px] mx-auto mb-10"
+          initial={false}
+          animate={
+            selectedCourseId
+              ? { opacity: 1, y: 0, filter: "blur(0px)" }
+              : { opacity: 0.55, y: 4, filter: "blur(0.4px)" }
+          }
+          transition={{ duration: 0.4, ease: EASE }}
+        >
           <div className="relative">
             <select
               value={selectedChapterId || ""}
@@ -490,6 +499,8 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                 opacity: selectedCourse ? 1 : 0.55,
                 boxShadow: selectedChapterId
                   ? "0 4px 14px rgba(20,33,61,0.10)"
+                  : selectedCourseId
+                  ? "0 0 0 4px rgba(20,33,61,0.06), 0 1px 2px rgba(0,0,0,0.03)"
                   : "0 1px 2px rgba(0,0,0,0.03)",
               }}
             >
@@ -507,7 +518,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
               style={{ color: selectedCourse ? NAVY : "#9CA3AF" }}
             />
           </div>
-        </div>
+        </motion.div>
 
         {/* Step 3: Study tool cards */}
         <div ref={toolStepRef}>
