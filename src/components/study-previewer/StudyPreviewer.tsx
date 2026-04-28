@@ -11,6 +11,15 @@ const NAVY = "#14213D";
 const RED = "#CE1126";
 const LOGO_FONT = "'DM Serif Display', serif";
 
+/* Match the retro terminal chassis so the selectors feel like the same hardware. */
+const PHOSPHOR = "#7CFFB0";
+const PHOSPHOR_DIM = "rgba(124,255,176,0.65)";
+const PHOSPHOR_GLOW = "rgba(124,255,176,0.45)";
+const CHASSIS_TOP = "#1F1F23";
+const CHASSIS_BOTTOM = "#141417";
+const CHASSIS_BORDER = "#2A2A30";
+const MONO_FONT = "'JetBrains Mono', 'SF Mono', ui-monospace, monospace";
+
 const TERMINAL_TOOLS: TerminalTool[] = [
   { key: "practice", label: "Practice Problem Helper" },
   { key: "je", label: "Journal Entry Helper", hint: "(coming soon)" },
@@ -175,25 +184,36 @@ export default function StudyPreviewer({
     [courses, selectedCourseId],
   );
 
-  const stepLabel = (n: number, label: string, complete: boolean) => (
-    <div className="flex items-center gap-2">
-      <span
-        className="inline-flex items-center justify-center rounded-full text-[10.5px] font-bold transition-colors"
-        style={{
-          width: 20,
-          height: 20,
-          background: complete ? NAVY : "#E2E8F0",
-          color: complete ? "#fff" : "#64748B",
-        }}
-      >
-        {complete ? <Check className="h-3 w-3" strokeWidth={3} /> : n}
-      </span>
-      <span
-        className="text-[11px] uppercase tracking-[0.14em] font-semibold"
-        style={{ color: complete ? NAVY : "#94A3B8" }}
-      >
-        {label}
-      </span>
+  const moduleHeader = (label: string, active: boolean, complete: boolean) => (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <span
+          className="inline-block rounded-full transition-all"
+          style={{
+            width: 7,
+            height: 7,
+            background: active ? PHOSPHOR : "#3A3A42",
+            boxShadow: active ? `0 0 8px ${PHOSPHOR_GLOW}` : "none",
+          }}
+        />
+        <span
+          className="text-[10.5px] uppercase font-semibold"
+          style={{
+            color: active ? PHOSPHOR_DIM : "#6B7280",
+            letterSpacing: "0.22em",
+            fontFamily: "'JetBrains Mono', 'SF Mono', ui-monospace, monospace",
+          }}
+        >
+          {label}
+        </span>
+      </div>
+      {complete && (
+        <Check
+          className="h-3 w-3"
+          strokeWidth={3}
+          style={{ color: PHOSPHOR, filter: `drop-shadow(0 0 3px ${PHOSPHOR_GLOW})` }}
+        />
+      )}
     </div>
   );
 
@@ -259,73 +279,84 @@ export default function StudyPreviewer({
         />
 
         <div className="relative space-y-6 sm:space-y-8">
-          {/* Stepper: Course + Chapter */}
+          {/* Setup panels — dark control modules above the monitor */}
           <section
-            className="rounded-2xl sa-rise p-5 sm:p-6"
-            style={{
-              background: "#fff",
-              boxShadow:
-                "0 12px 28px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08)",
-              animationDelay: "120ms",
-            }}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 sa-rise"
+            style={{ animationDelay: "120ms" }}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
-              {/* Step 1 — Course */}
-              <div className="space-y-2.5">
-                {stepLabel(1, "Course", courseChosen)}
-                {courses ? (
-                  <SelectShell
-                    value={selectedCourseId ?? ""}
-                    onChange={(v) => onCourseChange?.(v)}
-                    accent={!!selectedCourseId}
-                  >
-                    <option value="">Choose course…</option>
-                    {courses.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.fullName}
-                      </option>
-                    ))}
-                  </SelectShell>
-                ) : (
-                  <div
-                    className="w-full rounded-lg px-4 py-2.5 text-[14px] font-semibold flex items-center justify-between"
-                    style={{
-                      background: "#F8FAFC",
-                      border: "1px solid #E2E8F0",
-                      color: NAVY,
-                    }}
-                  >
-                    <span className="truncate">{fixedCourseLabel ?? "—"}</span>
-                    <Lock className="h-3.5 w-3.5" style={{ color: "#94A3B8" }} />
-                  </div>
-                )}
-              </div>
-
-              {/* Step 2 — Chapter */}
-              <div className="space-y-2.5">
-                {stepLabel(2, "Chapter", chapterChosen)}
+            {/* Module 1 — Course */}
+            <div
+              className="rounded-xl p-3.5 sm:p-4 space-y-2.5"
+              style={{
+                background: `linear-gradient(180deg, ${CHASSIS_TOP} 0%, ${CHASSIS_BOTTOM} 100%)`,
+                border: `1px solid ${CHASSIS_BORDER}`,
+                boxShadow:
+                  "0 8px 20px -10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
+              }}
+            >
+              {moduleHeader("Course", courseChosen, courseChosen)}
+              {courses ? (
                 <SelectShell
-                  ref={chapterDropdownRef}
-                  value={selectedChapterId ?? ""}
-                  onChange={handleChapterChange}
-                  accent={!!selectedChapterId}
-                  disabled={!courseChosen || chapterLoading || chapters.length === 0}
-                  loading={chapterLoading}
+                  value={selectedCourseId ?? ""}
+                  onChange={(v) => onCourseChange?.(v)}
+                  accent={!!selectedCourseId}
                 >
-                  <option value="">
-                    {!courseChosen
-                      ? "Pick a course first"
-                      : chapters.length === 0
-                      ? "Loading chapters…"
-                      : "Choose chapter…"}
-                  </option>
-                  {chapters.map((ch) => (
-                    <option key={ch.id} value={ch.id}>
-                      Ch {ch.chapter_number} — {ch.chapter_name}
+                  <option value="">Choose course…</option>
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.fullName}
                     </option>
                   ))}
                 </SelectShell>
-              </div>
+              ) : (
+                <div
+                  className="w-full rounded-md px-3 py-2.5 text-[13.5px] font-medium flex items-center justify-between"
+                  style={{
+                    background: "rgba(0,0,0,0.35)",
+                    border: `1px solid ${CHASSIS_BORDER}`,
+                    color: "#E8FFF1",
+                    fontFamily: MONO_FONT,
+                  }}
+                >
+                  <span className="truncate">{fixedCourseLabel ?? "—"}</span>
+                  <Lock className="h-3.5 w-3.5 shrink-0 ml-2" style={{ color: "#6B7280" }} />
+                </div>
+              )}
+            </div>
+
+            {/* Module 2 — Chapter */}
+            <div
+              className="rounded-xl p-3.5 sm:p-4 space-y-2.5 transition-opacity"
+              style={{
+                background: `linear-gradient(180deg, ${CHASSIS_TOP} 0%, ${CHASSIS_BOTTOM} 100%)`,
+                border: `1px solid ${CHASSIS_BORDER}`,
+                boxShadow:
+                  "0 8px 20px -10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
+                opacity: courseChosen ? 1 : 0.55,
+              }}
+            >
+              {moduleHeader("Chapter", chapterChosen, chapterChosen)}
+              <SelectShell
+                ref={chapterDropdownRef}
+                value={selectedChapterId ?? ""}
+                onChange={handleChapterChange}
+                accent={!!selectedChapterId}
+                disabled={!courseChosen || chapterLoading || chapters.length === 0}
+                loading={chapterLoading}
+              >
+                <option value="">
+                  {!courseChosen
+                    ? "Pick a course first"
+                    : chapters.length === 0
+                    ? "Loading chapters…"
+                    : "Choose chapter…"}
+                </option>
+                {chapters.map((ch) => (
+                  <option key={ch.id} value={ch.id}>
+                    Ch {ch.chapter_number} — {ch.chapter_name}
+                  </option>
+                ))}
+              </SelectShell>
             </div>
           </section>
 
@@ -474,25 +505,30 @@ const SelectShell = forwardRef<HTMLSelectElement, SelectShellProps>(function Sel
   ref,
 ) {
   return (
-    <div className="relative">
+    <div className="relative group">
       <select
         ref={ref}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="w-full appearance-none rounded-lg px-4 py-2.5 pr-10 text-[14px] font-medium outline-none transition-all disabled:opacity-60"
+        className="w-full appearance-none rounded-md px-3 py-2.5 pr-9 text-[13.5px] font-medium outline-none transition-all disabled:opacity-60 focus:outline-none"
         style={{
-          background: disabled ? "#F1F5F9" : "#F8FAFC",
-          border: `1px solid ${accent ? NAVY : "#E2E8F0"}`,
-          color: NAVY,
+          background: disabled ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.35)",
+          border: `1px solid ${accent ? PHOSPHOR_DIM : CHASSIS_BORDER}`,
+          color: accent ? PHOSPHOR : "#E8FFF1",
+          fontFamily: MONO_FONT,
+          letterSpacing: "0.01em",
           cursor: disabled ? "not-allowed" : loading ? "wait" : "pointer",
+          boxShadow: accent
+            ? `inset 0 0 0 1px ${PHOSPHOR_GLOW}, 0 0 12px -4px ${PHOSPHOR_GLOW}`
+            : "inset 0 1px 2px rgba(0,0,0,0.4)",
         }}
       >
         {children}
       </select>
       <ChevronDown
-        className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
-        style={{ color: "#94A3B8" }}
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none transition-colors"
+        style={{ color: accent ? PHOSPHOR : "#6B7280" }}
       />
     </div>
   );
