@@ -631,8 +631,6 @@ export default function RetroTerminalFrame({
                     transition: "opacity 280ms ease-out",
                   }}
                 >
-
-                >
                   {tools.map((tool) => {
                     const isActive = activeToolKey === tool.key;
                     const isDisabled = !!tool.disabled;
