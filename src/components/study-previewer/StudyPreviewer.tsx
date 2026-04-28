@@ -3,6 +3,7 @@ import { ArrowRight, ArrowUpRight, Check, ChevronDown, Lock } from "lucide-react
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import StudyToolCards, { type ToolKey } from "@/components/dashboard/StudyToolCards";
+import RetroTerminalFrame from "@/components/study-previewer/RetroTerminalFrame";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -138,6 +139,11 @@ export default function StudyPreviewer({
   const selectedChapter = useMemo(
     () => chapters.find((c) => c.id === selectedChapterId) ?? null,
     [chapters, selectedChapterId],
+  );
+
+  const selectedCourseLabel = useMemo(
+    () => courses?.find((c) => c.id === selectedCourseId)?.fullName ?? null,
+    [courses, selectedCourseId],
   );
 
   const stepLabel = (n: number, label: string, complete: boolean) => (
