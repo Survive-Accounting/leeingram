@@ -4,6 +4,8 @@ import { Loader2, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { buildGetAccessUrl } from "@/lib/getAccessUrl";
+import { sendMagicLink } from "@/lib/sendMagicLink";
+import CheckEmailPanel from "@/components/landing/CheckEmailPanel";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -176,10 +178,8 @@ export default function QuickEmailGateModal({
       );
 
       if (hasActive) {
-        const { error } = await supabase.functions.invoke("resend-login-link", {
-          body: { email: trimmed },
-        });
-        if (error) throw error;
+        const res = await sendMagicLink({ email: trimmed });
+        if (!res.ok) throw new Error(res.error || "send_failed");
         setStep("sent");
         setLoading(false);
         return;
@@ -327,28 +327,12 @@ export default function QuickEmailGateModal({
         )}
 
         {step === "sent" && (
-          <div className="px-6 sm:px-8 pt-8 pb-8 text-center">
-            <h2
-              className="text-[22px] sm:text-[24px] leading-tight"
-              style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
-            >
-              Check your email
-            </h2>
-            <p
-              className="mt-3 text-[14px]"
-              style={{ color: "#4A5568", fontFamily: "Inter, sans-serif" }}
-            >
-              Check your email for your secure access link.
-            </p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-6 w-full rounded-lg py-3 text-[14px] font-semibold text-white transition-all hover:brightness-110"
-              style={{ background: NAVY, fontFamily: "Inter, sans-serif" }}
-            >
-              Done
-            </button>
-          </div>
+          <CheckEmailPanel
+            email={email}
+            onChangeEmail={() => setStep("email")}
+            onDismiss={onClose}
+            dismissLabel="Done"
+          />
         )}
 
         {step === "courses" && (

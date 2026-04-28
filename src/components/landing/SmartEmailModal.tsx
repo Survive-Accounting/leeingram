@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { DevShortcut } from "@/components/DevShortcut";
+import { sendMagicLink } from "@/lib/sendMagicLink";
+import CheckEmailPanel from "@/components/landing/CheckEmailPanel";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -70,8 +72,8 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
         .from("students").select("id").eq("email", trimmed).maybeSingle();
 
       if (student) {
-        const { error } = await supabase.auth.signInWithOtp({ email: trimmed });
-        if (error) throw error;
+        const res = await sendMagicLink({ email: trimmed });
+        if (!res.ok) throw new Error(res.error || "send_failed");
         setStep("magic-link-sent");
       } else {
         setStep("course-select");
@@ -251,18 +253,12 @@ export default function SmartEmailModal({ open, onClose }: SmartEmailModalProps)
         )}
 
         {step === "magic-link-sent" && (
-          <div className="text-center space-y-4 py-4">
-            <CheckCircle className="w-12 h-12 mx-auto" style={{ color: "#22C55E" }} />
-            <h2 className="text-lg font-semibold" style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}>
-              Welcome back!
-            </h2>
-            <p className="text-[14px]" style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}>
-              Check your email for a login link.
-            </p>
-            <button onClick={handleClose} className="text-[13px] font-medium hover:underline" style={{ color: NAVY }}>
-              Close
-            </button>
-          </div>
+          <CheckEmailPanel
+            email={email}
+            onChangeEmail={() => { setStep("email"); }}
+            onDismiss={handleClose}
+            dismissLabel="Done"
+          />
         )}
 
         {step === "course-select" && (
