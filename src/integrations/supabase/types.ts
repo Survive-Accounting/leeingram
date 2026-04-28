@@ -5081,6 +5081,66 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_attributions: {
+        Row: {
+          created_at: string
+          id: string
+          landing_at: string
+          referral_code: string
+          referred_email: string | null
+          referred_user_id: string | null
+          referrer_user_id: string
+          signup_at: string | null
+          status: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          landing_at?: string
+          referral_code: string
+          referred_email?: string | null
+          referred_user_id?: string | null
+          referrer_user_id: string
+          signup_at?: string | null
+          status?: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          landing_at?: string
+          referral_code?: string
+          referred_email?: string | null
+          referred_user_id?: string | null
+          referrer_user_id?: string
+          signup_at?: string | null
+          status?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
           balance_cents: number | null

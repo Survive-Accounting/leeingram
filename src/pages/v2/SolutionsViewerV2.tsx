@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp, Sheet as SheetIcon, PanelLeftClose, PanelRightClose, Columns2, RotateCcw, GripVertical } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp, Sheet as SheetIcon, PanelLeftClose, PanelRightClose, Columns2, RotateCcw, GripVertical, Maximize2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { z } from "zod";
@@ -28,6 +28,7 @@ import { cn } from "@/lib/utils";
 import { buildShareUrl, captureRefFromUrl, logShareClick, attachReferrerOnConversion } from "@/lib/referralTracking";
 import { toYouPerspective } from "@/utils/youPerspective";
 import leeHeadshotImg from "@/assets/lee-headshot-original.png";
+import { ViewerOnboardingModal } from "@/pages/v2/ViewerOnboardingModal";
 
 type Asset = {
   id: string;
@@ -1669,6 +1670,19 @@ export default function SolutionsViewerV2() {
   const [isDragging, setIsDragging] = useState(false);
   const splitContainerRef = React.useRef<HTMLDivElement>(null);
 
+  // Current user (for onboarding modal + share strip)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data }) => {
+      if (cancelled) return;
+      setCurrentUserId(data.user?.id ?? null);
+      setCurrentUserEmail(data.user?.email ?? null);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   React.useEffect(() => {
     if (!isDragging) return;
     const handleMove = (clientX: number) => {
@@ -2095,7 +2109,7 @@ export default function SolutionsViewerV2() {
             </div>
 
             {/* Desktop: floating view-mode toolbar */}
-            <div className="hidden lg:flex justify-end mb-3">
+            <div className="hidden md:flex justify-end mb-3">
               <TooltipProvider delayDuration={200}>
                 <div
                   className="inline-flex items-center gap-1 rounded-full p-1"
@@ -2161,13 +2175,38 @@ export default function SolutionsViewerV2() {
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">Reset split (double-click divider)</TooltipContent>
                   </Tooltip>
+
+                  {/* Open in full screen — escapes embedded iframe constraints */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = window.location.pathname + window.location.search;
+                          if (window.top && window.top !== window.self) {
+                            window.open(url, "_blank", "noopener,noreferrer");
+                          } else {
+                            window.open(url, "_blank", "noopener,noreferrer");
+                          }
+                        }}
+                        aria-label="Open in full screen"
+                        className="h-8 w-8 rounded-full inline-flex items-center justify-center transition-all"
+                        style={{ color: "rgba(255,255,255,0.55)" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                      >
+                        <Maximize2 className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Open in full screen</TooltipContent>
+                  </Tooltip>
                 </div>
               </TooltipProvider>
             </div>
 
             <div
               ref={splitContainerRef}
-              className="flex flex-col lg:flex-row lg:items-stretch gap-6 lg:gap-0 relative"
+              className="flex flex-col md:flex-row md:items-stretch gap-6 md:gap-0 relative"
             >
             {/* LEFT: Problem + What you need to solve */}
             <div
@@ -2636,6 +2675,12 @@ export default function SolutionsViewerV2() {
         open={shareOpen}
         onOpenChange={setShareOpen}
         onCopy={() => trackShareEvent("copy_link")}
+      />
+
+      <ViewerOnboardingModal
+        assetCode={assetCode ?? null}
+        userId={currentUserId}
+        userEmail={currentUserEmail}
       />
     </div>
   );
