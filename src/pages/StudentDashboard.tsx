@@ -216,6 +216,18 @@ export default function StudentDashboard() {
   const [lastViewed, setLastViewed] = useState<LastViewed | null>(null);
   const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [campusId, setCampusId] = useState<string | null>(null);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [onboarding, setOnboarding] = useState<{
+    is_legacy: boolean;
+    beta_number: number | null;
+    campus_beta_number: number | null;
+    campus_name: string | null;
+    display_name: string | null;
+    welcomed_at: string | null;
+  } | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [verifying, setVerifying] = useState<boolean>(() => {
     const p = new URLSearchParams(window.location.search);
     return p.get("just_paid") === "1" || p.get("checkout") === "success";
