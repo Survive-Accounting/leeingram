@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, Lock } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, ChevronDown, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import StudyToolCards, { type ToolKey } from "@/components/dashboard/StudyToolCards";
@@ -14,33 +14,38 @@ export interface PreviewChapter {
   chapter_name: string;
 }
 
+export interface PreviewCourse {
+  id: string;
+  shortName: string;
+  fullName: string;
+}
+
 interface StudyPreviewerProps {
   /** Chapter list for the currently active course. */
   chapters: PreviewChapter[];
-  /** Header label, left side (e.g. "Your campus"). */
-  headerEyebrow?: string;
-  /** Campus name shown on the header (e.g. "Ole Miss"). */
-  campusName?: string | null;
-  /** Course label appended after the campus name. */
-  courseLabel?: string | null;
-  /** Called when a user clicks "Tell us what you want built" or the JE coming-soon CTA. */
+
+  /** Optional course list. When provided, renders a real course selector. */
+  courses?: PreviewCourse[];
+  /** Currently selected course id. Required when `courses` is provided. */
+  selectedCourseId?: string | null;
+  /** Course change handler (landing only). */
+  onCourseChange?: (courseId: string) => void;
+
+  /** Read-only display when no `courses` array is passed (dashboard case). */
+  fixedCourseLabel?: string | null;
+
   onOpenFeedback: () => void;
-  /**
-   * Optional gate. When provided AND it returns false, the action is blocked
-   * (parent should show a paywall etc.). When omitted, the action proceeds.
-   */
   onRequestUnlock?: (action: "open_workspace") => boolean;
-  /** localStorage key to persist the chapter pick. Pass null/undefined to disable. */
   persistChapterKey?: string | null;
-  /** Reset signal — bumping this number clears the chapter + tool selection. */
   resetSignal?: number;
 }
 
 export default function StudyPreviewer({
   chapters,
-  headerEyebrow = "Your course",
-  campusName,
-  courseLabel,
+  courses,
+  selectedCourseId,
+  onCourseChange,
+  fixedCourseLabel,
   onOpenFeedback,
   onRequestUnlock,
   persistChapterKey,
@@ -54,7 +59,12 @@ export default function StudyPreviewer({
   const chapterDropdownRef = useRef<HTMLSelectElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
 
-  // Restore from localStorage on mount + when chapters arrive
+  const courseChosen = courses
+    ? !!selectedCourseId
+    : !!fixedCourseLabel;
+  const chapterChosen = !!selectedChapterId && !chapterLoading;
+
+  // Restore from localStorage
   useEffect(() => {
     if (!persistChapterKey) return;
     try {
@@ -66,7 +76,6 @@ export default function StudyPreviewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persistChapterKey, chapters.length]);
 
-  // External reset (e.g. course changed on landing page)
   useEffect(() => {
     if (resetSignal === undefined) return;
     setSelectedChapterId(null);
@@ -98,7 +107,7 @@ export default function StudyPreviewer({
       .limit(1);
     const first = data?.[0]?.asset_name ?? null;
 
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 400));
 
     setSelectedChapterId(chId);
     setViewerAssetCode(first);
@@ -111,8 +120,6 @@ export default function StudyPreviewer({
   };
 
   const handleSelectTool = (key: ToolKey) => {
-    // For the practice tool we want to gate the workspace (real content).
-    // JE is "coming soon" + just a feedback nudge — never gated.
     if (key === "practice" && onRequestUnlock && !onRequestUnlock("open_workspace")) {
       return;
     }
@@ -133,59 +140,101 @@ export default function StudyPreviewer({
     [chapters, selectedChapterId],
   );
 
+  const stepLabel = (n: number, label: string, complete: boolean) => (
+    <div className="flex items-center gap-2">
+      <span
+        className="inline-flex items-center justify-center rounded-full text-[10.5px] font-bold transition-colors"
+        style={{
+          width: 20,
+          height: 20,
+          background: complete ? NAVY : "#E2E8F0",
+          color: complete ? "#fff" : "#64748B",
+        }}
+      >
+        {complete ? <Check className="h-3 w-3" strokeWidth={3} /> : n}
+      </span>
+      <span
+        className="text-[11px] uppercase tracking-[0.14em] font-semibold"
+        style={{ color: complete ? NAVY : "#94A3B8" }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+
   return (
-    <div className="space-y-10" style={{ fontFamily: "Inter, sans-serif" }}>
-      {/* Course + Chapter selector */}
+    <div className="space-y-8 sm:space-y-10" style={{ fontFamily: "Inter, sans-serif" }}>
+      {/* Stepper: Course + Chapter */}
       <section
-        className="rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+        className="rounded-2xl p-5 sm:p-6"
         style={{
           background: "#fff",
           border: "1px solid #E0E7F0",
           boxShadow: "0 4px 14px rgba(20,33,61,0.05)",
         }}
       >
-        <div className="min-w-0 flex-1">
-          <p
-            className="text-[10.5px] uppercase tracking-widest font-semibold"
-            style={{ color: "#94A3B8" }}
-          >
-            {headerEyebrow}
-          </p>
-          <p
-            className="mt-1 text-[16px] sm:text-[17px] font-semibold truncate"
-            style={{ color: NAVY }}
-          >
-            {campusName ? `${campusName}` : "Your campus"}
-            {courseLabel ? <span style={{ color: "#64748B", fontWeight: 500 }}> · {courseLabel}</span> : null}
-          </p>
-        </div>
-        <div className="relative w-full sm:w-[340px]">
-          <select
-            ref={chapterDropdownRef}
-            value={selectedChapterId ?? ""}
-            onChange={(e) => handleChapterChange(e.target.value)}
-            disabled={chapterLoading || chapters.length === 0}
-            className="w-full appearance-none rounded-lg px-4 py-2.5 pr-10 text-[14px] font-medium outline-none transition-colors"
-            style={{
-              background: "#F8FAFC",
-              border: `1px solid ${selectedChapterId ? NAVY : "#E2E8F0"}`,
-              color: NAVY,
-              cursor: chapterLoading ? "wait" : "pointer",
-            }}
-          >
-            <option value="">
-              {chapters.length === 0 ? "Pick a course first…" : "Choose chapter…"}
-            </option>
-            {chapters.map((ch) => (
-              <option key={ch.id} value={ch.id}>
-                Ch {ch.chapter_number} — {ch.chapter_name}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+          {/* Step 1 — Course */}
+          <div className="space-y-2.5">
+            {stepLabel(1, "Course", courseChosen)}
+            {courses ? (
+              <SelectShell
+                value={selectedCourseId ?? ""}
+                onChange={(v) => onCourseChange?.(v)}
+                accent={!!selectedCourseId}
+              >
+                <option value="">Choose course…</option>
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.fullName}
+                  </option>
+                ))}
+              </SelectShell>
+            ) : (
+              <div
+                className="w-full rounded-lg px-4 py-2.5 text-[14px] font-semibold flex items-center justify-between"
+                style={{
+                  background: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                  color: NAVY,
+                }}
+              >
+                <span className="truncate">{fixedCourseLabel ?? "—"}</span>
+                <Lock className="h-3.5 w-3.5" style={{ color: "#94A3B8" }} />
+              </div>
+            )}
+          </div>
+
+          {/* Step 2 — Chapter */}
+          <div className="space-y-2.5">
+            {stepLabel(2, "Chapter", chapterChosen)}
+            <SelectShell
+              ref={chapterDropdownRef}
+              value={selectedChapterId ?? ""}
+              onChange={handleChapterChange}
+              accent={!!selectedChapterId}
+              disabled={!courseChosen || chapterLoading || chapters.length === 0}
+              loading={chapterLoading}
+            >
+              <option value="">
+                {!courseChosen
+                  ? "Pick a course first"
+                  : chapters.length === 0
+                  ? "Loading chapters…"
+                  : "Choose chapter…"}
               </option>
-            ))}
-          </select>
-          <ArrowRight
-            className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 rotate-90 pointer-events-none"
-            style={{ color: "#94A3B8" }}
-          />
+              {chapters.map((ch) => (
+                <option key={ch.id} value={ch.id}>
+                  Ch {ch.chapter_number} — {ch.chapter_name}
+                </option>
+              ))}
+            </SelectShell>
+          </div>
+        </div>
+
+        {/* Step 3 — Tool hint */}
+        <div className="mt-6 pt-5 border-t" style={{ borderColor: "#EEF2F7" }}>
+          {stepLabel(3, "Pick a tool below", !!activeTool)}
         </div>
       </section>
 
@@ -193,7 +242,7 @@ export default function StudyPreviewer({
       <StudyToolCards
         active={activeTool}
         loading={chapterLoading}
-        chapterChosen={!!selectedChapterId && !chapterLoading}
+        chapterChosen={chapterChosen}
         onSelect={handleSelectTool}
         onOpenFeedback={onOpenFeedback}
         onNudgeChapter={handleNudgeChapter}
@@ -298,9 +347,59 @@ export default function StudyPreviewer({
           </div>
         )}
       </section>
-
-      {/* Hidden import to keep tree-shaking honest if Lock is needed by callers later */}
-      <span className="hidden"><Lock className="h-3 w-3" /></span>
     </div>
   );
 }
+
+/* ─── Shared dropdown shell ─── */
+
+interface SelectShellProps {
+  value: string;
+  onChange: (v: string) => void;
+  accent: boolean;
+  disabled?: boolean;
+  loading?: boolean;
+  children: React.ReactNode;
+}
+
+const SelectShell = (() => {
+  const Inner = (
+    {
+      value,
+      onChange,
+      accent,
+      disabled,
+      loading,
+      children,
+    }: SelectShellProps,
+    ref: React.ForwardedRef<HTMLSelectElement>,
+  ) => (
+    <div className="relative">
+      <select
+        ref={ref}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className="w-full appearance-none rounded-lg px-4 py-2.5 pr-10 text-[14px] font-medium outline-none transition-all disabled:opacity-60"
+        style={{
+          background: disabled ? "#F1F5F9" : "#F8FAFC",
+          border: `1px solid ${accent ? NAVY : "#E2E8F0"}`,
+          color: NAVY,
+          cursor: disabled ? "not-allowed" : loading ? "wait" : "pointer",
+        }}
+      >
+        {children}
+      </select>
+      <ChevronDown
+        className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
+        style={{ color: "#94A3B8" }}
+      />
+    </div>
+  );
+  // eslint-disable-next-line react/display-name
+  return Object.assign(
+    (props: SelectShellProps & { ref?: React.ForwardedRef<HTMLSelectElement> }) =>
+      Inner(props, props.ref ?? null),
+    {},
+  );
+})();
