@@ -101,11 +101,18 @@ export default function LandingStudyPreviewerSection({
       }}
     >
       <div className="mx-auto" style={{ maxWidth: 1080 }}>
+        <style>{`
+          @keyframes sa-hero-in {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+          .sa-hero-in { animation: sa-hero-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+        `}</style>
         {/* Header */}
         <div className="text-center mb-10 sm:mb-14" style={{ maxWidth: 760, margin: "0 auto" }}>
           <div
-            className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4"
-            style={{ color: RED, letterSpacing: "0.16em" }}
+            className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4 sa-hero-in"
+            style={{ color: RED, letterSpacing: "0.16em", animationDelay: "0ms" }}
           >
             <span
               className="inline-block rounded-full"
@@ -114,18 +121,19 @@ export default function LandingStudyPreviewerSection({
             Free Beta · Try it now
           </div>
           <h2
-            className="text-[30px] sm:text-[42px] leading-[1.1]"
-            style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: NAVY }}
+            className="text-[30px] sm:text-[42px] leading-[1.1] sa-hero-in"
+            style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: NAVY, animationDelay: "120ms" }}
           >
             Free accounting study tools for finals.
           </h2>
           <p
-            className="mt-4 sm:mt-5 text-[15px] sm:text-[17px] mx-auto"
+            className="mt-4 sm:mt-5 text-[15px] sm:text-[17px] mx-auto sa-hero-in"
             style={{
               fontFamily: "Inter, sans-serif",
               color: "#475569",
               lineHeight: 1.6,
               maxWidth: 620,
+              animationDelay: "240ms",
             }}
           >
             Choose a course, pick a chapter, and explore beta tools built to
