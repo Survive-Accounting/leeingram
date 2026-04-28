@@ -2375,15 +2375,7 @@ export default function SolutionsViewerV2() {
                   color: "rgba(255,255,255,0.92)",
                 }}
               >
-                {/* Top row: Course label + Topic chip + "Practice based on …" */}
-                {courseLabel && (
-                  <div
-                    className="text-[10px] font-semibold uppercase tracking-[0.16em] mb-2"
-                    style={{ color: "rgba(255,255,255,0.45)" }}
-                  >
-                    {courseLabel}
-                  </div>
-                )}
+                {/* Course label removed — already shown in header (left of "Switch Problem") */}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                   {/* Chapter pill removed — already shown in header "Switch Problem · Ch N" */}
                   {asset.source_ref && (
@@ -2421,13 +2413,7 @@ export default function SolutionsViewerV2() {
 
                 {/* Problem section — uses SmartTextRenderer to auto-format pipe tables */}
                 {asset.survive_problem_text && (
-                  <div className="mt-5">
-                    <div
-                      className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-2"
-                      style={{ color: "rgba(255,255,255,0.45)" }}
-                    >
-                      Problem
-                    </div>
+                  <div className="mt-4">
                     <div
                       className="text-[15px] max-w-[68ch] space-y-3 [&_p]:whitespace-pre-wrap [&_p]:text-[15px] [&_*]:!text-white/95 [&_strong]:!text-white [&_th]:!text-white [&_td]:!text-white/90 [&_.font-semibold]:!text-amber-300"
                       style={{ color: "rgba(255,255,255,0.95)", lineHeight: 1.7 }}
