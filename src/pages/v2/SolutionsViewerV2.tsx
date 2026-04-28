@@ -889,7 +889,7 @@ function MagicWandFeedback() {
         <Textarea
           value={wish}
           onChange={(e) => setWish(e.target.value)}
-          placeholder="Tell me anything — what's confusing, what's missing, what would help you cram faster…"
+          placeholder="Tell us anything! Your feedback helps us ensure we're building something perfect for you."
           rows={4}
           className="text-sm resize-none mt-2"
           autoFocus
