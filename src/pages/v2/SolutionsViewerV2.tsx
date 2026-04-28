@@ -839,7 +839,7 @@ function InlineExplanation({
                   if (!isLast) setWalkStep(idx + 1);
                 };
                 return (
-                  <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div key={`walk-step-${idx}`} className="space-y-3 animate-in fade-in slide-in-from-right-1 duration-150">
                     {/* Step header */}
                     <div className="flex items-baseline justify-between gap-3">
                       <div className="flex items-baseline gap-2">
