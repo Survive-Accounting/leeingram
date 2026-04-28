@@ -178,10 +178,8 @@ export default function QuickEmailGateModal({
       );
 
       if (hasActive) {
-        const { error } = await supabase.functions.invoke("resend-login-link", {
-          body: { email: trimmed },
-        });
-        if (error) throw error;
+        const res = await sendMagicLink({ email: trimmed });
+        if (!res.ok) throw new Error(res.error);
         setStep("sent");
         setLoading(false);
         return;
