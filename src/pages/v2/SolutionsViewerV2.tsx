@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp, Sheet as SheetIcon, PanelLeftClose, PanelRightClose, Columns2, RotateCcw, GripVertical, Maximize2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp, Sheet as SheetIcon, PanelLeftClose, PanelRightClose, Columns2, Rows2, RotateCcw, GripVertical, GripHorizontal, Maximize2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { z } from "zod";
@@ -337,7 +337,7 @@ function StuckSupportModal({
   asset: Asset | null;
   chapter: ChapterMeta | null;
   courseLabel: string | null;
-  viewMode: "split" | "problem" | "helper";
+  viewMode: "split" | "split-h" | "problem" | "helper";
   simplifiedText: string | null;
   activeHelper: string | null;
 }) {
@@ -1661,7 +1661,7 @@ export default function SolutionsViewerV2() {
 
   // ── Split-view controls ──────────────────────────────────────────────
   const isMobileViewport = useIsMobile();
-  type ViewMode = "split" | "problem" | "helper";
+  type ViewMode = "split" | "split-h" | "problem" | "helper";
   const [viewMode, setViewMode] = useState<ViewMode>("split");
   const [mobileTab, setMobileTab] = useState<"problem" | "helper">("problem");
   const [splitRatio, setSplitRatio] = useState<number>(() => {
@@ -1729,6 +1729,7 @@ export default function SolutionsViewerV2() {
       if (e.key === "[") setViewMode("problem");
       else if (e.key === "]") setViewMode("helper");
       else if (e.key === "\\") setViewMode("split");
+      else if (e.key === "-" || e.key === "_") setViewMode("split-h");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -2085,6 +2086,7 @@ export default function SolutionsViewerV2() {
                   {([
                     { mode: "problem" as const, Icon: PanelLeftClose, label: "Problem only", hint: "[" },
                     { mode: "split" as const,   Icon: Columns2,        label: "Split view",   hint: "\\" },
+                    { mode: "split-h" as const, Icon: Rows2,           label: "Stacked view", hint: "-" },
                     { mode: "helper" as const,  Icon: PanelRightClose, label: "Helper only",  hint: "]" },
                   ]).map(({ mode, Icon, label, hint }) => {
                     const active = viewMode === mode;
@@ -2167,14 +2169,16 @@ export default function SolutionsViewerV2() {
 
             <div
               ref={splitContainerRef}
-              className="flex flex-col md:flex-row md:items-stretch gap-6 md:gap-0 relative"
+              className={`flex ${viewMode === "split-h" ? "flex-col gap-6" : "flex-col md:flex-row md:items-stretch gap-6 md:gap-0"} relative`}
             >
-            {/* LEFT: Problem + What you need to solve */}
+            {/* LEFT (or TOP in split-h): Problem + What you need to solve */}
             <div
               className="space-y-4 min-w-0"
               style={
                 isMobileViewport
                   ? { display: mobileTab === "problem" ? "block" : "none", width: "100%" }
+                  : viewMode === "split-h"
+                  ? { display: "block", width: "100%" }
                   : {
                       display: viewMode === "helper" ? "none" : "block",
                       flexBasis: viewMode === "problem" ? "100%" : `${splitRatio * 100}%`,
@@ -2439,12 +2443,14 @@ export default function SolutionsViewerV2() {
               </div>
             )}
 
-            {/* RIGHT: Get unstuck fast toolbox */}
+            {/* RIGHT (or BOTTOM in split-h): Get unstuck fast toolbox */}
             <div
               className="min-w-0"
               style={
                 isMobileViewport
                   ? { display: mobileTab === "helper" ? "block" : "none", width: "100%" }
+                  : viewMode === "split-h"
+                  ? { display: "block", width: "100%" }
                   : {
                       display: viewMode === "problem" ? "none" : "block",
                       flexBasis: viewMode === "helper" ? "100%" : `${(1 - splitRatio) * 100}%`,
