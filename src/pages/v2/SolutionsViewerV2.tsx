@@ -532,6 +532,43 @@ function InlineExplanation({
     setError(null);
   }, [asset.asset_name]);
 
+  // Background prefetch — silently warm the explanation cache so the red
+  // "Walk me through this problem" CTA opens instantly. Uses requestIdleCallback
+  // when available; falls back to a small setTimeout. Stays silent on errors.
+  useEffect(() => {
+    if (sections || loading) return;
+    let cancelled = false;
+    const prefetch = () => {
+      if (cancelled || sections || loading) return;
+      // Fire-and-forget; don't toggle the visible loading state.
+      supabase.functions
+        .invoke("explain-this-solution", { body: { asset_code: asset.asset_name } })
+        .then(({ data, error }) => {
+          if (cancelled || error || !data?.success || !data?.sections) return;
+          setSections(data.sections as ExplanationSections);
+        })
+        .catch(() => { /* silent — student will retry on click */ });
+    };
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: () => void, opts?: { timeout: number }) => number)
+      | undefined;
+    let idleId: number | undefined;
+    let timeoutId: number | undefined;
+    if (ric) {
+      idleId = ric(prefetch, { timeout: 2500 });
+    } else {
+      timeoutId = window.setTimeout(prefetch, 1500);
+    }
+    return () => {
+      cancelled = true;
+      if (idleId !== undefined && (window as any).cancelIdleCallback) {
+        (window as any).cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asset.asset_name]);
+
   const ensureSections = async (): Promise<ExplanationSections | null> => {
     if (sections) return sections;
     setLoading(true);
