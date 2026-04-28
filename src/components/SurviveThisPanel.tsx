@@ -286,12 +286,11 @@ export function SurviveThisPanel(props: SurviveThisPanelProps) {
         {/* Body */}
         <div style={{ flex: 1, overflowY: "auto", background: "#fff" }}>
           {view === "menu" && (
-            <MenuView onPick={goCard} />
+            <MenuView onPick={goCard} assetId={props.assetId} />
           )}
           {view === "response" && activePrompt && (
             <ResponseView
               promptKey={activePrompt}
-              card={CARDS.find((c) => c.key === activePrompt)!}
               email={email}
               hasEmail={hasEmail}
               onEmailSaved={(e) => setEmail(e)}
