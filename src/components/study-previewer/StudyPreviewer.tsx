@@ -810,7 +810,7 @@ export default function StudyPreviewer({
                                 height: "min(85vh, 980px)",
                                 background: "#fff",
                               }}
-                              onLoad={() => setIframeLoaded(true)}
+                              onLoad={() => { setIframeLoaded(true); setStageLockHeight(null); }}
                               onError={() => setIframeError(true)}
                             />
 
