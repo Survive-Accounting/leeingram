@@ -2473,6 +2473,7 @@ export default function SolutionsViewerV2() {
                 setSimplifiedText={setSimplifiedText}
                 onShareClick={openShareModal}
                 onAdvanceTask={markTaskDone}
+                onActiveHelperChange={setActiveHelper}
               />
               <SurviveExplorePanel
                 assetId={asset.id}
