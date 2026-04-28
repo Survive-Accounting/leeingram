@@ -61,11 +61,22 @@ export default function RetroTerminalFrame({
 
   // CRT pulse: one quick brighten when either value changes (skips the very first mount)
   const [crtPulseKey, setCrtPulseKey] = useState(0);
+  // CRT sweep: stronger phosphor band sweep, fired on tool click / hand-off
+  const [crtSweepKey, setCrtSweepKey] = useState(0);
+  // Track which row was just clicked so it briefly flashes
+  const [flashedToolKey, setFlashedToolKey] = useState<string | null>(null);
   const firstPulseRef = useRef(true);
   useEffect(() => {
     if (firstPulseRef.current) { firstPulseRef.current = false; return; }
     setCrtPulseKey((k) => k + 1);
   }, [courseLabel, chapterLabel]);
+
+  const triggerToolPulse = (toolKey: string) => {
+    setCrtPulseKey((k) => k + 1);
+    setCrtSweepKey((k) => k + 1);
+    setFlashedToolKey(toolKey);
+    window.setTimeout(() => setFlashedToolKey(null), 540);
+  };
 
   // Sequential reveal of the boot lines for a tasteful "entering the system" feel.
   useEffect(() => {
