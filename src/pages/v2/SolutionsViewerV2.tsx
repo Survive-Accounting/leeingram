@@ -2095,7 +2095,7 @@ export default function SolutionsViewerV2() {
             </div>
 
             {/* Desktop: floating view-mode toolbar */}
-            <div className="hidden lg:flex justify-end mb-3">
+            <div className="hidden md:flex justify-end mb-3">
               <TooltipProvider delayDuration={200}>
                 <div
                   className="inline-flex items-center gap-1 rounded-full p-1"
