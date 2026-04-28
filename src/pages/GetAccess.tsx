@@ -428,13 +428,7 @@ export default function GetAccess() {
           className="mt-4 max-w-[640px] mx-auto text-[16px] sm:text-[18px]"
           style={{ color: "#475569", fontFamily: "Inter, sans-serif" }}
         >
-          Join the free beta and get access through your Spring &rsquo;26 final exams.
-        </p>
-        <p
-          className="mt-2 max-w-[640px] mx-auto text-[13px]"
-          style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-        >
-          Regular semester access will be $250 after beta.
+          Preview what we're building for you. Help us make it amazing.
         </p>
       </section>
 
