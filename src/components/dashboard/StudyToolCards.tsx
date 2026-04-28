@@ -33,9 +33,19 @@ export default function StudyToolCards({
 
   return (
     <section>
+      <style>{`
+        @keyframes sa-card-in {
+          0% { opacity: 0; transform: translateY(8px) scale(0.99); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .sa-card-in { animation: sa-card-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+      `}</style>
       {/* Two primary tools, then a quieter "feedback" card */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        <div className="md:col-span-5">
+        <div
+          className="md:col-span-5 sa-card-in"
+          style={{ animationDelay: "0ms" }}
+        >
           <PrimaryToolCard
             icon={<Wand2 className="h-4 w-4" />}
             title="Practice Problem Helper"
@@ -46,7 +56,10 @@ export default function StudyToolCards({
             onClick={() => handleToolClick("practice")}
           />
         </div>
-        <div className="md:col-span-5">
+        <div
+          className="md:col-span-5 sa-card-in"
+          style={{ animationDelay: "80ms" }}
+        >
           <PrimaryToolCard
             icon={<Brain className="h-4 w-4" />}
             title="Journal Entry Helper"
@@ -58,7 +71,10 @@ export default function StudyToolCards({
             onClick={() => handleToolClick("je")}
           />
         </div>
-        <div className="md:col-span-2">
+        <div
+          className="md:col-span-2 sa-card-in"
+          style={{ animationDelay: "160ms" }}
+        >
           <SecondaryToolCard
             title="Tell us what to build next"
             body="What study tool would make this even better for you?"
