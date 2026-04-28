@@ -562,6 +562,11 @@ function InlineExplanation({
       return;
     }
     setActiveSection(key);
+    // Reset bite-sized walkthrough each time "Walk me through it" is opened
+    if (key === "how_to_solve") {
+      setWalkStep(0);
+      setWalkShowAll(false);
+    }
     if (!sections) await ensureSections();
   };
 
