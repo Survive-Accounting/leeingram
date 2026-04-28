@@ -81,19 +81,6 @@ export default function ShareWithFriendsBand({ betaNumber, campusName, compact =
         </p>
 
         <div className={`flex flex-col gap-2.5 ${compact ? "mt-5" : "mt-6 sm:flex-row sm:gap-3"}`}>
-          <a
-            href={`sms:?&body=${smsBody}`}
-            className="inline-flex items-center justify-center gap-2 rounded-md px-5 py-3 text-[14px] font-semibold transition-all hover:brightness-110 active:scale-[0.98]"
-            style={{
-              background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-              color: "#fff",
-              boxShadow: "0 6px 18px rgba(206,17,38,0.35)",
-              minWidth: compact ? undefined : 220,
-            }}
-          >
-            <MessageCircle className="h-4 w-4" /> Text a friend now
-          </a>
-
           <button
             type="button"
             onClick={handleCopy}
@@ -101,7 +88,7 @@ export default function ShareWithFriendsBand({ betaNumber, campusName, compact =
             style={{
               background: "#fff",
               color: NAVY,
-              minWidth: compact ? undefined : 220,
+              minWidth: compact ? undefined : 200,
             }}
           >
             {copied ? (
@@ -110,10 +97,23 @@ export default function ShareWithFriendsBand({ betaNumber, campusName, compact =
               </>
             ) : (
               <>
-                <Copy className="h-4 w-4" /> Copy share link
+                <Copy className="h-4 w-4" /> Copy link
               </>
             )}
           </button>
+
+          <a
+            href={`sms:?&body=${smsBody}`}
+            className="inline-flex items-center justify-center gap-2 rounded-md px-5 py-3 text-[14px] font-semibold transition-all hover:brightness-110 active:scale-[0.98]"
+            style={{
+              background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+              color: "#fff",
+              boxShadow: "0 6px 18px rgba(206,17,38,0.35)",
+              minWidth: compact ? undefined : 200,
+            }}
+          >
+            <MessageCircle className="h-4 w-4" /> Text a friend
+          </a>
         </div>
 
         <p
