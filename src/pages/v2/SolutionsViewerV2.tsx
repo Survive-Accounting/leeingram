@@ -1090,12 +1090,14 @@ function NavigatePanel({
   courseId,
   currentChapterId,
   currentAssetName,
+  courseLabel,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   courseId: string | undefined;
   currentChapterId: string | undefined;
   currentAssetName: string | undefined;
+  courseLabel?: string | null;
 }) {
   const navigate = useNavigate();
 
@@ -1205,10 +1207,12 @@ function NavigatePanel({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Jump anywhere in the course</DialogTitle>
+          <DialogTitle>
+            {courseLabel ? `Jump anywhere in ${courseLabel}` : "Jump anywhere in the course"}
+          </DialogTitle>
           <DialogDescription>
             {totalCount && totalCount > 0
-              ? `${Math.floor(totalCount / 50) * 50}+ practice problems ready for you to cram — pick a chapter and problem.`
+              ? `${Math.floor(totalCount / 50) * 50}+ practice problems ready for you to cram.`
               : "Pick a chapter and problem."}
           </DialogDescription>
         </DialogHeader>
@@ -2045,6 +2049,7 @@ export default function SolutionsViewerV2() {
         courseId={chapter?.course_id}
         currentChapterId={chapter?.id}
         currentAssetName={asset?.asset_name}
+        courseLabel={courseLabel}
       />
 
       {/* Blocking modal while we generate the practice version on first open */}
