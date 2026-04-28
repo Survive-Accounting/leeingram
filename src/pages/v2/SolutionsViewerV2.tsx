@@ -100,6 +100,39 @@ function getInstructions(a: Asset): string[] {
   return [];
 }
 
+/**
+ * Detects and strips a leading instruction marker so we don't render it
+ * twice (the UI provides its own letter/number badge).
+ *
+ * Handles common variants used across our content:
+ *   "(a) ..."   "(A) ..."   "a. ..."   "a) ..."   "A) ..."
+ *   "1. ..."    "1) ..."    "#1 ..."   "#1. ..."
+ *
+ * Returns the cleaned text plus the detected prefix style ("letter" |
+ * "number" | "none") so the caller can pick a consistent badge style.
+ */
+function parseInstructionPrefix(raw: string): {
+  text: string;
+  kind: "letter" | "number" | "none";
+  marker: string | null;
+} {
+  const trimmed = raw.trim();
+  // (a)  (A)
+  let m = trimmed.match(/^\(\s*([a-zA-Z])\s*\)\s*[.:)\-]?\s*/);
+  if (m) return { text: trimmed.slice(m[0].length), kind: "letter", marker: m[1].toUpperCase() };
+  // a.   a)   A.
+  m = trimmed.match(/^([a-zA-Z])\s*[.)]\s+/);
+  if (m) return { text: trimmed.slice(m[0].length), kind: "letter", marker: m[1].toUpperCase() };
+  // #1   #1.   #1)
+  m = trimmed.match(/^#\s*(\d+)\s*[.)]?\s+/);
+  if (m) return { text: trimmed.slice(m[0].length), kind: "number", marker: m[1] };
+  // 1.   1)
+  m = trimmed.match(/^(\d+)\s*[.)]\s+/);
+  if (m) return { text: trimmed.slice(m[0].length), kind: "number", marker: m[1] };
+  return { text: trimmed, kind: "none", marker: null };
+}
+
+
 // ── Report Issue modal ────────────────────────────────────────────────
 type IssueType = "hard_to_read" | "formatting" | "incorrect_data" | "other";
 
