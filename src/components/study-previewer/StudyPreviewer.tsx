@@ -98,6 +98,12 @@ export default function StudyPreviewer({
   const [chapterLoading, setChapterLoading] = useState(false);
   const [activeTool, setActiveTool] = useState<ToolKey | null>(null);
   const [viewerAssetCode, setViewerAssetCode] = useState<string | null>(null);
+  const [crtPulseKey, setCrtPulseKey] = useState(0);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
+  const [iframeReloadKey, setIframeReloadKey] = useState(0);
+  const [showSkeleton, setShowSkeleton] = useState(false);
+  const [showSlowStatus, setShowSlowStatus] = useState(false);
   
 
   const chapterDropdownRef = useRef<HTMLSelectElement>(null);
