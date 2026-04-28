@@ -1177,7 +1177,7 @@ function InlineExplanation({
   };
 
   return (
-    <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-5">
+    <div className="rounded-xl border bg-card p-5 shadow-sm space-y-4">
       {/* Toolbox — opens directly to buttons, no heading */}
       <div className="space-y-3 pt-1">
         {/* Row 1 — Walk me through it (full width, red) */}
