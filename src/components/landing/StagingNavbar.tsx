@@ -112,29 +112,12 @@ export default function StagingNavbar({
           className="relative inline-flex items-center"
           aria-label="Survive Accounting — home"
         >
-          {/* Navy version (on solid bg) */}
+          {/* Single white wordmark with amber dot — works on both transparent and navy solid */}
           <img
             src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
             alt="Survive Accounting"
             className="h-5 sm:h-[22px] w-auto object-contain select-none"
             draggable={false}
-            style={{
-              opacity: isSolid ? 1 : 0,
-              transition: `opacity ${TRANSITION}`,
-            }}
-          />
-          {/* White version (on transparent bg) */}
-          <img
-            aria-hidden
-            src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
-            alt=""
-            className="h-5 sm:h-[22px] w-auto object-contain select-none absolute inset-0"
-            draggable={false}
-            style={{
-              filter: "brightness(0) invert(1)",
-              opacity: isSolid ? 0 : 1,
-              transition: `opacity ${TRANSITION}`,
-            }}
           />
         </button>
 
