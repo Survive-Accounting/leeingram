@@ -463,9 +463,12 @@ function StuckSupportModal({
     const lines: string[] = [
       "---",
       "Context (auto-captured):",
+      `- User: ${userId || "anonymous"}`,
+      `- Issue type: ${issueType}`,
       `- Course: ${courseLabel || "—"}`,
       chapter ? `- Chapter: Ch ${chapter.chapter_number} · ${chapter.chapter_name}` : "- Chapter: —",
       asset ? `- Problem: ${asset.asset_name}${asset.source_ref ? ` (ref ${asset.source_ref})` : ""}` : "- Problem: —",
+      asset ? `- Problem ID: ${asset.id}` : "- Problem ID: —",
       `- View mode: ${viewMode}`,
       `- Active helper: ${activeHelper || "none"}`,
       `- Page URL: ${typeof window !== "undefined" ? window.location.href : "—"}`,
