@@ -104,6 +104,7 @@ export default function RetroTerminalFrame({
         onNudgeChapter?.();
         return;
       }
+      triggerToolPulse(tool.key);
       onSelectTool(tool.key);
     };
     window.addEventListener("keydown", handler);
