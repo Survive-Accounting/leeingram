@@ -107,17 +107,10 @@ export default function StagingFinalCtaSection({
               fontFamily: "Inter, sans-serif",
             }}
           >
-            Join the Free Beta <span className="final-cta-arrow final-cta-arrow-char" />
+            Start Studying Now <span className="final-cta-arrow final-cta-arrow-char" />
           </button>
 
         </div>
-
-        <p
-          className="mt-6 text-[12px]"
-          style={{ color: "rgba(255,255,255,0.75)", fontFamily: "Inter, sans-serif" }}
-        >
-          Free during beta • No credit card required • Built for accounting exam prep
-        </p>
       </div>
     </section>
   );

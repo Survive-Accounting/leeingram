@@ -308,9 +308,6 @@ export default function StagingLandingPage() {
         />
       </div>
 
-      <div data-export-id="ask-anything" data-export-label="Ask Anything">
-        <AskAnythingSection />
-      </div>
 
       {/* Gradient bridge: demo (gray) → final CTA (red) — extended for a softer fade */}
       <div
