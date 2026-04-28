@@ -229,23 +229,53 @@ export default function RetroTerminalFrame({
             {crtSweepKey > 0 && (
               <div key={`crt-sweep-${crtSweepKey}`} className="sa-crt-sweep-overlay" aria-hidden />
             )}
-            {/* Scanlines */}
+            {/* Horizontal scanlines — slow drift for ambient life */}
             <div
               aria-hidden
-              className="absolute inset-0 pointer-events-none"
+              className="absolute inset-0 pointer-events-none sa-crt-scanlines"
               style={{
                 backgroundImage:
                   "repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px)",
                 mixBlendMode: "multiply",
               }}
             />
-            {/* Phosphor vignette */}
+            {/* Aperture grille — faint vertical RGB-style shadow mask for phosphor texture */}
+            <div
+              aria-hidden
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(90deg, rgba(124,255,176,0.035) 0px, rgba(124,255,176,0.035) 1px, transparent 1px, transparent 3px)",
+                mixBlendMode: "screen",
+                opacity: 0.55,
+              }}
+            />
+            {/* Top phosphor bloom — gentle warm-up glow at the top of the tube */}
+            <div
+              aria-hidden
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(120% 60% at 50% 0%, rgba(124,255,176,0.07) 0%, rgba(124,255,176,0) 55%)",
+                mixBlendMode: "screen",
+              }}
+            />
+            {/* Phosphor vignette — soft center glow + bottom darkening */}
             <div
               aria-hidden
               className="absolute inset-0 pointer-events-none"
               style={{
                 background:
                   "radial-gradient(120% 80% at 50% 50%, rgba(124,255,176,0.05) 0%, rgba(0,0,0,0) 55%), radial-gradient(140% 100% at 50% 100%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 60%)",
+              }}
+            />
+            {/* Edge vignette — gentle corner darkening for tube curvature feel */}
+            <div
+              aria-hidden
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                boxShadow:
+                  "inset 0 0 60px rgba(0,0,0,0.45), inset 0 0 140px rgba(0,0,0,0.35)",
               }}
             />
             {/* Subtle screen glare */}
