@@ -662,11 +662,24 @@ export default function StudyPreviewer({
             className="sa-stage sa-rise"
             style={{ animationDelay: "240ms" }}
           >
+            {/* Prefetch the v2 viewer route once we know the asset, so click feels instant */}
+            {viewerAssetCode && !activeTool && (
+              <link
+                rel="prefetch"
+                href={`/v2/solutions/${encodeURIComponent(viewerAssetCode)}`}
+              />
+            )}
+
             {/* Layer 1 — Retro terminal launchpad (in flow when no tool, overlay when transitioning out) */}
             <div
               className={`sa-stage-layer ${activeTool ? "sa-stage-overlay sa-stage-hidden" : "sa-stage-visible"}`}
               aria-hidden={!!activeTool}
+              style={{ position: "relative" }}
             >
+              {/* One-shot CRT refresh pulse triggered on tool selection */}
+              {crtPulseKey > 0 && (
+                <div key={`crt-${crtPulseKey}`} className="sa-crt-pulse" aria-hidden />
+              )}
               <RetroTerminalFrame
                 courseLabel={fixedCourseLabel ?? selectedCourseLabel ?? null}
                 chapterLabel={
