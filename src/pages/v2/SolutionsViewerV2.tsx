@@ -1493,6 +1493,57 @@ export default function SolutionsViewerV2() {
     };
   }, [assetCode]);
 
+  // Resolve the active student's campus + the local course code for the
+  // current course. We only do this when the chapter (and therefore course_id)
+  // is known. Best-effort: silently no-ops for anonymous viewers.
+  useEffect(() => {
+    if (!chapter?.course_id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || cancelled) return;
+
+        // Find this user's campus via student_onboarding (preferred) or student_purchases.
+        const { data: onb } = await supabase
+          .from("student_onboarding")
+          .select("campus_id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        let cId: string | null = onb?.campus_id ?? null;
+
+        if (!cId) {
+          const { data: sp } = await supabase
+            .from("student_purchases")
+            .select("campus_id")
+            .eq("email", (user.email || "").toLowerCase())
+            .not("campus_id", "is", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          cId = (sp as any)?.campus_id ?? null;
+        }
+        if (!cId || cancelled) return;
+
+        const [{ data: c }, { data: cc }] = await Promise.all([
+          supabase.from("campuses").select("slug").eq("id", cId).maybeSingle(),
+          supabase
+            .from("campus_courses")
+            .select("local_course_code")
+            .eq("campus_id", cId)
+            .eq("course_id", chapter.course_id)
+            .maybeSingle(),
+        ]);
+        if (cancelled) return;
+        setCampusSlug((c as any)?.slug ?? null);
+        setLocalCourseCode(cc?.local_course_code ?? null);
+      } catch {
+        /* best-effort */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [chapter?.course_id]);
+
   // Simplify-on-load is paused. Show original problem text as-is.
   // (PDF print path still calls simplify-problem on demand.)
 
