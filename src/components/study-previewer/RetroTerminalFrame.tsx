@@ -34,6 +34,8 @@ interface RetroTerminalFrameProps {
   welcomeName?: string | null;
   /** When true, greets as returning ("Welcome back"); otherwise as new ("Welcome"). */
   isReturning?: boolean;
+  /** Transient header notice (e.g. "Pick a chapter first"). When set, replaces the readiness badge and blinks. */
+  notice?: string | null;
 }
 
 /**
