@@ -430,7 +430,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
         {/* Step 1: Course pills */}
         <StepLabel number={1} label="Choose your course" active={!selectedCourseId} done={!!selectedCourseId} />
         <motion.div
-          className="flex flex-wrap justify-center gap-2.5 mb-10"
+          className="flex flex-wrap justify-center gap-2.5 mb-14"
           initial="hidden"
           animate="show"
           variants={stagger(0.1, 0.05)}
@@ -490,7 +490,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                   done={!!selectedChapterId}
                 />
               </div>
-              <div className="max-w-[480px] mx-auto mb-10">
+              <div className="max-w-[480px] mx-auto mb-14">
                 <div className="relative">
                   <select
                     value={selectedChapterId || ""}
@@ -543,7 +543,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                 />
               </div>
               <motion.div
-                className="grid sm:grid-cols-2 gap-5 mb-12"
+                className="grid sm:grid-cols-2 gap-6 mb-14"
                 initial="hidden"
                 animate="show"
                 variants={stagger(0.05, 0.07)}
