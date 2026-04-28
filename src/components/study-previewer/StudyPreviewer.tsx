@@ -24,7 +24,7 @@ const TERMINAL_TOOLS: TerminalTool[] = [
   {
     key: "practice",
     label: "Practice Problem Helper",
-    description: "Guided explanations for textbook-style problems.",
+    description: "Guided explanations for 2,500+ textbook-style problems.",
     cta: "Open helper",
     icon: Target,
   },
