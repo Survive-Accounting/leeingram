@@ -138,6 +138,8 @@ export default function SurviveExplorePanel({
   const isEmbed = searchParams.get("embed") === "1";
 
   const [exploreOpen, setExploreOpen] = useState(false);
+  // Which idea is currently expanded (showing its description + vote button).
+  const [previewKey, setPreviewKey] = useState<PromptKey | null>(null);
   const [activeKey, setActiveKey] = useState<PromptKey | null>(null);
   const [responseText, setResponseText] = useState<string>("");
   const [loading, setLoading] = useState(false);
