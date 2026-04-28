@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const PHOSPHOR = "#7CFFB0";
 const PHOSPHOR_DIM = "rgba(124,255,176,0.55)";
@@ -52,6 +52,18 @@ export default function RetroTerminalFrame({
   isReturning = false,
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
+
+  // Type-in + pulse state for the two reactive lines
+  const courseTyped = useTerminalValue(courseLabel);
+  const chapterTyped = useTerminalValue(chapterLabel);
+
+  // CRT pulse: one quick brighten when either value changes (skips the very first mount)
+  const [crtPulseKey, setCrtPulseKey] = useState(0);
+  const firstPulseRef = useRef(true);
+  useEffect(() => {
+    if (firstPulseRef.current) { firstPulseRef.current = false; return; }
+    setCrtPulseKey((k) => k + 1);
+  }, [courseLabel, chapterLabel]);
 
   // Sequential reveal of the boot lines for a tasteful "entering the system" feel.
   useEffect(() => {
@@ -110,6 +122,23 @@ export default function RetroTerminalFrame({
           50% { opacity: 0.93; }
           52% { opacity: 0.99; }
         }
+        /* Quick phosphor glow pulse on a refreshed value */
+        @keyframes sa-phosphor-pulse {
+          0%   { color: #FFFFFF; text-shadow: 0 0 6px #7CFFB0, 0 0 18px rgba(124,255,176,0.85); }
+          60%  { color: #EAFFF2; text-shadow: 0 0 3px rgba(124,255,176,0.6), 0 0 10px rgba(124,255,176,0.5); }
+          100% { color: #E8FFF1; text-shadow: 0 0 1px rgba(124,255,176,0.45), 0 0 8px rgba(124,255,176,0.45); }
+        }
+        .sa-value-pulse { animation: sa-phosphor-pulse 720ms cubic-bezier(0.22,1,0.36,1) both; }
+        /* Soft scanline brightness pulse on the whole CRT after an update */
+        @keyframes sa-crt-pulse {
+          0%   { box-shadow: inset 0 0 0 0 rgba(124,255,176,0); filter: brightness(1); }
+          25%  { box-shadow: inset 0 0 80px 4px rgba(124,255,176,0.10); filter: brightness(1.06); }
+          100% { box-shadow: inset 0 0 0 0 rgba(124,255,176,0); filter: brightness(1); }
+        }
+        .sa-crt-pulse-overlay {
+          position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+          animation: sa-crt-pulse 520ms ease-out both;
+        }
       `}</style>
 
       <div className="w-full" style={{ maxWidth: 980 }}>
@@ -141,6 +170,10 @@ export default function RetroTerminalFrame({
               animation: "sa-crt-flicker 6s ease-in-out infinite",
             }}
           >
+            {/* CRT pulse on value updates */}
+            {crtPulseKey > 0 && (
+              <div key={`crt-pulse-${crtPulseKey}`} className="sa-crt-pulse-overlay" aria-hidden />
+            )}
             {/* Scanlines */}
             <div
               aria-hidden
@@ -247,11 +280,49 @@ export default function RetroTerminalFrame({
               )}
               <Line show={bootStep >= 2}>
                 {">"} Course selected:{" "}
-                <span style={{ color: "#E8FFF1" }}>{safeCourse}</span>
+                <span
+                  key={`course-${courseTyped.pulseKey}`}
+                  className={courseTyped.pulseKey > 0 ? "sa-value-pulse" : undefined}
+                  style={{ color: "#E8FFF1" }}
+                >
+                  {courseTyped.text || safeCourse}
+                  {courseTyped.typing && (
+                    <span
+                      aria-hidden
+                      className="inline-block align-[-2px] ml-0.5"
+                      style={{
+                        width: "0.5em",
+                        height: "1em",
+                        background: PHOSPHOR,
+                        boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                        animation: "sa-cursor-blink 0.6s steps(1) infinite",
+                      }}
+                    />
+                  )}
+                </span>
               </Line>
               <Line show={bootStep >= 3}>
                 {">"} Chapter selected:{" "}
-                <span style={{ color: "#E8FFF1" }}>{safeChapter}</span>
+                <span
+                  key={`chapter-${chapterTyped.pulseKey}`}
+                  className={chapterTyped.pulseKey > 0 ? "sa-value-pulse" : undefined}
+                  style={{ color: "#E8FFF1" }}
+                >
+                  {chapterTyped.text || safeChapter}
+                  {chapterTyped.typing && (
+                    <span
+                      aria-hidden
+                      className="inline-block align-[-2px] ml-0.5"
+                      style={{
+                        width: "0.5em",
+                        height: "1em",
+                        background: PHOSPHOR,
+                        boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                        animation: "sa-cursor-blink 0.6s steps(1) infinite",
+                      }}
+                    />
+                  )}
+                </span>
               </Line>
               <Line show={bootStep >= 4}>{">"}</Line>
               <Line show={bootStep >= 5}>
@@ -428,4 +499,56 @@ function Line({ show, children }: { show: boolean; children: React.ReactNode }) 
       {children}
     </div>
   );
+}
+
+/**
+ * Quick terminal-style "type-in" of a label whenever it changes.
+ * Returns the currently visible substring, a typing flag (drives the inline
+ * cursor), and a pulseKey that bumps on each new value (drives the glow pulse).
+ * Skips animation on first mount so the initial reveal stays calm.
+ */
+function useTerminalValue(value: string | null) {
+  const safe = (value ?? "").trim();
+  const [text, setText] = useState(safe);
+  const [typing, setTyping] = useState(false);
+  const [pulseKey, setPulseKey] = useState(0);
+  const prevRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    // First mount: snap, no animation.
+    if (prevRef.current === null) {
+      prevRef.current = safe;
+      setText(safe);
+      return;
+    }
+    if (prevRef.current === safe) return;
+    prevRef.current = safe;
+
+    // No value yet → just clear, no typing effect.
+    if (!safe) {
+      setText("");
+      setTyping(false);
+      return;
+    }
+
+    // Type the new value in quickly, then pulse.
+    setTyping(true);
+    setText("");
+    const total = safe.length;
+    // Cap total animation around ~280ms regardless of length
+    const perChar = Math.max(8, Math.min(22, Math.floor(280 / Math.max(total, 1))));
+    const timers: number[] = [];
+    for (let i = 1; i <= total; i++) {
+      timers.push(window.setTimeout(() => setText(safe.slice(0, i)), i * perChar));
+    }
+    timers.push(
+      window.setTimeout(() => {
+        setTyping(false);
+        setPulseKey((k) => k + 1);
+      }, total * perChar + 40),
+    );
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [safe]);
+
+  return { text, typing, pulseKey };
 }
