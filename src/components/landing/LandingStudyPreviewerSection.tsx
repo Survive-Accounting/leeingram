@@ -109,7 +109,7 @@ export default function LandingStudyPreviewerSection({
           .sa-hero-in { animation: sa-hero-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
         `}</style>
         {/* Header */}
-        <div className="text-center mb-16 sm:mb-24" style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div className="text-center mb-20 sm:mb-28" style={{ maxWidth: 760, margin: "0 auto" }}>
           <div
             className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4 sa-hero-in"
             style={{ color: RED, letterSpacing: "0.16em", animationDelay: "0ms" }}
@@ -118,7 +118,7 @@ export default function LandingStudyPreviewerSection({
               className="inline-block rounded-full"
               style={{ width: 6, height: 6, background: RED }}
             />
-            FREE BETA · TRY IT NOW
+            FREE BETA · OPEN FOR FEEDBACK
           </div>
           <h2
             className="text-[30px] sm:text-[42px] leading-[1.1] sa-hero-in"
@@ -126,6 +126,12 @@ export default function LandingStudyPreviewerSection({
           >
             Free accounting study tools for finals.
           </h2>
+          <p
+            className="mt-4 text-[15px] sm:text-[16px] sa-hero-in"
+            style={{ color: "#5A6478", fontFamily: "Inter, sans-serif", animationDelay: "200ms" }}
+          >
+            Create a free account to unlock the beta tools and start studying.
+          </p>
         </div>
 
         {/* Previewer (course selector lives inside) */}
