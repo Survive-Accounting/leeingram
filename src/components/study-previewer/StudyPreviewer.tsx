@@ -295,6 +295,150 @@ export default function StudyPreviewer({
           animation: sa-status-pulse 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
           pointer-events: none;
         }
+
+        /* ─── 90s desktop-app window frame ─── */
+        .sa-win-frame {
+          background: #ECECEE;
+          border-radius: 10px;
+          border: 1px solid #C8CAD0;
+          box-shadow:
+            0 16px 40px rgba(0,0,0,0.28),
+            0 4px 10px rgba(0,0,0,0.12),
+            inset 0 1px 0 rgba(255,255,255,0.85),
+            inset 0 -1px 0 rgba(0,0,0,0.06);
+          overflow: hidden;
+          font-family: 'Inter', sans-serif;
+        }
+        .sa-win-titlebar {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 12px;
+          background: linear-gradient(180deg, #E6E8EE 0%, #C8CCD4 100%);
+          border-bottom: 1px solid #A9ADB5;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+          position: relative;
+        }
+        .sa-win-traffic { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .sa-win-dot {
+          width: 12px; height: 12px; border-radius: 50%;
+          border: 1px solid;
+          box-shadow: inset 0 1px 1px rgba(255,255,255,0.4), 0 1px 0 rgba(0,0,0,0.05);
+        }
+        .sa-win-title {
+          flex: 1;
+          text-align: center;
+          font-size: 12px;
+          font-weight: 600;
+          color: #2A2F3A;
+          letter-spacing: 0.01em;
+          text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          padding: 0 8px;
+        }
+        .sa-win-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+        .sa-win-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 22px; height: 18px;
+          font-size: 10px;
+          font-family: 'JetBrains Mono', ui-monospace, monospace;
+          color: #3A3F4A;
+          background: linear-gradient(180deg, #F4F5F8 0%, #D9DCE3 100%);
+          border: 1px solid #A9ADB5;
+          border-radius: 3px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+          line-height: 1;
+        }
+        .sa-win-btn-close { color: #8B1A1A; }
+
+        .sa-win-toolbar {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 6px 10px;
+          background: linear-gradient(180deg, #F2F3F6 0%, #E4E6EC 100%);
+          border-bottom: 1px solid #C8CAD0;
+          font-size: 11.5px;
+        }
+        .sa-win-addr-label {
+          font-weight: 600;
+          color: #5A6070;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          font-size: 10px;
+        }
+        .sa-win-addr {
+          flex: 1;
+          background: #fff;
+          border: 1px solid #B5B9C2;
+          border-radius: 3px;
+          padding: 3px 8px;
+          font-size: 11.5px;
+          color: #14213D;
+          box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
+          font-family: 'JetBrains Mono', ui-monospace, monospace;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .sa-win-tool-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 3px 9px;
+          font-size: 11px;
+          font-weight: 600;
+          color: #14213D;
+          background: linear-gradient(180deg, #FAFBFD 0%, #DDE0E7 100%);
+          border: 1px solid #A9ADB5;
+          border-radius: 3px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+          cursor: pointer;
+          transition: filter 120ms ease-out;
+        }
+        .sa-win-tool-btn:hover { filter: brightness(1.04); }
+        .sa-win-tool-btn:active { box-shadow: inset 0 1px 2px rgba(0,0,0,0.15); }
+
+        .sa-win-content {
+          background: #fff;
+          border-top: 1px solid #fff;
+          box-shadow: inset 0 1px 0 rgba(0,0,0,0.06), inset 0 0 0 1px rgba(0,0,0,0.04);
+          margin: 0 6px;
+          border-radius: 2px;
+          overflow: hidden;
+        }
+
+        .sa-win-statusbar {
+          display: flex;
+          align-items: center;
+          gap: 0;
+          padding: 4px 6px;
+          background: linear-gradient(180deg, #E6E8EE 0%, #D2D5DC 100%);
+          border-top: 1px solid #B5B9C2;
+          font-size: 10.5px;
+          color: #4A4F5A;
+          font-family: 'JetBrains Mono', ui-monospace, monospace;
+          letter-spacing: 0.04em;
+        }
+        .sa-win-status-cell {
+          padding: 2px 10px;
+          border: 1px solid transparent;
+          border-left-color: rgba(255,255,255,0.7);
+          border-right-color: rgba(0,0,0,0.08);
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .sa-win-status-grow { flex: 1; }
+        .sa-win-status-led {
+          width: 7px; height: 7px; border-radius: 50%;
+          background: #4ADE80;
+          box-shadow: 0 0 4px rgba(74,222,128,0.6), inset 0 0 1px rgba(255,255,255,0.5);
+        }
       `}</style>
 
       {/* Navy frame wrapper */}
@@ -547,42 +691,62 @@ export default function StudyPreviewer({
               />
             </div>
 
-            {/* Layer 2 — Modern V2 viewer (mounted only when a tool is active, fades in over the same frame) */}
+            {/* Layer 2 — Modern V2 viewer in a subtle 90s desktop-app frame */}
             {activeTool && (
               <section
-                className="sa-stage-layer sa-stage-visible rounded-2xl overflow-hidden"
-                style={{
-                  background: "#fff",
-                  boxShadow:
-                    "0 16px 40px rgba(0,0,0,0.22), 0 4px 10px rgba(0,0,0,0.10)",
-                  minHeight: 600,
-                }}
+                className="sa-stage-layer sa-stage-visible sa-win-frame"
+                style={{ minHeight: 600 }}
               >
+                {/* Classic title bar */}
+                <div className="sa-win-titlebar">
+                  <div className="sa-win-traffic" aria-hidden>
+                    <span className="sa-win-dot" style={{ background: "#FF5F57", borderColor: "#E14640" }} />
+                    <span className="sa-win-dot" style={{ background: "#FEBC2E", borderColor: "#D89E1F" }} />
+                    <span className="sa-win-dot" style={{ background: "#28C840", borderColor: "#1FA22F" }} />
+                  </div>
+                  <div className="sa-win-title">
+                    {activeTool === "practice"
+                      ? selectedChapter
+                        ? `Practice Problem Helper — Ch ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}`
+                        : "Practice Problem Helper"
+                      : "Journal Entry Helper"}
+                  </div>
+                  <div className="sa-win-controls" aria-hidden>
+                    <span className="sa-win-btn">_</span>
+                    <span className="sa-win-btn">▢</span>
+                    <span className="sa-win-btn sa-win-btn-close">✕</span>
+                  </div>
+                </div>
+
+                {/* Optional toolbar / address strip */}
                 {activeTool === "practice" && viewerAssetCode && (
-                  <div className="relative">
-                    <div
-                      className="px-5 py-2.5 flex items-center justify-between gap-3 text-[12px]"
-                      style={{ background: "#fff", borderBottom: "1px solid #EEF2F7", color: "#64748B" }}
-                    >
-                      <span className="truncate font-medium" style={{ color: NAVY }}>
+                  <div className="sa-win-toolbar">
+                    <span className="sa-win-addr-label">File</span>
+                    <div className="sa-win-addr">
+                      <span className="truncate">
                         {selectedChapter
                           ? `Ch ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}`
                           : "Practice Problem Helper"}
                       </span>
-                      <button
-                        onClick={() =>
-                          window.open(
-                            `/v2/solutions/${encodeURIComponent(viewerAssetCode)}`,
-                            "_blank",
-                            "noopener,noreferrer",
-                          )
-                        }
-                        className="inline-flex items-center gap-1 hover:underline"
-                        style={{ color: NAVY, fontWeight: 600 }}
-                      >
-                        Open in new tab <ArrowUpRight className="h-3 w-3" />
-                      </button>
                     </div>
+                    <button
+                      onClick={() =>
+                        window.open(
+                          `/v2/solutions/${encodeURIComponent(viewerAssetCode)}`,
+                          "_blank",
+                          "noopener,noreferrer",
+                        )
+                      }
+                      className="sa-win-tool-btn"
+                    >
+                      Open in new tab <ArrowUpRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Inset content well */}
+                <div className="sa-win-content">
+                  {activeTool === "practice" && viewerAssetCode && (
                     <iframe
                       key={viewerAssetCode}
                       src={`/v2/solutions/${encodeURIComponent(viewerAssetCode)}`}
@@ -590,42 +754,53 @@ export default function StudyPreviewer({
                       className="w-full block border-0"
                       style={{ height: "min(85vh, 980px)", background: "#fff" }}
                     />
-                  </div>
-                )}
+                  )}
 
-                {activeTool === "practice" && !viewerAssetCode && (
-                  <div className="flex items-center justify-center text-center px-6 py-24">
-                    <p className="text-[14px]" style={{ color: "#64748B" }}>
-                      This chapter is being finalized — check back soon.
-                    </p>
-                  </div>
-                )}
+                  {activeTool === "practice" && !viewerAssetCode && (
+                    <div className="flex items-center justify-center text-center px-6 py-24 bg-white">
+                      <p className="text-[14px]" style={{ color: "#64748B" }}>
+                        This chapter is being finalized — check back soon.
+                      </p>
+                    </div>
+                  )}
 
-                {activeTool === "je" && (
-                  <div className="px-6 py-16 sm:py-20 max-w-2xl mx-auto text-center">
-                    <h3
-                      className="text-[26px] leading-tight"
-                      style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
-                    >
-                      Journal Entry Helper is being built
-                    </h3>
-                    <p className="mt-2 text-[14px]" style={{ color: "#64748B" }}>
-                      Tell us exactly how you'd want this to work and we'll build it
-                      straight from your feedback.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={onOpenFeedback}
-                      className="mt-5 inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-[13px] font-semibold text-white transition-all hover:brightness-110"
-                      style={{
-                        background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-                        boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
-                      }}
-                    >
-                      Tell us what you'd want <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                )}
+                  {activeTool === "je" && (
+                    <div className="px-6 py-16 sm:py-20 max-w-2xl mx-auto text-center bg-white">
+                      <h3
+                        className="text-[26px] leading-tight"
+                        style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
+                      >
+                        Journal Entry Helper is being built
+                      </h3>
+                      <p className="mt-2 text-[14px]" style={{ color: "#64748B" }}>
+                        Tell us exactly how you'd want this to work and we'll build it
+                        straight from your feedback.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={onOpenFeedback}
+                        className="mt-5 inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-[13px] font-semibold text-white transition-all hover:brightness-110"
+                        style={{
+                          background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+                          boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
+                        }}
+                      >
+                        Tell us what you'd want <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Status bar */}
+                <div className="sa-win-statusbar">
+                  <span className="sa-win-status-cell sa-win-status-grow">
+                    <span className="sa-win-status-led" /> Ready
+                  </span>
+                  <span className="sa-win-status-cell">
+                    {activeTool === "practice" ? "PRACTICE.EXE" : "JE_HELPER.EXE"}
+                  </span>
+                  <span className="sa-win-status-cell">SURVIVE OS</span>
+                </div>
               </section>
             )}
           </div>
