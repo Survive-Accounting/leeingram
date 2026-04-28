@@ -143,23 +143,6 @@ export default function StagingNavbar({
         {/* Right side */}
         <div className="relative flex items-center gap-3 sm:gap-5">
           <button
-            onClick={() => {
-              const el = document.getElementById("demo-section") || document.getElementById("courses-section");
-              if (el) {
-                const top = el.getBoundingClientRect().top + window.scrollY - 24;
-                window.scrollTo({ top, behavior: "smooth" });
-              }
-            }}
-            className="hidden sm:inline-block text-[13px] font-semibold hover:opacity-70"
-            style={{
-              color: isSolid ? NAVY : "rgba(255,255,255,0.85)",
-              fontFamily: "Inter, sans-serif",
-              transition: `color ${TRANSITION}`,
-            }}
-          >
-            How it works
-          </button>
-          <button
             onClick={handleCourses}
             className="hidden sm:inline-block text-[13px] font-semibold hover:opacity-70"
             style={{
@@ -168,7 +151,7 @@ export default function StagingNavbar({
               transition: `color ${TRANSITION}`,
             }}
           >
-            What's inside
+            what's inside
           </button>
 
           {/* Log in — quiet secondary link */}
