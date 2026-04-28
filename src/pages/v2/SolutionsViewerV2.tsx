@@ -7,6 +7,7 @@ import SmartTextRenderer from "@/components/SmartTextRenderer";
 import { generateSimplifiedPracticePdf } from "@/lib/generateSimplifiedPracticePdf";
 import ReactMarkdown from "react-markdown";
 import SurviveExplorePanel from "@/components/v2/SurviveExplorePanel";
+import DOMPurify from "isomorphic-dompurify";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
