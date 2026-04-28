@@ -2167,7 +2167,7 @@ export default function SolutionsViewerV2() {
 
             <div
               ref={splitContainerRef}
-              className="flex flex-col lg:flex-row lg:items-stretch gap-6 lg:gap-0 relative"
+              className="flex flex-col md:flex-row md:items-stretch gap-6 md:gap-0 relative"
             >
             {/* LEFT: Problem + What you need to solve */}
             <div
