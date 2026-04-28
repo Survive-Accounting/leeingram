@@ -354,7 +354,7 @@ export default function StudentDashboard() {
 
         {/* Previewer entry — the centerpiece */}
         <div ref={previewerRef} className="space-y-6 scroll-mt-24">
-          <div className="text-center" style={{ maxWidth: 760, margin: "0 auto" }}>
+          <div className="text-center pb-10 sm:pb-16" style={{ maxWidth: 760, margin: "0 auto" }}>
             <div
               className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4"
               style={{ color: RED, letterSpacing: "0.16em" }}
