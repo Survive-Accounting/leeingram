@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { isAllowedEmail } from "@/lib/emailWhitelist";
 import { Loader2 } from "lucide-react";
+import { sendMagicLink } from "@/lib/sendMagicLink";
+import CheckEmailPanel from "@/components/landing/CheckEmailPanel";
 
 export default function Login() {
   const [searchParams] = useSearchParams();
   const message = searchParams.get("message");
+  const prefilledEmail = searchParams.get("email") || "";
+  const wasResent = searchParams.get("resent") === "1";
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(prefilledEmail);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useState(wasResent);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,20 +27,14 @@ export default function Login() {
     }
 
     setLoading(true);
-    try {
-      const { error: otpErr } = await supabase.auth.signInWithOtp({
-        email: trimmed,
-        options: {
-          emailRedirectTo: window.location.origin + "/auth/callback",
-        },
-      });
-      if (otpErr) throw otpErr;
-      setSent(true);
-    } catch {
-      setError("Something went wrong. Try again or contact Lee.");
-    } finally {
-      setLoading(false);
+    const res = await sendMagicLink({ email: trimmed, allowNew: true });
+    setLoading(false);
+    if (!res.ok) {
+      setError(res.error || "Something went wrong. Try again or contact Lee.");
+      return;
     }
+    setEmail(trimmed);
+    setSent(true);
   };
 
   return (
@@ -70,37 +67,31 @@ export default function Login() {
             This login link has expired or already been used. Request a new one below.
           </div>
         )}
+        {message === "link_expired" && (
+          <div className="rounded-lg px-4 py-3 text-[13px]" style={{ background: "#FEF3C7", color: "#92400E" }}>
+            That login link expired. Enter your email to get a new one — links last 15 minutes.
+          </div>
+        )}
+        {message === "device_mismatch" && (
+          <div className="rounded-lg px-4 py-3 text-[13px]" style={{ background: "#FEF3C7", color: "#92400E" }}>
+            Looks like that link was opened on a different device than where it was requested.
+            {wasResent ? " We just sent a fresh link to your email — open it on this device." : ""}
+          </div>
+        )}
 
         {/* Card */}
-        <div className="bg-white rounded-xl shadow-sm border p-6" style={{ borderColor: "#E5E7EB" }}>
+        <div className="bg-white rounded-xl shadow-sm border p-0" style={{ borderColor: "#E5E7EB" }}>
           {sent ? (
-            <div className="text-center space-y-3 py-2">
-              <div className="text-3xl">📬</div>
-              <h2 className="text-lg font-semibold" style={{ color: "#14213D" }}>
-                Check your email
-              </h2>
-              <p className="text-[14px]" style={{ color: "#666" }}>
-                We sent a login link to{" "}
-                <span className="font-medium" style={{ color: "#14213D" }}>
-                  {email}
-                </span>
-              </p>
-              <p className="text-[13px]" style={{ color: "#999" }}>
-                It may take a minute to arrive. Check your spam folder if you don't see it.
-              </p>
-              <button
-                onClick={() => {
-                  setSent(false);
-                  setEmail("");
-                }}
-                className="text-[13px] font-medium hover:underline"
-                style={{ color: "#CE1126" }}
-              >
-                Wrong email? Start over →
-              </button>
-            </div>
+            <CheckEmailPanel
+              email={email}
+              onChangeEmail={() => {
+                setSent(false);
+                setEmail("");
+              }}
+              allowNew
+            />
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 p-6">
               <div className="space-y-1.5">
                 <label className="text-[13px] font-medium" style={{ color: "#14213D" }}>
                   Email address
