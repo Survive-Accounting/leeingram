@@ -2288,7 +2288,7 @@ export default function SolutionsViewerV2() {
                             <Icon className="h-4 w-4" />
                           </button>
                         </TooltipTrigger>
-                        <TooltipContent side="bottom" className="text-xs">
+                        <TooltipContent side="top" sideOffset={6} className="text-xs">
                           {label} <span className="opacity-50 ml-1">{hint}</span>
                         </TooltipContent>
                       </Tooltip>
@@ -2314,7 +2314,7 @@ export default function SolutionsViewerV2() {
                         <RotateCcw className="h-3.5 w-3.5" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">Reset split (double-click divider)</TooltipContent>
+                    <TooltipContent side="top" sideOffset={6} className="text-xs">Reset split (double-click divider)</TooltipContent>
                   </Tooltip>
 
                   {/* Open in full screen — escapes embedded iframe constraints */}
@@ -2339,7 +2339,7 @@ export default function SolutionsViewerV2() {
                         <Maximize2 className="h-3.5 w-3.5" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">Open in full screen</TooltipContent>
+                    <TooltipContent side="top" sideOffset={6} className="text-xs">Open in full screen</TooltipContent>
                   </Tooltip>
                 </div>
               </TooltipProvider>
