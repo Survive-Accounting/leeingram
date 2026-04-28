@@ -35,52 +35,141 @@ interface Chapter {
 /* ─── Navbar ─── */
 
 function DashNavbar({
+  email,
+  onStudyTools,
+  onShare,
   onFeedback,
   onSignOut,
 }: {
+  email: string | null;
+  onStudyTools: () => void;
+  onShare: () => void;
   onFeedback: () => void;
   onSignOut: () => void;
 }) {
   const navigate = useNavigate();
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!accountOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) {
+        setAccountOpen(false);
+      }
+    };
+    window.addEventListener("mousedown", handler);
+    return () => window.removeEventListener("mousedown", handler);
+  }, [accountOpen]);
+
+  const initial = (email?.[0] ?? "?").toUpperCase();
+
+  const linkStyle: React.CSSProperties = {
+    color: NAVY,
+    fontFamily: "Inter, sans-serif",
+  };
+
   return (
     <header
       className="sticky top-0 z-40 w-full"
       style={{
-        background: "rgba(255,255,255,0.92)",
+        background: "rgba(255,255,255,0.85)",
         borderBottom: "1px solid rgba(20,33,61,0.08)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+        boxShadow: "0 4px 16px rgba(20,33,61,0.05)",
       }}
     >
       <nav className="max-w-6xl mx-auto h-16 px-5 sm:px-8 flex items-center justify-between">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/dashboard")}
           className="text-[16px] sm:text-[18px] tracking-tight"
           style={{ fontFamily: LOGO_FONT }}
-          aria-label="Survive Accounting — home"
+          aria-label="Survive Accounting — dashboard"
         >
           <span style={{ color: RED, fontWeight: 800 }}>Survive</span>
           <span style={{ color: NAVY, fontWeight: 400 }}> Accounting</span>
         </button>
-        <div className="flex items-center gap-4 sm:gap-5">
+
+        <div className="flex items-center gap-4 sm:gap-6">
           <button
-            onClick={onSignOut}
-            className="text-[12px] font-medium hover:underline"
-            style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+            onClick={onStudyTools}
+            className="hidden sm:inline-block text-[13px] font-semibold hover:opacity-70 transition-opacity"
+            style={linkStyle}
           >
-            Sign out
+            Study tools
+          </button>
+          <button
+            onClick={onShare}
+            className="hidden sm:inline-block text-[13px] font-semibold hover:opacity-70 transition-opacity"
+            style={linkStyle}
+          >
+            Share beta
           </button>
           <button
             onClick={onFeedback}
-            className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98]"
-            style={{
-              background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-              boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
-              fontFamily: "Inter, sans-serif",
-            }}
+            className="text-[13px] font-semibold hover:opacity-70 transition-opacity"
+            style={linkStyle}
           >
-            Submit Feedback <ArrowRight className="h-3.5 w-3.5" />
+            Feedback
           </button>
+
+          {/* Account menu */}
+          <div ref={accountRef} className="relative">
+            <button
+              onClick={() => setAccountOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={accountOpen}
+              aria-label="Account menu"
+              className="inline-flex items-center justify-center rounded-full text-[12.5px] font-semibold text-white transition-transform hover:scale-105 active:scale-95"
+              style={{
+                width: 34,
+                height: 34,
+                background: `linear-gradient(180deg, ${NAVY} 0%, #0E1830 100%)`,
+                boxShadow: "0 2px 8px rgba(20,33,61,0.25)",
+                fontFamily: "Inter, sans-serif",
+              }}
+            >
+              {initial}
+            </button>
+            {accountOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 mt-2 min-w-[220px] rounded-lg overflow-hidden"
+                style={{
+                  background: "#FFFFFF",
+                  border: "1px solid rgba(20,33,61,0.10)",
+                  boxShadow: "0 12px 32px rgba(20,33,61,0.16)",
+                  fontFamily: "Inter, sans-serif",
+                }}
+              >
+                <div
+                  className="px-4 py-3 text-[12px]"
+                  style={{ color: "#64748B", borderBottom: "1px solid rgba(20,33,61,0.08)" }}
+                >
+                  Signed in as
+                  <div
+                    className="text-[13px] font-semibold mt-0.5 truncate"
+                    style={{ color: NAVY }}
+                    title={email ?? ""}
+                  >
+                    {email ?? "—"}
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setAccountOpen(false);
+                    onSignOut();
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-[13px] font-medium hover:bg-slate-50 transition-colors"
+                  style={{ color: NAVY }}
+                  role="menuitem"
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
     </header>
