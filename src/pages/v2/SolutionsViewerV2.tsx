@@ -2169,14 +2169,16 @@ export default function SolutionsViewerV2() {
 
             <div
               ref={splitContainerRef}
-              className="flex flex-col md:flex-row md:items-stretch gap-6 md:gap-0 relative"
+              className={`flex ${viewMode === "split-h" ? "flex-col gap-6" : "flex-col md:flex-row md:items-stretch gap-6 md:gap-0"} relative`}
             >
-            {/* LEFT: Problem + What you need to solve */}
+            {/* LEFT (or TOP in split-h): Problem + What you need to solve */}
             <div
               className="space-y-4 min-w-0"
               style={
                 isMobileViewport
                   ? { display: mobileTab === "problem" ? "block" : "none", width: "100%" }
+                  : viewMode === "split-h"
+                  ? { display: "block", width: "100%" }
                   : {
                       display: viewMode === "helper" ? "none" : "block",
                       flexBasis: viewMode === "problem" ? "100%" : `${splitRatio * 100}%`,
@@ -2441,12 +2443,14 @@ export default function SolutionsViewerV2() {
               </div>
             )}
 
-            {/* RIGHT: Get unstuck fast toolbox */}
+            {/* RIGHT (or BOTTOM in split-h): Get unstuck fast toolbox */}
             <div
               className="min-w-0"
               style={
                 isMobileViewport
                   ? { display: mobileTab === "helper" ? "block" : "none", width: "100%" }
+                  : viewMode === "split-h"
+                  ? { display: "block", width: "100%" }
                   : {
                       display: viewMode === "problem" ? "none" : "block",
                       flexBasis: viewMode === "helper" ? "100%" : `${(1 - splitRatio) * 100}%`,
