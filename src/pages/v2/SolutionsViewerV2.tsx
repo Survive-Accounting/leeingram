@@ -1207,10 +1207,12 @@ function NavigatePanel({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Jump anywhere in the course</DialogTitle>
+          <DialogTitle>
+            {courseLabel ? `Jump anywhere in ${courseLabel}` : "Jump anywhere in the course"}
+          </DialogTitle>
           <DialogDescription>
             {totalCount && totalCount > 0
-              ? `${Math.floor(totalCount / 50) * 50}+ practice problems ready for you to cram — pick a chapter and problem.`
+              ? `${Math.floor(totalCount / 50) * 50}+ practice problems ready for you to cram.`
               : "Pick a chapter and problem."}
           </DialogDescription>
         </DialogHeader>
