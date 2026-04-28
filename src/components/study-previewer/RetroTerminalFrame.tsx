@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Info } from "lucide-react";
+import { useEffect, useRef, useState, type ComponentType, type SVGProps } from "react";
+import { Info, Lock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const PHOSPHOR = "#7CFFB0";
@@ -10,6 +10,12 @@ const PHOSPHOR_MUTED = "rgba(124,255,176,0.35)";
 export interface TerminalTool {
   key: string;
   label: string;
+  /** One-line descriptor shown under the title inside the terminal card. */
+  description?: string;
+  /** Subtle action cue rendered at the bottom of the card (e.g. "Open helper"). */
+  cta?: string;
+  /** Outline icon component (lucide-react) shown in the card header. */
+  icon?: ComponentType<SVGProps<SVGSVGElement> & { size?: number | string }>;
   /** Optional small caption shown after the label, e.g. "(coming soon)" */
   hint?: string;
   disabled?: boolean;
