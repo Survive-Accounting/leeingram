@@ -28,7 +28,16 @@ export function AdminToolsMenu() {
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
-    try { return localStorage.getItem(HIDDEN_STORAGE_KEY) === "1"; } catch { return false; }
+    // One-time migration: clear stale hidden flag so the bar reappears for staff
+    // after the shortcut change. Safe to remove later.
+    try {
+      if (!localStorage.getItem("devTool.adminBar.migrated.v2")) {
+        localStorage.removeItem(HIDDEN_STORAGE_KEY);
+        localStorage.setItem("devTool.adminBar.migrated.v2", "1");
+        return false;
+      }
+      return localStorage.getItem(HIDDEN_STORAGE_KEY) === "1";
+    } catch { return false; }
   });
 
   const { pos, dragHandlers } = useDraggable(POS_STORAGE_KEY, defaultPos(), SIZE);
