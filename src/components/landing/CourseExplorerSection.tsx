@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import { ChevronDown, ChevronRight, BookOpen, FileText, GraduationCap, Lock, Brain, MessageCircle, X, Send } from "lucide-react";
+import { useState, useMemo, useRef } from "react";
+import { ChevronDown, BookOpen, FileText, Lock, Brain, MessageCircle, X, Send, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,6 +18,7 @@ interface CourseChapter {
 interface ExplorerCourse {
   id: string;
   name: string;
+  shortName: string;
   slug: string;
   status: "live" | "upcoming" | "future";
   chapters: CourseChapter[];
@@ -25,26 +26,29 @@ interface ExplorerCourse {
 
 const COURSE_DATA: ExplorerCourse[] = [
   {
-    id: "44444444-4444-4444-4444-444444444444",
-    name: "Intermediate Accounting 2",
-    slug: "intermediate-accounting-2",
-    status: "live",
+    id: "11111111-1111-1111-1111-111111111111",
+    name: "Intro Accounting 1",
+    shortName: "Intro 1",
+    slug: "intro-accounting-1",
+    status: "future",
     chapters: [
-      { id: "ff12c70e-8d9f-4a8a-bc3c-d2fd42fcf2de", number: 13, name: "Long Term Liabilities" },
-      { id: "71b37666-7f1a-4c88-bc47-d3cbedd37b49", number: 14, name: "Stockholder's Equity" },
-      { id: "6e7d8d22-9d77-4e99-9e97-efa1b955bd89", number: 15, name: "Dilutive Securities and EPS" },
-      { id: "65a9d581-f025-44d3-85cd-6462deec1532", number: 16, name: "Investments" },
-      { id: "572e302c-30f6-42ba-aa5d-51d6bda24a2a", number: 17, name: "Revenue Recognition" },
-      { id: "d6d10c34-1732-46dd-a741-c68daf1e480e", number: 18, name: "Income Taxes" },
-      { id: "d3005950-75d6-4876-aa71-4ff49211703f", number: 19, name: "Pensions" },
-      { id: "1e973354-ba1f-4629-830e-8a884fccd754", number: 20, name: "Leases" },
-      { id: "f7a73bd7-65ff-494f-a06d-ac3cd380b7d8", number: 21, name: "Accounting Changes" },
-      { id: "56c7d37a-cef2-4a9e-9004-3f7d958b9273", number: 22, name: "Statement of Cash Flows" },
+      { id: "e211854f-3ff4-4d5d-ba50-c7ccba24f0bf", number: 1, name: "Accounting in Business" },
+      { id: "aa3bfc7a-a515-463c-9962-8e36a787bc52", number: 2, name: "Journalizing Transactions" },
+      { id: "7a2f37f6-e211-4990-8674-a877ec3d602e", number: 3, name: "Adjusting Entries" },
+      { id: "9aa455e5-5be1-4b10-8f68-79dbd80f048c", number: 4, name: "Merchandising" },
+      { id: "d444dcb1-0ec0-48e7-b2ff-b3c2d0a43daa", number: 5, name: "FIFO/LIFO" },
+      { id: "0be56e30-af34-48bc-9955-b3baff59ffe8", number: 6, name: "Cash & Internal Controls" },
+      { id: "d4cd336f-95cf-4640-b233-88473a3550da", number: 7, name: "Receivables" },
+      { id: "890e7db3-4485-40b2-81a4-fdf02723008f", number: 8, name: "Long Term Assets" },
+      { id: "709e3c53-7877-4d1c-8bed-44da353b5623", number: 9, name: "Current Liabilities" },
+      { id: "0aa9a1c6-bb12-424c-9e64-d6921d2ac7c3", number: 10, name: "Long Term Liabilities" },
+      { id: "b479e31e-e594-43f0-8190-5d6f35bb3d73", number: 11, name: "Equity" },
     ],
   },
   {
     id: "22222222-2222-2222-2222-222222222222",
     name: "Intro Accounting 2",
+    shortName: "Intro 2",
     slug: "intro-accounting-2",
     status: "upcoming",
     chapters: [
@@ -64,27 +68,9 @@ const COURSE_DATA: ExplorerCourse[] = [
     ],
   },
   {
-    id: "11111111-1111-1111-1111-111111111111",
-    name: "Intro Accounting 1",
-    slug: "intro-accounting-1",
-    status: "future",
-    chapters: [
-      { id: "e211854f-3ff4-4d5d-ba50-c7ccba24f0bf", number: 1, name: "Accounting in Business" },
-      { id: "aa3bfc7a-a515-463c-9962-8e36a787bc52", number: 2, name: "Journalizing Transactions" },
-      { id: "7a2f37f6-e211-4990-8674-a877ec3d602e", number: 3, name: "Adjusting Entries" },
-      { id: "9aa455e5-5be1-4b10-8f68-79dbd80f048c", number: 4, name: "Merchandising" },
-      { id: "d444dcb1-0ec0-48e7-b2ff-b3c2d0a43daa", number: 5, name: "FIFO/LIFO" },
-      { id: "0be56e30-af34-48bc-9955-b3baff59ffe8", number: 6, name: "Cash & Internal Controls" },
-      { id: "d4cd336f-95cf-4640-b233-88473a3550da", number: 7, name: "Receivables" },
-      { id: "890e7db3-4485-40b2-81a4-fdf02723008f", number: 8, name: "Long Term Assets" },
-      { id: "709e3c53-7877-4d1c-8bed-44da353b5623", number: 9, name: "Current Liabilities" },
-      { id: "0aa9a1c6-bb12-424c-9e64-d6921d2ac7c3", number: 10, name: "Long Term Liabilities" },
-      { id: "b479e31e-e594-43f0-8190-5d6f35bb3d73", number: 11, name: "Equity" },
-    ],
-  },
-  {
     id: "33333333-3333-3333-3333-333333333333",
     name: "Intermediate Accounting 1",
+    shortName: "Intermediate 1",
     slug: "intermediate-accounting-1",
     status: "future",
     chapters: [
@@ -102,17 +88,28 @@ const COURSE_DATA: ExplorerCourse[] = [
       { id: "690afe15-71f8-4788-ab3f-1ac9114d7509", number: 12, name: "Current Liabilities" },
     ],
   },
+  {
+    id: "44444444-4444-4444-4444-444444444444",
+    name: "Intermediate Accounting 2",
+    shortName: "Intermediate 2",
+    slug: "intermediate-accounting-2",
+    status: "live",
+    chapters: [
+      { id: "ff12c70e-8d9f-4a8a-bc3c-d2fd42fcf2de", number: 13, name: "Long Term Liabilities" },
+      { id: "71b37666-7f1a-4c88-bc47-d3cbedd37b49", number: 14, name: "Stockholder's Equity" },
+      { id: "6e7d8d22-9d77-4e99-9e97-efa1b955bd89", number: 15, name: "Dilutive Securities and EPS" },
+      { id: "65a9d581-f025-44d3-85cd-6462deec1532", number: 16, name: "Investments" },
+      { id: "572e302c-30f6-42ba-aa5d-51d6bda24a2a", number: 17, name: "Revenue Recognition" },
+      { id: "d6d10c34-1732-46dd-a741-c68daf1e480e", number: 18, name: "Income Taxes" },
+      { id: "d3005950-75d6-4876-aa71-4ff49211703f", number: 19, name: "Pensions" },
+      { id: "1e973354-ba1f-4629-830e-8a884fccd754", number: 20, name: "Leases" },
+      { id: "f7a73bd7-65ff-494f-a06d-ac3cd380b7d8", number: 21, name: "Accounting Changes" },
+      { id: "56c7d37a-cef2-4a9e-9004-3f7d958b9273", number: 22, name: "Statement of Cash Flows" },
+    ],
+  },
 ];
 
-type PreviewSection = "cram" | "be" | "ex" | "p";
-
-interface PreviewState {
-  chapterId: string;
-  chapterNumber: number;
-  chapterName: string;
-  section: PreviewSection;
-  problemId?: string;
-}
+type StudyTool = "practice" | "je";
 
 interface CramCounts {
   formulas: number;
@@ -132,50 +129,56 @@ interface CourseExplorerSectionProps {
   onCtaClick: () => void;
 }
 
-/* ─── Highlight flash keyframes (injected once) ─── */
-const HIGHLIGHT_STYLE_ID = "explorer-highlight-style";
-function ensureHighlightStyle() {
-  if (document.getElementById(HIGHLIGHT_STYLE_ID)) return;
-  const style = document.createElement("style");
-  style.id = HIGHLIGHT_STYLE_ID;
-  style.textContent = `
-    @keyframes explorer-glow {
-      0% { background-color: rgba(206,17,38,0.10); }
-      100% { background-color: transparent; }
-    }
-    .explorer-highlight {
-      animation: explorer-glow 1.5s ease-out forwards;
-      border-radius: 8px;
-    }
-  `;
-  document.head.appendChild(style);
-}
-
 export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSectionProps) {
-  const [selectedCourseId, setSelectedCourseId] = useState(COURSE_DATA[0].id);
-  const [expandedChapterId, setExpandedChapterId] = useState<string | null>(null);
-  const [expandedPractice, setExpandedPractice] = useState<string | null>(null);
-  const [preview, setPreview] = useState<PreviewState | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+  const [selectedTool, setSelectedTool] = useState<StudyTool | null>(null);
   const [questionOpen, setQuestionOpen] = useState(false);
   const [questionText, setQuestionText] = useState("");
   const [questionSending, setQuestionSending] = useState(false);
-  const previewPaneRef = useRef<HTMLDivElement>(null);
+
+  const previewRef = useRef<HTMLDivElement>(null);
+  const chapterStepRef = useRef<HTMLDivElement>(null);
+  const toolStepRef = useRef<HTMLDivElement>(null);
 
   const selectedCourse = useMemo(
-    () => COURSE_DATA.find((c) => c.id === selectedCourseId)!,
+    () => COURSE_DATA.find((c) => c.id === selectedCourseId) || null,
     [selectedCourseId],
   );
-  const isLive = selectedCourse.status === "live";
+  const selectedChapter = useMemo(
+    () => selectedCourse?.chapters.find((c) => c.id === selectedChapterId) || null,
+    [selectedCourse, selectedChapterId],
+  );
+  const isLive = selectedCourse?.status === "live";
 
-  // ─── Data fetching for selected chapter ───
-  const activeChapterId = preview?.chapterId || null;
+  // Reset cascading when parents change
+  const handleCourseChange = (id: string) => {
+    setSelectedCourseId(id);
+    setSelectedChapterId(null);
+    setSelectedTool(null);
+    setTimeout(() => chapterStepRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+  };
 
+  const handleChapterChange = (id: string) => {
+    setSelectedChapterId(id || null);
+    setSelectedTool(null);
+    if (id) {
+      setTimeout(() => toolStepRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+    }
+  };
+
+  const handleToolPick = (tool: StudyTool) => {
+    setSelectedTool(tool);
+    setTimeout(() => previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+  };
+
+  // ─── Data ───
   const { data: cramCounts } = useQuery({
-    queryKey: ["explorer-cram", activeChapterId],
-    enabled: !!activeChapterId && isLive,
+    queryKey: ["explorer-cram", selectedChapterId],
+    enabled: !!selectedChapterId && isLive,
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
-      const chId = activeChapterId!;
+      const chId = selectedChapterId!;
       const [formulas, jes, keyTerms, accounts, mistakes] = await Promise.all([
         supabase.from("chapter_formulas").select("id", { count: "exact", head: true }).eq("chapter_id", chId).eq("is_approved", true),
         supabase.from("chapter_journal_entries").select("id", { count: "exact", head: true }).eq("chapter_id", chId).eq("is_approved", true),
@@ -194,14 +197,14 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
   });
 
   const { data: problems } = useQuery({
-    queryKey: ["explorer-problems", activeChapterId],
-    enabled: !!activeChapterId && isLive,
+    queryKey: ["explorer-problems", selectedChapterId],
+    enabled: !!selectedChapterId && isLive,
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("teaching_assets")
         .select("id, source_ref, problem_title")
-        .eq("chapter_id", activeChapterId!)
+        .eq("chapter_id", selectedChapterId!)
         .eq("status", "approved")
         .order("source_ref");
       return (data || []) as ProblemRow[];
@@ -209,7 +212,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
   });
 
   const groupedProblems = useMemo(() => {
-    const g: Record<string, ProblemRow[]> = { be: [], ex: [], p: [] };
+    const g: Record<"be" | "ex" | "p", ProblemRow[]> = { be: [], ex: [], p: [] };
     (problems || []).forEach((p) => {
       const s = (p.source_ref || "").toUpperCase();
       if (s.startsWith("BE") || s.startsWith("QS")) g.be.push(p);
@@ -219,80 +222,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
     return g;
   }, [problems]);
 
-  // ─── Highlight + scroll logic ───
-  useEffect(() => { ensureHighlightStyle(); }, []);
-
-  const flashAndScroll = useCallback((targetId: string) => {
-    requestAnimationFrame(() => {
-      const el = document.getElementById(targetId);
-      if (!el || !previewPaneRef.current) return;
-      // scroll within preview pane
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      el.classList.remove("explorer-highlight");
-      void el.offsetWidth; // reflow
-      el.classList.add("explorer-highlight");
-    });
-  }, []);
-
-  const handleSidebarClick = useCallback(
-    (chId: string, chNum: number, chName: string, section: PreviewSection, problemId?: string) => {
-      setPreview({ chapterId: chId, chapterNumber: chNum, chapterName: chName, section, problemId });
-      const targetId = problemId ? `prob-${problemId}` : `section-${section}`;
-      setTimeout(() => flashAndScroll(targetId), 120);
-    },
-    [flashAndScroll],
-  );
-
-  const handleChapterToggle = (chapterId: string) => {
-    if (expandedChapterId === chapterId) {
-      setExpandedChapterId(null);
-      setExpandedPractice(null);
-    } else {
-      setExpandedChapterId(chapterId);
-      setExpandedPractice(null);
-    }
-  };
-
-  const togglePractice = (chapterId: string) => {
-    setExpandedPractice((prev) => (prev === chapterId ? null : chapterId));
-  };
-
-  // ─── Preview content rendering ───
-  const renderCramPreview = () => {
-    if (!cramCounts) {
-      return (
-        <div className="space-y-3 p-1">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-16 w-full rounded-lg" />
-          ))}
-        </div>
-      );
-    }
-    const items = [
-      { label: "Formulas", count: cramCounts.formulas, icon: "📐" },
-      { label: "Journal Entries", count: cramCounts.jes, icon: "📒" },
-      { label: "Key Terms", count: cramCounts.keyTerms, icon: "📖" },
-      { label: "Accounts", count: cramCounts.accounts, icon: "🏦" },
-      { label: "Exam Mistakes", count: cramCounts.mistakes, icon: "⚠️" },
-    ].filter((i) => i.count > 0);
-
-    return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-1">
-        {items.map((item) => (
-          <div
-            key={item.label}
-            className="rounded-xl p-4 transition-all"
-            style={{ background: "#F8F9FA", border: "1px solid #E5E7EB" }}
-          >
-            <div className="text-xl mb-1">{item.icon}</div>
-            <p className="text-2xl font-bold" style={{ color: NAVY }}>{item.count}</p>
-            <p className="text-[11px] mt-0.5" style={{ color: "#6B7280" }}>{item.label}</p>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
+  // ─── Preview renderers ───
   const renderProblemList = (type: "be" | "ex" | "p", label: string) => {
     const items = groupedProblems[type];
     if (!items || items.length === 0) return null;
@@ -307,149 +237,133 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
             {items.length}
           </span>
         </p>
-        <div className="space-y-0.5 max-h-[200px] overflow-y-auto pr-1">
-          {items.map((p) => (
+        <div className="space-y-0.5">
+          {items.slice(0, 12).map((p) => (
             <div
               key={p.id}
-              id={`prob-${p.id}`}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] transition-colors cursor-default"
-              style={{
-                background: preview?.problemId === p.id ? "rgba(20,33,61,0.06)" : "transparent",
-                color: "#4B5563",
-              }}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px]"
+              style={{ color: "#4B5563" }}
             >
               <span className="font-mono text-[11px] shrink-0 w-[52px]" style={{ color: "#9CA3AF" }}>
                 {p.source_ref || "—"}
               </span>
-              <span className="truncate">{p.problem_title ? p.problem_title.slice(0, 55) : p.source_ref}</span>
+              <span className="truncate">{p.problem_title ? p.problem_title.slice(0, 60) : p.source_ref}</span>
+            </div>
+          ))}
+          {items.length > 12 && (
+            <p className="text-[11px] px-3 py-1.5" style={{ color: "#9CA3AF" }}>
+              + {items.length - 12} more
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderPracticePreview = () => {
+    if (!isLive) return renderComingSoon();
+    const totalProblems = groupedProblems.be.length + groupedProblems.ex.length + groupedProblems.p.length;
+    return (
+      <div className="p-5 space-y-6">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
+            Chapter {selectedChapter!.number} · Practice Problem Helper
+          </p>
+          <h3 className="text-[20px] font-bold flex items-center gap-2" style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}>
+            <FileText className="w-5 h-5" style={{ color: RED }} />
+            {selectedChapter!.name}
+            {totalProblems > 0 && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(20,33,61,0.08)", color: NAVY }}>
+                {totalProblems} problems
+              </span>
+            )}
+          </h3>
+        </div>
+        {!problems ? (
+          <div className="space-y-2">
+            {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {renderProblemList("be", "Brief Exercises")}
+            {renderProblemList("ex", "Exercises")}
+            {renderProblemList("p", "Problems")}
+          </div>
+        )}
+        <div
+          className="rounded-lg px-4 py-2.5 flex items-center gap-2 text-[12px]"
+          style={{ background: "rgba(20,33,61,0.03)", border: "1px dashed #D1D5DB", color: "#6B7280" }}
+        >
+          <Lock className="w-3.5 h-3.5 shrink-0" style={{ color: "#9CA3AF" }} />
+          Walkthroughs, hints, and challenge questions unlock with full access.
+        </div>
+      </div>
+    );
+  };
+
+  const renderJEPreview = () => {
+    if (!isLive) return renderComingSoon();
+    if (!cramCounts) {
+      return (
+        <div className="p-5 space-y-3">
+          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+        </div>
+      );
+    }
+    const items = [
+      { label: "Journal Entries", count: cramCounts.jes, icon: "📒" },
+      { label: "Accounts", count: cramCounts.accounts, icon: "🏦" },
+      { label: "Formulas", count: cramCounts.formulas, icon: "📐" },
+      { label: "Key Terms", count: cramCounts.keyTerms, icon: "📖" },
+      { label: "Exam Mistakes", count: cramCounts.mistakes, icon: "⚠️" },
+    ].filter((i) => i.count > 0);
+
+    return (
+      <div className="p-5 space-y-6">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
+            Chapter {selectedChapter!.number} · Journal Entry Helper
+          </p>
+          <h3 className="text-[20px] font-bold flex items-center gap-2" style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}>
+            <Brain className="w-5 h-5" style={{ color: RED }} />
+            {selectedChapter!.name}
+          </h3>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {items.map((item) => (
+            <div
+              key={item.label}
+              className="rounded-xl p-4"
+              style={{ background: "#F8F9FA", border: "1px solid #E5E7EB" }}
+            >
+              <div className="text-xl mb-1">{item.icon}</div>
+              <p className="text-2xl font-bold" style={{ color: NAVY }}>{item.count}</p>
+              <p className="text-[11px] mt-0.5" style={{ color: "#6B7280" }}>{item.label}</p>
             </div>
           ))}
         </div>
-      </div>
-    );
-  };
-
-  const renderPreviewContent = () => {
-    if (!preview) {
-      return (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center space-y-3">
-            <BookOpen className="w-10 h-10 mx-auto" style={{ color: "#D1D5DB" }} />
-            <p className="text-[16px] font-semibold" style={{ color: NAVY }}>
-              Select a chapter to preview
-            </p>
-            <p className="text-[13px] max-w-[300px]" style={{ color: "#9CA3AF" }}>
-              Click any chapter on the left, then explore the content.
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    if (!isLive) {
-      return (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center space-y-3">
-            <Lock className="w-10 h-10 mx-auto" style={{ color: "#D1D5DB" }} />
-            <p className="text-[16px] font-semibold" style={{ color: NAVY }}>Coming Soon</p>
-            <p className="text-[13px] max-w-[300px]" style={{ color: "#9CA3AF" }}>
-              This course is still being built. Sign up to get notified when it launches.
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    const totalProblems = (groupedProblems.be?.length || 0) + (groupedProblems.ex?.length || 0) + (groupedProblems.p?.length || 0);
-
-    return (
-      <div className="flex-1 overflow-hidden flex flex-col">
-        <ScrollArea className="flex-1">
-          <div ref={previewPaneRef} className="p-5 space-y-6 pb-20">
-            {/* Chapter header */}
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9CA3AF" }}>
-                Chapter {preview.chapterNumber}
-              </p>
-              <h3 className="text-[20px] font-bold" style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}>
-                {preview.chapterName}
-              </h3>
-            </div>
-
-            {/* Study Tools */}
-            <div id="section-cram">
-              <p className="text-[13px] font-semibold mb-3 flex items-center gap-2" style={{ color: NAVY }}>
-                <Brain className="w-4 h-4" />
-                Chapter Study Tools
-              </p>
-              {renderCramPreview()}
-              {/* Paywall signal */}
-              <div
-                className="mt-3 rounded-lg px-4 py-2.5 flex items-center gap-2 text-[12px]"
-                style={{ background: "rgba(20,33,61,0.03)", border: "1px dashed #D1D5DB", color: "#6B7280" }}
-              >
-                <Lock className="w-3.5 h-3.5 shrink-0" style={{ color: "#9CA3AF" }} />
-                Full interactive study tools available after purchase
-              </div>
-            </div>
-
-            {/* Practice Problems */}
-            <div id="section-be">
-              <p className="text-[13px] font-semibold mb-3 flex items-center gap-2" style={{ color: NAVY }}>
-                <FileText className="w-4 h-4" />
-                Practice Problems
-                {totalProblems > 0 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(20,33,61,0.08)", color: NAVY }}>
-                    {totalProblems} total
-                  </span>
-                )}
-              </p>
-              {!problems ? (
-                <div className="space-y-2">
-                  {[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div id="section-be">{renderProblemList("be", "Brief Exercises")}</div>
-                  <div id="section-ex">{renderProblemList("ex", "Exercises")}</div>
-                  <div id="section-p">{renderProblemList("p", "Problems")}</div>
-                </div>
-              )}
-              {/* Paywall signal */}
-              <div
-                className="mt-3 rounded-lg px-4 py-2.5 flex items-center gap-2 text-[12px]"
-                style={{ background: "rgba(20,33,61,0.03)", border: "1px dashed #D1D5DB", color: "#6B7280" }}
-              >
-                <Lock className="w-3.5 h-3.5 shrink-0" style={{ color: "#9CA3AF" }} />
-                Unlock full walkthroughs and step-by-step explanations
-              </div>
-            </div>
-          </div>
-        </ScrollArea>
-
-        {/* Sticky CTA inside preview pane */}
         <div
-          className="px-4 py-3 flex items-center justify-between gap-3"
-          style={{ borderTop: "1px solid #E5E7EB", background: "rgba(248,249,250,0.95)", backdropFilter: "blur(8px)" }}
+          className="rounded-lg px-4 py-2.5 flex items-center gap-2 text-[12px]"
+          style={{ background: "rgba(20,33,61,0.03)", border: "1px dashed #D1D5DB", color: "#6B7280" }}
         >
-          <div className="min-w-0">
-            <p className="text-[13px] font-semibold" style={{ color: NAVY }}>
-              <span className="text-[12px] line-through mr-1.5" style={{ color: "#9CA3AF" }}>$250</span>
-              $99 one-time
-            </p>
-            <p className="text-[11px]" style={{ color: "#9CA3AF" }}>Access through finals week</p>
-          </div>
-          <button
-            onClick={onCtaClick}
-            className="shrink-0 rounded-lg px-5 py-2.5 text-[13px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.97]"
-            style={{ background: RED, boxShadow: "0 2px 8px rgba(206,17,38,0.2)" }}
-          >
-            Get Access →
-          </button>
+          <Lock className="w-3.5 h-3.5 shrink-0" style={{ color: "#9CA3AF" }} />
+          Interactive debits, credits, and walkthroughs unlock with full access.
         </div>
       </div>
     );
   };
+
+  const renderComingSoon = () => (
+    <div className="flex items-center justify-center p-12">
+      <div className="text-center space-y-3">
+        <Lock className="w-10 h-10 mx-auto" style={{ color: "#D1D5DB" }} />
+        <p className="text-[16px] font-semibold" style={{ color: NAVY }}>Coming Soon</p>
+        <p className="text-[13px] max-w-[300px] mx-auto" style={{ color: "#9CA3AF" }}>
+          This course is still being built. Sign up to get notified when it launches.
+        </p>
+      </div>
+    </div>
+  );
 
   const handleQuestionSubmit = async () => {
     if (!questionText.trim()) return;
@@ -468,203 +382,196 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
     }
   };
 
+  // ─── Render ───
   return (
-    <section className="py-16 sm:py-20 px-4 sm:px-6" style={{ background: "#EDEEF1" }}>
+    <section className="py-16 sm:py-24 px-4 sm:px-6" style={{ background: "#EDEEF1" }}>
       <div className="mx-auto max-w-[1000px]">
         {/* Header */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-10 sm:mb-14">
           <h2
-            className="text-[24px] sm:text-[30px] font-bold tracking-tight mb-2"
+            className="text-[26px] sm:text-[34px] font-bold tracking-tight mb-3"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif" }}
           >
-            Preview before you buy
+            Built for last-minute accounting studying.
           </h2>
           <p
-            className="text-[14px] sm:text-[15px] font-medium mb-1"
-            style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+            className="text-[14px] sm:text-[16px] max-w-[620px] mx-auto"
+            style={{ color: "#4B5563", fontFamily: "Inter, sans-serif" }}
           >
-            Click around — this is the real course.
+            Pick a course, choose a chapter, and explore the tools built to help you cram smarter for finals.
           </p>
         </div>
 
-        {/* Explorer */}
-        <div
-          className="rounded-2xl overflow-hidden relative"
-          style={{
-            background: "#fff",
-            boxShadow: "0 8px 40px rgba(0,0,0,0.08)",
-            border: "1px solid rgba(0,0,0,0.06)",
-          }}
-        >
-          {/* Have questions? link */}
-          <button
-            onClick={() => setQuestionOpen(true)}
-            className="absolute top-3 right-4 z-10 flex items-center gap-1.5 text-[12px] font-medium transition-colors hover:underline"
-            style={{ color: "#6B7280" }}
-          >
-            <MessageCircle className="w-3.5 h-3.5" />
-            Have questions?
-          </button>
-          <div className="flex flex-col lg:flex-row" style={{ minHeight: 520 }}>
-            {/* Left sidebar */}
-            <div
-              className="w-full lg:w-[300px] shrink-0 flex flex-col"
-              style={{ borderRight: "1px solid #F0F0F0" }}
-            >
-              {/* Course dropdown */}
-              <div className="p-4" style={{ borderBottom: "1px solid #F0F0F0" }}>
-                <label
-                  className="block text-[11px] font-semibold uppercase tracking-wider mb-2"
-                  style={{ color: "#9CA3AF", fontFamily: "Inter, sans-serif" }}
-                >
-                  Course
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedCourseId}
-                    onChange={(e) => {
-                      setSelectedCourseId(e.target.value);
-                      setExpandedChapterId(null);
-                      setExpandedPractice(null);
-                      setPreview(null);
-                    }}
-                    className="w-full appearance-none rounded-lg px-3 py-2.5 pr-8 text-[14px] font-semibold cursor-pointer outline-none focus:ring-2"
+        {/* Step 1: Course pills */}
+        <StepLabel number={1} label="Choose your course" active={!selectedCourseId} done={!!selectedCourseId} />
+        <div className="flex flex-wrap justify-center gap-2.5 mb-10">
+          {COURSE_DATA.map((c) => {
+            const isActive = selectedCourseId === c.id;
+            return (
+              <button
+                key={c.id}
+                onClick={() => handleCourseChange(c.id)}
+                className="rounded-full px-5 py-2.5 text-[13.5px] font-semibold transition-all"
+                style={{
+                  background: isActive ? NAVY : "#fff",
+                  color: isActive ? "#fff" : NAVY,
+                  border: `1px solid ${isActive ? NAVY : "#E5E7EB"}`,
+                  boxShadow: isActive ? "0 6px 16px rgba(20,33,61,0.18)" : "0 1px 2px rgba(0,0,0,0.03)",
+                  fontFamily: "Inter, sans-serif",
+                }}
+              >
+                {c.shortName}
+                {c.status !== "live" && (
+                  <span
+                    className="ml-2 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
                     style={{
-                      background: "#F8F9FA",
-                      border: "1px solid #E5E7EB",
-                      color: NAVY,
-                      fontFamily: "Inter, sans-serif",
+                      background: isActive ? "rgba(255,255,255,0.18)" : "rgba(20,33,61,0.06)",
+                      color: isActive ? "rgba(255,255,255,0.85)" : "#6B7280",
                     }}
                   >
-                    {COURSE_DATA.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                        {c.status !== "live" ? " (Coming Soon)" : ""}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                    style={{ color: "#9CA3AF" }}
-                  />
-                </div>
-              </div>
+                    Soon
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
 
-              {/* Chapter list */}
-              <div className="flex-1 overflow-y-auto p-2" style={{ maxHeight: 460 }}>
-                {selectedCourse.chapters.map((ch) => {
-                  const isExpanded = expandedChapterId === ch.id;
-                  const isPracticeExpanded = expandedPractice === ch.id;
-                  const isCramActive = preview?.chapterId === ch.id && preview?.section === "cram";
-                  const isPracticeActive = preview?.chapterId === ch.id && ["be", "ex", "p"].includes(preview?.section || "");
-
-                  return (
-                    <div key={ch.id} className="mb-0.5">
-                      <button
-                        onClick={() => handleChapterToggle(ch.id)}
-                        className="w-full text-left flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors text-[13px] font-medium"
-                        style={{
-                          color: isExpanded ? NAVY : "#4B5563",
-                          background: isExpanded ? "rgba(20,33,61,0.06)" : "transparent",
-                          fontFamily: "Inter, sans-serif",
-                        }}
-                      >
-                        {isExpanded ? (
-                          <ChevronDown className="w-3.5 h-3.5 shrink-0" style={{ color: "#9CA3AF" }} />
-                        ) : (
-                          <ChevronRight className="w-3.5 h-3.5 shrink-0" style={{ color: "#9CA3AF" }} />
-                        )}
-                        <span className="truncate">
-                          Ch {ch.number} · {ch.name}
-                        </span>
-                      </button>
-
-                      {isExpanded && (
-                        <div className="ml-6 pl-3 py-1 space-y-0.5" style={{ borderLeft: "2px solid #E5E7EB" }}>
-                          {/* Chapter Study Tools */}
-                          <button
-                            onClick={() => handleSidebarClick(ch.id, ch.number, ch.name, "cram")}
-                            className="w-full text-left flex items-center gap-2 px-2.5 py-2 rounded-md transition-colors text-[12px] hover:bg-gray-50"
-                            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
-                          >
-                            <Brain className="w-3.5 h-3.5 shrink-0" />
-                            <span>Chapter Study Tools</span>
-                          </button>
-
-                          {/* Practice Problems (expandable) */}
-                          <button
-                            onClick={() => {
-                              togglePractice(ch.id);
-                              handleSidebarClick(ch.id, ch.number, ch.name, "be");
-                            }}
-                            className="w-full text-left flex items-center gap-2 px-2.5 py-2 rounded-md transition-colors text-[12px] hover:bg-gray-50"
-                            style={{
-                              color: isPracticeActive ? NAVY : "#6B7280",
-                              fontWeight: isPracticeActive ? 600 : 400,
-                              fontFamily: "Inter, sans-serif",
-                            }}
-                          >
-                            <FileText className="w-3.5 h-3.5 shrink-0" />
-                            <span>Practice Problems</span>
-                            <ChevronRight
-                              className="w-3 h-3 ml-auto shrink-0 transition-transform duration-200"
-                              style={{
-                                color: "#9CA3AF",
-                                transform: isPracticeExpanded ? "rotate(90deg)" : "rotate(0deg)",
-                              }}
-                            />
-                          </button>
-
-                          {/* Practice subcategories */}
-                          {isPracticeExpanded && (
-                            <div className="ml-5 pl-2 py-0.5 space-y-0.5" style={{ borderLeft: "1px solid #E5E7EB" }}>
-                              {([["be", "Brief Exercises"], ["ex", "Exercises"], ["p", "Problems"]] as const).map(
-                                ([key, label]) => (
-                                  <button
-                                    key={key}
-                                    onClick={() => handleSidebarClick(ch.id, ch.number, ch.name, key)}
-                                    className="w-full text-left px-2 py-1.5 rounded text-[11px] transition-colors hover:bg-gray-50"
-                                    style={{
-                                      color: preview?.section === key && preview?.chapterId === ch.id ? NAVY : "#9CA3AF",
-                                      fontWeight: preview?.section === key && preview?.chapterId === ch.id ? 600 : 400,
-                                      fontFamily: "Inter, sans-serif",
-                                    }}
-                                  >
-                                    {label}
-                                  </button>
-                                ),
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Right preview pane */}
-            <div className="flex-1 flex flex-col min-h-[300px] lg:min-h-0">
-              {renderPreviewContent()}
-            </div>
+        {/* Step 2: Chapter dropdown */}
+        <div ref={chapterStepRef}>
+          <StepLabel
+            number={2}
+            label="Choose a chapter"
+            active={!!selectedCourseId && !selectedChapterId}
+            done={!!selectedChapterId}
+            disabled={!selectedCourseId}
+          />
+        </div>
+        <div className="max-w-[480px] mx-auto mb-10">
+          <div className="relative">
+            <select
+              value={selectedChapterId || ""}
+              onChange={(e) => handleChapterChange(e.target.value)}
+              disabled={!selectedCourse}
+              className="w-full appearance-none rounded-xl px-4 py-3.5 pr-10 text-[14.5px] font-semibold cursor-pointer outline-none transition-all disabled:cursor-not-allowed"
+              style={{
+                background: "#fff",
+                border: `1px solid ${selectedChapterId ? NAVY : "#E5E7EB"}`,
+                color: selectedCourse ? NAVY : "#9CA3AF",
+                fontFamily: "Inter, sans-serif",
+                opacity: selectedCourse ? 1 : 0.55,
+                boxShadow: selectedChapterId
+                  ? "0 4px 14px rgba(20,33,61,0.10)"
+                  : "0 1px 2px rgba(0,0,0,0.03)",
+              }}
+            >
+              <option value="">
+                {selectedCourse ? "Select a chapter…" : "Pick a course first"}
+              </option>
+              {selectedCourse?.chapters.map((ch) => (
+                <option key={ch.id} value={ch.id}>
+                  Ch {ch.number} · {ch.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+              style={{ color: selectedCourse ? NAVY : "#9CA3AF" }}
+            />
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="mt-12 flex justify-center">
-          <button
-            onClick={onCtaClick}
-            className="rounded-xl px-8 py-4 text-[16px] font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{
-              background: RED,
-              boxShadow: "0 4px 16px rgba(206,17,38,0.25)",
-              fontFamily: "Inter, sans-serif",
-            }}
-          >
-            Start Studying →
-          </button>
+        {/* Step 3: Study tool cards */}
+        <div ref={toolStepRef}>
+          <StepLabel
+            number={3}
+            label="Pick a study tool"
+            active={!!selectedChapterId && !selectedTool}
+            done={!!selectedTool}
+            disabled={!selectedChapterId}
+          />
         </div>
+        <div className="grid sm:grid-cols-2 gap-4 mb-10">
+          <ToolCard
+            title="Practice Problem Helper"
+            description="Practice smarter with walkthroughs, hints, challenge questions, and deeper explanations."
+            icon={<FileText className="w-5 h-5" />}
+            active={selectedTool === "practice"}
+            disabled={!selectedChapterId}
+            onClick={() => handleToolPick("practice")}
+          />
+          <ToolCard
+            title="Journal Entry Helper"
+            description="Understand debits, credits, accounts, and calculations in a way that actually sticks."
+            icon={<Brain className="w-5 h-5" />}
+            active={selectedTool === "je"}
+            disabled={!selectedChapterId}
+            onClick={() => handleToolPick("je")}
+          />
+        </div>
+
+        {/* Preview pane (only when a tool is chosen) */}
+        {selectedTool && selectedChapter && (
+          <div ref={previewRef} className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+            <div
+              className="rounded-2xl overflow-hidden relative"
+              style={{
+                background: "#fff",
+                boxShadow: "0 12px 50px rgba(0,0,0,0.10)",
+                border: "1px solid rgba(0,0,0,0.06)",
+              }}
+            >
+              <button
+                onClick={() => setQuestionOpen(true)}
+                className="absolute top-3 right-4 z-10 flex items-center gap-1.5 text-[12px] font-medium transition-colors hover:underline"
+                style={{ color: "#6B7280" }}
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                Have questions?
+              </button>
+              <ScrollArea style={{ maxHeight: 560 }}>
+                {selectedTool === "practice" ? renderPracticePreview() : renderJEPreview()}
+              </ScrollArea>
+              {/* Sticky CTA */}
+              <div
+                className="px-5 py-3.5 flex items-center justify-between gap-3"
+                style={{ borderTop: "1px solid #E5E7EB", background: "rgba(248,249,250,0.95)", backdropFilter: "blur(8px)" }}
+              >
+                <div className="min-w-0 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 shrink-0" style={{ color: RED }} />
+                  <p className="text-[13px] font-semibold truncate" style={{ color: NAVY }}>
+                    Like what you see? Unlock the full toolkit.
+                  </p>
+                </div>
+                <button
+                  onClick={onCtaClick}
+                  className="shrink-0 rounded-lg px-5 py-2.5 text-[13px] font-bold text-white transition-all hover:brightness-110 active:scale-[0.97]"
+                  style={{ background: RED, boxShadow: "0 2px 8px rgba(206,17,38,0.2)" }}
+                >
+                  Get Access →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Empty placeholder when no tool yet (subtle hint) */}
+        {!selectedTool && (
+          <div
+            className="rounded-2xl border border-dashed flex items-center justify-center py-14 px-6"
+            style={{ borderColor: "#D8DBE0", background: "rgba(255,255,255,0.45)" }}
+          >
+            <div className="text-center space-y-2">
+              <BookOpen className="w-8 h-8 mx-auto" style={{ color: "#B7BCC4" }} />
+              <p className="text-[13.5px] font-semibold" style={{ color: NAVY }}>
+                Your live preview will appear here
+              </p>
+              <p className="text-[12.5px]" style={{ color: "#8A92A0" }}>
+                Finish the three steps above to load it.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Questions modal */}
         {questionOpen && (
@@ -690,8 +597,6 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
                 rows={4}
                 className="w-full rounded-xl px-4 py-3 text-[14px] outline-none resize-none transition-all"
                 style={{ background: "#F8F9FA", border: "1px solid #E5E7EB", color: NAVY }}
-                onFocus={(e) => { e.target.style.borderColor = NAVY; }}
-                onBlur={(e) => { e.target.style.borderColor = "#E5E7EB"; }}
               />
               <button
                 onClick={handleQuestionSubmit}
@@ -706,5 +611,96 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
         )}
       </div>
     </section>
+  );
+}
+
+/* ───────── Subcomponents ───────── */
+
+function StepLabel({
+  number,
+  label,
+  active,
+  done,
+  disabled,
+}: {
+  number: number;
+  label: string;
+  active?: boolean;
+  done?: boolean;
+  disabled?: boolean;
+}) {
+  const color = disabled ? "#B7BCC4" : done ? "#6B7280" : active ? NAVY : "#6B7280";
+  const dotBg = disabled ? "#E5E7EB" : done ? NAVY : active ? RED : "#D1D5DB";
+  const dotColor = disabled ? "#9CA3AF" : "#fff";
+  return (
+    <div className="flex items-center justify-center gap-2.5 mb-4">
+      <span
+        className="inline-flex items-center justify-center text-[11px] font-bold rounded-full"
+        style={{ background: dotBg, color: dotColor, width: 22, height: 22, fontFamily: "Inter, sans-serif" }}
+      >
+        {number}
+      </span>
+      <span
+        className="text-[12px] font-semibold uppercase tracking-[0.12em]"
+        style={{ color, fontFamily: "Inter, sans-serif" }}
+      >
+        Step {number} — {label}
+      </span>
+    </div>
+  );
+}
+
+function ToolCard({
+  title,
+  description,
+  icon,
+  active,
+  disabled,
+  onClick,
+}: {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  active: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="text-left rounded-2xl p-5 transition-all disabled:cursor-not-allowed"
+      style={{
+        background: active ? NAVY : "#fff",
+        color: active ? "#fff" : NAVY,
+        border: `1px solid ${active ? NAVY : "#E5E7EB"}`,
+        boxShadow: active
+          ? "0 10px 30px rgba(20,33,61,0.20)"
+          : disabled
+          ? "0 1px 2px rgba(0,0,0,0.02)"
+          : "0 2px 10px rgba(0,0,0,0.04)",
+        opacity: disabled ? 0.5 : 1,
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      <div className="flex items-center gap-2.5 mb-2">
+        <span
+          className="inline-flex items-center justify-center rounded-lg w-9 h-9 shrink-0"
+          style={{
+            background: active ? "rgba(255,255,255,0.12)" : "rgba(206,17,38,0.08)",
+            color: active ? "#fff" : RED,
+          }}
+        >
+          {icon}
+        </span>
+        <h3 className="text-[15.5px] font-bold">{title}</h3>
+      </div>
+      <p
+        className="text-[13px] leading-relaxed"
+        style={{ color: active ? "rgba(255,255,255,0.85)" : "#6B7280" }}
+      >
+        {description}
+      </p>
+    </button>
   );
 }
