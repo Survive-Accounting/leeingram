@@ -2253,11 +2253,10 @@ export default function SolutionsViewerV2() {
             <div className="hidden md:flex justify-end mb-3">
               <TooltipProvider delayDuration={200}>
                 <div
-                  className="inline-flex items-center gap-1 rounded-full p-1"
+                  className="inline-flex items-center gap-0.5 rounded-md p-0.5"
                   style={{
-                    background: "rgba(255,255,255,0.04)",
+                    background: "rgba(255,255,255,0.03)",
                     border: "1px solid rgba(255,255,255,0.08)",
-                    backdropFilter: "blur(8px)",
                   }}
                   role="toolbar"
                   aria-label="View mode"
@@ -2277,11 +2276,11 @@ export default function SolutionsViewerV2() {
                             onClick={() => setViewMode(mode)}
                             aria-label={label}
                             aria-pressed={active}
-                            className="h-8 w-8 rounded-full inline-flex items-center justify-center transition-all"
+                            className="h-8 w-8 rounded inline-flex items-center justify-center transition-colors"
                             style={{
                               background: active ? "#14213D" : "transparent",
                               color: active ? "#fff" : "rgba(255,255,255,0.55)",
-                              boxShadow: active ? "0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06) inset" : "none",
+                              boxShadow: active ? "0 0 0 1px rgba(255,255,255,0.06) inset" : "none",
                             }}
                             onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
                             onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
@@ -2307,7 +2306,7 @@ export default function SolutionsViewerV2() {
                         }}
                         disabled={viewMode !== "split"}
                         aria-label="Reset split to 50/50"
-                        className="h-8 w-8 rounded-full inline-flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="h-8 w-8 rounded inline-flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         style={{ color: "rgba(255,255,255,0.55)" }}
                         onMouseEnter={(e) => { if (viewMode === "split") e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
@@ -2332,7 +2331,7 @@ export default function SolutionsViewerV2() {
                           }
                         }}
                         aria-label="Open in full screen"
-                        className="h-8 w-8 rounded-full inline-flex items-center justify-center transition-all"
+                        className="h-8 w-8 rounded inline-flex items-center justify-center transition-colors"
                         style={{ color: "rgba(255,255,255,0.55)" }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
