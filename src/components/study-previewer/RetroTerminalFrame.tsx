@@ -154,7 +154,7 @@ export default function RetroTerminalFrame({
   const safeChapter = chapterLabel?.trim() || "—";
 
   const promptLabel = !canPickTool
-    ? "> Awaiting chapter selection"
+    ? "> Select a chapter to reveal 3 study tools"
     : loading
     ? "> Loading chapter assets"
     : "> Select a tool to start studying";
