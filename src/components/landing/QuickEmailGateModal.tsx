@@ -4,6 +4,8 @@ import { Loader2, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { buildGetAccessUrl } from "@/lib/getAccessUrl";
+import { sendMagicLink } from "@/lib/sendMagicLink";
+import CheckEmailPanel from "@/components/landing/CheckEmailPanel";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
