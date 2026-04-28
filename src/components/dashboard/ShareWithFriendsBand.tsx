@@ -56,37 +56,28 @@ export default function ShareWithFriendsBand({ betaNumber, campusName, compact =
 
       <div className={`relative h-full flex flex-col ${compact ? "" : "max-w-2xl"}`}>
         <div
-          className="inline-flex items-center self-start gap-1.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-widest"
-          style={{ background: "rgba(255,255,255,0.12)", color: "#FCA5A5" }}
+          className="inline-flex items-center self-start gap-1.5 rounded-full px-2.5 py-0.5 text-[10.5px] font-bold uppercase"
+          style={{
+            background: "rgba(255,255,255,0.12)",
+            color: "#FCA5A5",
+            letterSpacing: "0.16em",
+          }}
         >
           <Sparkles className="h-3 w-3" /> Help us launch loud
         </div>
 
         <h2
-          className={`mt-3 leading-[1.08] ${compact ? "text-[24px] sm:text-[28px]" : "text-[28px] sm:text-[38px] leading-[1.1]"}`}
+          className={`mt-3 leading-[1.08] ${compact ? "text-[24px] sm:text-[28px]" : "text-[28px] sm:text-[38px]"}`}
           style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
         >
           Make this beta epic — share it with a friend.
         </h2>
 
         <p
-          className={`mt-3 leading-relaxed ${compact ? "text-[13.5px]" : "text-[14.5px] sm:text-[15.5px]"}`}
-          style={{ color: "rgba(255,255,255,0.85)" }}
+          className={`mt-2.5 leading-snug ${compact ? "text-[13.5px]" : "text-[14.5px] sm:text-[15.5px]"}`}
+          style={{ color: "rgba(255,255,255,0.78)" }}
         >
-          {compact ? (
-            <>
-              Every friend who joins makes the tools sharper for{" "}
-              {campusName ? campusName : "your class"} — and bumps you up the
-              leaderboard.
-            </>
-          ) : (
-            <>
-              Every friend who joins makes the tools sharper for{" "}
-              {campusName ? campusName : "your class"} — and bumps you up the
-              leaderboard. The more feedback we get, the better this gets before
-              your final.
-            </>
-          )}
+          Every friend who joins helps us improve the tools before finals.
         </p>
 
         <div className={`flex flex-col gap-2.5 ${compact ? "mt-5" : "mt-6 sm:flex-row sm:gap-3"}`}>
