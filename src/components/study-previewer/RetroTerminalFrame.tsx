@@ -875,6 +875,46 @@ function Line({
   );
 }
 
+function ChangeLink({ onClick, label = "change" }: { onClick: () => void; label?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="ml-2 sm:ml-3 align-middle inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 transition-all focus:outline-none focus-visible:ring-1"
+      style={{
+        background: "transparent",
+        border: `1px dashed ${PHOSPHOR_MUTED}`,
+        color: PHOSPHOR_DIM,
+        fontFamily: "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
+        fontSize: "0.72em",
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        textShadow: `0 0 4px ${PHOSPHOR_GLOW}`,
+        cursor: "pointer",
+        opacity: 0.85,
+      }}
+      onMouseEnter={(e) => {
+        const el = e.currentTarget;
+        el.style.color = PHOSPHOR;
+        el.style.borderColor = PHOSPHOR_DIM;
+        el.style.opacity = "1";
+        el.style.boxShadow = `0 0 10px ${PHOSPHOR_GLOW}`;
+      }}
+      onMouseLeave={(e) => {
+        const el = e.currentTarget;
+        el.style.color = PHOSPHOR_DIM;
+        el.style.borderColor = PHOSPHOR_MUTED;
+        el.style.opacity = "0.85";
+        el.style.boxShadow = "none";
+      }}
+    >
+      <span aria-hidden style={{ color: PHOSPHOR_MUTED }}>[</span>
+      {label}
+      <span aria-hidden style={{ color: PHOSPHOR_MUTED }}>]</span>
+    </button>
+  );
+}
+
 /**
  * Quick terminal-style "type-in" of a label whenever it changes.
  * Returns the currently visible substring, a typing flag (drives the inline
