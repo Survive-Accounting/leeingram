@@ -143,6 +143,13 @@ export default function RetroTerminalFrame({
           100% { color: #E8FFF1; text-shadow: 0 0 1px rgba(124,255,176,0.45), 0 0 8px rgba(124,255,176,0.45); }
         }
         .sa-value-pulse { animation: sa-phosphor-pulse 720ms cubic-bezier(0.22,1,0.36,1) both; }
+        /* Signal-received: brief soft phosphor wash across the whole line */
+        @keyframes sa-line-flash {
+          0%   { background: rgba(124,255,176,0); box-shadow: inset 0 0 0 0 rgba(124,255,176,0); }
+          18%  { background: rgba(124,255,176,0.10); box-shadow: inset 0 0 0 1px rgba(124,255,176,0.28), 0 0 14px rgba(124,255,176,0.18); }
+          100% { background: rgba(124,255,176,0); box-shadow: inset 0 0 0 0 rgba(124,255,176,0); }
+        }
+        .sa-line-flash { animation: sa-line-flash 780ms cubic-bezier(0.22,1,0.36,1) both; }
         /* Soft scanline brightness pulse on the whole CRT after an update */
         @keyframes sa-crt-pulse {
           0%   { box-shadow: inset 0 0 0 0 rgba(124,255,176,0); filter: brightness(1); }
@@ -384,7 +391,7 @@ export default function RetroTerminalFrame({
                   {">"} Survive Accounting Beta v1.0
                 </Line>
               )}
-              <Line show={bootStep >= 2}>
+              <Line show={bootStep >= 2} flashKey={courseTyped.pulseKey}>
                 {">"} Course selected:{" "}
                 <span
                   key={`course-${courseTyped.pulseKey}`}
@@ -407,7 +414,7 @@ export default function RetroTerminalFrame({
                   )}
                 </span>
               </Line>
-              <Line show={bootStep >= 3}>
+              <Line show={bootStep >= 3} flashKey={chapterTyped.pulseKey}>
                 {">"} Chapter selected:{" "}
                 <span
                   key={`chapter-${chapterTyped.pulseKey}`}
@@ -640,15 +647,32 @@ export default function RetroTerminalFrame({
   );
 }
 
-function Line({ show, children }: { show: boolean; children: React.ReactNode }) {
+function Line({
+  show,
+  children,
+  flashKey,
+}: {
+  show: boolean;
+  children: React.ReactNode;
+  flashKey?: string | number;
+}) {
+  const flashing = flashKey !== undefined && flashKey !== "" && flashKey !== 0;
   return (
     <div
-      className="whitespace-pre-wrap"
+      className={`relative whitespace-pre-wrap ${flashing ? "sa-line-flash" : ""}`}
+      key={flashing ? `flash-${flashKey}` : undefined}
       style={{
         opacity: show ? 1 : 0,
         transform: show ? "translateY(0)" : "translateY(2px)",
         transition: "opacity 220ms ease-out, transform 220ms ease-out",
         minHeight: "1.7em",
+        // Negative margin + padding so the highlight bleeds slightly past the
+        // text without shifting layout.
+        marginLeft: "-0.4em",
+        marginRight: "-0.4em",
+        paddingLeft: "0.4em",
+        paddingRight: "0.4em",
+        borderRadius: 4,
       }}
     >
       {children}
