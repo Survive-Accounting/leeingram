@@ -48,6 +48,8 @@ export default function RetroTerminalFrame({
   canPickTool = true,
   loading = false,
   onNudgeChapter,
+  welcomeName,
+  isReturning = false,
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
 
