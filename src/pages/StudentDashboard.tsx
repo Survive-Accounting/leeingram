@@ -256,10 +256,11 @@ export default function StudentDashboard() {
 
       const userEmail = session.user.email.toLowerCase();
       setEmail(userEmail);
+      setUserId(session.user.id);
 
       const { data: rows } = await supabase
         .from("student_purchases")
-        .select("id, course_id, expires_at, created_at")
+        .select("id, course_id, expires_at, created_at, campus_id")
         .eq("email", userEmail)
         .order("created_at", { ascending: false });
 
@@ -272,6 +273,35 @@ export default function StudentDashboard() {
       const active = rows.find((r) => !r.expires_at || new Date(r.expires_at).getTime() > now);
       const chosen = active ?? rows[0];
       setPurchase(chosen as Purchase);
+      setCampusId((chosen as any).campus_id ?? null);
+
+      // Onboarding check
+      const { data: onb } = await supabase
+        .from("student_onboarding")
+        .select("is_legacy, beta_number, campus_beta_number, display_name, welcomed_at, completed_at, campus_id")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      let campusName: string | null = null;
+      const cId = onb?.campus_id ?? (chosen as any).campus_id;
+      if (cId) {
+        const { data: c } = await supabase.from("campuses").select("name").eq("id", cId).maybeSingle();
+        campusName = c?.name ?? null;
+      }
+
+      if (!onb || !onb.completed_at) {
+        setNeedsOnboarding(true);
+      } else {
+        setOnboarding({
+          is_legacy: !!onb.is_legacy,
+          beta_number: onb.beta_number,
+          campus_beta_number: onb.campus_beta_number,
+          campus_name: campusName,
+          display_name: onb.display_name,
+          welcomed_at: onb.welcomed_at,
+        });
+        setShowWelcome(!onb.welcomed_at);
+      }
 
       const { data: chapterRows } = await supabase
         .from("chapters")
