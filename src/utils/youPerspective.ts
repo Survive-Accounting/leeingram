@@ -130,6 +130,28 @@ function buildEntityRoleMap(text: string): Record<string, string> {
 function transformLine(line: string, roles: Record<string, string>): string {
   let out = line;
 
+  // 0. Strip redundant "on the books of Survive Company A [(the role)]" phrases
+  //    BEFORE the entity substitution. In second person, "on your books" is
+  //    almost always implied by the verb (calculate, prepare, record), so we
+  //    drop the whole prepositional phrase for a tighter read.
+  //    "Calculate the ending inventory on the books of Survive Company A (the seller) using LIFO."
+  //    → "Calculate the ending inventory using LIFO."
+  out = out.replace(
+    new RegExp(
+      `\\s+on\\s+the\\s+books\\s+of\\s+Survive\\s+Company\\s+A(?:\\s*\\(\\s*the\\s+(?:${ROLE_PATTERN})\\s*\\))?`,
+      "gi",
+    ),
+    "",
+  );
+  // Same idea for "for Survive Company A (the role)" tail clauses.
+  out = out.replace(
+    new RegExp(
+      `\\s+for\\s+Survive\\s+Company\\s+A(?:\\s*\\(\\s*the\\s+(?:${ROLE_PATTERN})\\s*\\))?(?=[\\s.,;:!?]|$)`,
+      "gi",
+    ),
+    "",
+  );
+
   // 1. Possessive form first — "Survive Company A's" → "your".
   out = out.replace(/\bSurvive\s+Company\s+A's\b/g, "your");
   // After possessive, also handle the plain "Survive Company A".
