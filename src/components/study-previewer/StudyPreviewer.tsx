@@ -443,7 +443,7 @@ export default function StudyPreviewer({
 
       {/* Navy frame wrapper */}
       <div
-        className="relative rounded-[28px] p-5 sm:p-8 lg:p-10 sa-rise"
+        className="relative rounded-[28px] px-5 sm:px-8 lg:px-10 pt-9 sm:pt-12 lg:pt-14 pb-5 sm:pb-8 lg:pb-10 sa-rise"
         style={{
           background: `linear-gradient(180deg, ${NAVY} 0%, #1A2A4F 55%, #20335E 100%)`,
           boxShadow:
