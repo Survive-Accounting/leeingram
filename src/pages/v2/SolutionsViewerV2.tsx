@@ -1210,58 +1210,85 @@ function InlineExplanation({
   };
 
   return (
-    <div className="rounded-xl border bg-card p-5 shadow-sm space-y-4">
-      {/* Toolbox — opens directly to buttons, no heading */}
-      <div className="space-y-3 pt-1">
-        {/* Row 1 — Walk me through it (full width, red) */}
+    <div
+      className="rounded-lg border overflow-hidden flex flex-col"
+      style={{
+        background: "linear-gradient(180deg, #0F1A2E 0%, #0B1424 100%)",
+        borderColor: "rgba(255,255,255,0.08)",
+        boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px -12px rgba(0,0,0,0.5)",
+      }}
+    >
+      {/* ── Top control bar — action buttons live in a single header strip ── */}
+      <div
+        className="px-4 pt-4 pb-3 space-y-2.5 border-b"
+        style={{
+          borderColor: "rgba(255,255,255,0.06)",
+          background: "rgba(255,255,255,0.015)",
+        }}
+      >
+        {/* Row 1 — Walk me through it (full width, brand red) */}
         <button
           type="button"
           onClick={() => handleToolboxClick("walk_through")}
           className={cn(
-            "w-full inline-flex items-center justify-center gap-2 rounded-lg h-12 px-4 text-sm font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99]",
-            activeSection === "walk_through" && "ring-2 ring-offset-2 ring-[#CE1126]/40"
+            "w-full inline-flex items-center justify-center gap-2 rounded-md h-11 px-4 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-[0.99]",
+            activeSection === "walk_through" && "ring-1 ring-[#CE1126]/60",
           )}
           style={{
             background: "linear-gradient(180deg, #E63950 0%, #CE1126 50%, #A30E1F 100%)",
             boxShadow:
-              "0 1px 0 rgba(255,255,255,0.18) inset, 0 6px 16px -6px rgba(206,17,38,0.5), 0 2px 4px rgba(0,0,0,0.2)",
+              "0 1px 0 rgba(255,255,255,0.18) inset, 0 4px 12px -6px rgba(206,17,38,0.45)",
           }}
         >
           <span aria-hidden>{TOOLBOX_META.walk_through.emoji}</span>
           {TOOLBOX_META.walk_through.label}
         </button>
 
-        {/* Row 2 — Hint + Setup (two equal columns) */}
+        {/* Row 2 — Hint + Setup (two equal columns, dark ghost buttons) */}
         <div className="grid grid-cols-2 gap-2">
           {(["hint", "setup"] as ToolboxKey[]).map((k) => {
             const isActive = activeSection === k;
             return (
-              <Button
+              <button
                 key={k}
-                variant={isActive ? "default" : "outline"}
-                size="sm"
+                type="button"
                 onClick={() => handleToolboxClick(k)}
-                className="justify-start gap-2 h-9 text-xs sm:text-sm font-medium"
                 title={TOOLBOX_META[k].subtitle}
+                className="inline-flex items-center justify-start gap-2 h-9 px-3 rounded-md text-xs sm:text-[13px] font-medium transition-colors"
+                style={{
+                  background: isActive ? "rgba(206,17,38,0.18)" : "rgba(255,255,255,0.04)",
+                  border: isActive
+                    ? "1px solid rgba(206,17,38,0.5)"
+                    : "1px solid rgba(255,255,255,0.10)",
+                  color: isActive ? "#FFD3D8" : "rgba(255,255,255,0.85)",
+                }}
               >
                 <span aria-hidden>{TOOLBOX_META[k].emoji}</span>
                 {TOOLBOX_META[k].label}
-              </Button>
+              </button>
             );
           })}
         </div>
 
-        {/* Row 3 — Full solution (full width, secondary) */}
-        <Button
-          variant={activeSection === "full_solution" ? "default" : "outline"}
-          size="sm"
+        {/* Row 3 — Full solution (full width, dark ghost) */}
+        <button
+          type="button"
           onClick={() => handleToolboxClick("full_solution")}
-          className="w-full justify-start gap-2 h-9 text-xs sm:text-sm font-medium"
           title={TOOLBOX_META.full_solution.subtitle}
+          className="w-full inline-flex items-center justify-start gap-2 h-9 px-3 rounded-md text-xs sm:text-[13px] font-medium transition-colors"
+          style={{
+            background:
+              activeSection === "full_solution" ? "rgba(206,17,38,0.18)" : "rgba(255,255,255,0.04)",
+            border:
+              activeSection === "full_solution"
+                ? "1px solid rgba(206,17,38,0.5)"
+                : "1px solid rgba(255,255,255,0.10)",
+            color: activeSection === "full_solution" ? "#FFD3D8" : "rgba(255,255,255,0.85)",
+          }}
         >
           <span aria-hidden>{TOOLBOX_META.full_solution.emoji}</span>
           {TOOLBOX_META.full_solution.label}
-        </Button>
+        </button>
       </div>
 
       {hasJE && (
@@ -1280,44 +1307,78 @@ function InlineExplanation({
         </Dialog>
       )}
 
-      {error && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      {/* ── Response window — chat-style output area ─────────────────── */}
+      <div
+        className="px-4 py-4 flex-1 min-h-[140px] [&_*]:!text-white/95 [&_strong]:!text-white [&_th]:!text-white [&_td]:!text-white/90"
+        style={{ color: "rgba(255,255,255,0.92)" }}
+      >
+        {error && (
+          <div
+            className="mb-3 rounded-md p-3 text-sm"
+            style={{
+              background: "rgba(206,17,38,0.10)",
+              border: "1px solid rgba(206,17,38,0.35)",
+              color: "#FFD3D8",
+            }}
+          >
+            {error}
+          </div>
+        )}
 
-      {activeSection && (
-        <section
-          key={activeSection}
-          className="rounded-lg border border-border bg-muted/30 p-4 animate-in fade-in slide-in-from-top-1 duration-200"
-        >
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5">
-            <span aria-hidden>{TOOLBOX_META[activeSection].emoji}</span>
-            {TOOLBOX_META[activeSection].label}
-          </h3>
-          {loading && !responses[activeSection] ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              We're working on it…
+        {!activeSection && !error ? (
+          // Empty state — keeps the panel feeling like a tutor response area
+          // rather than a missing section. Lightweight, calm, on-brand.
+          <div
+            className="flex flex-col items-center justify-center text-center py-8 gap-2"
+            style={{ color: "rgba(255,255,255,0.45)" }}
+          >
+            <Sparkles className="h-4 w-4" style={{ color: "rgba(255,255,255,0.35)" }} />
+            <div className="text-[12px] font-medium">
+              Pick an option above and the tutor response will appear here.
             </div>
-          ) : responses[activeSection] ? (
-            activeSection === "walk_through" ? (
-              <WalkthroughStepper
-                text={responses.walk_through!}
-                onReviewFullSolution={() => handleToolboxClick("full_solution")}
-              />
-            ) : (
-              <InlineResponseBlock text={responses[activeSection]!} />
-            )
-          ) : null}
-        </section>
-      )}
+          </div>
+        ) : activeSection ? (
+          <section
+            key={activeSection}
+            className="animate-in fade-in slide-in-from-top-1 duration-200"
+          >
+            <div
+              className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-3 flex items-center gap-1.5"
+              style={{ color: "rgba(255,255,255,0.55)" }}
+            >
+              <span aria-hidden>{TOOLBOX_META[activeSection].emoji}</span>
+              {TOOLBOX_META[activeSection].label}
+            </div>
+            {loading && !responses[activeSection] ? (
+              <div
+                className="flex items-center gap-2 text-xs"
+                style={{ color: "rgba(255,255,255,0.55)" }}
+              >
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Thinking…
+              </div>
+            ) : responses[activeSection] ? (
+              activeSection === "walk_through" ? (
+                <WalkthroughStepper
+                  text={responses.walk_through!}
+                  onReviewFullSolution={() => handleToolboxClick("full_solution")}
+                />
+              ) : (
+                <InlineResponseBlock text={responses[activeSection]!} />
+              )
+            ) : null}
+          </section>
+        ) : null}
 
-      {activeSection && responses[activeSection] && (
-        <div className="pt-3 border-t border-border">
-          <ExplanationFeedback asset={asset} onShareClick={onShareClick} />
-        </div>
-      )}
+        {activeSection && responses[activeSection] && (
+          <div
+            className="mt-4 pt-3 border-t"
+            style={{ borderColor: "rgba(255,255,255,0.08)" }}
+          >
+            <ExplanationFeedback asset={asset} onShareClick={onShareClick} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
