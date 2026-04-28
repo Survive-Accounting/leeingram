@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { buildShareUrl, captureRefFromUrl, logShareClick, attachReferrerOnConversion } from "@/lib/referralTracking";
+import { toYouPerspective } from "@/utils/youPerspective";
 
 type Asset = {
   id: string;
