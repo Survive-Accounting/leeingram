@@ -293,20 +293,29 @@ export default function StudentDashboard() {
       <BetaCountdownStrip />
       <DashNavbar onFeedback={() => setFeedbackOpen(true)} onSignOut={handleSignOut} />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-5 sm:px-8 pt-10 md:pt-12 pb-20 space-y-10">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-5 sm:px-8 pt-10 md:pt-12 pb-20 space-y-12 md:space-y-14">
         {/* Top row — Share (primary, left) + A Note From Lee (right) */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-6 items-stretch">
-          <div className="md:col-span-7">
-            <ShareWithFriendsBand
-              betaNumber={betaNumber}
-              campusName={campusName}
-              compact
-            />
+        <section aria-label="Beta priorities">
+          <div
+            className="inline-flex items-center gap-2 text-[10.5px] font-bold uppercase mb-3"
+            style={{ color: "#94A3B8", letterSpacing: "0.18em", fontFamily: "Inter, sans-serif" }}
+          >
+            <span className="inline-block rounded-full" style={{ width: 5, height: 5, background: "#CBD5E1" }} />
+            Your beta · two quick things
           </div>
-          <div className="md:col-span-5">
-            <WelcomeVideoCard onClick={() => setVideoOpen(true)} fullWidth />
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-6 items-stretch">
+            <div className="md:col-span-7">
+              <ShareWithFriendsBand
+                betaNumber={betaNumber}
+                campusName={campusName}
+                compact
+              />
+            </div>
+            <div className="md:col-span-5">
+              <WelcomeVideoCard onClick={() => setVideoOpen(true)} fullWidth />
+            </div>
           </div>
-        </div>
+        </section>
 
         {!earlyBirdOpted && userId && (
           <div className="text-center md:text-left">
@@ -317,7 +326,7 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {/* Previewer entry — eyebrow + headline + monitor read as one launchpad unit */}
+        {/* Previewer entry — the centerpiece */}
         <div className="space-y-6">
           <div className="text-center" style={{ maxWidth: 760, margin: "0 auto" }}>
             <div
