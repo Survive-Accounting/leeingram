@@ -979,7 +979,14 @@ function InlineExplanation({
               We're working on it…
             </div>
           ) : responses[activeSection] ? (
-            <InlineResponseBlock text={responses[activeSection]!} />
+            activeSection === "walk_through" ? (
+              <WalkthroughStepper
+                text={responses.walk_through!}
+                onReviewFullSolution={() => handleToolboxClick("full_solution")}
+              />
+            ) : (
+              <InlineResponseBlock text={responses[activeSection]!} />
+            )
           ) : null}
         </section>
       )}
