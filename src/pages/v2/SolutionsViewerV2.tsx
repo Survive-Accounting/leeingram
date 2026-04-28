@@ -1592,7 +1592,11 @@ export default function SolutionsViewerV2() {
   }, [asset, siblings]);
 
   const instructions = asset ? getInstructions(asset) : [];
-  const courseLabel = getCourseLabel(chapter?.course);
+  const courseLabel = buildCourseLabel({
+    courseName: chapter?.course?.course_name,
+    campusSlug,
+    localCourseCode,
+  });
   const headerLabel = chapter
     ? `Ch ${chapter.chapter_number}${asset?.source_ref ? ` — ${asset.source_ref}` : ""}`
     : asset?.source_ref || "";
