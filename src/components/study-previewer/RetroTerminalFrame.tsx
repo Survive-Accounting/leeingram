@@ -225,18 +225,76 @@ export default function RetroTerminalFrame({
                   borderBottom: `1px dashed ${PHOSPHOR_DIM}`,
                 }}
               >
-                <img
-                  src={LOGO_URL}
-                  alt="Survive Accounting"
-                  className="h-5 sm:h-6 w-auto object-contain select-none"
-                  style={{
-                    // Phosphor tint: knock the white logo into the green palette
-                    filter:
-                      "brightness(0) saturate(100%) invert(92%) sepia(38%) saturate(640%) hue-rotate(76deg) brightness(105%) contrast(101%) drop-shadow(0 0 4px rgba(124,255,176,0.45))",
-                    opacity: 0.95,
-                  }}
-                  draggable={false}
-                />
+                <div className="flex items-center gap-2 min-w-0">
+                  <img
+                    src={LOGO_URL}
+                    alt="Survive Accounting"
+                    className="h-5 sm:h-6 w-auto object-contain select-none"
+                    style={{
+                      // Phosphor tint: knock the white logo into the green palette
+                      filter:
+                        "brightness(0) saturate(100%) invert(92%) sepia(38%) saturate(640%) hue-rotate(76deg) brightness(105%) contrast(101%) drop-shadow(0 0 4px rgba(124,255,176,0.45))",
+                      opacity: 0.95,
+                    }}
+                    draggable={false}
+                  />
+                  <TooltipProvider delayDuration={150}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="What's a green cathode monitor?"
+                          className="inline-flex items-center justify-center rounded-full transition-opacity focus:outline-none"
+                          style={{
+                            width: 16,
+                            height: 16,
+                            color: PHOSPHOR_DIM,
+                            opacity: 0.7,
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                          onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.7")}
+                        >
+                          <Info className="h-3.5 w-3.5" strokeWidth={1.75} />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent
+                        side="bottom"
+                        align="start"
+                        sideOffset={8}
+                        className="border max-w-[280px] p-3"
+                        style={{
+                          background: "rgba(8,18,12,0.96)",
+                          borderColor: "rgba(124,255,176,0.35)",
+                          color: "#E8FFF1",
+                          fontFamily:
+                            "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+                          boxShadow:
+                            "0 8px 24px rgba(0,0,0,0.55), 0 0 18px rgba(124,255,176,0.18)",
+                        }}
+                      >
+                        <div
+                          className="text-[11px] uppercase mb-1.5"
+                          style={{
+                            color: PHOSPHOR,
+                            letterSpacing: "0.12em",
+                            textShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                          }}
+                        >
+                          What's a green cathode monitor?
+                        </div>
+                        <p
+                          className="text-[12px] leading-relaxed m-0"
+                          style={{ color: "rgba(232,255,241,0.85)" }}
+                        >
+                          Before modern flat screens, accountants and office
+                          workers often used monochrome CRT monitors like these.
+                          Green-screen terminals were common in the 70s and 80s,
+                          so this is our little nod to old-school accounting tech.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <span
                   style={{
                     fontSize: "0.78em",
