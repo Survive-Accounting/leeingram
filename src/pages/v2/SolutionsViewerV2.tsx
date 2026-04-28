@@ -2409,17 +2409,14 @@ export default function SolutionsViewerV2() {
               onClick={() => setFeedbackChooserOpen(true)}
               data-embed-allow="true"
               aria-label="Share feedback about this problem"
-              className="group relative inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-xs font-semibold transition-all hover:brightness-110 hover:-translate-y-px"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-colors hover:bg-white/[0.06]"
               style={{
-                background:
-                  "linear-gradient(180deg, rgba(251,191,36,0.18) 0%, rgba(245,158,11,0.12) 100%)",
-                border: "1px solid rgba(251,191,36,0.55)",
-                color: "#FDE68A",
-                boxShadow:
-                  "0 0 0 1px rgba(251,191,36,0.08), 0 6px 18px -8px rgba(251,191,36,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "rgba(255,255,255,0.85)",
               }}
             >
-              <Sparkles className="h-3.5 w-3.5" style={{ color: "#FCD34D" }} />
+              <MessageCircleQuestion className="h-3.5 w-3.5" style={{ color: "rgba(255,255,255,0.7)" }} />
               <span className="hidden sm:inline">Share Feedback</span>
             </button>
           </div>
