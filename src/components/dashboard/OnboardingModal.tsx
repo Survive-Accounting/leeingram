@@ -10,7 +10,9 @@ const RED = "#CE1126";
 interface Campus {
   id: string;
   name: string;
+  slug: string;
 }
+const CATCH_ALL_SLUG = "general";
 interface Course {
   id: string;
   course_name: string;
@@ -51,6 +53,7 @@ export default function OnboardingModal({
   const [syllabusPath, setSyllabusPath] = useState<string | null>(null);
   const [syllabusName, setSyllabusName] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [campusWriteIn, setCampusWriteIn] = useState("");
 
   const [major, setMajor] = useState<"yes" | "no" | "definitely_not" | null>(null);
   const [inGreek, setInGreek] = useState<boolean | null>(null);
@@ -64,12 +67,18 @@ export default function OnboardingModal({
     (async () => {
       const { data } = await supabase
         .from("campuses")
-        .select("id, name")
+        .select("id, name, slug")
         .eq("status", "active")
         .order("name", { ascending: true });
       setCampuses((data || []) as Campus[]);
     })();
   }, []);
+
+  const prefilledCampus = useMemo(
+    () => campuses.find((c) => c.id === campusId) || null,
+    [campuses, campusId],
+  );
+  const isCatchAll = prefilledCampus?.slug === CATCH_ALL_SLUG;
 
   // Validation per step
   const canAdvance = useMemo(() => {
