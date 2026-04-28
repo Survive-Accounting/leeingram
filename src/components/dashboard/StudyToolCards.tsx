@@ -1,4 +1,4 @@
-import { ArrowRight, Wand2, Brain, Sparkles, Plus } from "lucide-react";
+import { ArrowRight, Wand2, Brain, Sparkles } from "lucide-react";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -33,95 +33,85 @@ export default function StudyToolCards({
 
   return (
     <section>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <ToolCard
-          icon={<Wand2 className="h-4 w-4" />}
-          eyebrow="Tool 01"
-          title="Practice Problem Helper"
-          body="Step-by-step explanations for any problem in this chapter."
-          cta="Open"
-          status="active"
-          accent={RED}
-          isActive={active === "practice"}
-          loading={loading}
-          onClick={() => handleToolClick("practice")}
-        />
-        <ToolCard
-          icon={<Brain className="h-4 w-4" />}
-          eyebrow="Tool 02 · Building"
-          title="Journal Entry Helper"
-          body="Drill the JEs you'll need to memorize for the exam."
-          cta="Preview"
-          status="soon"
-          accent={NAVY}
-          isActive={active === "je"}
-          loading={loading}
-          onClick={() => handleToolClick("je")}
-        />
-        <ToolCard
-          icon={<Sparkles className="h-4 w-4" />}
-          eyebrow="Tool 03 · Your turn"
-          title="Tell us what you want built"
-          body="If we could build the perfect study tool for you, what would it do?"
-          cta="Drop an idea"
-          status="prompt"
-          accent={NAVY}
-          isActive={false}
-          loading={loading}
-          onClick={onOpenFeedback}
-          dashed
-        />
+      {/* Two primary tools, then a quieter "feedback" card */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <div className="md:col-span-5">
+          <PrimaryToolCard
+            icon={<Wand2 className="h-4 w-4" />}
+            title="Practice Problem Helper"
+            body="Step-by-step help, hints, walkthroughs, and challenge questions."
+            cta="Open"
+            isActive={active === "practice"}
+            loading={loading}
+            onClick={() => handleToolClick("practice")}
+          />
+        </div>
+        <div className="md:col-span-5">
+          <PrimaryToolCard
+            icon={<Brain className="h-4 w-4" />}
+            title="Journal Entry Helper"
+            body="Drill the journal entries you'll need to know for the exam."
+            cta="Preview"
+            badge="Coming soon"
+            isActive={active === "je"}
+            loading={loading}
+            onClick={() => handleToolClick("je")}
+          />
+        </div>
+        <div className="md:col-span-2">
+          <SecondaryToolCard
+            title="Tell us what to build next"
+            body="What study tool would make this even better for you?"
+            cta="Drop an idea"
+            onClick={onOpenFeedback}
+            disabled={loading}
+          />
+        </div>
       </div>
     </section>
   );
 }
 
-function ToolCard({
+/* ─── Primary tool card ─── */
+
+function PrimaryToolCard({
   icon,
-  eyebrow,
   title,
   body,
   cta,
-  status,
-  accent,
+  badge,
   isActive,
   loading,
   onClick,
-  dashed,
 }: {
   icon: React.ReactNode;
-  eyebrow: string;
   title: string;
   body: string;
   cta: string;
-  status: "active" | "soon" | "prompt";
-  accent: string;
+  badge?: string;
   isActive: boolean;
   loading: boolean;
   onClick: () => void;
-  dashed?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="group relative text-left rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg flex flex-col overflow-hidden"
+      className="group relative w-full h-full text-left rounded-2xl p-5 sm:p-6 transition-all duration-200 hover:-translate-y-0.5 flex flex-col overflow-hidden"
       style={{
         background: "#fff",
-        border: dashed
-          ? `2px dashed ${isActive ? NAVY : "#CBD5E1"}`
-          : `1px solid ${isActive ? NAVY : "#E0E7F0"}`,
+        border: `1px solid ${isActive ? NAVY : "#E0E7F0"}`,
         boxShadow: isActive
-          ? "0 0 0 3px rgba(20,33,61,0.10), 0 8px 22px rgba(20,33,61,0.10)"
-          : "0 4px 14px rgba(20,33,61,0.05)",
+          ? "0 0 0 3px rgba(20,33,61,0.10), 0 12px 28px rgba(20,33,61,0.14)"
+          : "0 6px 18px rgba(20,33,61,0.07)",
         fontFamily: "Inter, sans-serif",
         minHeight: 200,
         opacity: loading ? 0.7 : 1,
         cursor: loading ? "wait" : "pointer",
       }}
     >
-      {/* Shimmer overlay while a chapter is loading */}
+      {/* Shimmer while a chapter is loading */}
       {loading && (
         <span
           aria-hidden
@@ -134,54 +124,100 @@ function ToolCard({
         />
       )}
 
-      {status === "soon" && (
+      {badge && (
         <span
-          className="absolute top-3 right-3 text-[10px] uppercase tracking-widest font-semibold rounded-full px-2 py-0.5 z-10"
+          className="absolute top-4 right-4 text-[10px] uppercase tracking-widest font-semibold rounded-full px-2 py-0.5 z-10"
           style={{ background: "#FEF3C7", color: "#92400E" }}
         >
-          Coming soon
-        </span>
-      )}
-      {status === "prompt" && (
-        <span
-          className="absolute top-3 right-3 text-[10px] uppercase tracking-widest font-semibold rounded-full px-2 py-0.5 z-10 inline-flex items-center gap-1"
-          style={{ background: "#EEF2F7", color: NAVY }}
-        >
-          <Plus className="h-3 w-3" /> Add a tool
+          {badge}
         </span>
       )}
 
       <div
-        className="w-9 h-9 rounded-lg flex items-center justify-center mb-3 relative z-10"
-        style={{ background: `${accent}15`, color: accent }}
+        className="w-9 h-9 rounded-lg flex items-center justify-center mb-4 relative z-10"
+        style={{ background: `${NAVY}0F`, color: NAVY }}
       >
         {icon}
       </div>
 
-      <p
-        className="text-[10.5px] uppercase tracking-widest font-semibold mb-1 relative z-10"
-        style={{ color: "#94A3B8" }}
-      >
-        {eyebrow}
-      </p>
       <h3
-        className="text-[15.5px] font-semibold leading-snug relative z-10"
+        className="text-[16px] sm:text-[16.5px] font-semibold leading-snug relative z-10"
         style={{ color: NAVY }}
       >
         {title}
       </h3>
       <p
-        className="mt-1.5 text-[12.5px] leading-relaxed flex-1 relative z-10"
+        className="mt-1.5 text-[13px] leading-relaxed flex-1 relative z-10"
         style={{ color: "#64748B" }}
       >
         {body}
       </p>
 
       <div
-        className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-semibold transition-transform group-hover:translate-x-0.5 relative z-10"
-        style={{ color: accent }}
+        className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold transition-transform group-hover:translate-x-0.5 relative z-10"
+        style={{ color: RED }}
       >
         {cta} <ArrowRight className="h-3.5 w-3.5" />
+      </div>
+    </button>
+  );
+}
+
+/* ─── Quieter secondary card (feedback) ─── */
+
+function SecondaryToolCard({
+  title,
+  body,
+  cta,
+  onClick,
+  disabled,
+}: {
+  title: string;
+  body: string;
+  cta: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="group w-full h-full text-left rounded-2xl p-5 transition-all duration-200 hover:bg-white hover:-translate-y-0.5 flex flex-col"
+      style={{
+        background: "rgba(255,255,255,0.55)",
+        border: "1.5px dashed #CBD5E1",
+        fontFamily: "Inter, sans-serif",
+        minHeight: 200,
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.6 : 1,
+      }}
+    >
+      <div
+        className="w-7 h-7 rounded-md flex items-center justify-center mb-3"
+        style={{ background: "transparent", color: "#94A3B8" }}
+      >
+        <Sparkles className="h-3.5 w-3.5" />
+      </div>
+
+      <h3
+        className="text-[13.5px] font-semibold leading-snug"
+        style={{ color: NAVY }}
+      >
+        {title}
+      </h3>
+      <p
+        className="mt-1.5 text-[12px] leading-relaxed flex-1"
+        style={{ color: "#64748B" }}
+      >
+        {body}
+      </p>
+
+      <div
+        className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold transition-transform group-hover:translate-x-0.5"
+        style={{ color: NAVY }}
+      >
+        {cta} <ArrowRight className="h-3 w-3" />
       </div>
     </button>
   );
