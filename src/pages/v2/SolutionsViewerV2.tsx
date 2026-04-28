@@ -2196,22 +2196,23 @@ export default function SolutionsViewerV2() {
             </button>
           </div>
 
-          {/* RIGHT — Stuck? utility */}
+          {/* RIGHT — Share Feedback */}
           <div className="flex items-center gap-2 justify-end">
             <button
               type="button"
               onClick={() => setHelpOpen(true)}
               data-embed-allow="true"
-              aria-label="Stuck? Send feedback"
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-xs font-medium transition-colors hover:bg-white/10"
+              aria-label="Share feedback about this problem"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-xs font-semibold transition-colors hover:brightness-110"
               style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "rgba(255,255,255,0.85)",
+                background: "rgba(206,17,38,0.14)",
+                border: "1px solid rgba(206,17,38,0.45)",
+                color: "#FFD3D8",
+                boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset",
               }}
             >
               <MessageCircleQuestion className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Stuck?</span>
+              <span className="hidden sm:inline">Share Feedback</span>
             </button>
           </div>
         </div>
