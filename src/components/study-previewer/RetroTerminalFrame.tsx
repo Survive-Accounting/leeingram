@@ -500,3 +500,55 @@ function Line({ show, children }: { show: boolean; children: React.ReactNode }) 
     </div>
   );
 }
+
+/**
+ * Quick terminal-style "type-in" of a label whenever it changes.
+ * Returns the currently visible substring, a typing flag (drives the inline
+ * cursor), and a pulseKey that bumps on each new value (drives the glow pulse).
+ * Skips animation on first mount so the initial reveal stays calm.
+ */
+function useTerminalValue(value: string | null) {
+  const safe = (value ?? "").trim();
+  const [text, setText] = useState(safe);
+  const [typing, setTyping] = useState(false);
+  const [pulseKey, setPulseKey] = useState(0);
+  const prevRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    // First mount: snap, no animation.
+    if (prevRef.current === null) {
+      prevRef.current = safe;
+      setText(safe);
+      return;
+    }
+    if (prevRef.current === safe) return;
+    prevRef.current = safe;
+
+    // No value yet → just clear, no typing effect.
+    if (!safe) {
+      setText("");
+      setTyping(false);
+      return;
+    }
+
+    // Type the new value in quickly, then pulse.
+    setTyping(true);
+    setText("");
+    const total = safe.length;
+    // Cap total animation around ~280ms regardless of length
+    const perChar = Math.max(8, Math.min(22, Math.floor(280 / Math.max(total, 1))));
+    const timers: number[] = [];
+    for (let i = 1; i <= total; i++) {
+      timers.push(window.setTimeout(() => setText(safe.slice(0, i)), i * perChar));
+    }
+    timers.push(
+      window.setTimeout(() => {
+        setTyping(false);
+        setPulseKey((k) => k + 1);
+      }, total * perChar + 40),
+    );
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [safe]);
+
+  return { text, typing, pulseKey };
+}
