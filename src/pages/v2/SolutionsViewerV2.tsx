@@ -819,7 +819,7 @@ function InlineExplanation({
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Lee is unpacking part (a)… first step lands in a few seconds.
+                We're unpacking part (a)… first step lands in a few seconds.
               </div>
             </div>
           ) : sections ? (
