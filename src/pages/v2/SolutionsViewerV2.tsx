@@ -1764,6 +1764,19 @@ export default function SolutionsViewerV2() {
   const [localCourseCode, setLocalCourseCode] = useState<string | null>(null);
 
   const [helpOpen, setHelpOpen] = useState(false);
+  const [feedbackChooserOpen, setFeedbackChooserOpen] = useState(false);
+
+  const openReportIssue = () => {
+    setFeedbackChooserOpen(false);
+    // Defer slightly so the chooser unmount doesn't race the second dialog.
+    setTimeout(() => setHelpOpen(true), 80);
+  };
+  const openSuggestFeature = () => {
+    setFeedbackChooserOpen(false);
+    setTimeout(() => {
+      try { window.dispatchEvent(new Event("sa:open-vote-ideas")); } catch { /* ignore */ }
+    }, 80);
+  };
   const [activeHelper, setActiveHelper] = useState<string | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [jumpOpen, setJumpOpen] = useState(false);
