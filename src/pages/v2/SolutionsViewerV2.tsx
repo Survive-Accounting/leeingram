@@ -969,10 +969,6 @@ function ShareModal({
             )}
           </Button>
         </div>
-
-        <p className="text-xs text-muted-foreground italic">
-          "Helped me cram this way faster — try this"
-        </p>
       </DialogContent>
     </Dialog>
   );
