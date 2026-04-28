@@ -83,6 +83,8 @@ export default function OnboardingModal({
   // Validation per step
   const canAdvance = useMemo(() => {
     if (step === 1) {
+      // Catch-all campus: name only — write-in/skip is allowed.
+      if (isCatchAll) return name.trim().length > 0;
       return name.trim().length > 0 && !!campusId;
     }
     if (step === 2) {
@@ -95,7 +97,7 @@ export default function OnboardingModal({
       return confidence >= 1 && confidence <= 10;
     }
     return false;
-  }, [step, name, campusId, major, inGreek, greekOrgId, greekOther, confidence]);
+  }, [step, name, campusId, isCatchAll, major, inGreek, greekOrgId, greekOther, confidence]);
 
   const handleSyllabusUpload = async (file: File) => {
     if (!file) return;
