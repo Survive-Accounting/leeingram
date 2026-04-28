@@ -1,97 +1,70 @@
+# Speed Up the Walk-Me-Through Buttons
 
-# Bite-Sized "Walk Me Through It" — One Part at a Time
+## What's actually slow (and what isn't)
 
-## The Goal
+Two buttons feel slow, but for different reasons:
 
-Big multi-part word problems are overwhelming. Today, "Walk me through this problem" dumps the entire solution at once. We'll generate it once in the background, but **deliver it one part at a time** with a "Continue to part (b) →" button. Students can also choose **"Show me everything"** to dump the full thing if they want.
+| Button | What happens today | Why it feels slow |
+|---|---|---|
+| **"Walk me through this problem"** (initial red CTA) | Calls `explain-this-solution` edge function → OpenAI `gpt-5-mini` reasoning call → returns full JSON → renders Step (a) | Cold call to a reasoning model is 5–15s. Student stares at "Survive Accounting is thinking…" with zero progress. |
+| **"Continue to part (b)"** / **"Back"** | Pure `setWalkStep(idx + 1)` — local React state | Already instant *after* the first call. The lag is just the visual "feel" — no transition, content swap is abrupt. |
 
-This makes a 5-part problem feel like 5 small, winnable steps instead of one wall of text.
-
----
-
-## Approach
-
-### 1. Restructure the AI output (the key unlock)
-
-Today `how_to_solve` is one markdown blob. We change the edge function `explain-this-solution` to return a structured `walkthrough` array — one entry per instruction part:
-
-```json
-{
-  "walkthrough": [
-    { "part": "a", "title": "Calculate gross profit", "content": "..." },
-    { "part": "b", "title": "Net amount to settle invoice", "content": "..." },
-    ...
-  ]
-}
-```
-
-The AI generates **all parts at once** in a single call (same cost as today — no extra API hits). We just ask it to split by instruction letter. Caching stays the same (whole asset cached once).
-
-Backwards-compatible: keep `how_to_solve` (the legacy markdown blob) as a fallback so existing cached rows still render.
-
-### 2. Bite-sized UI in the Solutions Viewer
-
-When a student clicks **"Walk me through this problem"**, instead of dumping everything, show:
-
-```text
-┌─────────────────────────────────────────┐
-│ Step (a) of 5  ·  Calculate gross profit│
-│                                         │
-│ [bite-sized explanation for part a]     │
-│                                         │
-│ ─────────────────────────────────       │
-│  ◉ ◯ ◯ ◯ ◯   ← progress dots           │
-│                                         │
-│  [ Show me everything ]  [ Continue → ] │
-└─────────────────────────────────────────┘
-```
-
-- **Continue to part (b) →**: advances one step. Auto-checks the corresponding task in "Your Tasks" so the checklist stays synced.
-- **Show me everything**: collapses into the old single-scroll view for power users.
-- **Back**: lets them re-read a previous part.
-- On the **last** part, the button becomes **"I got it ✓"** which marks all tasks done and surfaces the feedback prompt.
-
-Why this works: it matches how the existing instructions checklist already works (one task at a time, current-task highlight). The walkthrough now mirrors that rhythm — read part (a), do part (a), continue.
-
-### 3. Quick-win companions (same night, low effort)
-
-Three small changes that compound the "easier to digest" goal:
-
-- **Auto-scroll the matching task into view** when you advance — the checklist on the left highlights part (b) at the same moment the explanation reveals part (b). Cause-and-effect.
-- **"What's this part asking?" plain-English restate** at the top of each step — one sentence in Lee's voice that translates the textbook instruction (e.g., *"Just figure out: sale price minus cost. That's it."*). The AI already produces this naturally; we just surface it as a styled callout.
-- **Estimated time per part** (e.g., *"~30 sec"*) as a subtle muted-text hint. Tiny psychological win — students see "30 seconds" and start, instead of seeing a wall and bouncing.
+So this is really a **first-call latency** problem plus a small **perceived-speed** problem on the step nav. Below are the quick wins, ordered by impact.
 
 ---
 
-## Technical Details
+## Quick wins (tonight)
 
-**Files touched:**
-- `supabase/functions/explain-this-solution/index.ts` — add `walkthrough` array to the schema; keep `how_to_solve` for back-compat.
-- `src/pages/v2/SolutionsViewerV2.tsx` (`InlineExplanation` component, ~line 491) — add `currentStep` state; render stepped view by default; add "Show me everything" toggle; wire `onAdvance` to call `toggleTask(i)` so the left checklist stays in sync.
+### 1. Prefetch the explanation in the background as soon as the problem loads
+**Highest impact.** Right now we don't call `explain-this-solution` until the student clicks the red button. We can fire it silently when the Solutions Viewer mounts (or when the student scrolls past the problem text). By the time they click "Walk me through this problem," the cache is warm and the response is **instant**.
 
-**State:**
-```ts
-const [currentStep, setCurrentStep] = useState(0);
-const [showAll, setShowAll] = useState(false);
-```
+- Add a `useEffect` in `SolutionsViewerV2` that calls `ensureSections()` after a short idle delay (e.g. 1.5s after mount) — only if not already loading/loaded.
+- Use the existing cache check on the edge function — repeat calls return immediately.
+- Cost impact: identical to today, since 99% of clickers would have triggered it anyway. We can gate it to "only prefetch if the asset already has a cached explanation in the DB" to be even safer (zero new AI cost — pure cache reads).
 
-**Caching:** Existing `explanation_cache` row is invalidated naturally — first load after deploy will regenerate with the new shape. Old cached rows still render via the `how_to_solve` fallback.
+### 2. Show progressive skeleton + "first step in ~5s" message instead of a spinner
+A bare spinner with "thinking…" feels endless. Replace with:
+- A 3-line shimmering skeleton sized like a real step (header + restate callout + content lines).
+- Subtitle: *"Lee is unpacking part (a)… first step lands in a few seconds."*
+- This makes the same 5–10s wait feel ~half as long (well-documented UX effect).
 
-**Prompt change:** Add to the existing system prompt:
-> "Split your step-by-step solution by instruction letter. For each lettered part (a, b, c…), produce: a one-sentence plain-English restate, then 2–4 short steps. Return as a `walkthrough` array."
+### 3. Make the Continue button feel instant with a micro-transition
+Continue/Back are already local state — but the content swap is a hard cut, which reads as "did anything happen?" Add:
+- A 120ms `fade-in slide-in-from-right-1` animation on the step body when `walkStep` changes (we already use this pattern elsewhere in the file).
+- Optimistic checkbox tick on Continue (we already do this — keep it).
+- Keep the "Continue to part (b)" button focused after click so keyboard users don't lose place.
+
+### 4. Pre-warm the cache for *all* problems in the chapter (background job, optional)
+For approved assets that don't yet have a `survive_solution_explanation_cache` with the new `walkthrough` shape, run a one-time bulk warm. After that, **every** "Walk me through this problem" click is a pure DB read (~100ms instead of 5–15s).
+
+- Reuse the existing background-job pattern (batches of 10).
+- Skip if `cache.sections.walkthrough` already exists.
+- One-time spend, then permanently fast for every student.
+
+### 5. Smaller win: switch `gpt-5-mini` → `gpt-5-nano` for the walkthrough call
+`gpt-5-nano` is dramatically faster and cheaper, and the walkthrough output is short structured bullets — the lower reasoning depth is fine here. Worth A/B-ing on 5–10 problems first to confirm quality holds. (Skip if you'd rather not touch the model tonight.)
 
 ---
 
-## What This Doesn't Change
+## What I would NOT change tonight
 
-- "Start me off", "Explain the rule", "Show the setup" stay as-is (they're already concise by design).
-- Pricing, paywall, JE display, and chapter content all untouched.
-- No DB migration needed.
+- **Streaming the AI response token-by-token.** OpenAI tool-calling responses don't stream usefully (the JSON has to be complete to parse). True streaming would require restructuring the prompt to emit one part at a time — bigger change, save for a later sprint.
+- **The Back/Continue logic itself.** It's already a single `setState`. Nothing to optimize there beyond the visual transition in #3.
 
 ---
 
-## Future Enhancements (not tonight)
+## Recommended order
 
-- Streaming reveal (type-on effect per part) — feels alive but adds complexity.
-- "Stuck on this part?" inline button per step that fires a smaller, cheaper "just this part" AI call.
-- Track which parts students re-read most → signal for content QA.
+1. **#1 Prefetch on mount** (biggest perceived win, ~10 lines of code)
+2. **#2 Better skeleton + copy** (no perf change, but makes the unavoidable wait tolerable)
+3. **#3 Micro-transition on Continue** (polish — makes the whole flow feel snappy)
+4. **#4 Bulk pre-warm cache** (do once, benefits forever)
+5. **#5 Model swap** (only if you want to)
+
+## Files I'd touch
+
+- `src/pages/v2/SolutionsViewerV2.tsx` — prefetch effect, skeleton, transition (items 1–3)
+- `supabase/functions/explain-this-solution/index.ts` — model swap if doing #5
+- New small bulk-warm script or one-off button in admin for #4
+
+Want me to ship 1+2+3 right now and leave 4 and 5 for a follow-up?
