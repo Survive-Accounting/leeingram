@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { X, Loader2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { sendMagicLink } from "@/lib/sendMagicLink";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -62,17 +63,6 @@ export default function MagicLinkModal({ open, onClose }: MagicLinkModalProps) {
 
   if (!open) return null;
 
-  const sendLink = async (target: string) => {
-    const { error: otpErr } = await supabase.auth.signInWithOtp({
-      email: target,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        shouldCreateUser: false,
-      },
-    });
-    return otpErr;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -83,17 +73,17 @@ export default function MagicLinkModal({ open, onClose }: MagicLinkModalProps) {
     }
     setLoading(true);
     try {
-      const otpErr = await sendLink(clean);
-      if (otpErr) {
-        const msg = otpErr.message?.toLowerCase() || "";
+      const { ok, error: errMsg } = await sendMagicLink({ email: clean });
+      if (!ok) {
+        const msg = (errMsg || "").toLowerCase();
         if (
+          msg.includes("no account") ||
           msg.includes("not found") ||
-          msg.includes("invalid") ||
           msg.includes("signups not allowed")
         ) {
           setError("We couldn't find an active Study Pass for that email.");
         } else {
-          setError("Something went wrong. Try again or email lee@surviveaccounting.com.");
+          setError(errMsg || "Something went wrong. Try again or email lee@surviveaccounting.com.");
         }
         return;
       }
@@ -110,8 +100,8 @@ export default function MagicLinkModal({ open, onClose }: MagicLinkModalProps) {
     if (resending) return;
     setResending(true);
     try {
-      const otpErr = await sendLink(email);
-      if (otpErr) {
+      const { ok } = await sendMagicLink({ email });
+      if (!ok) {
         toast.error("Couldn't resend. Try again in a minute.");
       } else {
         toast.success("New login link sent.");
