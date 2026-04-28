@@ -2649,277 +2649,173 @@ export default function SolutionsViewerV2() {
                   )}
                 </div>
 
-                {/* Problem section — with reading controls (Show/Hide + One at a time / All at once) */}
+                {/* Problem text — always visible. Long word problems get a
+                    comfortable reading width and generous line-height. */}
                 {asset.survive_problem_text && (
                   <div className="mt-4">
-                    {/* Compact reading control bar */}
                     <div
-                      className="flex flex-wrap items-center gap-2 mb-3 text-[11px] font-medium"
-                      style={{ color: "rgba(255,255,255,0.55)" }}
+                      className="text-[15px] max-w-[68ch] space-y-3 [&_p]:whitespace-pre-wrap [&_p]:text-[15px] [&_*]:!text-white/95 [&_strong]:!text-white [&_th]:!text-white [&_td]:!text-white/90 [&_.font-semibold]:!text-amber-300"
+                      style={{ color: "rgba(255,255,255,0.95)", lineHeight: 1.7 }}
+                    >
+                      <SmartTextRenderer text={toYouPerspective(asset.survive_problem_text)} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Instructions — collapsed by default. The header itself is
+                    the toggle so the surface stays calm and uncluttered.
+                    Markers respect the source format: (a)/(b)/(A) → letter
+                    badges; #1/1./1) → number badges; bare text falls back to
+                    the index letter. */}
+                {instructions.length > 0 && (() => {
+                  const parsed = instructions.map((raw) => parseInstructionPrefix(raw));
+                  const usesNumbers = parsed.some((p) => p.kind === "number");
+                  return (
+                    <div
+                      className="mt-6 pt-5 border-t"
+                      style={{ borderColor: "rgba(255,255,255,0.08)" }}
                     >
                       <button
                         type="button"
-                        onClick={() => setProblemBodyOpen((v) => !v)}
-                        className="inline-flex items-center gap-1 h-6 px-1.5 rounded transition-colors hover:text-white hover:bg-white/5"
-                        aria-expanded={problemBodyOpen}
+                        onClick={() => setInstructionsOpen((v) => !v)}
+                        aria-expanded={instructionsOpen}
+                        className="w-full flex items-center justify-between gap-3 -mx-1 px-1 py-1 rounded-md transition-colors hover:bg-white/[0.03] group"
                       >
-                        {problemBodyOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                        {problemBodyOpen ? "Hide instructions" : "Show instructions"}
+                        <div
+                          className="text-[10px] font-semibold uppercase tracking-[0.14em] flex items-center gap-2"
+                          style={{ color: "rgba(255,255,255,0.55)" }}
+                        >
+                          Instructions
+                          <span
+                            className="text-[10px] font-medium normal-case tracking-normal"
+                            style={{ color: "rgba(255,255,255,0.35)" }}
+                          >
+                            {instructions.length} {instructions.length === 1 ? "part" : "parts"}
+                          </span>
+                        </div>
+                        <span
+                          className="inline-flex items-center gap-1 text-[11px] font-medium transition-colors group-hover:text-white"
+                          style={{ color: "rgba(255,255,255,0.55)" }}
+                        >
+                          {instructionsOpen ? (
+                            <>
+                              <ChevronUp className="h-3 w-3" />
+                              Hide
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-3 w-3" />
+                              Show
+                            </>
+                          )}
+                        </span>
                       </button>
 
-                      {problemBodyOpen && problemChunks.length > 1 && (
-                        <>
-                          <span className="text-white/15">·</span>
-                          <span className="uppercase tracking-[0.1em] text-[10px] text-white/40">Reading</span>
-                          <div
-                            className="inline-flex items-center rounded-md p-0.5"
-                            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-                            role="tablist"
-                            aria-label="Reading mode"
+                      {instructionsOpen && (
+                        <div className="mt-3">
+                          <ul
+                            className="space-y-1.5 text-[13px] animate-in fade-in slide-in-from-top-1 duration-150"
+                            style={{ lineHeight: 1.55 }}
                           >
-                            {([
-                              { id: "chunks", label: "One at a time" },
-                              { id: "all", label: "All at once" },
-                            ] as const).map((opt) => {
-                              const active = readingMode === opt.id;
+                            {parsed.map((p, i) => {
+                              const checked = !!checkedTasks[i];
+                              const isCurrent = !checked && i === currentTaskIndex;
+                              // Badge label honors the source-detected marker
+                              // when present; otherwise falls back to a clean
+                              // sequence (numbers if any sibling used numbers,
+                              // letters otherwise).
+                              const badge =
+                                p.marker ??
+                                (usesNumbers ? String(i + 1) : String.fromCharCode(97 + i).toUpperCase());
                               return (
-                                <button
-                                  key={opt.id}
-                                  type="button"
-                                  role="tab"
-                                  aria-selected={active}
-                                  onClick={() => {
-                                    setReadingMode(opt.id);
-                                    if (opt.id === "chunks") setChunkIndex(0);
-                                  }}
-                                  className="h-6 px-2 rounded text-[11px] font-medium transition-colors"
+                                <li
+                                  key={i}
+                                  className="flex gap-2.5 items-start rounded-md transition-all"
                                   style={{
-                                    background: active ? "rgba(206,17,38,0.18)" : "transparent",
-                                    color: active ? "#FFD3D8" : "rgba(255,255,255,0.6)",
-                                    border: active ? "1px solid rgba(206,17,38,0.4)" : "1px solid transparent",
+                                    padding: "8px 10px",
+                                    marginLeft: "-10px",
+                                    marginRight: "-10px",
+                                    background: isCurrent ? "rgba(250,204,21,0.08)" : "transparent",
+                                    borderLeft: isCurrent
+                                      ? "2px solid #FACC15"
+                                      : "2px solid transparent",
                                   }}
                                 >
-                                  {opt.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    {problemBodyOpen && (
-                      <>
-                        {readingMode === "all" || problemChunks.length <= 1 ? (
-                          <div
-                            className="text-[15px] max-w-[68ch] space-y-3 [&_p]:whitespace-pre-wrap [&_p]:text-[15px] [&_*]:!text-white/95 [&_strong]:!text-white [&_th]:!text-white [&_td]:!text-white/90 [&_.font-semibold]:!text-amber-300"
-                            style={{ color: "rgba(255,255,255,0.95)", lineHeight: 1.7 }}
-                          >
-                            <SmartTextRenderer text={toYouPerspective(asset.survive_problem_text)} />
-                          </div>
-                        ) : (
-                          <div className="max-w-[68ch]">
-                            {/* Show chunks 0..chunkIndex stacked, with the active one labeled */}
-                            <div className="space-y-5">
-                              {problemChunks.slice(0, chunkIndex + 1).map((c, i) => {
-                                const isActive = i === chunkIndex;
-                                return (
-                                  <div
-                                    key={i}
-                                    className="rounded-md transition-opacity"
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleTask(i)}
+                                    aria-pressed={checked}
+                                    aria-label={`Mark part ${badge} as ${checked ? "incomplete" : "complete"}`}
+                                    className="mt-0.5 inline-flex h-5 min-w-[20px] px-1 shrink-0 items-center justify-center rounded-[5px] border text-[10px] font-bold transition-all hover:scale-105"
                                     style={{
-                                      opacity: isActive ? 1 : 0.7,
+                                      borderColor: checked
+                                        ? "#CE1126"
+                                        : isCurrent
+                                          ? "rgba(250,204,21,0.7)"
+                                          : "rgba(255,255,255,0.35)",
+                                      background: checked
+                                        ? "#CE1126"
+                                        : isCurrent
+                                          ? "rgba(250,204,21,0.12)"
+                                          : "rgba(255,255,255,0.04)",
+                                      color: checked
+                                        ? "#fff"
+                                        : isCurrent
+                                          ? "#FACC15"
+                                          : "rgba(255,255,255,0.7)",
                                     }}
                                   >
-                                    <div
-                                      className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-1.5"
-                                      style={{ color: isActive ? "#FFB8C0" : "rgba(255,255,255,0.4)" }}
-                                    >
-                                      {c.label}
-                                      <span className="ml-2 text-white/30 normal-case tracking-normal">
-                                        {i + 1} of {problemChunks.length}
-                                      </span>
-                                    </div>
-                                    <div
-                                      className="text-[15px] space-y-3 [&_p]:whitespace-pre-wrap [&_p]:text-[15px] [&_*]:!text-white/95 [&_strong]:!text-white [&_th]:!text-white [&_td]:!text-white/90 [&_.font-semibold]:!text-amber-300"
-                                      style={{ color: "rgba(255,255,255,0.95)", lineHeight: 1.7 }}
-                                    >
-                                      <SmartTextRenderer text={c.text} />
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-
-                            {/* Next / Show all */}
-                            <div className="mt-4 flex items-center gap-3">
-                              {chunkIndex < problemChunks.length - 1 ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setChunkIndex((i) => Math.min(i + 1, problemChunks.length - 1))}
-                                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[12px] font-semibold transition-colors hover:brightness-110"
-                                  style={{
-                                    background: "rgba(206,17,38,0.16)",
-                                    border: "1px solid rgba(206,17,38,0.45)",
-                                    color: "#FFD3D8",
-                                  }}
+                                    {checked ? <Check className="h-3 w-3" /> : badge}
+                                  </button>
+                                  <span
+                                    className="whitespace-pre-wrap flex-1 cursor-pointer transition-all"
+                                    onClick={() => toggleTask(i)}
+                                    style={{
+                                      color: checked
+                                        ? "rgba(255,255,255,0.4)"
+                                        : isCurrent
+                                          ? "#FFF8DC"
+                                          : "rgba(255,255,255,0.92)",
+                                      textDecoration: checked ? "line-through" : "none",
+                                      fontWeight: isCurrent ? 500 : 400,
+                                    }}
+                                  >
+                                    {highlightTerms(toYouPerspective(p.text))}
+                                  </span>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                          {(anyChecked || allTasksDone) && (
+                            <div className="mt-3 flex items-center justify-between gap-3">
+                              {allTasksDone ? (
+                                <div
+                                  className="text-[12px] flex items-center gap-1.5"
+                                  style={{ color: "#FACC15" }}
                                 >
-                                  Next
-                                  <ArrowRight className="h-3.5 w-3.5" />
-                                </button>
+                                  <Check className="h-3.5 w-3.5" />
+                                  Nice — all parts done. Hit <span className="font-semibold">Walk me through it</span> to compare.
+                                </div>
                               ) : (
-                                <span className="text-[11px] text-white/40">All sections shown</span>
+                                <div className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+                                  {checkedTasks.filter(Boolean).length} of {instructions.length} done
+                                </div>
                               )}
-                              {chunkIndex > 0 && (
-                                <button
-                                  type="button"
-                                  onClick={() => setChunkIndex(0)}
-                                  className="text-[11px] font-medium text-white/50 hover:text-white/80 transition-colors"
-                                >
-                                  Restart
-                                </button>
-                              )}
+                              <button
+                                type="button"
+                                onClick={resetTasks}
+                                className="text-[11px] underline-offset-2 hover:underline transition-colors"
+                                style={{ color: "rgba(255,255,255,0.45)" }}
+                              >
+                                Reset
+                              </button>
                             </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* Your Tasks — open by default */}
-                {instructions.length > 0 && (
-                  <div
-                    className="mt-6 pt-5 border-t"
-                    style={{ borderColor: "rgba(255,255,255,0.08)" }}
-                  >
-                    <div className="flex items-center justify-between gap-3 mb-3">
-                      <div
-                        className="text-[10px] font-semibold uppercase tracking-[0.14em]"
-                        style={{ color: "rgba(255,255,255,0.55)" }}
-                      >
-                        Your Tasks
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setInstructionsOpen((v) => !v)}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium transition-colors hover:text-white"
-                        style={{ color: "rgba(255,255,255,0.55)" }}
-                      >
-                        {instructionsOpen ? (
-                          <>
-                            <ChevronUp className="h-3 w-3" />
-                            Hide
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="h-3 w-3" />
-                            Show
-                          </>
-                        )}
-                      </button>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    {instructionsOpen && (
-                      <>
-                        <ul
-                          className="space-y-1.5 text-[13px] animate-in fade-in slide-in-from-top-1 duration-150"
-                          style={{ lineHeight: 1.55 }}
-                        >
-                          {instructions.map((ins, i) => {
-                            const checked = !!checkedTasks[i];
-                            const isCurrent = !checked && i === currentTaskIndex;
-                            return (
-                              <li
-                                key={i}
-                                className="flex gap-2.5 items-start rounded-md transition-all"
-                                style={{
-                                  padding: "8px 10px",
-                                  marginLeft: "-10px",
-                                  marginRight: "-10px",
-                                  background: isCurrent ? "rgba(250,204,21,0.08)" : "transparent",
-                                  borderLeft: isCurrent
-                                    ? "2px solid #FACC15"
-                                    : "2px solid transparent",
-                                }}
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => toggleTask(i)}
-                                  aria-pressed={checked}
-                                  aria-label={`Mark task ${String.fromCharCode(97 + i).toUpperCase()} as ${checked ? "incomplete" : "complete"}`}
-                                  className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[5px] border text-[10px] font-bold transition-all hover:scale-105"
-                                  style={{
-                                    borderColor: checked
-                                      ? "#CE1126"
-                                      : isCurrent
-                                        ? "rgba(250,204,21,0.7)"
-                                        : "rgba(255,255,255,0.35)",
-                                    background: checked
-                                      ? "#CE1126"
-                                      : isCurrent
-                                        ? "rgba(250,204,21,0.12)"
-                                        : "rgba(255,255,255,0.04)",
-                                    color: checked
-                                      ? "#fff"
-                                      : isCurrent
-                                        ? "#FACC15"
-                                        : "rgba(255,255,255,0.7)",
-                                  }}
-                                >
-                                  {checked ? (
-                                    <Check className="h-3 w-3" />
-                                  ) : (
-                                    String.fromCharCode(97 + i).toUpperCase()
-                                  )}
-                                </button>
-                                <span
-                                  className="whitespace-pre-wrap flex-1 cursor-pointer transition-all"
-                                  onClick={() => toggleTask(i)}
-                                  style={{
-                                    color: checked
-                                      ? "rgba(255,255,255,0.4)"
-                                      : isCurrent
-                                        ? "#FFF8DC"
-                                        : "rgba(255,255,255,0.92)",
-                                    textDecoration: checked ? "line-through" : "none",
-                                    fontWeight: isCurrent ? 500 : 400,
-                                  }}
-                                >
-                                  {highlightTerms(toYouPerspective(ins))}
-                                </span>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                        {(anyChecked || allTasksDone) && (
-                          <div className="mt-3 flex items-center justify-between gap-3">
-                            {allTasksDone ? (
-                              <div
-                                className="text-[12px] flex items-center gap-1.5"
-                                style={{ color: "#FACC15" }}
-                              >
-                                <Check className="h-3.5 w-3.5" />
-                                Nice — all parts done. Hit <span className="font-semibold">Walk me through it</span> to compare.
-                              </div>
-                            ) : (
-                              <div className="text-[11px]" style={{ color: "rgba(255,255,255,0.45)" }}>
-                                {checkedTasks.filter(Boolean).length} of {instructions.length} done
-                              </div>
-                            )}
-                            <button
-                              type="button"
-                              onClick={resetTasks}
-                              className="text-[11px] underline-offset-2 hover:underline transition-colors"
-                              style={{ color: "rgba(255,255,255,0.45)" }}
-                            >
-                              Reset
-                            </button>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
+                  );
+                })()}
               </section>
 
             </div>
