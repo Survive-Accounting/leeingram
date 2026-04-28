@@ -1729,6 +1729,7 @@ export default function SolutionsViewerV2() {
       if (e.key === "[") setViewMode("problem");
       else if (e.key === "]") setViewMode("helper");
       else if (e.key === "\\") setViewMode("split");
+      else if (e.key === "-" || e.key === "_") setViewMode("split-h");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -2085,6 +2086,7 @@ export default function SolutionsViewerV2() {
                   {([
                     { mode: "problem" as const, Icon: PanelLeftClose, label: "Problem only", hint: "[" },
                     { mode: "split" as const,   Icon: Columns2,        label: "Split view",   hint: "\\" },
+                    { mode: "split-h" as const, Icon: Rows2,           label: "Stacked view", hint: "-" },
                     { mode: "helper" as const,  Icon: PanelRightClose, label: "Helper only",  hint: "]" },
                   ]).map(({ mode, Icon, label, hint }) => {
                     const active = viewMode === mode;
