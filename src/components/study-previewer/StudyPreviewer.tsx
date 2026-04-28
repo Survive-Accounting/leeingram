@@ -284,6 +284,17 @@ export default function StudyPreviewer({
           filter: blur(0);
           transform: scale(1);
         }
+
+        /* One-shot status LED ring pulse on selector change */
+        @keyframes sa-status-pulse {
+          0%   { transform: scale(0.6); opacity: 0.7; }
+          80%  { transform: scale(2.4); opacity: 0; }
+          100% { transform: scale(2.4); opacity: 0; }
+        }
+        .sa-status-pulse {
+          animation: sa-status-pulse 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+          pointer-events: none;
+        }
       `}</style>
 
       {/* Navy frame wrapper */}
