@@ -341,7 +341,7 @@ export default function FeedbackToolModal({
               className="mt-1.5 text-[12.5px]"
               style={{ color: "#64748B" }}
             >
-              Drag to rank the ones you'd want most.
+              Drag to rank, or use the arrows to move items up and down.
             </p>
 
             {order.length === 0 ? (
