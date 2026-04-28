@@ -214,6 +214,9 @@ export default function StudentDashboard() {
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [lastViewed, setLastViewed] = useState<LastViewed | null>(null);
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+  const [viewerAssetCode, setViewerAssetCode] = useState<string | null>(null);
+  const [viewerLoading, setViewerLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -422,78 +425,126 @@ export default function StudentDashboard() {
         {/* Beta tools */}
         <BetaToolCards email={email} />
 
-        {/* Continue where you left off */}
-        {lastViewed && (
-          <section
-            className="rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-            style={{
-              background: "#fff",
-              border: "1px solid #E0E7F0",
-              boxShadow: "0 8px 24px rgba(20,33,61,0.06), 0 2px 6px rgba(20,33,61,0.04)",
-              fontFamily: "Inter, sans-serif",
-            }}
+        {/* Chapter selector + inline Solutions Viewer v2 */}
+        <section
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: "#fff",
+            border: "1px solid #E0E7F0",
+            boxShadow: "0 8px 24px rgba(20,33,61,0.06), 0 2px 6px rgba(20,33,61,0.04)",
+            fontFamily: "Inter, sans-serif",
+          }}
+        >
+          <div
+            className="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 border-b"
+            style={{ borderColor: "#EEF2F7" }}
           >
-            <div className="min-w-0">
-              <h3 className="text-[15px] font-semibold" style={{ color: NAVY }}>
-                Continue where you left off
-              </h3>
-              {lastViewed.chapter_number != null && lastViewed.chapter_name && (
-                <p className="text-[13px] mt-0.5 truncate" style={{ color: "#64748B" }}>
-                  Ch {lastViewed.chapter_number} — {lastViewed.chapter_name}
-                </p>
-              )}
+            <div className="min-w-0 flex-1">
+              <h2
+                className="text-[18px] sm:text-[20px] leading-tight"
+                style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
+              >
+                Jump to a chapter
+              </h2>
+              <p className="text-[12px] mt-0.5" style={{ color: "#64748B" }}>
+                Pick a chapter and dive into the explanations.
+              </p>
             </div>
-            <button
-              onClick={() =>
-                window.open(
-                  `/v2/solutions/${encodeURIComponent(lastViewed.asset_name)}`,
-                  "_blank",
-                  "noopener,noreferrer",
-                )
-              }
-              className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] font-semibold text-white transition-all hover:brightness-110 active:scale-[0.98] shrink-0"
-              style={{
-                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-                boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
-              }}
-            >
-              Continue <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </section>
-        )}
-
-        {/* All chapters grid */}
-        <section>
-          <h2
-            className="text-[22px] leading-tight mb-4"
-            style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
-          >
-            Chapters
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {chapters.map((ch) => (
-              <button
-                key={ch.id}
-                onClick={() => openFirstAssetForChapter(ch.id)}
-                className="text-left rounded-xl p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg group"
+            <div className="relative w-full sm:w-[320px]">
+              <select
+                value={selectedChapterId ?? ""}
+                onChange={async (e) => {
+                  const chId = e.target.value || null;
+                  setSelectedChapterId(chId);
+                  setViewerAssetCode(null);
+                  if (!chId) return;
+                  setViewerLoading(true);
+                  const { data } = await supabase
+                    .from("teaching_assets")
+                    .select("asset_name, source_number")
+                    .eq("chapter_id", chId)
+                    .order("source_number", { ascending: true, nullsFirst: false })
+                    .order("asset_name", { ascending: true })
+                    .limit(1);
+                  const first = data?.[0]?.asset_name;
+                  if (!first) {
+                    toast("This chapter is being finalized — check back soon.", { icon: "📚" });
+                    setViewerLoading(false);
+                    return;
+                  }
+                  setViewerAssetCode(first);
+                  setViewerLoading(false);
+                }}
+                className="w-full appearance-none rounded-lg px-4 py-2.5 pr-10 text-[14px] font-medium outline-none transition-colors"
                 style={{
-                  background: "#fff",
-                  border: "1px solid #E0E7F0",
-                  boxShadow: "0 4px 12px rgba(20,33,61,0.04)",
-                  fontFamily: "Inter, sans-serif",
+                  background: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                  color: NAVY,
+                  cursor: "pointer",
                 }}
               >
+                <option value="">Select a chapter…</option>
+                {chapters.map((ch) => (
+                  <option key={ch.id} value={ch.id}>
+                    Ch {ch.chapter_number} — {ch.chapter_name}
+                  </option>
+                ))}
+              </select>
+              <ArrowRight
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 rotate-90 pointer-events-none"
+                style={{ color: "#94A3B8" }}
+              />
+            </div>
+          </div>
+
+          {/* Viewer pane */}
+          <div style={{ background: "#F8FAFC", minHeight: 600 }}>
+            {!selectedChapterId && (
+              <div className="flex items-center justify-center text-center px-6 py-20">
+                <div className="max-w-sm">
+                  <p className="text-[15px] font-semibold" style={{ color: NAVY }}>
+                    Choose a chapter above to start studying
+                  </p>
+                  <p className="text-[13px] mt-1.5" style={{ color: "#64748B" }}>
+                    Solutions Viewer loads right here — no new tabs needed.
+                  </p>
+                </div>
+              </div>
+            )}
+            {selectedChapterId && viewerLoading && (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-5 w-5 animate-spin" style={{ color: NAVY }} />
+              </div>
+            )}
+            {selectedChapterId && !viewerLoading && viewerAssetCode && (
+              <div className="relative">
                 <div
-                  className="text-[20px] font-bold leading-none mb-1.5 transition-colors"
-                  style={{ color: NAVY, letterSpacing: "-0.02em" }}
+                  className="px-5 py-2 flex items-center justify-end gap-3 text-[12px]"
+                  style={{ background: "#fff", borderBottom: "1px solid #EEF2F7", color: "#64748B" }}
                 >
-                  Ch {ch.chapter_number}
+                  <button
+                    onClick={() =>
+                      window.open(
+                        `/v2/solutions/${encodeURIComponent(viewerAssetCode)}`,
+                        "_blank",
+                        "noopener,noreferrer",
+                      )
+                    }
+                    className="inline-flex items-center gap-1 hover:underline"
+                    style={{ color: NAVY, fontWeight: 600 }}
+                  >
+                    Open in new tab <ArrowRight className="h-3 w-3" />
+                  </button>
                 </div>
-                <div className="text-[12px] leading-snug line-clamp-2" style={{ color: "#64748B" }}>
-                  {ch.chapter_name}
-                </div>
-              </button>
-            ))}
+                <iframe
+                  key={viewerAssetCode}
+                  src={`/v2/solutions/${encodeURIComponent(viewerAssetCode)}`}
+                  title="Solutions Viewer"
+                  className="w-full block border-0"
+                  style={{ height: "min(80vh, 900px)", background: "#fff" }}
+                />
+              </div>
+            )}
           </div>
         </section>
 
