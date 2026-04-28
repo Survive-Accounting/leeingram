@@ -1835,7 +1835,112 @@ export default function SolutionsViewerV2() {
         )}
 
         {!loading && asset && (
-          <div className="grid lg:grid-cols-2 gap-6 SPLIT_MARKER">
+          <>
+            {/* Mobile: Problem / Helper segmented toggle */}
+            <div className="lg:hidden mb-4">
+              <div
+                className="inline-flex rounded-lg p-1 w-full"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                role="tablist"
+                aria-label="Switch between problem and helper"
+              >
+                {(["problem", "helper"] as const).map((tab) => {
+                  const active = mobileTab === tab;
+                  return (
+                    <button
+                      key={tab}
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setMobileTab(tab)}
+                      className="flex-1 h-9 rounded-md text-[13px] font-semibold transition-all"
+                      style={{
+                        background: active ? "#14213D" : "transparent",
+                        color: active ? "#fff" : "rgba(255,255,255,0.6)",
+                        boxShadow: active ? "0 2px 8px rgba(0,0,0,0.25)" : "none",
+                      }}
+                    >
+                      {tab === "problem" ? "Problem" : "Helper"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Desktop: floating view-mode toolbar */}
+            <div className="hidden lg:flex justify-end mb-3">
+              <TooltipProvider delayDuration={200}>
+                <div
+                  className="inline-flex items-center gap-1 rounded-full p-1"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    backdropFilter: "blur(8px)",
+                  }}
+                  role="toolbar"
+                  aria-label="View mode"
+                >
+                  {([
+                    { mode: "problem" as const, Icon: PanelLeftClose, label: "Problem only", hint: "[" },
+                    { mode: "split" as const,   Icon: Columns2,        label: "Split view",   hint: "\\" },
+                    { mode: "helper" as const,  Icon: PanelRightClose, label: "Helper only",  hint: "]" },
+                  ]).map(({ mode, Icon, label, hint }) => {
+                    const active = viewMode === mode;
+                    return (
+                      <Tooltip key={mode}>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => setViewMode(mode)}
+                            aria-label={label}
+                            aria-pressed={active}
+                            className="h-8 w-8 rounded-full inline-flex items-center justify-center transition-all"
+                            style={{
+                              background: active ? "#14213D" : "transparent",
+                              color: active ? "#fff" : "rgba(255,255,255,0.55)",
+                              boxShadow: active ? "0 2px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06) inset" : "none",
+                            }}
+                            onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                            onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                          >
+                            <Icon className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs">
+                          {label} <span className="opacity-50 ml-1">{hint}</span>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                  <div className="w-px h-5 mx-1" style={{ background: "rgba(255,255,255,0.08)" }} />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSplitRatio(0.5);
+                          try { sessionStorage.setItem("sa.viewer.splitRatio", "0.5"); } catch { /* ignore */ }
+                          setViewMode("split");
+                        }}
+                        disabled={viewMode !== "split"}
+                        aria-label="Reset split to 50/50"
+                        className="h-8 w-8 rounded-full inline-flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        style={{ color: "rgba(255,255,255,0.55)" }}
+                        onMouseEnter={(e) => { if (viewMode === "split") e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Reset split (double-click divider)</TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
+            </div>
+
+            <div
+              ref={splitContainerRef}
+              className="flex flex-col lg:flex-row lg:items-stretch gap-6 lg:gap-0 relative"
+            >
             {/* LEFT: Problem + What you need to solve */}
             <div className="space-y-4 min-w-0">
               {/* Card 1: Problem */}
