@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ArrowRight, X, Search } from "lucide-react";
 import { toast } from "sonner";
+import OnboardingModal from "@/components/dashboard/OnboardingModal";
+import BetaCountdownStrip from "@/components/dashboard/BetaCountdownStrip";
+import WelcomeCard from "@/components/dashboard/WelcomeCard";
+import LegacyWelcomeCard from "@/components/dashboard/LegacyWelcomeCard";
+import BetaToolCards from "@/components/dashboard/BetaToolCards";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -211,6 +216,18 @@ export default function StudentDashboard() {
   const [lastViewed, setLastViewed] = useState<LastViewed | null>(null);
   const [loading, setLoading] = useState(true);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [campusId, setCampusId] = useState<string | null>(null);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [onboarding, setOnboarding] = useState<{
+    is_legacy: boolean;
+    beta_number: number | null;
+    campus_beta_number: number | null;
+    campus_name: string | null;
+    display_name: string | null;
+    welcomed_at: string | null;
+  } | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [verifying, setVerifying] = useState<boolean>(() => {
     const p = new URLSearchParams(window.location.search);
     return p.get("just_paid") === "1" || p.get("checkout") === "success";
@@ -239,10 +256,11 @@ export default function StudentDashboard() {
 
       const userEmail = session.user.email.toLowerCase();
       setEmail(userEmail);
+      setUserId(session.user.id);
 
       const { data: rows } = await supabase
         .from("student_purchases")
-        .select("id, course_id, expires_at, created_at")
+        .select("id, course_id, expires_at, created_at, campus_id")
         .eq("email", userEmail)
         .order("created_at", { ascending: false });
 
@@ -255,6 +273,35 @@ export default function StudentDashboard() {
       const active = rows.find((r) => !r.expires_at || new Date(r.expires_at).getTime() > now);
       const chosen = active ?? rows[0];
       setPurchase(chosen as Purchase);
+      setCampusId((chosen as any).campus_id ?? null);
+
+      // Onboarding check
+      const { data: onb } = await supabase
+        .from("student_onboarding")
+        .select("is_legacy, beta_number, campus_beta_number, display_name, welcomed_at, completed_at, campus_id")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      let campusName: string | null = null;
+      const cId = onb?.campus_id ?? (chosen as any).campus_id;
+      if (cId) {
+        const { data: c } = await supabase.from("campuses").select("name").eq("id", cId).maybeSingle();
+        campusName = c?.name ?? null;
+      }
+
+      if (!onb || !onb.completed_at) {
+        setNeedsOnboarding(true);
+      } else {
+        setOnboarding({
+          is_legacy: !!onb.is_legacy,
+          beta_number: onb.beta_number,
+          campus_beta_number: onb.campus_beta_number,
+          campus_name: campusName,
+          display_name: onb.display_name,
+          welcomed_at: onb.welcomed_at,
+        });
+        setShowWelcome(!onb.welcomed_at);
+      }
 
       const { data: chapterRows } = await supabase
         .from("chapters")
@@ -322,19 +369,21 @@ export default function StudentDashboard() {
       })
     : "the current semester";
 
-  const firstName = (() => {
+  const fallbackFirstName = (() => {
     if (!email) return "";
     const local = email.split("@")[0].split("+")[0];
     const raw = local.split(/[._-]/)[0] || local;
     return raw ? raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase() : "";
   })();
+  const firstName = (onboarding?.display_name?.trim().split(/\s+/)[0]) || fallbackFirstName;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: BG_GRADIENT }}>
+      <BetaCountdownStrip />
       <DashNavbar onStart={openStartStudying} onSignOut={handleSignOut} />
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-12 md:pt-16 pb-16 space-y-10">
-        {/* Welcome */}
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 pt-10 md:pt-14 pb-16 space-y-10">
+        {/* Welcome heading */}
         <div className="text-center sm:text-left">
           <h1
             className="text-[34px] sm:text-[44px] md:text-[54px] leading-tight"
@@ -349,6 +398,29 @@ export default function StudentDashboard() {
             Access through {expiresStr}
           </p>
         </div>
+
+        {/* Welcome card (beta number or legacy) */}
+        {showWelcome && onboarding && userId && (
+          onboarding.is_legacy ? (
+            <LegacyWelcomeCard
+              userId={userId}
+              firstName={firstName}
+              onDismiss={() => setShowWelcome(false)}
+            />
+          ) : onboarding.beta_number ? (
+            <WelcomeCard
+              userId={userId}
+              firstName={firstName}
+              betaNumber={onboarding.beta_number}
+              campusBetaNumber={onboarding.campus_beta_number}
+              campusName={onboarding.campus_name}
+              onDismiss={() => setShowWelcome(false)}
+            />
+          ) : null
+        )}
+
+        {/* Beta tools */}
+        <BetaToolCards email={email} />
 
         {/* Continue where you left off */}
         {lastViewed && (
@@ -446,6 +518,28 @@ export default function StudentDashboard() {
         chapters={chapters}
         onClose={() => setPickerOpen(false)}
       />
+
+      {needsOnboarding && userId && email && (
+        <OnboardingModal
+          userId={userId}
+          email={email}
+          prefillCampusId={campusId}
+          prefillCourseId={purchase?.course_id ?? null}
+          prefillName={fallbackFirstName}
+          onComplete={(result) => {
+            setOnboarding({
+              is_legacy: result.legacy,
+              beta_number: result.beta_number,
+              campus_beta_number: result.campus_beta_number,
+              campus_name: result.campus_name,
+              display_name: null,
+              welcomed_at: null,
+            });
+            setNeedsOnboarding(false);
+            setShowWelcome(true);
+          }}
+        />
+      )}
 
       {verifying && (
         <div
