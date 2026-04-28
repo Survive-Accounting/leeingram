@@ -265,18 +265,18 @@ export default function FeedbackToolModal({
         </div>
 
         {/* Scrollable body */}
-        <div className="px-6 pb-2 overflow-y-auto" style={{ flex: 1 }}>
+        <div className="px-6 pt-5 pb-2 overflow-y-auto" style={{ flex: 1 }}>
           {/* Section 1: Choose */}
           <SectionHeader
             step={1}
             title="Choose anything you'd want"
             hint={
               selected.length
-                ? `${selected.length} selected`
-                : "Tap to select"
+                ? `${selected.length} picked`
+                : "Tap to add"
             }
           />
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-1.5">
             {IDEAS.map((idea) => {
               const active = selected.includes(idea.id);
               return (
@@ -286,17 +286,24 @@ export default function FeedbackToolModal({
                   onClick={() => toggle(idea.id)}
                   disabled={submitting || done}
                   title={idea.description}
-                  className="text-[12.5px] font-medium rounded-full px-3 py-1.5 transition-all inline-flex items-center gap-1.5"
+                  className="text-[12.5px] font-medium rounded-full px-3 py-1.5 transition-all duration-150 inline-flex items-center gap-1.5 hover:-translate-y-px"
                   style={{
-                    background: active ? NAVY : "#F1F5F9",
-                    color: active ? "#fff" : "#475569",
+                    background: active ? NAVY : "#fff",
+                    color: active ? "#fff" : "#334155",
                     border: `1px solid ${active ? NAVY : "#E2E8F0"}`,
                     boxShadow: active
-                      ? "0 4px 10px rgba(20,33,61,0.18)"
-                      : "none",
+                      ? "0 4px 12px rgba(20,33,61,0.22)"
+                      : "0 1px 2px rgba(20,33,61,0.04)",
                   }}
                 >
-                  {active && <Check className="h-3 w-3" />}
+                  {active ? (
+                    <Check className="h-3 w-3" />
+                  ) : (
+                    <Plus
+                      className="h-3 w-3"
+                      style={{ color: "#94A3B8" }}
+                    />
+                  )}
                   {idea.label}
                 </button>
               );
@@ -305,9 +312,11 @@ export default function FeedbackToolModal({
               type="button"
               onClick={() => toggle(OTHER_ID)}
               disabled={submitting || done}
-              className="text-[12.5px] font-medium rounded-full px-3 py-1.5 transition-all inline-flex items-center gap-1.5"
+              className="text-[12.5px] font-medium rounded-full px-3 py-1.5 transition-all duration-150 inline-flex items-center gap-1.5 hover:-translate-y-px"
               style={{
-                background: selected.includes(OTHER_ID) ? NAVY : "#fff",
+                background: selected.includes(OTHER_ID)
+                  ? NAVY
+                  : "rgba(20,33,61,0.03)",
                 color: selected.includes(OTHER_ID) ? "#fff" : NAVY,
                 border: `1.5px dashed ${
                   selected.includes(OTHER_ID) ? NAVY : "#CBD5E1"
@@ -322,29 +331,41 @@ export default function FeedbackToolModal({
           {/* Tutoring Shorts microcopy */}
           {selected.includes("tutoring-shorts") && (
             <p
-              className="mt-2 text-[11.5px]"
-              style={{ color: "#64748B" }}
+              className="mt-2.5 text-[11.5px] inline-flex items-center gap-1.5 rounded-md px-2 py-1"
+              style={{
+                color: "#475569",
+                background: "rgba(20,33,61,0.04)",
+              }}
             >
-              Tutoring Shorts: send Lee a question and get a quick video answer.
+              <Sparkles className="h-3 w-3" style={{ color: RED }} />
+              Send Lee a question and get a quick video answer.
             </p>
           )}
 
-          {/* Other idea inline input */}
+          {/* Other idea inline input — visually secondary */}
           {selected.includes(OTHER_ID) && (
-            <input
-              type="text"
-              value={otherIdea}
-              onChange={(e) => setOtherIdea(e.target.value)}
-              placeholder="Name your idea (e.g., Audio recap)"
-              maxLength={80}
-              className="mt-3 w-full rounded-lg px-3 py-2 text-[13px] outline-none"
-              style={{
-                background: "#F8FAFC",
-                border: "1px solid #E2E8F0",
-                color: NAVY,
-              }}
-              disabled={submitting || done}
-            />
+            <div className="mt-3">
+              <label
+                className="text-[10.5px] uppercase tracking-widest font-semibold block mb-1"
+                style={{ color: "#94A3B8" }}
+              >
+                Your idea
+              </label>
+              <input
+                type="text"
+                value={otherIdea}
+                onChange={(e) => setOtherIdea(e.target.value)}
+                placeholder="e.g., Audio recap of each chapter"
+                maxLength={80}
+                className="w-full rounded-lg px-3 py-2 text-[13px] outline-none focus:ring-2 transition-all"
+                style={{
+                  background: "#F8FAFC",
+                  border: "1px dashed #CBD5E1",
+                  color: NAVY,
+                }}
+                disabled={submitting || done}
+              />
+            </div>
           )}
 
           {/* Section 2: Rank */}
