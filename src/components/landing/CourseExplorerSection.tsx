@@ -779,23 +779,41 @@ function StepLabel({
   done?: boolean;
   disabled?: boolean;
 }) {
-  const color = disabled ? "#B7BCC4" : done ? "#6B7280" : active ? NAVY : "#6B7280";
+  const labelColor = disabled ? "#B7BCC4" : active ? NAVY : "#6B7280";
   const dotBg = disabled ? "#E5E7EB" : done ? NAVY : active ? RED : "#D1D5DB";
   const dotColor = disabled ? "#9CA3AF" : "#fff";
   return (
-    <div className="flex items-center justify-center gap-2.5 mb-4">
+    <div className="flex items-center justify-center gap-3 mb-5">
       <span
-        className="inline-flex items-center justify-center text-[11px] font-bold rounded-full"
-        style={{ background: dotBg, color: dotColor, width: 22, height: 22, fontFamily: "Inter, sans-serif" }}
-      >
-        {number}
+        className="block h-px w-8 sm:w-12"
+        style={{ background: "linear-gradient(to right, transparent, rgba(20,33,61,0.18))" }}
+      />
+      <span className="inline-flex items-center gap-2.5">
+        <span
+          className="inline-flex items-center justify-center text-[10.5px] font-bold rounded-full"
+          style={{
+            background: dotBg,
+            color: dotColor,
+            width: 20,
+            height: 20,
+            fontFamily: "Inter, sans-serif",
+            boxShadow: active ? "0 0 0 4px rgba(206,17,38,0.12)" : "none",
+            transition: "background 0.25s ease, box-shadow 0.25s ease",
+          }}
+        >
+          {done ? <Check className="w-3 h-3" strokeWidth={3} /> : number}
+        </span>
+        <span
+          className="text-[11.5px] font-semibold uppercase tracking-[0.18em]"
+          style={{ color: labelColor, fontFamily: "Inter, sans-serif" }}
+        >
+          {label}
+        </span>
       </span>
       <span
-        className="text-[12px] font-semibold uppercase tracking-[0.12em]"
-        style={{ color, fontFamily: "Inter, sans-serif" }}
-      >
-        Step {number} — {label}
-      </span>
+        className="block h-px w-8 sm:w-12"
+        style={{ background: "linear-gradient(to left, transparent, rgba(20,33,61,0.18))" }}
+      />
     </div>
   );
 }
