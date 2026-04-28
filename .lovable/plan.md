@@ -1,132 +1,70 @@
-# Solutions Viewer — Split View Fix + First-Load Onboarding
+# Solutions V2 Helper Buttons — Diagnosis & Fix Plan
 
-## 1. Diagnosis: why split view does nothing
+## What's broken
 
-Three things are working against you, all rooted in **viewport width inside the iframe** (not the browser window):
+All four toolbox buttons on Solutions V2 (Walk me through it, Hint, Setup, Full solution) appear to do nothing meaningful. The button toggles open, briefly shows the loading spinner, then collapses back to empty — and clicking again re-triggers the spinner with the same empty result.
 
-The Solutions Viewer is rendered inside an `<iframe>` embedded in the StudyPreviewer's 90s window frame on both `/` and `/my-dashboard`. The iframe's internal width is roughly **~900–1000px**, even on a wide laptop, because it sits inside:
+## Root cause (confirmed)
 
-- the navy hero band's 1080px max
-- the navy console's padding
-- the 90s window frame's chrome and inset margins
+**Field name mismatch between the edge function and the client.**
 
-The viewer's split-view code uses Tailwind's `lg` breakpoint (≥1024px) for both:
+The `survive-this` edge function (`supabase/functions/survive-this/index.ts`) returns:
 
-- the toolbar visibility (`hidden lg:flex`) — so the **toggle buttons aren't even rendered** below 1024px iframe width
-- the side-by-side layout (`lg:flex-row`) — so even if you toggled, the panels would still stack
-
-That's why clicking does nothing visible: on the embedded view, the buttons don't exist, and the layout isn't capable of going side-by-side. The keyboard shortcut (`\`) does flip state but the layout doesn't react.
-
-Default is already `"split"` in code — but it's invisible at sub-`lg` widths.
-
-## 2. Fixes
-
-### A. Make split view actually work in the embedded iframe
-
-Lower the breakpoint from `lg` (1024px) → `md` (768px) for the split-view UI, since the iframe's effective width crosses 768 long before 1024. Specifically, in `src/pages/v2/SolutionsViewerV2.tsx`:
-
-- toolbar wrapper: `hidden lg:flex` → `hidden md:flex`
-- split container: `lg:flex-row lg:items-stretch` → `md:flex-row md:items-stretch`
-- the two panels' `lg:` style guards → `md:`
-- divider visibility check: keep `!isMobileViewport` (the `useIsMobile` hook already uses 768)
-
-This aligns the layout breakpoint with the mobile detection breakpoint, so the toolbar appears exactly when the layout supports it.
-
-### B. Default to split (already correct, just verify)
-
-`useState<ViewMode>("split")` is already the default. After fix A this will visibly take effect on first paint.
-
-### C. Add an "Open full screen" affordance
-
-In the desktop toolbar (next to the existing reset button), add a small icon button that opens the current asset in a new top-level tab (`/v2/solutions/:assetCode`). This is the cleanest way to escape the iframe constraints when a student wants the most room. Tooltip: "Open in full screen".
-
-The existing "Open in new tab" button in the 90s window toolbar already does this — we'll keep both so it's discoverable from inside the viewer chrome too.
-
-## 3. First-load onboarding modal
-
-A one-time, easily skippable modal shown on the **first load of the Solutions Viewer per session** (sessionStorage flag, not localStorage — so it can re-suggest in a new session if useful).
-
-### Desktop (≥768px)
-
-- Title: "Best in full screen"
-- Body: "The split view works best when the viewer has more room. Open it full screen for a smoother cram session."
-- Primary button: **Open full screen** → opens `/v2/solutions/:assetCode` in a new tab
-- Secondary: **Continue here** (dismiss)
-- "Don't show again" checkbox → writes a localStorage flag
-
-### Mobile (<768px)
-
-- Title: "Cram better on a laptop"
-- Body: "Solutions Viewer is built for a bigger screen. Send yourself a link and pick it up on your laptop."
-- Email input (prefilled if user is logged in)
-- Primary button: **Send link to my email**
-- Secondary: **Continue on phone**
-
-The email is sent via a new edge function `send-viewer-link` using Resend (already configured). The email contains a deep link back to the same asset.
-
-## 4. Viral share — "Share 2 free passes with friends"
-
-Sits **subtly underneath** the onboarding modal CTAs, and also as a small persistent strip under the viewer toolbar on desktop.
-
-### Behavior
-
-- Copy: "Share 2 free passes with friends"
-- One-click **Copy link** button
-- The link is `https://learn.surviveaccounting.com/?ref=:userCode` (or `/get-access?ref=:userCode` if signed-out flow lives there)
-- `:userCode` is a short opaque code per user (8–10 chars, base32) generated on first share
-- On copy: toast "Link copied — your friend gets 2 free passes when they join"
-
-### Attribution data model
-
-New table `referral_codes`:
-
-```text
-id              uuid pk
-user_id         uuid fk → auth.users
-code            text unique (8-char base32)
-created_at      timestamptz default now()
+```
+{ success: true, cached, response_text, prompt_type }
 ```
 
-New table `referral_attributions`:
+But `src/pages/v2/SolutionsViewerV2.tsx` reads `data.response` in two places:
 
-```text
-id              uuid pk
-referrer_user_id uuid fk
-referred_email   text
-referred_user_id uuid nullable (filled when they sign up)
-landing_at      timestamptz
-signup_at       timestamptz nullable
-status          text ('landed' | 'signed_up' | 'rewarded')
+- Line 786 (background prefetch for "walk_through")
+- Line 841 (`handleToolboxClick`, all four buttons)
+
+```
+setResponses((p) => ({ ...p, [key]: data.response || "" }));
 ```
 
-When someone hits `/?ref=CODE`:
-- store `ref` in localStorage as `sa.referral_ref`
-- record a row in `referral_attributions` (status = `landed`) via an edge function
-- on signup completion, look up that ref and write `referred_user_id` + `signup_at` + status `signed_up`
-- a follow-up step (out of scope for this pass) credits the referrer with 2 free pass redemptions
+`data.response` is `undefined` for every successful call, so the stored value falls back to `""`. The render branch is:
 
-RLS:
-- `referral_codes`: user can `select` their own code; `insert` their own
-- `referral_attributions`: insert via service-role edge function only; user can `select` rows where `referrer_user_id = auth.uid()`
+```
+responses[activeSection] ? <InlineResponseBlock ... /> : null
+```
 
-## 5. Files to change
+`""` is falsy → nothing renders. On the next click `responses[key]` is also falsy, so the fetch fires again with the same empty result. The cache write on the server side does succeed, so the cached row is correct — only the client display is broken.
 
-- `src/pages/v2/SolutionsViewerV2.tsx` — breakpoint swap (lg → md), add full-screen icon button
-- `src/pages/v2/ViewerOnboardingModal.tsx` — **new**, desktop + mobile variants, session flag
-- `src/components/share/ReferralShareStrip.tsx` — **new**, copy-link CTA
-- `src/hooks/useReferralCode.ts` — **new**, ensures the user has a code, returns it
-- `supabase/functions/send-viewer-link/index.ts` — **new**, Resend email
-- `supabase/functions/track-referral-landing/index.ts` — **new**, records landing
-- migration: create `referral_codes` and `referral_attributions` tables + RLS
+The companion `simplify-problem` edge function uses `data.simplified_text` and the client reads `data.simplified_text` — that path is fine. PDF print still works.
 
-## 6. What this does NOT touch
+This is a recent regression: the field on the server was renamed to `response_text` (consistent with the `response_text` column in `survive_ai_responses`), but the V2 viewer was never updated.
 
-- The 90s window frame / retro shell (kept exactly as-is)
-- The Practice Helper iframe wiring in StudyPreviewer (unchanged)
-- The reward redemption flow for the 2 free passes (separate sprint — this lays the attribution foundation)
+## Fix
 
-## 7. Open questions before I build
+Single-file change in `src/pages/v2/SolutionsViewerV2.tsx`:
 
-1. For the **mobile email-myself** flow, do you want to require a logged-in user, or accept any email (anonymous send)?
-2. For the **referral reward**, should "2 free passes" mean the friend gets the pass free, or the referrer gets credit toward something? I'll wire the attribution either way — just need to know what the toast/CTA copy should promise.
-3. Should the onboarding modal also show when the viewer is opened in a top-level tab (not just inside the dashboard iframe), or suppress it there?
+1. Line 786 — change `data.response` → `data.response_text`
+2. Line 841 — change `data.response` → `data.response_text`
+3. Line 840 — `if (!data?.success) throw new Error(data?.error || "No response");` — keep, but also guard against empty `response_text` so a future regression is loud instead of silent.
+
+No edge-function changes, no DB changes. The four buttons share the same handler, so one fix restores all of them. Cached rows already in `survive_ai_responses` will start displaying immediately.
+
+## Confirmation of which prompt powers each button
+
+All four buttons hit `survive-this` with a `prompt_type` defined in `buildUserPrompt` (lines 27-264 of `supabase/functions/survive-this/index.ts`). Mapping:
+
+| Button (UI label) | `prompt_type` sent | Prompt purpose |
+|---|---|---|
+| Walk me through it | `walk_through` | Step-by-step, one step at a time, max 6 steps; ends with "Ready for step 2?" |
+| Hint | `hint` | Single nudge, no calculations, max 3 sentences |
+| Setup | `setup` | Empty worksheet/scaffold + one rule + one target sentence; does NOT solve |
+| Full solution | `full_solution` | One-line method + HTML solution table with totals row + 2 follow-up sentences |
+
+System prompt (shared, lines 9-25): Lee persona — HTML tables only (never markdown pipes), `<strong>` for bold, ≤180 words (≤80 with a table), second-person tutor voice, no "Great question!" filler, model `o3` with `max_completion_tokens: 2000`.
+
+The viewer also has additional prompt types defined server-side that aren't wired to the four main buttons but exist for other surfaces: `challenge`, `challenge_followup`, `similar_problem`, `memorize`, `journal_entries`, `financial_statements`, `real_world`, `professor_tricks`, `the_why`, plus the legacy `strategy`.
+
+## Verification after the fix
+
+1. Open Solutions V2 on any approved asset.
+2. Click each of the four buttons in turn — each should reveal a formatted response within ~1-3 seconds (or instantly if cached).
+3. Re-click a button — it should toggle closed, not refetch.
+4. Switch to a second asset and back — responses should reset and reload from cache instantly.
+
+If a button still fails after the fix, the network/console error will now surface (the empty-response guard added in step 3) and the existing user-facing error message ("Lee's tools are taking a breather…") will appear.
