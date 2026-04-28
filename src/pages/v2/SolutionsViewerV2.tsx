@@ -1177,7 +1177,7 @@ function InlineExplanation({
   };
 
   return (
-    <div className="rounded-2xl border bg-card p-6 shadow-sm space-y-5">
+    <div className="rounded-xl border bg-card p-5 shadow-sm space-y-4">
       {/* Toolbox — opens directly to buttons, no heading */}
       <div className="space-y-3 pt-1">
         {/* Row 1 — Walk me through it (full width, red) */}
@@ -3012,21 +3012,9 @@ export default function SolutionsViewerV2() {
         </nav>
       )}
 
-      {/* Floating help button */}
-      {!loading && asset && !isEmbed && (
-        <button
-          onClick={() => setFeedbackChooserOpen(true)}
-          className={cn(
-            "fixed right-4 bottom-20 z-30 rounded-full shadow-md backdrop-blur",
-            "bg-card/80 border hover:bg-accent transition-colors",
-            "h-9 px-3.5 inline-flex items-center gap-1.5 text-[13px] font-medium",
-          )}
-          aria-label="Share feedback about this problem"
-        >
-          <MessageCircleQuestion className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Share Feedback</span>
-        </button>
-      )}
+      {/* Floating help button removed — Share Feedback already lives in the
+          top-right of the header, so a duplicate floating CTA just adds
+          visual noise on the helper panel. */}
 
       <FeedbackChooserModal
         open={feedbackChooserOpen}

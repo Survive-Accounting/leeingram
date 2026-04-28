@@ -42,7 +42,7 @@ export default function SurviveExplorePanel({ assetId, assetCode }: Props) {
   return (
     <div
       id="vote-on-new-ideas"
-      className="mt-4 rounded-2xl border bg-card p-5 shadow-sm space-y-4 scroll-mt-24"
+      className="mt-4 rounded-xl border bg-card p-4 shadow-sm space-y-3 scroll-mt-24"
       data-embed-allow="true"
     >
       <button
