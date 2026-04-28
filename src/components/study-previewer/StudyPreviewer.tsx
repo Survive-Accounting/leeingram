@@ -466,12 +466,11 @@ export default function StudyPreviewer({
               }}
             />
           </div>
-        </div>
 
           {/* Workspace stage — retro terminal + modern viewer crossfade in the same frame */}
           <div
             ref={workspaceRef}
-            className="sa-stage sa-rise"
+            className="sa-stage sa-rise mt-2"
             style={{ animationDelay: "240ms" }}
           >
             {/* Layer 1 — Retro terminal launchpad (in flow when no tool, overlay when transitioning out) */}
