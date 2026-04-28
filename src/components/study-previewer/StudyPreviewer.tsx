@@ -566,14 +566,35 @@ export default function StudyPreviewer({
                     ? `Ch ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}`
                     : null
                 }
-                tools={TERMINAL_TOOLS}
+                tools={chapterChosen ? TERMINAL_TOOLS : undefined}
                 activeToolKey={activeTool}
                 canPickTool={chapterChosen}
                 loading={chapterLoading}
                 welcomeName={welcomeName ?? null}
                 isReturning={!!isReturning}
-                notice={terminalNotice}
-                onNudgeChapter={handleNudgeChapter}
+                chapterSelector={
+                  courseChosen && !chapterChosen ? (
+                    <div className="mt-3 max-w-sm">
+                      <SelectShell
+                        ref={chapterDropdownRef}
+                        value={selectedChapterId ?? ""}
+                        onChange={handleChapterChange}
+                        accent={false}
+                        disabled={chapterLoading || chapters.length === 0}
+                        loading={chapterLoading}
+                      >
+                        <option value="">
+                          {chapters.length === 0 ? "Loading chapters…" : "Choose chapter…"}
+                        </option>
+                        {chapters.map((ch) => (
+                          <option key={ch.id} value={ch.id}>
+                            Ch {ch.chapter_number} — {ch.chapter_name}
+                          </option>
+                        ))}
+                      </SelectShell>
+                    </div>
+                  ) : null
+                }
                 onSelectTool={(key) => {
                   if (key === "feedback") {
                     onOpenFeedback();
