@@ -22,7 +22,7 @@ const MONO_FONT = "'JetBrains Mono', 'SF Mono', ui-monospace, monospace";
 
 const TERMINAL_TOOLS: TerminalTool[] = [
   { key: "practice", label: "Practice Problem Helper" },
-  { key: "je", label: "Journal Entry Helper", hint: "(coming soon)" },
+  { key: "je", label: "Journal Entry Helper" },
   { key: "feedback", label: "Suggest a tool we should build" },
 ];
 
