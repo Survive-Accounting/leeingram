@@ -140,7 +140,7 @@ export default function StagingNavbar({
             onClick={() => setLoginOpen(true)}
             className="text-[13px] font-medium hover:opacity-100"
             style={{
-              color: isSolid ? "rgba(20,33,61,0.65)" : "rgba(255,255,255,0.7)",
+              color: "rgba(255,255,255,0.7)",
               fontFamily: "Inter, sans-serif",
               transition: `color ${TRANSITION}`,
               opacity: 0.95,
