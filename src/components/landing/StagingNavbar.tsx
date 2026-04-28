@@ -106,38 +106,36 @@ export default function StagingNavbar({
           }}
         />
 
-        {/* Logo */}
+        {/* Logo — image wordmark, matches problem viewer */}
         <button
           onClick={() => navigate("/")}
-          className="relative text-[16px] sm:text-[18px] tracking-tight"
-          style={{ fontFamily: "'DM Serif Display', serif" }}
+          className="relative inline-flex items-center"
+          aria-label="Survive Accounting — home"
         >
-          <span style={{ color: RED, fontWeight: 800 }}>Survive</span>
-          {/* Crossfade Accounting text colors */}
-          <span className="relative inline-block" style={{ fontWeight: 400 }}>
-            <span
-              style={{
-                color: "#FFFFFF",
-                opacity: isSolid ? 0 : 1,
-                transition: `opacity ${TRANSITION}`,
-              }}
-            >
-              {" "}Accounting
-              <sup className="text-[9px] font-normal ml-0.5 opacity-70">™</sup>
-            </span>
-            <span
-              aria-hidden
-              className="absolute inset-0"
-              style={{
-                color: NAVY,
-                opacity: isSolid ? 1 : 0,
-                transition: `opacity ${TRANSITION}`,
-              }}
-            >
-              {" "}Accounting
-              <sup className="text-[9px] font-normal ml-0.5 opacity-70">™</sup>
-            </span>
-          </span>
+          {/* Navy version (on solid bg) */}
+          <img
+            src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
+            alt="Survive Accounting"
+            className="h-5 sm:h-[22px] w-auto object-contain select-none"
+            draggable={false}
+            style={{
+              opacity: isSolid ? 1 : 0,
+              transition: `opacity ${TRANSITION}`,
+            }}
+          />
+          {/* White version (on transparent bg) */}
+          <img
+            aria-hidden
+            src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
+            alt=""
+            className="h-5 sm:h-[22px] w-auto object-contain select-none absolute inset-0"
+            draggable={false}
+            style={{
+              filter: "brightness(0) invert(1)",
+              opacity: isSolid ? 0 : 1,
+              transition: `opacity ${TRANSITION}`,
+            }}
+          />
         </button>
 
         {/* Right side */}

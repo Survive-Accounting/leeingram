@@ -2156,7 +2156,7 @@ export default function SolutionsViewerV2() {
               <img
                 src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
                 alt="Survive Accounting"
-                className="h-6 w-auto object-contain select-none transition-opacity group-hover:opacity-95"
+                className="h-4 w-auto object-contain select-none transition-opacity group-hover:opacity-95"
                 style={{
                   filter: "brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
                   opacity: 0.92,
