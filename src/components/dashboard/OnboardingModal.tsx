@@ -43,6 +43,7 @@ export default function OnboardingModal({
   prefillName,
   onComplete,
 }: Props) {
+  const isStaff = useIsStaff();
   const [step, setStep] = useState<Step>(1);
   const [submitting, setSubmitting] = useState(false);
 
@@ -51,10 +52,8 @@ export default function OnboardingModal({
   const [campusId, setCampusId] = useState<string | null>(prefillCampusId);
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [courseId] = useState<string | null>(prefillCourseId);
-  const [syllabusPath, setSyllabusPath] = useState<string | null>(null);
-  const [syllabusName, setSyllabusName] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [campusWriteIn, setCampusWriteIn] = useState("");
+  const [editCampus, setEditCampus] = useState(false);
 
   const [major, setMajor] = useState<"yes" | "no" | "definitely_not" | null>(null);
   const [inGreek, setInGreek] = useState<boolean | null>(null);
