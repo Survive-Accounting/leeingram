@@ -1,87 +1,36 @@
 project_id = "hdylxvyvateaephkbccy"
 
-[functions.generate-lesson-plan]
+[functions.create-checkout-session]
 verify_jwt = false
 
-[functions.refine-email]
+[functions.stripe-webhook]
 verify_jwt = false
 
-[functions.generate-lesson-outputs]
+[functions.create-get-access-checkout]
 verify_jwt = false
 
-[functions.convert-to-asset]
+[functions.verify-get-access-checkout]
 verify_jwt = false
 
-[functions.generate-distractors]
+[functions.create-org-access-checkout]
 verify_jwt = false
 
-[functions.extract-ocr]
+[functions.verify-org-access-checkout]
 verify_jwt = false
 
-[functions.refine-topics]
+[functions.resolve-org-invite]
 verify_jwt = false
 
-[functions.generate-ai-output]
+[functions.resend-login-link]
 verify_jwt = false
 
-[functions.parse-solutions-pdf]
+[functions.send-contact-notification]
 verify_jwt = false
 
-[functions.start-chapter-batch-run]
-verify_jwt = false
-
-[functions.run-chapter-batch-step]
-verify_jwt = false
-
-[functions.create-asset-sheet]
-verify_jwt = false
-
-[functions.create-tutoring-sheet]
-verify_jwt = false
-
-[functions.sync-asset-sheet-to-template]
-verify_jwt = false
-
-[functions.bank-teaching-asset]
-verify_jwt = false
-
-[functions.create-va-user]
-verify_jwt = false
-
-[functions.create-test-slide]
-verify_jwt = false
-
-[functions.sync-hidden-data]
-verify_jwt = false
-
-[functions.sync-mc-to-sheet]
-verify_jwt = false
-
-[functions.create-prep-doc]
-verify_jwt = false
-
-[functions.process-background-jobs]
-verify_jwt = false
-
-[functions.generate-entry-builder-set]
-verify_jwt = false
-
-[functions.generate-dissector-highlights]
-verify_jwt = false
-
-[functions.swap-problem-numbers]
+[functions.send-chapter-question]
 verify_jwt = false
 
 [functions.send-issue-report]
-verify_jwt = false
-
-[functions.generate-flowchart]
-verify_jwt = false
-
-[functions.create-preview-session]
-verify_jwt = false
-
-[functions.rewrite-je-tooltips]
 verify_jwt = false
 
 [functions.send-fix-email]
@@ -90,25 +39,20 @@ verify_jwt = false
 [functions.send-bulk-fix-summary]
 verify_jwt = false
 
-[functions.generate-topic-quiz]
+[functions.resolve-campus]
 verify_jwt = false
 
-[functions.backup-to-gdrive]
+[functions.resolve-coupon]
 verify_jwt = false
 
-[functions.remove-ai-thinking]
+[functions.create-preview-session]
 verify_jwt = false
 
-[functions.remove-duplicates]
+[functions.claim-free-beta]
 verify_jwt = false
 
-[functions.regenerate-missing]
+[functions.enroll-lw-background]
 verify_jwt = false
 
-[functions.audit-chapter-content]
-verify_jwt = false
-
-[functions.resend-login-link]
-verify_jwt = false
-[functions.enrich-new-campus]
+[functions.create-tutoring-sheet]
 verify_jwt = false

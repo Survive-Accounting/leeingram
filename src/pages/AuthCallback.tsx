@@ -86,6 +86,11 @@ export default function AuthCallback() {
         // Instant redirect — gating happens on the destination via useAccessControl.
         navigate(nextParam || "/my-dashboard", { replace: true });
 
+        // Fire-and-forget LW enrollment (returns 202 immediately)
+        void supabase.functions
+          .invoke("enroll-lw-background", { body: { email: cleanEmail } })
+          .catch(() => { /* noop */ });
+
         // Fire-and-forget side effects (no await before navigate above).
         void (async () => {
           try {
