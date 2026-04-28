@@ -537,7 +537,7 @@ function InlineExplanation({
       .filter(Boolean)
       .join("\n"),
     chapter_name: chapter ? `Ch ${chapter.chapter_number}: ${chapter.chapter_name}` : "",
-    course_name: buildCourseLabel({ courseName: chapter?.course?.course_name, campusSlug, localCourseCode }),
+    course_name: chapter?.course?.course_name || "",
   });
 
   // Background prefetch for "Walk me through it" — survive-this caches in
