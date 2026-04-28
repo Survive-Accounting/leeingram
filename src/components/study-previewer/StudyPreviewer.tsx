@@ -152,7 +152,7 @@ export default function StudyPreviewer({
     setSelectedChapterId(chId);
     setViewerAssetCode(first);
     setChapterLoading(false);
-    setTerminalNotice(null);
+    
     if (persistChapterKey) {
       try { localStorage.setItem(persistChapterKey, chId); } catch { /* ignore */ }
     }
@@ -170,11 +170,6 @@ export default function StudyPreviewer({
     }, 50);
   };
 
-  const handleNudgeChapter = () => {
-    setTerminalNotice("Pick a chapter first 👇");
-    chapterDropdownRef.current?.focus();
-    chapterDropdownRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
 
   const selectedChapter = useMemo(
     () => chapters.find((c) => c.id === selectedChapterId) ?? null,
