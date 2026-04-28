@@ -86,7 +86,10 @@ export default function RetroTerminalFrame({
     ? "> Awaiting chapter selection…"
     : loading
     ? "> Loading chapter assets…"
-    : "> Pick a tool to start studying:";
+    : "> Select a tool to start studying_";
+
+  const LOGO_URL =
+    "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 
   return (
     <div className="w-full flex justify-center px-2 sm:px-6 py-6 sm:py-10 animate-fade-in">
