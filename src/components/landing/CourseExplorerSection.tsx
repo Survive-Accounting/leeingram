@@ -513,6 +513,23 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
         {/* Preview pane (only when a tool is chosen) */}
         {selectedTool && selectedChapter && (
           <div ref={previewRef} className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <span
+                className="inline-flex items-center justify-center rounded-full"
+                style={{ width: 18, height: 18, background: RED }}
+              >
+                <span className="block rounded-full" style={{ width: 6, height: 6, background: "#fff" }} />
+              </span>
+              <p
+                className="text-[12px] font-semibold uppercase tracking-[0.14em]"
+                style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+              >
+                Now previewing:{" "}
+                <span style={{ color: RED }}>
+                  {selectedTool === "practice" ? "Practice Problem Helper" : "Journal Entry Helper"}
+                </span>
+              </p>
+            </div>
             <div
               className="rounded-2xl overflow-hidden relative"
               style={{
