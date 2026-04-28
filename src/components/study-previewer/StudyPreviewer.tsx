@@ -326,7 +326,7 @@ export default function StudyPreviewer({
 
         /* Crossfade stage: retro terminal ↔ modern viewer share the same frame.
            Tuned to feel instant — no perceptible "monitor disappeared" gap. */
-        .sa-stage { position: relative; min-height: clamp(420px, 60vw, 620px); }
+        .sa-stage { position: relative; }
         .sa-stage-layer {
           transition:
             opacity 90ms linear,
