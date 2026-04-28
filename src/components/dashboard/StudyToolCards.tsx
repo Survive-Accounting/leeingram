@@ -1,4 +1,4 @@
-import { ArrowRight, Wand2, Brain, Sparkles } from "lucide-react";
+import { ArrowRight, Wand2, Brain, Lightbulb } from "lucide-react";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -40,45 +40,35 @@ export default function StudyToolCards({
         }
         .sa-card-in { animation: sa-card-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both; }
       `}</style>
-      {/* Two primary tools, then a quieter "feedback" card */}
+
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        <div
-          className="md:col-span-5 sa-card-in"
-          style={{ animationDelay: "0ms" }}
-        >
+        <div className="md:col-span-5 sa-card-in" style={{ animationDelay: "0ms" }}>
           <PrimaryToolCard
             icon={<Wand2 className="h-4 w-4" />}
             title="Practice Problem Helper"
-            body="Step-by-step help, hints, walkthroughs, and challenge questions."
+            body="Guided explanations for 2,500+ textbook problems."
             cta="Open"
             isActive={active === "practice"}
             loading={loading}
             onClick={() => handleToolClick("practice")}
           />
         </div>
-        <div
-          className="md:col-span-5 sa-card-in"
-          style={{ animationDelay: "80ms" }}
-        >
+        <div className="md:col-span-5 sa-card-in" style={{ animationDelay: "80ms" }}>
           <PrimaryToolCard
             icon={<Brain className="h-4 w-4" />}
             title="Journal Entry Helper"
-            body="Drill the journal entries you'll need to know for the exam."
+            body="Understanding JEs > memorizing them."
             cta="Preview"
-            badge="Coming soon"
             isActive={active === "je"}
             loading={loading}
             onClick={() => handleToolClick("je")}
           />
         </div>
-        <div
-          className="md:col-span-2 sa-card-in"
-          style={{ animationDelay: "160ms" }}
-        >
+        <div className="md:col-span-2 sa-card-in" style={{ animationDelay: "160ms" }}>
           <SecondaryToolCard
-            title="Tell us what to build next"
-            body="What study tool would make this even better for you?"
-            cta="Drop an idea"
+            title="Help shape what we build next"
+            body="Tell us which study tools you'd actually use."
+            cta="Rank ideas"
             onClick={onOpenFeedback}
             disabled={loading}
           />
@@ -95,7 +85,6 @@ function PrimaryToolCard({
   title,
   body,
   cta,
-  badge,
   isActive,
   loading,
   onClick,
@@ -104,7 +93,6 @@ function PrimaryToolCard({
   title: string;
   body: string;
   cta: string;
-  badge?: string;
   isActive: boolean;
   loading: boolean;
   onClick: () => void;
@@ -114,20 +102,43 @@ function PrimaryToolCard({
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="group relative w-full h-full text-left rounded-2xl p-5 sm:p-6 transition-all duration-200 hover:-translate-y-0.5 flex flex-col overflow-hidden"
+      className="group relative w-full h-full text-left rounded-2xl p-6 sm:p-7 transition-all duration-300 hover:-translate-y-1 flex flex-col overflow-hidden"
       style={{
         background: "#fff",
-        border: `1px solid ${isActive ? NAVY : "#E0E7F0"}`,
+        border: `1px solid ${isActive ? NAVY : "#E5EAF2"}`,
         boxShadow: isActive
-          ? "0 0 0 3px rgba(20,33,61,0.10), 0 12px 28px rgba(20,33,61,0.14)"
-          : "0 6px 18px rgba(20,33,61,0.07)",
+          ? "0 0 0 3px rgba(20,33,61,0.10), 0 18px 38px rgba(20,33,61,0.16)"
+          : "0 10px 24px rgba(20,33,61,0.08), 0 2px 6px rgba(20,33,61,0.04)",
         fontFamily: "Inter, sans-serif",
-        minHeight: 200,
+        minHeight: 210,
         opacity: loading ? 0.7 : 1,
         cursor: loading ? "wait" : "pointer",
       }}
+      onMouseEnter={(e) => {
+        if (!loading && !isActive) {
+          e.currentTarget.style.boxShadow =
+            "0 18px 40px rgba(20,33,61,0.14), 0 4px 10px rgba(20,33,61,0.06)";
+          e.currentTarget.style.borderColor = "#C9D3E2";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!loading && !isActive) {
+          e.currentTarget.style.boxShadow =
+            "0 10px 24px rgba(20,33,61,0.08), 0 2px 6px rgba(20,33,61,0.04)";
+          e.currentTarget.style.borderColor = "#E5EAF2";
+        }
+      }}
     >
-      {/* Shimmer while a chapter is loading */}
+      {/* subtle top accent line */}
+      <span
+        aria-hidden
+        className="absolute top-0 left-0 right-0 h-[3px]"
+        style={{
+          background: `linear-gradient(90deg, ${NAVY} 0%, ${NAVY} 60%, ${RED} 100%)`,
+          opacity: isActive ? 1 : 0.85,
+        }}
+      />
+
       {loading && (
         <span
           aria-hidden
@@ -140,37 +151,32 @@ function PrimaryToolCard({
         />
       )}
 
-      {badge && (
-        <span
-          className="absolute top-4 right-4 text-[10px] uppercase tracking-widest font-semibold rounded-full px-2 py-0.5 z-10"
-          style={{ background: "#FEF3C7", color: "#92400E" }}
-        >
-          {badge}
-        </span>
-      )}
-
       <div
-        className="w-9 h-9 rounded-lg flex items-center justify-center mb-4 relative z-10"
-        style={{ background: `${NAVY}0F`, color: NAVY }}
+        className="w-10 h-10 rounded-xl flex items-center justify-center mb-5 relative z-10 transition-transform duration-300 group-hover:scale-105"
+        style={{
+          background: `linear-gradient(135deg, ${NAVY} 0%, #1E2F52 100%)`,
+          color: "#fff",
+          boxShadow: "0 4px 12px rgba(20,33,61,0.18)",
+        }}
       >
         {icon}
       </div>
 
       <h3
-        className="text-[16px] sm:text-[16.5px] font-semibold leading-snug relative z-10"
+        className="text-[17px] font-semibold leading-snug tracking-tight relative z-10"
         style={{ color: NAVY }}
       >
         {title}
       </h3>
       <p
-        className="mt-1.5 text-[13px] leading-relaxed flex-1 relative z-10"
-        style={{ color: "#64748B" }}
+        className="mt-2 text-[13.5px] leading-relaxed flex-1 relative z-10"
+        style={{ color: "#5B6679" }}
       >
         {body}
       </p>
 
       <div
-        className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold transition-transform group-hover:translate-x-0.5 relative z-10"
+        className="mt-5 inline-flex items-center gap-1.5 text-[13px] font-semibold transition-transform duration-200 group-hover:translate-x-1 relative z-10"
         style={{ color: RED }}
       >
         {cta} <ArrowRight className="h-3.5 w-3.5" />
@@ -199,38 +205,56 @@ function SecondaryToolCard({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="group w-full h-full text-left rounded-2xl p-5 transition-all duration-200 hover:bg-white hover:-translate-y-0.5 flex flex-col"
+      className="group w-full h-full text-left rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:-translate-y-1 flex flex-col relative overflow-hidden"
       style={{
-        background: "rgba(255,255,255,0.55)",
-        border: "1.5px dashed #CBD5E1",
+        background:
+          "linear-gradient(160deg, rgba(255,255,255,0.85) 0%, rgba(243,246,251,0.9) 100%)",
+        border: "1px solid #D9E0EC",
         fontFamily: "Inter, sans-serif",
-        minHeight: 200,
+        minHeight: 210,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.6 : 1,
+        boxShadow: "0 4px 14px rgba(20,33,61,0.05)",
+      }}
+      onMouseEnter={(e) => {
+        if (!disabled) {
+          e.currentTarget.style.boxShadow = "0 10px 24px rgba(20,33,61,0.10)";
+          e.currentTarget.style.borderColor = "#C9D3E2";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!disabled) {
+          e.currentTarget.style.boxShadow = "0 4px 14px rgba(20,33,61,0.05)";
+          e.currentTarget.style.borderColor = "#D9E0EC";
+        }
       }}
     >
       <div
-        className="w-7 h-7 rounded-md flex items-center justify-center mb-3"
-        style={{ background: "transparent", color: "#94A3B8" }}
+        className="w-9 h-9 rounded-xl flex items-center justify-center mb-4"
+        style={{
+          background: "#fff",
+          color: NAVY,
+          border: "1px solid #E5EAF2",
+        }}
       >
-        <Sparkles className="h-3.5 w-3.5" />
+        <Lightbulb className="h-4 w-4" />
       </div>
 
       <h3
-        className="text-[13.5px] font-semibold leading-snug"
+        className="text-[14px] font-semibold leading-snug tracking-tight"
         style={{ color: NAVY }}
       >
         {title}
       </h3>
       <p
-        className="mt-1.5 text-[12px] leading-relaxed flex-1"
+        className="mt-1.5 text-[12.5px] leading-relaxed flex-1"
         style={{ color: "#64748B" }}
       >
         {body}
       </p>
 
       <div
-        className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold transition-transform group-hover:translate-x-0.5"
+        className="mt-4 inline-flex items-center gap-1 text-[12.5px] font-semibold transition-transform duration-200 group-hover:translate-x-0.5"
         style={{ color: NAVY }}
       >
         {cta} <ArrowRight className="h-3 w-3" />
