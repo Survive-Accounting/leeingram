@@ -55,6 +55,20 @@ const PROMPT_EMOJIS: Record<PromptKey, string> = {
   request_video: "🎥",
 };
 
+// One-line pitch for each idea — shown when the student opens an idea card.
+// These describe what the feature WOULD do; they are not active tools.
+const PROMPT_DESCRIPTIONS: Record<PromptKey, string> = {
+  challenge: "A quick check-yourself prompt. We'd give you a twist on this problem and grade your answer with feedback.",
+  similar_problem: "Generate a fresh practice problem with the same skill, so you can repeat the rep without re-reading the original.",
+  memorize: "A short, exam-ready list of the formulas, accounts, and patterns worth committing to memory for this topic.",
+  journal_entries: "A clean, line-by-line breakdown of every journal entry — what hits which account and why.",
+  financial_statements: "Show how this transaction flows into the income statement, balance sheet, and cash flow statement.",
+  real_world: "A plain-English example of where you'd actually see this in a company's books or news.",
+  professor_tricks: "Common ways professors twist this concept on exams — wording traps, sneaky numbers, and partial-credit pitfalls.",
+  the_why: "The reasoning behind the rule — why GAAP handles it this way, in one short paragraph.",
+  request_video: "Vote for Lee to record a short walkthrough video for this exact problem.",
+};
+
 const EXPLORE_KEYS: PromptKey[] = [
   "challenge",
   "similar_problem",
