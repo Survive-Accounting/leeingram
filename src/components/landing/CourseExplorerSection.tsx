@@ -686,36 +686,66 @@ function ToolCard({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="text-left rounded-2xl p-5 transition-all disabled:cursor-not-allowed"
+      className="group relative text-left rounded-2xl p-6 sm:p-7 transition-all duration-200 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       style={{
-        background: active ? NAVY : "#fff",
-        color: active ? "#fff" : NAVY,
-        border: `1px solid ${active ? NAVY : "#E5E7EB"}`,
+        background: "#fff",
+        color: NAVY,
+        border: `${active ? 2 : 1}px solid ${active ? RED : "#E5E7EB"}`,
         boxShadow: active
-          ? "0 10px 30px rgba(20,33,61,0.20)"
+          ? "0 18px 44px rgba(206,17,38,0.18), 0 4px 12px rgba(20,33,61,0.06)"
           : disabled
           ? "0 1px 2px rgba(0,0,0,0.02)"
-          : "0 2px 10px rgba(0,0,0,0.04)",
-        opacity: disabled ? 0.5 : 1,
+          : "0 4px 14px rgba(20,33,61,0.06)",
+        transform: active ? "translateY(-3px)" : "translateY(0)",
+        opacity: disabled ? 0.45 : 1,
         fontFamily: "Inter, sans-serif",
+        minHeight: 168,
+      }}
+      onMouseEnter={(e) => {
+        if (disabled || active) return;
+        e.currentTarget.style.transform = "translateY(-2px)";
+        e.currentTarget.style.boxShadow = "0 12px 28px rgba(20,33,61,0.10)";
+        e.currentTarget.style.borderColor = "#C7CCD4";
+      }}
+      onMouseLeave={(e) => {
+        if (disabled || active) return;
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.boxShadow = "0 4px 14px rgba(20,33,61,0.06)";
+        e.currentTarget.style.borderColor = "#E5E7EB";
       }}
     >
-      <div className="flex items-center gap-2.5 mb-2">
+      {active && (
         <span
-          className="inline-flex items-center justify-center rounded-lg w-9 h-9 shrink-0"
+          className="absolute top-3.5 right-3.5 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider"
           style={{
-            background: active ? "rgba(255,255,255,0.12)" : "rgba(206,17,38,0.08)",
-            color: active ? "#fff" : RED,
+            background: RED,
+            color: "#fff",
+            boxShadow: "0 2px 8px rgba(206,17,38,0.30)",
+            fontFamily: "Inter, sans-serif",
           }}
         >
-          {icon}
+          <Check className="w-3 h-3" strokeWidth={3} />
+          Previewing
         </span>
-        <h3 className="text-[15.5px] font-bold">{title}</h3>
-      </div>
-      <p
-        className="text-[13px] leading-relaxed"
-        style={{ color: active ? "rgba(255,255,255,0.85)" : "#6B7280" }}
+      )}
+
+      <span
+        className="inline-flex items-center justify-center rounded-xl w-12 h-12 shrink-0 mb-4 transition-all"
+        style={{
+          background: active
+            ? "linear-gradient(135deg, #CE1126 0%, #A8101F 100%)"
+            : "rgba(206,17,38,0.08)",
+          color: active ? "#fff" : RED,
+          boxShadow: active ? "0 6px 16px rgba(206,17,38,0.28)" : "none",
+        }}
       >
+        {icon}
+      </span>
+
+      <h3 className="text-[17px] sm:text-[18px] font-bold mb-1.5 leading-tight" style={{ color: NAVY }}>
+        {title}
+      </h3>
+      <p className="text-[13.5px] leading-relaxed" style={{ color: "#5B6573" }}>
         {description}
       </p>
     </button>
