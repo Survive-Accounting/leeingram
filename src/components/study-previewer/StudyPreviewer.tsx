@@ -2,12 +2,20 @@ import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, ArrowUpRight, Check, ChevronDown, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import StudyToolCards, { type ToolKey } from "@/components/dashboard/StudyToolCards";
-import RetroTerminalFrame from "@/components/study-previewer/RetroTerminalFrame";
+import type { ToolKey } from "@/components/dashboard/StudyToolCards";
+import RetroTerminalFrame, {
+  type TerminalTool,
+} from "@/components/study-previewer/RetroTerminalFrame";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
 const LOGO_FONT = "'DM Serif Display', serif";
+
+const TERMINAL_TOOLS: TerminalTool[] = [
+  { key: "practice", label: "Practice Problem Helper" },
+  { key: "je", label: "Journal Entry Helper", hint: "(coming soon)" },
+  { key: "feedback", label: "Suggest a tool we should build" },
+];
 
 export interface PreviewChapter {
   id: string;
@@ -275,24 +283,12 @@ export default function StudyPreviewer({
             </div>
           </section>
 
-          {/* Tool cards */}
-          <div className="sa-rise" style={{ animationDelay: "240ms" }}>
-            <StudyToolCards
-              active={activeTool}
-              loading={chapterLoading}
-              chapterChosen={chapterChosen}
-              onSelect={handleSelectTool}
-              onOpenFeedback={onOpenFeedback}
-              onNudgeChapter={handleNudgeChapter}
-            />
-          </div>
-
-          {/* Workspace pane — retro terminal entry state OR loaded tool */}
+          {/* Workspace pane — retro terminal launchpad OR loaded tool */}
           {!activeTool ? (
             <div
               ref={workspaceRef}
               className="sa-rise"
-              style={{ animationDelay: "360ms" }}
+              style={{ animationDelay: "240ms" }}
             >
               <RetroTerminalFrame
                 courseLabel={fixedCourseLabel ?? selectedCourseLabel ?? null}
@@ -301,6 +297,18 @@ export default function StudyPreviewer({
                     ? `Ch ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}`
                     : null
                 }
+                tools={TERMINAL_TOOLS}
+                activeToolKey={activeTool}
+                canPickTool={chapterChosen}
+                loading={chapterLoading}
+                onNudgeChapter={handleNudgeChapter}
+                onSelectTool={(key) => {
+                  if (key === "feedback") {
+                    onOpenFeedback();
+                    return;
+                  }
+                  handleSelectTool(key as ToolKey);
+                }}
               />
             </div>
           ) : (
