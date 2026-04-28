@@ -342,7 +342,7 @@ export default function SurviveExplorePanel({
       >
         <span className="flex items-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5" />
-          Explore & Vote
+          Vote on new ideas
         </span>
         {exploreOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
