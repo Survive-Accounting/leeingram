@@ -1516,25 +1516,41 @@ export default function SolutionsViewerV2() {
           boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 20px -8px rgba(0,0,0,0.4)",
         }}
       >
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between gap-6">
-          {isEmbed ? (
-            <span aria-hidden />
-          ) : (
-            <Link
-              to="/my-dashboard"
-              className="inline-flex items-center gap-1.5 text-sm rounded-md px-2 py-1.5 -ml-2 transition-all hover:bg-white/5"
-              style={{ color: "rgba(255,255,255,0.55)" }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.95)")}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.55)")}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Back to dashboard</span>
-              <span className="sm:hidden">Dashboard</span>
-            </Link>
-          )}
+        <div className="max-w-6xl mx-auto px-6 h-14 grid grid-cols-3 items-center gap-6">
+          <div className="flex items-center justify-start min-w-0">
+            {isEmbed ? (
+              <button
+                type="button"
+                onClick={() => setHelpOpen(true)}
+                data-embed-allow="true"
+                aria-label="Stuck? Ask Lee"
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-sm font-medium transition-all hover:bg-white/10"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  color: "rgba(255,255,255,0.9)",
+                }}
+              >
+                <MessageCircleQuestion className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Stuck? Ask Lee</span>
+              </button>
+            ) : (
+              <Link
+                to="/my-dashboard"
+                className="inline-flex items-center gap-1.5 text-sm rounded-md px-2 py-1.5 -ml-2 transition-all hover:bg-white/5"
+                style={{ color: "rgba(255,255,255,0.55)" }}
+                onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.95)")}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.55)")}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Back to dashboard</span>
+                <span className="sm:hidden">Dashboard</span>
+              </Link>
+            )}
+          </div>
           <Link
             to="/my-dashboard"
-            className="tracking-tight truncate"
+            className="tracking-tight truncate justify-self-center text-center"
             style={{ fontFamily: "'DM Serif Display', serif", fontSize: 18, letterSpacing: "-0.01em" }}
             data-embed-allow="true"
           >
@@ -1544,7 +1560,7 @@ export default function SolutionsViewerV2() {
               <sup className="text-[9px] font-normal ml-0.5 opacity-70">™</sup>
             </span>
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-end">
             <button
               type="button"
               onClick={openShareModal}
@@ -1904,7 +1920,7 @@ export default function SolutionsViewerV2() {
       )}
 
       {/* Floating help button */}
-      {!loading && asset && (
+      {!loading && asset && !isEmbed && (
         <button
           onClick={() => setHelpOpen(true)}
           className={cn(
