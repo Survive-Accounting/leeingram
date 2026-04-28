@@ -389,7 +389,13 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: BG_GRADIENT }}>
       <BetaCountdownStrip />
-      <DashNavbar onFeedback={() => setFeedbackOpen(true)} onSignOut={handleSignOut} />
+      <DashNavbar
+        email={email}
+        onStudyTools={scrollToPreviewer}
+        onShare={scrollToShare}
+        onFeedback={() => setFeedbackOpen(true)}
+        onSignOut={handleSignOut}
+      />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-5 sm:px-8 pt-10 md:pt-12 pb-20 space-y-12 md:space-y-14">
         {/* Welcome header */}
