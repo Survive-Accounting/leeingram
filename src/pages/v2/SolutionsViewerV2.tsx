@@ -1656,8 +1656,8 @@ export default function SolutionsViewerV2() {
                       Problem
                     </div>
                     <div
-                      className="text-[14px] max-w-[68ch] space-y-3 [&_p]:whitespace-pre-wrap [&_p]:text-[14px]"
-                      style={{ color: "rgba(255,255,255,0.9)", lineHeight: 1.65 }}
+                      className="text-[15px] max-w-[68ch] space-y-3 [&_p]:whitespace-pre-wrap [&_p]:text-[15px]"
+                      style={{ color: "rgba(255,255,255,0.95)", lineHeight: 1.7 }}
                     >
                       <SmartTextRenderer text={toYouPerspective(asset.survive_problem_text)} />
                     </div>
