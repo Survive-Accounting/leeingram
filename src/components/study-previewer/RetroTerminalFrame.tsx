@@ -387,6 +387,17 @@ export default function RetroTerminalFrame({
               <Line show={bootStep >= 4}>{">"}</Line>
               <Line show={bootStep >= 5}>
                 <span style={{ color: PHOSPHOR_DIM }}>{promptLabel}</span>
+                <span
+                  aria-hidden
+                  className="inline-block align-[-2px] ml-2"
+                  style={{
+                    width: "0.55em",
+                    height: "1.05em",
+                    background: PHOSPHOR,
+                    boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                    animation: "sa-cursor-blink 1.05s steps(1) infinite",
+                  }}
+                />
               </Line>
 
               {/* Tool menu */}
