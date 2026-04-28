@@ -673,7 +673,10 @@ export default function StudyPreviewer({
           <div
             ref={workspaceRef}
             className="sa-stage sa-rise"
-            style={{ animationDelay: "240ms" }}
+            style={{
+              animationDelay: "240ms",
+              minHeight: stageLockHeight ? `${stageLockHeight}px` : undefined,
+            }}
           >
             {/* Prefetch the v2 viewer route once we know the asset, so click feels instant */}
             {viewerAssetCode && !activeTool && (
