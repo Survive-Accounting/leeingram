@@ -710,12 +710,24 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
 
 
         {/* Microcopy under flow */}
-        <p
-          className="mt-6 text-center text-[12.5px]"
-          style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
-        >
-          Free during finals. No credit card needed. Help us improve it with your feedback.
-        </p>
+        <div className="mt-8 flex flex-col items-center gap-2 text-center">
+          <p
+            className="text-[12.5px]"
+            style={{ color: "#6B7280", fontFamily: "Inter, sans-serif" }}
+          >
+            Free during finals. No credit card needed. Help us improve it with your feedback.
+          </p>
+          {selectedTool && (
+            <button
+              onClick={() => setQuestionOpen(true)}
+              className="inline-flex items-center gap-1.5 text-[12px] font-medium hover:underline"
+              style={{ color: "#525B6B", fontFamily: "Inter, sans-serif" }}
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              Have questions?
+            </button>
+          )}
+        </div>
 
         {/* Questions modal */}
         {questionOpen && (
