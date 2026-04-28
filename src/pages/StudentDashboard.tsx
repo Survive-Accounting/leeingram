@@ -10,6 +10,7 @@ import { WelcomeVideoCard, WelcomeVideoModal } from "@/components/dashboard/Welc
 import EarlyBirdOptInRow from "@/components/dashboard/EarlyBirdOptInRow";
 import StudyToolCards, { type ToolKey } from "@/components/dashboard/StudyToolCards";
 import ShareWithFriendsBand from "@/components/dashboard/ShareWithFriendsBand";
+import { getCourseLabel } from "@/lib/courseLabel";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
