@@ -612,13 +612,6 @@ export default function RetroTerminalFrame({
                 )}
               </Line>
               <Line show={bootStep >= 4}>{">"}</Line>
-              {!canPickTool && (
-                <Line show={bootStep >= 5}>
-                  <span style={{ color: PHOSPHOR_MUTED, fontStyle: "italic" }}>
-                    {"> Awaiting chapter selection…"}
-                  </span>
-                </Line>
-              )}
               <Line show={bootStep >= 5}>
                 <span style={{ color: PHOSPHOR_DIM }}>{promptLabel}</span>
                 <span
