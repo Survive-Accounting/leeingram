@@ -519,6 +519,28 @@ export default function StudentDashboard() {
         onClose={() => setPickerOpen(false)}
       />
 
+      {needsOnboarding && userId && email && (
+        <OnboardingModal
+          userId={userId}
+          email={email}
+          prefillCampusId={campusId}
+          prefillCourseId={purchase?.course_id ?? null}
+          prefillName={fallbackFirstName}
+          onComplete={(result) => {
+            setOnboarding({
+              is_legacy: result.legacy,
+              beta_number: result.beta_number,
+              campus_beta_number: result.campus_beta_number,
+              campus_name: result.campus_name,
+              display_name: null,
+              welcomed_at: null,
+            });
+            setNeedsOnboarding(false);
+            setShowWelcome(true);
+          }}
+        />
+      )}
+
       {verifying && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
