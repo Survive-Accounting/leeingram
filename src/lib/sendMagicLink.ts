@@ -40,7 +40,7 @@ export async function sendMagicLink(opts: {
         "Could not send login link. Try again.";
       return { ok: false, error: String(msg) };
     }
-    return { ok: true };
+    return { ok: true, error: null };
   } catch (e: any) {
     return { ok: false, error: e?.message || "Could not send login link." };
   }
