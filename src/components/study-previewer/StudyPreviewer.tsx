@@ -690,7 +690,7 @@ export default function StudyPreviewer({
             <div
               className={`sa-stage-layer ${activeTool ? "sa-stage-overlay sa-stage-hidden" : "sa-stage-visible"}`}
               aria-hidden={!!activeTool}
-              style={{ position: "relative" }}
+              style={{ position: activeTool ? "absolute" : "relative", inset: activeTool ? 0 : undefined }}
             >
               {/* One-shot CRT refresh pulse triggered on tool selection */}
               {crtPulseKey > 0 && (
