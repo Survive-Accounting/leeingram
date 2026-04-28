@@ -277,24 +277,12 @@ export default function StudyPreviewer({
             </div>
           </section>
 
-          {/* Tool cards */}
-          <div className="sa-rise" style={{ animationDelay: "240ms" }}>
-            <StudyToolCards
-              active={activeTool}
-              loading={chapterLoading}
-              chapterChosen={chapterChosen}
-              onSelect={handleSelectTool}
-              onOpenFeedback={onOpenFeedback}
-              onNudgeChapter={handleNudgeChapter}
-            />
-          </div>
-
-          {/* Workspace pane — retro terminal entry state OR loaded tool */}
+          {/* Workspace pane — retro terminal launchpad OR loaded tool */}
           {!activeTool ? (
             <div
               ref={workspaceRef}
               className="sa-rise"
-              style={{ animationDelay: "360ms" }}
+              style={{ animationDelay: "240ms" }}
             >
               <RetroTerminalFrame
                 courseLabel={fixedCourseLabel ?? selectedCourseLabel ?? null}
@@ -303,6 +291,18 @@ export default function StudyPreviewer({
                     ? `Ch ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}`
                     : null
                 }
+                tools={TERMINAL_TOOLS}
+                activeToolKey={activeTool}
+                canPickTool={chapterChosen}
+                loading={chapterLoading}
+                onNudgeChapter={handleNudgeChapter}
+                onSelectTool={(key) => {
+                  if (key === "feedback") {
+                    onOpenFeedback();
+                    return;
+                  }
+                  handleSelectTool(key as ToolKey);
+                }}
               />
             </div>
           ) : (
