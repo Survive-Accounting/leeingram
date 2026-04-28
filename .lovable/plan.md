@@ -1,70 +1,109 @@
-# Solutions Viewer polish — Explore panel, problem text, Navigate
+# Engagement-gated sharing on V2 Solutions Viewer
 
-Four focused fixes in `src/pages/v2/SolutionsViewerV2.tsx` and one component update in `src/components/v2/SurviveExplorePanel.tsx`.
+Goal: stop asking everyone to share. Only invite the most engaged students (those who rated us 4–5 AND took the time to send written feedback) to share with a friend.
 
-## 1. "Suggest your own idea" → 8th dashed card
+---
 
-In `SurviveExplorePanel.tsx`, move the suggest link out from below the grid and into the grid as the final card.
+## What changes for the student
 
-- Render it as the 8th cell in the same `grid-cols-1 sm:grid-cols-2 gap-2` grid (after the 7 EXPLORE_KEYS).
-- Style: dashed border (`border-dashed`), muted text, sparkle/plus icon, same height (`h-9`), hover state that brightens border to primary. Keep the existing inline-textarea expansion behavior — when clicked, the card itself swaps in-place to the textarea + Send/Cancel row (spans both columns via `sm:col-span-2` while open).
-- Copy stays "+ suggest your own idea".
+**1. Remove the Share button from the V2 viewer header.**
+No more always-visible Share icon next to "Jump anywhere in the course."
 
-## 2. Fix unreadable Problem text on dark navy panel
+**2. The "Quick favor?" popup (every 15th problem view) becomes a 3-step funnel:**
 
-Root cause: the navy problem block sets `color: rgba(255,255,255,0.95)` inline, but `SmartTextRenderer` outputs children wrapped in `text-foreground` (dark) which wins over the inherited inline color.
+```text
+Step 1 — Rate
+  "How are we doing so far?"
+  [1] [2] [3] [4] [5]   ← 1 = worst, 5 = best
+  Don't show again · Skip
 
-Fix in `SolutionsViewerV2.tsx` around line 1693–1709:
+  ├─ Rating 1–3 → save rating, show short "Thanks — we'll keep improving" → close.
+  │              No wish step. No share step.
+  │
+  └─ Rating 4–5 → continue to Step 2.
 
-- Wrap `<SmartTextRenderer>` in a div with class `[&_*]:!text-white/95` (and matching tweaks for `[&_strong]:!text-white`, `[&_th]:!text-white`, `[&_td]:!text-white/90`) so all rendered descendants are forced light on the navy background.
-- Also force the highlighted key terms (currently `text-primary` red) to a softer light accent on dark: add `[&_.font-semibold]:!text-amber-300` (or keep red but bump opacity) — to be confirmed visually after the white fix.
+Step 2 — Wish (only for 4★/5★)
+  "Glad it's helping. If you could wave a magic wand,
+   what would make this even better?"
+  [textarea — placeholder: "One thing you'd change…"]
+  Skip · Send to Lee
 
-This is scoped only to the problem-text container, so other usages of `SmartTextRenderer` on light backgrounds are unaffected.
+  ├─ Skip / empty → save rating only → close.
+  │
+  └─ Sends actual feedback → continue to Step 3.
 
-## 3. Supercharge the "Navigate" button
+Step 3 — Share (only after they actually submit a wish)
+  "You're exactly the kind of student we built this for.
+   Know a friend cramming right now? Send them this:"
+  [link field]  [Copy link]
+  Done
+```
 
-Goal: turn the small icon-only button into a marketing-forward control that advertises scope.
+The existing "Send this to a friend" button inside the per-problem **ExplanationFeedback** card (shown after a thumbs-up) stays — it's user-initiated and only appears for engaged students, which fits the same philosophy.
 
-Changes to the header CTA at line ~1579–1593:
+---
 
-- Replace text "Navigate" with a two-line stack:
-  - Line 1 (small, uppercase, muted): the course name (e.g. `INTRO ACCOUNTING 1`)
-  - Line 2 (semibold, white): `Jump anywhere in the course`
-- Keep the menu icon on the left, add a small chevron-down on the right.
-- Increase height to `h-11`, add subtle red accent on hover (`hover:border-[#CE1126]/40`).
-- On mobile, collapse back to icon + "Jump" label.
+## Trigger rules (unchanged from today)
 
-Course name is already available via `getCourseLabel(chapter?.course)` (used at line 1874 for the explore panel).
+- Popup opens on every 15th problem view (`sa_problem_views % 15 === 0`).
+- "Don't show again" sets `sa_wand_optout=1` and the popup never returns on that browser.
+- "Skip" at any step just closes; the next 15-view cycle can re-trigger.
 
-## 4. Navigate panel — dropdown chapter selector + problem count headline
+---
 
-In `NavigatePanel` (lines 977–1198):
+## Data captured
 
-- Replace the horizontal chip strip of chapters with a single `<Select>` dropdown:
-  - Trigger shows: `Ch {n} — {chapter_name}` for current selection.
-  - Items list all chapters in order; current asset's chapter gets a small red dot.
-- Update header copy:
-  - DialogTitle: `Jump anywhere in the course`
-  - DialogDescription: `{TOTAL}+ practice problems ready for you to cram — pick a chapter, type, and problem.`
-  - Compute TOTAL on panel open via a single `select count` query against `teaching_assets` filtered by `course_id` (cached in component state). Round down to nearest 50 and append `+`.
-- Add a one-line summary above the problem grid: `{visibleItems.length} {category label} in Ch {n}` to reduce visual noise.
-- Drop the redundant "Type" label — let the three pill buttons speak for themselves.
+Reuse the existing `explanation_feedback` table. One row per popup completion, written at the end of whichever step the student finished:
 
-## 5. General clutter reduction in viewer header
+| field | value |
+|---|---|
+| `asset_id` | sentinel `00000000-0000-0000-0000-000000000001` (current pattern) |
+| `asset_name` | `__magic_wand__` |
+| `user_email` | from `v2_student_email` / `sa_free_user_email` if present |
+| `helpful` | `true` if rating ≥ 4, `false` if ≤ 3, `null` if skipped |
+| `reason` | `["wand_prompt", "rating:<1-5>"]` |
+| `note` | wish text (only for 4–5 who typed something) |
 
-- Remove the standalone "Navigate" word duplication now that the new button carries the course name.
-- Keep Share button as-is.
+No schema migration needed — `reason` is already a text array.
 
-## Technical notes
+---
 
-- Files touched:
-  - `src/pages/v2/SolutionsViewerV2.tsx` — header CTA, problem-text wrapper class, NavigatePanel rewrite (dropdown + count query + copy).
-  - `src/components/v2/SurviveExplorePanel.tsx` — move suggest into grid as dashed 8th card with in-place expansion.
-- New query: a single `supabase.from('teaching_assets').select('id', { count: 'exact', head: true }).eq('course_id', courseId).eq('status','approved')` inside NavigatePanel, run once when `open && courseId` first match.
-- No DB migrations, no new dependencies.
-- shadcn `Select` already in use elsewhere in the project.
+## Technical implementation
 
-## Out of scope
+All changes live in **`src/pages/v2/SolutionsViewerV2.tsx`**.
 
-- No changes to Challenge button, vote logic, or paywall flow.
-- No changes to the Explanation/Solutions content rendering or right-column accordions.
+1. **Delete** the header Share button (lines ~1564–1578) — the `<button>` with `<Share2>` icon. Keep `openShareModal`, `ShareModal`, and `shareOpen` state — they're still used by `ExplanationFeedback` and now by the new wand flow.
+
+2. **Refactor `MagicWandFeedback`** (lines ~795–894):
+   - Add `onTriggerShare: () => void` prop.
+   - Replace single-screen UI with a `step` state machine: `"rate" | "wish" | "thanks"`.
+   - On rating click: store rating in local state; if 1–3, write feedback row and show "Thanks" then close; if 4–5, advance to `"wish"`.
+   - On wish "Send to Lee" with non-empty text: write feedback row → close popup → call `onTriggerShare()` (which opens the existing `ShareModal`).
+   - On wish "Skip": write rating-only row → close.
+   - Keep "Don't show again" link visible on the rate step only.
+   - Keep Lee headshot at the top of all steps for continuity.
+
+3. **Wire it up** at line 1951:
+   ```tsx
+   <MagicWandFeedback onTriggerShare={openShareModal} />
+   ```
+
+4. **Tighten copy** to keep the friendly, concise voice already established:
+   - Rate step title: `Quick favor?`
+   - Rate step body: `How's Survive Accounting working for you so far?`
+   - Wish step title: `Awesome — one wish?`
+   - Wish step body: `If you could wave a magic wand, what would make this perfect?`
+   - Share step title: `Help a friend before their exam`
+   - Share step body: `You're the kind of student we built this for. Send them the link:`
+
+5. **Star UI**: 5 large numbered buttons (1–5) in a row, navy fill on hover, red fill on selected, matching the project's existing button styling. No icon library needed beyond Lucide `Star` if we want stars; numeric 1–5 is simpler and matches the user's spec ("1 worse, 5 best").
+
+6. **Remove unused import** `Share2` from the lucide import line **only if** no other in-file usage remains. `ExplanationFeedback` still uses `Share2`, so the import stays.
+
+---
+
+## Files touched
+
+- `src/pages/v2/SolutionsViewerV2.tsx` — single-file change.
+
+No DB migrations, no new components, no new dependencies.
