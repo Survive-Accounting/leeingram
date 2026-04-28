@@ -362,27 +362,54 @@ export default function FeedbackToolModal({
                   return (
                     <li
                       key={id}
+                      ref={(el) => {
+                        if (el) itemRefs.current.set(id, el);
+                        else itemRefs.current.delete(id);
+                      }}
                       draggable={!submitting && !done}
                       onDragStart={() => setDragId(id)}
                       onDragOver={(e) => {
                         e.preventDefault();
                         reorderTo(id);
                       }}
-                      onDragEnd={() => setDragId(null)}
-                      className="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all cursor-grab active:cursor-grabbing"
+                      onDragEnd={() => {
+                        setDragId(null);
+                        setTouchOverId(null);
+                      }}
+                      className="flex items-center gap-2 sm:gap-3 rounded-xl px-3 py-2.5 transition-all"
                       style={{
                         background: isTop3 ? "#fff" : "#F8FAFC",
-                        border: `1px solid ${isTop3 ? "#D9E0EC" : "#E2E8F0"}`,
+                        border: `1px solid ${
+                          touchOverId === id && dragId !== id
+                            ? NAVY
+                            : isTop3
+                            ? "#D9E0EC"
+                            : "#E2E8F0"
+                        }`,
                         boxShadow: isTop3
                           ? "0 4px 12px rgba(20,33,61,0.06)"
                           : "none",
                         opacity: dragId === id ? 0.5 : 1,
+                        touchAction: dragId === id ? "none" : "auto",
                       }}
                     >
-                      <GripVertical
-                        className="h-4 w-4 flex-shrink-0"
-                        style={{ color: "#94A3B8" }}
-                      />
+                      {/* Drag handle — also captures touch drag on mobile */}
+                      <span
+                        onTouchStart={() => setDragId(id)}
+                        onTouchMove={(e) => handleTouchMove(e, id)}
+                        onTouchEnd={() => {
+                          setDragId(null);
+                          setTouchOverId(null);
+                        }}
+                        className="flex-shrink-0 p-1 -ml-1 cursor-grab active:cursor-grabbing"
+                        style={{ touchAction: "none" }}
+                        aria-label="Drag to reorder"
+                      >
+                        <GripVertical
+                          className="h-4 w-4"
+                          style={{ color: "#94A3B8" }}
+                        />
+                      </span>
                       <span
                         className="inline-flex items-center justify-center rounded-md text-[11px] font-bold flex-shrink-0"
                         style={{
@@ -400,7 +427,7 @@ export default function FeedbackToolModal({
                       >
                         {labelFor(id)}
                       </span>
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
                         <ArrowBtn
                           dir="up"
                           disabled={idx === 0}
