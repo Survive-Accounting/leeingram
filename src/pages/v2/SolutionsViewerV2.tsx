@@ -496,12 +496,14 @@ function InlineExplanation({
   simplifiedText,
   setSimplifiedText,
   onShareClick,
+  onAdvanceTask,
 }: {
   asset: Asset;
   chapter: ChapterMeta | null;
   simplifiedText: string | null;
   setSimplifiedText: (t: string | null) => void;
   onShareClick: () => void;
+  onAdvanceTask?: (taskIndex: number) => void;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -510,6 +512,15 @@ function InlineExplanation({
   const [printing, setPrinting] = useState(false);
   const [exportingSheet, setExportingSheet] = useState(false);
   const [jeOpen, setJeOpen] = useState(false);
+  // Bite-sized walkthrough state — index into sections.walkthrough
+  const [walkStep, setWalkStep] = useState(0);
+  const [walkShowAll, setWalkShowAll] = useState(false);
+
+  // Reset walkthrough whenever asset changes or user re-opens "Walk me through"
+  useEffect(() => {
+    setWalkStep(0);
+    setWalkShowAll(false);
+  }, [asset.asset_name]);
 
   const hasJE = Array.isArray(asset.journal_entry_completed_json?.scenario_sections)
     && asset.journal_entry_completed_json.scenario_sections.length > 0;
