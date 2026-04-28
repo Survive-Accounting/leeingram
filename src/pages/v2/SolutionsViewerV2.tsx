@@ -1109,76 +1109,74 @@ function NavigatePanel({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Navigate</DialogTitle>
-          <DialogDescription>Jump anywhere in the course — chapter, type, problem.</DialogDescription>
+          <DialogTitle>Jump anywhere in the course</DialogTitle>
+          <DialogDescription>
+            {totalCount && totalCount > 0
+              ? `${Math.floor(totalCount / 50) * 50}+ practice problems ready for you to cram — pick a chapter and problem.`
+              : "Pick a chapter and problem."}
+          </DialogDescription>
         </DialogHeader>
 
-        {/* 1. Chapter selection */}
+        {/* 1. Chapter dropdown */}
         <div className="space-y-1.5">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Chapter</div>
           {loadingChapters && chapters.length === 0 ? (
             <div className="text-xs text-muted-foreground py-2">Loading chapters…</div>
           ) : (
-            <div className="flex gap-1.5 overflow-x-auto pb-1.5 -mx-1 px-1" style={{ scrollbarWidth: "thin" }}>
-              {chapters.map((ch) => {
-                const isCurrent = ch.id === selectedChapterId;
-                const isAssetChapter = ch.id === currentChapterId;
-                return (
-                  <button
-                    key={ch.id}
-                    onClick={() => setSelectedChapterId(ch.id)}
-                    className={cn(
-                      "shrink-0 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-all border",
-                      isCurrent
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-card hover:bg-accent border-border text-foreground",
-                    )}
-                    title={ch.chapter_name}
-                  >
-                    Ch {ch.chapter_number}
-                    {isAssetChapter && !isCurrent && (
-                      <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-primary align-middle" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <Select value={selectedChapterId} onValueChange={setSelectedChapterId}>
+              <SelectTrigger className="w-full h-10">
+                <SelectValue placeholder="Select a chapter" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[50vh]">
+                {chapters.map((ch) => {
+                  const isAssetChapter = ch.id === currentChapterId;
+                  return (
+                    <SelectItem key={ch.id} value={ch.id}>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="font-semibold">Ch {ch.chapter_number}</span>
+                        <span className="text-muted-foreground">— {ch.chapter_name}</span>
+                        {isAssetChapter && (
+                          <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-primary align-middle" />
+                        )}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
           )}
         </div>
 
-        {/* 2. Problem type */}
-        <div className="space-y-1.5">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Type</div>
-          <div className="flex flex-wrap gap-1.5">
-            {categories.map((c) => {
-              const isActive = c.key === activeCat;
-              const disabled = c.count === 0;
-              return (
-                <button
-                  key={c.key}
-                  disabled={disabled}
-                  onClick={() => setActiveCat(c.key)}
+        {/* 2. Problem type pills */}
+        <div className="flex flex-wrap gap-1.5">
+          {categories.map((c) => {
+            const isActive = c.key === activeCat;
+            const disabled = c.count === 0;
+            return (
+              <button
+                key={c.key}
+                disabled={disabled}
+                onClick={() => setActiveCat(c.key)}
+                className={cn(
+                  "h-8 px-3 rounded-md text-xs font-semibold transition-all border inline-flex items-center gap-1.5",
+                  isActive
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-card hover:bg-accent border-border text-foreground",
+                  disabled && "opacity-40 cursor-not-allowed hover:bg-card",
+                )}
+              >
+                {c.label}
+                <span
                   className={cn(
-                    "h-8 px-3 rounded-md text-xs font-semibold transition-all border inline-flex items-center gap-1.5",
-                    isActive
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-card hover:bg-accent border-border text-foreground",
-                    disabled && "opacity-40 cursor-not-allowed hover:bg-card",
+                    "inline-flex items-center justify-center rounded-full text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]",
+                    isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground",
                   )}
                 >
-                  {c.label}
-                  <span
-                    className={cn(
-                      "inline-flex items-center justify-center rounded-full text-[10px] font-bold px-1.5 min-w-[18px] h-[18px]",
-                      isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {c.count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                  {c.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* 3. Problem grid */}
