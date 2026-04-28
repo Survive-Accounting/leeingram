@@ -12,6 +12,7 @@ import SmartTextRenderer from "@/components/SmartTextRenderer";
 import { generateSimplifiedPracticePdf } from "@/lib/generateSimplifiedPracticePdf";
 import ReactMarkdown from "react-markdown";
 import SurviveExplorePanel from "@/components/v2/SurviveExplorePanel";
+import FeatureIdeasVoting from "@/components/v2/FeatureIdeasVoting";
 import DOMPurify from "isomorphic-dompurify";
 
 import { supabase } from "@/integrations/supabase/client";
