@@ -28,10 +28,12 @@ export default function FeedbackToolModal({
     }
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("chapter_questions").insert({
-        question_text: text.trim().slice(0, 4000),
-        email,
-        issue_type: "feedback",
+      const { error } = await supabase.functions.invoke("send-contact-notification", {
+        body: {
+          email: email || "anonymous@beta",
+          message: `[Beta · Help us decide] ${text.trim().slice(0, 4000)}`,
+          subject: "Beta tool idea",
+        },
       });
       if (error) throw error;
       setDone(true);
