@@ -33,19 +33,24 @@ function buildUserPrompt(promptType: string, ctx: any): string {
 
   switch (promptType) {
     case "walk_through":
-      return `A student needs a guided, step-by-step walkthrough of this accounting problem. Walk them through it ONE STEP AT A TIME — do NOT show all steps upfront.
+      return `A student needs a guided, step-by-step walkthrough of this accounting problem. Generate ALL steps in ONE response — they will be revealed to the student one at a time client-side.
 
-Start at Step 1 only. Format:
-- Bold "Step 1 of [N] — [short title]" using <strong> tags
-- 2-3 sentences explaining what they're doing and why
+CRITICAL FORMAT RULES:
+- Separate each step with this exact delimiter on its own line: <!--STEP-->
+- Do NOT include the delimiter before the first step or after the last step.
+- Each step starts with: <strong>Step N of [TOTAL] — [short title]</strong>
+- After the bold title: 2-3 sentences explaining what they're doing and why
 - Then the actual work for THIS step (use an HTML <table> if numbers/layers are involved)
-- End with: "Ready for step 2?" or a soft comprehension question that previews step 2
+- Do NOT add "Ready for step N?" or "Continue to next step" prompts — the UI handles transitions
+- Do NOT repeat content from previous steps
+
+The FINAL step should clearly state the final answer (bold the number) and one sentence on what would change under a different assumption.
 
 Pick the right step structure for the problem type. Examples:
 - Inventory cost-flow: (1) Build layers table, (2) Confirm units available vs on hand, (3) Apply method to isolate EI layers, (4) Multiply units × cost, (5) Sum to EI value
 - Bond amortization: (1) Identify face/coupon/market, (2) Compute issue price, (3) Build amortization row, (4) Record entries
 - Adjusting entries: (1) Identify what changed, (2) Determine the accounts touched, (3) Compute the amount, (4) Write the JE
-Adjust step count to fit. Maximum 6 steps total.
+Adjust step count to fit. 3-6 steps total.
 
 Course: ${course} | Chapter: ${chapter} | Topic: ${topic}
 Problem: ${problem}
