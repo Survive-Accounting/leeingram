@@ -707,7 +707,7 @@ export default function RetroTerminalFrame({
                           <div
                             style={{
                               color: PHOSPHOR_MUTED,
-                              fontSize: 11,
+                              fontSize: 10,
                               lineHeight: 1.45,
                               fontFamily:
                                 "'JetBrains Mono', 'IBM Plex Mono', monospace",
