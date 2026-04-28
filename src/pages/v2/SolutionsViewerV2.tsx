@@ -2001,17 +2001,7 @@ export default function SolutionsViewerV2() {
                 <span className="hidden sm:inline">Stuck?</span>
               </button>
             ) : (
-              <Link
-                to="/my-dashboard"
-                className="inline-flex items-center gap-1.5 text-sm rounded-md px-2 py-1.5 -ml-2 transition-all hover:bg-white/5"
-                style={{ color: "rgba(255,255,255,0.55)" }}
-                onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.95)")}
-                onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.55)")}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">Back to dashboard</span>
-                <span className="sm:hidden">Dashboard</span>
-              </Link>
+              <div />
             )}
           </div>
           <Link
@@ -2041,11 +2031,6 @@ export default function SolutionsViewerV2() {
               }}
             >
               <Menu className="h-4 w-4 shrink-0 opacity-80 group-hover:opacity-100" />
-              {courseLabel && (
-                <span className="hidden sm:inline text-[12px] font-semibold text-white">
-                  {courseLabel}
-                </span>
-              )}
             </button>
           </div>
         </div>
@@ -2078,35 +2063,7 @@ export default function SolutionsViewerV2() {
 
         {!loading && asset && (
           <>
-            {/* Mobile: Problem / Helper segmented toggle */}
-            <div className="lg:hidden mb-4">
-              <div
-                className="inline-flex rounded-lg p-1 w-full"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-                role="tablist"
-                aria-label="Switch between problem and helper"
-              >
-                {(["problem", "helper"] as const).map((tab) => {
-                  const active = mobileTab === tab;
-                  return (
-                    <button
-                      key={tab}
-                      role="tab"
-                      aria-selected={active}
-                      onClick={() => setMobileTab(tab)}
-                      className="flex-1 h-9 rounded-md text-[13px] font-semibold transition-all"
-                      style={{
-                        background: active ? "#14213D" : "transparent",
-                        color: active ? "#fff" : "rgba(255,255,255,0.6)",
-                        boxShadow: active ? "0 2px 8px rgba(0,0,0,0.25)" : "none",
-                      }}
-                    >
-                      {tab === "problem" ? "Problem" : "Helper"}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            {/* Mobile Problem/Helper toggle removed for cleaner UI */}
 
             {/* Desktop: floating view-mode toolbar */}
             <div className="hidden md:flex justify-end mb-3">
