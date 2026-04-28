@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp, Sheet as SheetIcon, PanelLeftClose, PanelRightClose, Columns2, Rows2, RotateCcw, GripVertical, GripHorizontal, Maximize2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronLeft, MessageCircleQuestion, Sparkles, Loader2, AlertTriangle, Menu, Wand2, Printer, BookOpen, Share2, Copy, Check, Search, ChevronDown, ChevronUp, Sheet as SheetIcon, PanelLeftClose, PanelRightClose, Columns2, Rows2, RotateCcw, GripVertical, GripHorizontal, Maximize2, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { z } from "zod";
@@ -709,6 +709,225 @@ const REASON_OPTIONS: { value: FeedbackReason; label: string }[] = [
 
 const MAX_REASONS = 2;
 
+// ── Lightweight thumbs feedback for a single helper response ─────────
+// Lives at the bottom-right of the helper response window. Subtle by
+// default, expands to a thin row of reason chips on a thumbs-down so
+// students can optionally tell us why — but the click alone is already
+// saved, so chip selection is never required.
+type ThumbsReason =
+  | "confusing"
+  | "incorrect"
+  | "too_long"
+  | "too_short"
+  | "didnt_answer"
+  | "other";
+
+const THUMBS_REASONS: { value: ThumbsReason; label: string }[] = [
+  { value: "confusing", label: "Confusing" },
+  { value: "incorrect", label: "Incorrect" },
+  { value: "too_long", label: "Too long" },
+  { value: "too_short", label: "Too short" },
+  { value: "didnt_answer", label: "Didn't answer my question" },
+  { value: "other", label: "Other" },
+];
+
+function HelperResponseThumbs({
+  asset,
+  chapter,
+  section,
+}: {
+  asset: Asset;
+  chapter: ChapterMeta | null;
+  section: ToolboxKey;
+}) {
+  // Reset when the user switches to a different helper section so each
+  // response gets its own clean thumb state.
+  const [vote, setVote] = useState<"up" | "down" | null>(null);
+  const [reasonsOpen, setReasonsOpen] = useState(false);
+  const [reasonSent, setReasonSent] = useState(false);
+  const [feedbackId, setFeedbackId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setVote(null);
+    setReasonsOpen(false);
+    setReasonSent(false);
+    setFeedbackId(null);
+  }, [section, asset.asset_name]);
+
+  const buildContext = async () => {
+    let userId: string | null = null;
+    try {
+      const { data } = await supabase.auth.getUser();
+      userId = data.user?.id ?? null;
+    } catch {}
+    let email: string | null = null;
+    try {
+      email =
+        localStorage.getItem("v2_student_email") ||
+        localStorage.getItem("sa_free_user_email") ||
+        null;
+    } catch {}
+    return {
+      email,
+      context: {
+        user_id: userId,
+        problem_id: asset.id,
+        asset_name: asset.asset_name,
+        source_ref: asset.source_ref ?? null,
+        chapter_number: chapter?.chapter_number ?? null,
+        chapter_name: chapter?.chapter_name ?? null,
+        course_name: chapter?.course?.course_name ?? null,
+        page_url: typeof window !== "undefined" ? window.location.href : null,
+      },
+    };
+  };
+
+  const cast = async (helpful: boolean) => {
+    if (vote || submitting) return;
+    setSubmitting(true);
+    try {
+      const { email, context } = await buildContext();
+      const { data, error } = await supabase
+        .from("explanation_feedback")
+        .insert({
+          asset_id: asset.id,
+          asset_name: asset.asset_name,
+          user_email: email,
+          helpful,
+          section,
+          context,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      setFeedbackId(data?.id ?? null);
+      setVote(helpful ? "up" : "down");
+      if (!helpful) setReasonsOpen(true);
+      else toast.success("Thanks for the feedback.");
+    } catch {
+      toast.error("Couldn't save that — try again?");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const sendReason = async (value: ThumbsReason) => {
+    if (reasonSent || !feedbackId) return;
+    setReasonSent(true);
+    try {
+      await supabase
+        .from("explanation_feedback")
+        .update({ reason: [value] })
+        .eq("id", feedbackId);
+      toast.success("Thanks for the feedback.");
+      setReasonsOpen(false);
+    } catch {
+      // Silent — the original thumb is already saved, so we don't want
+      // to pester the student with a retry toast.
+      setReasonSent(false);
+    }
+  };
+
+  // Confirmed view — quiet acknowledgment, no action.
+  if (vote && !reasonsOpen) {
+    return (
+      <div
+        className="flex items-center justify-end gap-1.5 text-[11px]"
+        style={{ color: "rgba(255,255,255,0.45)" }}
+      >
+        <Check className="h-3 w-3" />
+        Thanks for the feedback.
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-2">
+      <div className="flex items-center gap-2">
+        <span
+          className="text-[11px] font-medium"
+          style={{ color: "rgba(255,255,255,0.45)" }}
+        >
+          Was this helpful?
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => cast(true)}
+            disabled={!!vote || submitting}
+            aria-label="Mark response as helpful"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-white/10 disabled:opacity-50 disabled:cursor-default"
+            style={{
+              background: vote === "up" ? "rgba(34,197,94,0.18)" : "transparent",
+              border: vote === "up"
+                ? "1px solid rgba(34,197,94,0.5)"
+                : "1px solid rgba(255,255,255,0.10)",
+              color: vote === "up" ? "#86EFAC" : "rgba(255,255,255,0.7)",
+            }}
+          >
+            <ThumbsUp className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => cast(false)}
+            disabled={!!vote || submitting}
+            aria-label="Mark response as not helpful"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-white/10 disabled:opacity-50 disabled:cursor-default"
+            style={{
+              background: vote === "down" ? "rgba(206,17,38,0.18)" : "transparent",
+              border: vote === "down"
+                ? "1px solid rgba(206,17,38,0.5)"
+                : "1px solid rgba(255,255,255,0.10)",
+              color: vote === "down" ? "#FFD3D8" : "rgba(255,255,255,0.7)",
+            }}
+          >
+            <ThumbsDown className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Reason chips — only after thumbs-down. Optional; clicking
+          isn't required because the thumb itself is already saved. */}
+      {reasonsOpen && (
+        <div className="flex flex-wrap items-center justify-end gap-1.5 max-w-[320px] animate-fade-in">
+          <span
+            className="text-[10px] font-medium uppercase tracking-[0.1em] mr-1"
+            style={{ color: "rgba(255,255,255,0.4)" }}
+          >
+            Why?
+          </span>
+          {THUMBS_REASONS.map((r) => (
+            <button
+              key={r.value}
+              type="button"
+              onClick={() => sendReason(r.value)}
+              disabled={reasonSent}
+              className="inline-flex items-center h-6 px-2 rounded-full text-[11px] font-medium transition-colors disabled:opacity-40 disabled:cursor-default"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "rgba(255,255,255,0.8)",
+              }}
+            >
+              {r.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setReasonsOpen(false)}
+            className="text-[10px] underline-offset-2 hover:underline ml-1"
+            style={{ color: "rgba(255,255,255,0.4)" }}
+          >
+            Skip
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function ExplanationFeedback({ asset, onShareClick }: { asset: Asset; onShareClick: () => void }) {
   const [helpful, setHelpful] = useState<boolean | null>(null);
   const [stage, setStage] = useState<"ask" | "negative" | "done">("ask");
@@ -1393,7 +1612,11 @@ function InlineExplanation({
             className="mt-4 pt-3 border-t"
             style={{ borderColor: "rgba(255,255,255,0.08)" }}
           >
-            <ExplanationFeedback asset={asset} onShareClick={onShareClick} />
+            <HelperResponseThumbs
+              asset={asset}
+              chapter={chapter}
+              section={activeSection}
+            />
           </div>
         )}
       </div>
