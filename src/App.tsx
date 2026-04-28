@@ -131,7 +131,7 @@ const LegacyNotionPage = lazy(() => import("./pages/LegacyNotionPage"));
 const Preview = lazy(() => import("./pages/Preview"));
 const CheckoutComplete = lazy(() => import("./pages/CheckoutComplete"));
 const CheckoutCancelled = lazy(() => import("./pages/CheckoutCancelled"));
-const Login = lazy(() => import("./pages/Login"));
+
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const StudentDashboard = lazy(() => import("./pages/StudentDashboard"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -228,7 +228,7 @@ const AppRoutes = () => {
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/about-solutions" element={<AboutSolutions />} />
         <Route path="/lees-story" element={<LeesStory />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<Navigate to="/?login=1" replace />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/my-dashboard" element={<StudentDashboard />} />
         <Route path="/tools/flashcards" element={<FlashcardTool />} />
