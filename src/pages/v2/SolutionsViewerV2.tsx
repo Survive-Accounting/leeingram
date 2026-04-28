@@ -2888,6 +2888,12 @@ export default function SolutionsViewerV2() {
         </button>
       )}
 
+      <FeedbackChooserModal
+        open={feedbackChooserOpen}
+        onOpenChange={setFeedbackChooserOpen}
+        onReportIssue={openReportIssue}
+        onSuggestFeature={openSuggestFeature}
+      />
       <StuckSupportModal
         open={helpOpen}
         onOpenChange={setHelpOpen}
