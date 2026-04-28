@@ -1516,7 +1516,7 @@ export default function SolutionsViewerV2() {
           boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 20px -8px rgba(0,0,0,0.4)",
         }}
       >
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between gap-6">
+        <div className="max-w-6xl mx-auto px-6 h-14 grid grid-cols-3 items-center gap-6">
           {isEmbed ? (
             <span aria-hidden />
           ) : (
