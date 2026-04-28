@@ -497,26 +497,37 @@ export default function RetroTerminalFrame({
               </Line>
               <Line show={bootStep >= 3} flashKey={chapterTyped.pulseKey}>
                 {">"} Chapter selected:{" "}
-                <span
-                  key={`chapter-${chapterTyped.pulseKey}`}
-                  className={chapterTyped.pulseKey > 0 ? "sa-value-pulse" : undefined}
-                  style={{ color: "#E8FFF1" }}
-                >
-                  {chapterTyped.text || safeChapter}
-                  {chapterTyped.typing && (
-                    <span
-                      aria-hidden
-                      className="inline-block align-[-2px] ml-0.5"
-                      style={{
-                        width: "0.5em",
-                        height: "1em",
-                        background: PHOSPHOR,
-                        boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
-                        animation: "sa-cursor-blink 0.6s steps(1) infinite",
-                      }}
-                    />
-                  )}
-                </span>
+                {chapterLabel ? (
+                  <span
+                    key={`chapter-${chapterTyped.pulseKey}`}
+                    className={chapterTyped.pulseKey > 0 ? "sa-value-pulse" : undefined}
+                    style={{ color: "#E8FFF1" }}
+                  >
+                    {chapterTyped.text || safeChapter}
+                    {chapterTyped.typing && (
+                      <span
+                        aria-hidden
+                        className="inline-block align-[-2px] ml-0.5"
+                        style={{
+                          width: "0.5em",
+                          height: "1em",
+                          background: PHOSPHOR,
+                          boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                          animation: "sa-cursor-blink 0.6s steps(1) infinite",
+                        }}
+                      />
+                    )}
+                  </span>
+                ) : chapterSelector ? (
+                  <span
+                    className="inline-block align-middle ml-0.5"
+                    style={{ minWidth: 220, maxWidth: "min(320px, 60%)" }}
+                  >
+                    {chapterSelector}
+                  </span>
+                ) : (
+                  <span style={{ color: PHOSPHOR_MUTED }}>—</span>
+                )}
               </Line>
               <Line show={bootStep >= 4}>{">"}</Line>
               <Line show={bootStep >= 5}>
@@ -533,39 +544,6 @@ export default function RetroTerminalFrame({
                   }}
                 />
               </Line>
-
-              {/* Inline chapter selector — appears once a course is chosen */}
-              {chapterSelector && (
-                <div
-                  style={{
-                    opacity: bootStep >= 5 ? 1 : 0,
-                    transform: bootStep >= 5 ? "translateY(0)" : "translateY(2px)",
-                    transition: "opacity 240ms ease-out, transform 240ms ease-out",
-                  }}
-                >
-                  {chapterSelector}
-                </div>
-              )}
-
-              {/* Muted unlock hint — only when chapter not yet chosen */}
-              {!canPickTool && (
-                <Line show={bootStep >= 5}>
-                  <span style={{ color: PHOSPHOR_MUTED }}>
-                    {">"} Choose a chapter to unlock the study tools
-                  </span>
-                  <span
-                    aria-hidden
-                    className="inline-block align-[-2px] ml-1"
-                    style={{
-                      width: "0.5em",
-                      height: "1em",
-                      background: PHOSPHOR_MUTED,
-                      boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
-                      animation: "sa-cursor-blink 1.05s steps(1) infinite",
-                    }}
-                  />
-                </Line>
-              )}
 
               {/* Tool grid — 3-column terminal cards */}
               {tools && tools.length > 0 && (
