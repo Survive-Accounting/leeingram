@@ -1249,6 +1249,9 @@ export default function SolutionsViewerV2() {
     ) as HTMLElement | null;
     if (!interactive) return;
     if (interactive.closest('[data-embed-allow="true"]')) return;
+    // Allow all interactions inside any open Radix dialog (Share, Help, etc.)
+    // so the user can close them without triggering the paywall.
+    if (interactive.closest('[role="dialog"], [data-radix-popper-content-wrapper]')) return;
     e.preventDefault();
     e.stopPropagation();
     try {
