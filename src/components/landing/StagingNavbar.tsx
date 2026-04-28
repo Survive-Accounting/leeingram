@@ -127,7 +127,7 @@ export default function StagingNavbar({
             onClick={handleCourses}
             className="hidden sm:inline-block text-[13px] font-semibold hover:opacity-70"
             style={{
-              color: isSolid ? NAVY : "rgba(255,255,255,0.85)",
+              color: "rgba(255,255,255,0.85)",
               fontFamily: "Inter, sans-serif",
               transition: `color ${TRANSITION}`,
             }}
