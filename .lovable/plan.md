@@ -1,121 +1,149 @@
-# Resizable Split-View Controls — Solutions Viewer V2
+# "Stuck?" Support Flow — Solutions Viewer V2
 
-## What this changes
+## What changes
 
-Add a subtle floating control bar + draggable divider to the **problem viewer page** (`/v2/solutions/:assetCode` — `src/pages/v2/SolutionsViewerV2.tsx`). This is the page rendered inside the iframe in the screenshot — left = Problem + Your Tasks, right = Walk me through / Hint / Setup / Full solution / Challenge me / Vote.
+Replace the existing **"Stuck? Ask Lee"** floating button on `/v2/solutions/:assetCode` with a cleaner, beta-feedback-flavored **"Stuck?"** button + modal. The modal lets students report 1 of 4 issue types, write a short note, and (optionally) attach a snapshot of the current problem so we have full context server-side.
 
-Today that layout is a fixed `grid lg:grid-cols-2 gap-6`. We'll replace that with a controlled split so users can:
+The current `NeedHelpModal` ("Send Lee a question, he'll reply by email") is replaced. The other existing report flow (the small "Report issue" link under the problem card → `ReportIssueModal` → `problem_issue_reports` table) stays untouched — that one is for tagging text issues; this new one is the broad student-feedback funnel.
 
-- Drag a vertical divider to resize left vs right
-- Snap to one of three modes via icon-only toolbar: **Problem only · Split · Helper only**
-- Reset to 50/50 with a fourth icon (and via double-clicking the divider)
-- On mobile, swap the split for a simple **Problem / Helper** tab toggle
+All submissions write to the existing **`chapter_questions`** table — same table the admin Student Inbox already reads — so Lee sees them immediately without any new admin UI work.
 
-Nothing else on the page changes — same problem card, same `InlineExplanation` + `SurviveExplorePanel`, same sticky bottom nav.
+## Button
 
-## Desktop UX
+- Floating, bottom-right, same position as today (`fixed right-4 bottom-20`)
+- Label: **Stuck?** (icon `MessageCircleQuestion` retained)
+- Subtle: smaller pill, lower-contrast border, no red fill — must not compete with the helper buttons (Walk me through it, etc.)
+- One button only — currently the file has **two** copies (lines ~1748 and ~2308, one for the embed/iframe context, one for the standalone page). Both get updated to the new label and both open the same new modal.
 
-```text
-┌── max-w-6xl main ───────────────────────────────────────────┐
-│  ┌─ floating control bar (top-right, sticky-ish) ───┐      │
-│  │  [▮▯ Problem]  [▮▮ Split]  [▯▮ Helper]  │ [↺]    │      │
-│  └──────────────────────────────────────────────────┘      │
-│                                                             │
-│  ┌────── Problem (resizable) ──┃─── Helper (resizable) ──┐ │
-│  │  Course chip · Ch chip       ┃   Walk me through it    │ │
-│  │  Problem text                ┃   Hint  /  Setup        │ │
-│  │  Your Tasks                  ┃   Full solution         │ │
-│  │                              ┃   Challenge me          │ │
-│  │                              ┃   Vote on new ideas     │ │
-│  └──────────────────────────────┴──────────────────────────┘│
-│                                  ↑ draggable divider         │
-└─────────────────────────────────────────────────────────────┘
-```
-
-- Default split: 50/50
-- Min widths: each panel ≥ 320px (the helper buttons + the problem card both need this)
-- Drag handle: 8px hit-target with a 1px visible rule, `GripVertical` icon centered, `cursor-col-resize`, hover/active states tinted with brand red
-- Double-click the handle → reset to 50/50
-- Last drag ratio persists for the session via `sessionStorage` (key per asset is overkill — one global key `sa.viewer.splitRatio` is enough)
-
-## View-mode toolbar
-
-A small pill, top-right of the main area, sits just above the cards. Icons only, with `Tooltip` from shadcn and `aria-label` on each button:
-
-- `PanelLeftClose` → **Problem only** (helper hidden, problem 100%)
-- `Columns2` → **Split view** (restores last custom ratio, fallback 50/50)
-- `PanelRightClose` → **Helper only** (problem hidden, helper 100%)
-- `RotateCcw` → **Reset split** (forces 50/50, only enabled in Split mode; subtle/secondary)
-
-Active mode = filled navy background `#14213D` + white icon. Inactive = transparent + `text-muted-foreground`, hover lifts to `bg-white/5`. Keep total height ~36px so it doesn't dominate.
-
-Keyboard: `[`, `]`, `\` shortcuts (problem-only / split / helper-only) — nice-to-have, included.
-
-## Mobile UX (< `lg` breakpoint)
-
-No drag, no split. Replace the toolbar with a 2-segment toggle pinned at the top of the cards:
+## Modal: `StuckSupportModal`
 
 ```text
-┌──────────────────────────────┐
-│  [ Problem ] [ Helper ]      │   ← segmented control
-└──────────────────────────────┘
+┌─ What's going on? ────────────────────┐
+│ Help us fix it or point you in the    │
+│ right direction.                       │
+├───────────────────────────────────────┤
+│ ◉ Question about this problem         │
+│   I'm confused and need help          │
+│   understanding it.                    │
+│                                        │
+│ ○ Problem text / instructions issue   │
+│   Something looks wrong, missing,     │
+│   or unclear.                          │
+│                                        │
+│ ○ Walkthrough / solution issue        │
+│   The explanation, math, or setup     │
+│   seems off.                           │
+│                                        │
+│ ○ Something else                      │
+│   Share general feedback or another   │
+│   issue.                               │
+├───────────────────────────────────────┤
+│ Tell us what happened.                │
+│ ┌───────────────────────────────────┐ │
+│ │ What confused you, what looked    │ │
+│ │ wrong, or what would make this    │ │
+│ │ better?                           │ │
+│ └───────────────────────────────────┘ │
+│                                        │
+│ [✓] Include this problem with my      │
+│     report                             │
+│                                        │
+│         [ Send feedback ]              │
+└───────────────────────────────────────┘
 ```
 
-- Default: **Problem** selected
-- Tap to switch — only the active panel renders
-- Sticky bottom problem-nav (Previous / N of M / Next) stays unchanged
+- Card-style radio options (single-select), keyboard accessible via `RadioGroup` from shadcn
+- Email field appears **only** when no email is on file (`localStorage.v2_student_email` empty AND no auth user) — most students have already provided it; reuse silently when we have it
+- Include-snapshot checkbox defaults to **on**
+- Success: `toast.success("Thanks — we'll review this ASAP.")` then close
+- Subtle "Beta feedback — replies come by email" microcopy under the submit button
 
-## Technical changes
+## Data captured per submission
 
-**Single file edit:** `src/pages/v2/SolutionsViewerV2.tsx`
+Written to `chapter_questions` (Insert):
 
-1. **State**
+| Column | Source |
+|---|---|
+| `chapter_id` | `asset.chapter_id` (required) |
+| `student_email` | auth email → localStorage fallback → field value |
+| `issue_type` | One of: `question`, `problem_text_issue`, `walkthrough_issue`, `general_feedback` (the existing column already takes free-form strings; the admin Student Inbox treats anything ≠ `question` as a fix/feedback ticket) |
+| `question` | The textarea content + a structured **Context block** appended below `---` so Lee sees everything in one place |
+| `asset_name` | `asset.asset_name` |
+| `source_ref` | `asset.source_ref` |
+
+The structured Context block (when "Include this problem" is checked) appends:
+
+```text
+---
+Context (auto-captured):
+- Course: <courseLabel>
+- Chapter: Ch <n> · <chapter_name>
+- Problem: <asset.asset_name> (ref <source_ref>)
+- View mode: <viewMode>           ← split-view state added in the previous task
+- Active helper: <walk_through | hint | setup | full_solution | none>
+- Page URL: <window.location.href>
+- Device: <navigator.userAgent>
+- Timestamp: <ISO>
+- Problem text snapshot:
+  <first 800 chars of asset.survive_problem_text>
+- Helper state:
+  <e.g. "Simplified text shown" / "Walkthrough open" / "—">
+```
+
+This keeps everything inside the existing column without a schema change.
+
+### Why no schema migration
+
+- `chapter_questions` already accepts free-form `issue_type` strings; the admin StudentInbox already filters on it
+- Stuffing structured context into the `question` text means zero migration risk and Lee sees it inline in his existing inbox
+- If we later want first-class columns (selected_tool, view_mode, snapshot), that's a separate, additive migration
+
+## State to thread into the modal
+
+The modal needs to know:
+- `asset`, `chapter`, `courseLabel` — already in scope at the call site
+- `viewMode` — already in scope (added in prior task)
+- `simplifiedText` (helper state hint) — already in scope
+- `activeHelper` — currently the page tracks which helper button is "open" via local state inside `InlineExplanation`. To avoid plumbing a callback through, we'll read the most recent helper from a tiny new state in the parent (`activeHelper: string | null`) and update it via an existing `onAdvanceTask` neighbor — minimal plumbing.
+
+## Implementation steps
+
+1. **Add `StuckSupportModal`** as a new internal component near the existing `NeedHelpModal` in `src/pages/v2/SolutionsViewerV2.tsx`. Uses `Dialog`, `RadioGroup`, `Textarea`, `Checkbox`, `Button` from shadcn (`Checkbox` may need to be added to the imports — verify).
+
+2. **Replace both floating buttons** (lines ~1748 and ~2308):
+   - Text → "Stuck?"
+   - Same `setHelpOpen(true)` handler
+   - Tone down styling: `bg-card/80 backdrop-blur border` instead of solid card, smaller height (`h-9` instead of `h-11`), 13px font
+
+3. **Replace `<NeedHelpModal …>` with `<StuckSupportModal …>`** at line ~2321. Pass `asset`, `chapter`, `courseLabel`, `viewMode`, `simplifiedText`, and the new `activeHelper` ref.
+
+4. **Add `activeHelper` state** to the parent and pass a setter into `InlineExplanation` so each helper button updates it on click. Default `null`. Reset on asset change.
+
+5. **Validation** with zod inline:
    ```ts
-   type ViewMode = "split" | "problem" | "helper";
-   const [viewMode, setViewMode] = useState<ViewMode>("split");
-   const [splitRatio, setSplitRatio] = useState<number>(() => {
-     const v = Number(sessionStorage.getItem("sa.viewer.splitRatio"));
-     return v >= 0.25 && v <= 0.75 ? v : 0.5;
+   const schema = z.object({
+     issue_type: z.enum(["question", "problem_text_issue", "walkthrough_issue", "general_feedback"]),
+     note: z.string().trim().min(3, "Add a quick note").max(2000),
+     email: z.string().trim().email().max(255),
    });
-   const isMobile = useIsMobile(); // existing hook
-   const [mobileTab, setMobileTab] = useState<"problem" | "helper">("problem");
    ```
 
-2. **Replace the wrapper** at line ~1774
-   - Desktop: container becomes `relative flex` with two children sized via inline `style={{ flexBasis: \`${ratio*100}%\` }}` (and `flexBasis: 100%` when in problem-only / helper-only modes), each with `minWidth: 320`.
-   - The drag handle is a sibling `<div>` between them with mouse + touch handlers.
-   - Mobile: render just one branch based on `mobileTab`.
-
-3. **Drag logic** — inline, no new dep needed
-   - `onMouseDown` / `onTouchStart` on the handle captures pointer, attaches `mousemove` / `mouseup` listeners to `window`, computes `(clientX - container.left) / container.width`, clamps to `[0.25, 0.75]`, calls `setSplitRatio` and writes to `sessionStorage` on release.
-   - `onDoubleClick` → `setSplitRatio(0.5)`.
-   - Use `useRef` for the container to read its bounding rect; add `userSelect: 'none'` + `cursor: 'col-resize'` on `<body>` while dragging via a small effect.
-   - No external lib (avoids `react-resizable-panels` since the file is already heavy and we only need one divider).
-
-4. **Toolbar**
-   - New small component inside the file, `ViewModeToolbar`, rendered just above the split (still inside `<main>`, after the `notFound` check). Hidden on mobile.
-   - Uses the existing `Tooltip`/`TooltipProvider` from shadcn (already imported elsewhere — verify; if not, add the standard import).
-   - Reset button is greyed out unless `viewMode === "split"`.
-
-5. **Mobile segmented control**
-   - Renders only on `< lg` (use `useIsMobile` or a CSS-only `lg:hidden` wrapper). Two buttons, equal width, navy fill on active.
-
-6. **Behavioral guards**
-   - When `viewMode === "problem"`, don't render the helper subtree at all (saves the `SurviveExplorePanel` re-mount cost on toggle? — actually, re-mounting `InlineExplanation` would lose its internal state. **Mitigation:** keep both panels mounted and use `display: none` + `aria-hidden` for the hidden one. This preserves prefetched walkthrough content and simplified text.)
-   - The right panel keeps `lg:sticky lg:top-20` only when in split mode; in helper-only mode it should be a normal block (sticky on a 100%-wide column looks odd).
+6. **Keep `NeedHelpModal` definition** in the file (don't delete) — only its usage is removed. This avoids touching unrelated imports/types and lets us roll back instantly if needed. Mark it `/** @deprecated */` so the next sweep can remove it cleanly.
 
 ## Out of scope
 
-- No persistence across sessions (session-only is enough; the user explicitly said "preserve … during the session if possible")
-- No changes to `StudyPreviewer.tsx` or any other page — this lives entirely on the v2 viewer that the iframe loads
-- No changes to copy, no new content, no new modals
+- No schema migration (`chapter_questions` already fits)
+- No changes to admin Student Inbox UI (it already shows `issue_type` + `question`)
+- No changes to the small inline "Report issue" link under the problem card
+- No new edge functions or notifications (existing inbox flow notifies Lee)
 
-## QA checklist before shipping
+## QA checklist
 
-- Drag clamps at 25% / 75%; no overlap with course chip or buttons
-- Double-click resets cleanly
-- Switching modes doesn't lose: simplified text state, prefetched walkthrough, checked tasks
-- Mobile tab toggle defaults to Problem and switches without scroll jump
-- Sticky bottom nav still works; floating "Stuck? Ask Lee" still works
-- Toolbar invisible on `< lg`; tab toggle invisible on `≥ lg`
-- Tooltips appear on hover; `aria-label`s present on every icon button
+- Both floating "Stuck?" buttons open the same modal
+- Each issue type submits with the right `issue_type` value and shows up correctly in the admin Student Inbox
+- Context block is appended only when the checkbox is checked
+- Email is reused silently when present; field appears only when missing
+- Submit blocked until an issue type is picked AND the note has ≥3 chars
+- Toast says exactly: **"Thanks — we'll review this ASAP."**
+- Mobile: modal scrolls cleanly, radio cards remain tappable, no horizontal overflow
+- Floating button no longer competes visually with the helper buttons in the right pane
