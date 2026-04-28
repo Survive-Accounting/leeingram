@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -118,6 +119,9 @@ export default function SurviveExplorePanel({
   chapterName,
   courseName,
 }: Props) {
+  const [searchParams] = useSearchParams();
+  const isEmbed = searchParams.get("embed") === "1";
+
   const [exploreOpen, setExploreOpen] = useState(false);
   const [activeKey, setActiveKey] = useState<PromptKey | null>(null);
   const [responseText, setResponseText] = useState<string>("");
@@ -136,6 +140,28 @@ export default function SurviveExplorePanel({
   const [challengeFeedback, setChallengeFeedback] = useState<string>("");
   const [challengeLoading, setChallengeLoading] = useState(false);
   const [challengeError, setChallengeError] = useState<string | null>(null);
+
+  // Embed-mode silent vote logger — fires on any interaction inside the
+  // landing-page laptop preview. Logs alongside normal vote counts (loose
+  // signal for which prompt students reach for) and triggers the parent's
+  // beta paywall modal. The student is never told their click was a vote.
+  const logEmbedVoteAndPaywall = (key: PromptKey | null) => {
+    if (key) {
+      // Best-effort silent vote — same RPC used for "Helpful" thumbs.
+      try {
+        (supabase as any)
+          .rpc("increment_survive_helpful", {
+            p_asset_id: assetId,
+            p_prompt_type: key,
+          })
+          .then(() => {})
+          .catch(() => {});
+      } catch { /* silent */ }
+    }
+    try {
+      window.parent?.postMessage({ type: "sa-embed-paywall" }, "*");
+    } catch { /* silent */ }
+  };
 
   // Load vote counts from cached survive_ai_responses rows
   useEffect(() => {
@@ -280,11 +306,17 @@ export default function SurviveExplorePanel({
   };
 
   return (
-    <div className="mt-4 rounded-2xl border bg-card p-5 shadow-sm space-y-4">
+    <div
+      className="mt-4 rounded-2xl border bg-card p-5 shadow-sm space-y-4"
+      data-embed-allow="true"
+    >
       {/* Challenge me — primary CTA */}
       <button
         type="button"
-        onClick={() => fetchPrompt("challenge")}
+        onClick={() => {
+          if (isEmbed) { logEmbedVoteAndPaywall("challenge"); return; }
+          fetchPrompt("challenge");
+        }}
         className={cn(
           "w-full inline-flex items-center justify-center gap-2 rounded-lg h-11 px-4 text-sm font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99]",
           activeKey === "challenge" && "ring-2 ring-offset-2 ring-amber-400/40"
@@ -300,7 +332,9 @@ export default function SurviveExplorePanel({
         Challenge me
       </button>
 
-      {/* Explore toggle */}
+      {/* Explore toggle — always allowed to open even in embed mode so the
+          student can see the prompt menu. Individual prompt clicks then
+          trigger the silent-vote + paywall flow. */}
       <button
         type="button"
         onClick={() => setExploreOpen((v) => !v)}
@@ -313,6 +347,7 @@ export default function SurviveExplorePanel({
         {exploreOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
 
+
       {exploreOpen && (
         <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -324,7 +359,10 @@ export default function SurviveExplorePanel({
                   key={k}
                   variant={isActive ? "default" : "outline"}
                   size="sm"
-                  onClick={() => fetchPrompt(k)}
+                  onClick={() => {
+                    if (isEmbed) { logEmbedVoteAndPaywall(k); return; }
+                    fetchPrompt(k);
+                  }}
                   className="justify-between gap-2 h-9 text-xs font-medium"
                   title={PROMPT_LABELS[k]}
                 >
@@ -349,7 +387,10 @@ export default function SurviveExplorePanel({
           {!ideaOpen ? (
             <button
               type="button"
-              onClick={() => setIdeaOpen(true)}
+              onClick={() => {
+                if (isEmbed) { logEmbedVoteAndPaywall(null); return; }
+                setIdeaOpen(true);
+              }}
               className="text-[12px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
             >
               + suggest your own idea
