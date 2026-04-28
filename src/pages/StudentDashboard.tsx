@@ -354,7 +354,7 @@ export default function StudentDashboard() {
 
         {/* Previewer entry — the centerpiece */}
         <div ref={previewerRef} className="space-y-6 scroll-mt-24">
-          <div className="text-center pb-10 sm:pb-16" style={{ maxWidth: 760, margin: "0 auto" }}>
+          <div className="text-center pb-14 sm:pb-20" style={{ maxWidth: 760, margin: "0 auto" }}>
             <div
               className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4"
               style={{ color: RED, letterSpacing: "0.16em" }}
@@ -363,7 +363,7 @@ export default function StudentDashboard() {
                 className="inline-block rounded-full"
                 style={{ width: 6, height: 6, background: RED }}
               />
-              FREE BETA · TRY IT NOW
+              FREE BETA · OPEN FOR FEEDBACK
             </div>
             <h2
               className="text-[28px] sm:text-[38px] leading-[1.1]"
@@ -372,7 +372,13 @@ export default function StudentDashboard() {
               Free accounting study tools for finals.
             </h2>
             <p
-              className="mt-2 text-[11px]"
+              className="mt-4 text-[15px] sm:text-[16px]"
+              style={{ color: "#5A6478", fontFamily: "Inter, sans-serif" }}
+            >
+              Choose a course and chapter to enter your study console.
+            </p>
+            <p
+              className="mt-3 text-[11px]"
               style={{ color: "#A3AEC2", fontFamily: "Inter, sans-serif" }}
             >
               Free access expires May 31st
