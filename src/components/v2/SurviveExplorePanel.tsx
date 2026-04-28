@@ -138,6 +138,21 @@ export default function SurviveExplorePanel({
   const isEmbed = searchParams.get("embed") === "1";
 
   const [exploreOpen, setExploreOpen] = useState(false);
+
+  // Allow external triggers (e.g. "Suggest a new feature" card in the
+  // Share Feedback chooser) to expand this section and scroll it into view.
+  useEffect(() => {
+    const handler = () => {
+      setExploreOpen(true);
+      // Defer scroll so the expanded content is mounted first.
+      setTimeout(() => {
+        const el = document.getElementById("vote-on-new-ideas");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 60);
+    };
+    window.addEventListener("sa:open-vote-ideas", handler);
+    return () => window.removeEventListener("sa:open-vote-ideas", handler);
+  }, []);
   // Which idea is currently expanded (showing its description + vote button).
   const [previewKey, setPreviewKey] = useState<PromptKey | null>(null);
   const [activeKey, setActiveKey] = useState<PromptKey | null>(null);
