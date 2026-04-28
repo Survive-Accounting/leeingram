@@ -147,6 +147,8 @@ export default function FeedbackToolModal({
     return false;
   }, [selected, extraNote, otherIdea]);
 
+  if (!open) return null;
+
   const handleSubmit = async () => {
     if (!canSubmit) {
       toast.error("Pick at least one idea or share a thought.");
