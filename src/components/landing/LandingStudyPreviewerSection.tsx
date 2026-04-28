@@ -93,14 +93,23 @@ export default function LandingStudyPreviewerSection({
 
   return (
     <section
-      className="relative px-4 sm:px-6 py-20 sm:py-28"
+      className="relative px-4 sm:px-6 py-24 sm:py-32"
       style={{
-        background:
-          "radial-gradient(80% 60% at 50% 0%, #EEF2F7 0%, #F8FAFC 55%, #F8FAFC 100%)",
-        borderTop: "1px solid #E5E7EB",
+        background: `radial-gradient(120% 80% at 50% 0%, #1A2A4F 0%, ${NAVY} 55%, #0E1830 100%)`,
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+        borderBottom: "1px solid rgba(0,0,0,0.25)",
       }}
     >
-      <div className="mx-auto" style={{ maxWidth: 1080 }}>
+      {/* Subtle top vignette to feel hero-like */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(60% 40% at 50% 0%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 70%)",
+        }}
+      />
+      <div className="relative mx-auto" style={{ maxWidth: 1080 }}>
         <style>{`
           @keyframes sa-hero-in {
             0% { opacity: 0; transform: translateY(10px); }
@@ -109,26 +118,26 @@ export default function LandingStudyPreviewerSection({
           .sa-hero-in { animation: sa-hero-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
         `}</style>
         {/* Header */}
-        <div className="text-center mb-20 sm:mb-28" style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div className="text-center mb-16 sm:mb-20" style={{ maxWidth: 760, margin: "0 auto" }}>
           <div
             className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4 sa-hero-in"
-            style={{ color: RED, letterSpacing: "0.16em", animationDelay: "0ms" }}
+            style={{ color: "#FF6B7A", letterSpacing: "0.16em", animationDelay: "0ms" }}
           >
             <span
               className="inline-block rounded-full"
-              style={{ width: 6, height: 6, background: RED }}
+              style={{ width: 6, height: 6, background: RED, boxShadow: "0 0 8px rgba(206,17,38,0.6)" }}
             />
             FREE BETA · OPEN FOR FEEDBACK
           </div>
           <h2
             className="text-[30px] sm:text-[42px] leading-[1.1] sa-hero-in"
-            style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: NAVY, animationDelay: "120ms" }}
+            style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: "#FFFFFF", animationDelay: "120ms" }}
           >
             Free accounting study tools for finals.
           </h2>
           <p
             className="mt-4 text-[15px] sm:text-[16px] sa-hero-in"
-            style={{ color: "#5A6478", fontFamily: "Inter, sans-serif", animationDelay: "200ms" }}
+            style={{ color: "rgba(255,255,255,0.72)", fontFamily: "Inter, sans-serif", animationDelay: "200ms" }}
           >
             Create a free account to unlock the beta tools and start studying.
           </p>

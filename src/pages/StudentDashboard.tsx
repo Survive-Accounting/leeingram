@@ -352,47 +352,73 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {/* Previewer entry — the centerpiece */}
-        <div ref={previewerRef} className="space-y-6 scroll-mt-24">
-          <div className="text-center pb-14 sm:pb-20" style={{ maxWidth: 760, margin: "0 auto" }}>
-            <div
-              className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4"
-              style={{ color: RED, letterSpacing: "0.16em" }}
-            >
-              <span
-                className="inline-block rounded-full"
-                style={{ width: 6, height: 6, background: RED }}
-              />
-              FREE BETA · OPEN FOR FEEDBACK
-            </div>
-            <h2
-              className="text-[28px] sm:text-[38px] leading-[1.1]"
-              style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: NAVY }}
-            >
-              Free accounting study tools for finals.
-            </h2>
-            <p
-              className="mt-4 text-[15px] sm:text-[16px]"
-              style={{ color: "#5A6478", fontFamily: "Inter, sans-serif" }}
-            >
-              Choose a course and chapter to enter your study console.
-            </p>
-            <p
-              className="mt-3 text-[11px]"
-              style={{ color: "#A3AEC2", fontFamily: "Inter, sans-serif" }}
-            >
-              Free access expires May 31st
-            </p>
-          </div>
-
-          <StudyPreviewer
-            chapters={chapters}
-            fixedCourseLabel={courseLabel ?? campusName ?? null}
-            onOpenFeedback={() => setFeedbackOpen(true)}
-            persistChapterKey={SELECTED_CHAPTER_KEY}
-            welcomeName={firstName || null}
-            isReturning={isReturning}
+        {/* Previewer entry — the centerpiece (full-bleed navy hero band) */}
+        <div
+          ref={previewerRef}
+          className="relative scroll-mt-24"
+          style={{
+            // Full-bleed breakout from the constrained <main> container
+            marginLeft: "calc(50% - 50vw)",
+            marginRight: "calc(50% - 50vw)",
+            paddingLeft: "1rem",
+            paddingRight: "1rem",
+            paddingTop: "5rem",
+            paddingBottom: "5rem",
+            background: `radial-gradient(120% 80% at 50% 0%, #1A2A4F 0%, ${NAVY} 55%, #0E1830 100%)`,
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            borderBottom: "1px solid rgba(0,0,0,0.25)",
+          }}
+        >
+          {/* Subtle top vignette */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(60% 40% at 50% 0%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 70%)",
+            }}
           />
+          <div className="relative mx-auto" style={{ maxWidth: 1080 }}>
+            <div className="text-center mb-16 sm:mb-20" style={{ maxWidth: 760, margin: "0 auto" }}>
+              <div
+                className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4"
+                style={{ color: "#FF6B7A", letterSpacing: "0.16em" }}
+              >
+                <span
+                  className="inline-block rounded-full"
+                  style={{ width: 6, height: 6, background: RED, boxShadow: "0 0 8px rgba(206,17,38,0.6)" }}
+                />
+                FREE BETA · OPEN FOR FEEDBACK
+              </div>
+              <h2
+                className="text-[28px] sm:text-[38px] leading-[1.1]"
+                style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: "#FFFFFF" }}
+              >
+                Free accounting study tools for finals.
+              </h2>
+              <p
+                className="mt-4 text-[15px] sm:text-[16px]"
+                style={{ color: "rgba(255,255,255,0.72)", fontFamily: "Inter, sans-serif" }}
+              >
+                Choose a course and chapter to enter your study console.
+              </p>
+              <p
+                className="mt-3 text-[11px]"
+                style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}
+              >
+                Free access expires May 31st
+              </p>
+            </div>
+
+            <StudyPreviewer
+              chapters={chapters}
+              fixedCourseLabel={courseLabel ?? campusName ?? null}
+              onOpenFeedback={() => setFeedbackOpen(true)}
+              persistChapterKey={SELECTED_CHAPTER_KEY}
+              welcomeName={firstName || null}
+              isReturning={isReturning}
+            />
+          </div>
         </div>
 
         {/* Support */}

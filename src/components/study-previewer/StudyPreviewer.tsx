@@ -441,13 +441,14 @@ export default function StudyPreviewer({
         }
       `}</style>
 
-      {/* Navy frame wrapper */}
+      {/* Navy frame wrapper — sits as an elevated console on the hero background */}
       <div
         className="relative rounded-[28px] px-5 sm:px-8 lg:px-10 pt-9 sm:pt-12 lg:pt-14 pb-5 sm:pb-8 lg:pb-10 sa-rise"
         style={{
-          background: `linear-gradient(180deg, ${NAVY} 0%, #1A2A4F 55%, #20335E 100%)`,
+          background: `linear-gradient(180deg, #1F3160 0%, #243A6E 55%, #2A427C 100%)`,
+          border: "1px solid rgba(255,255,255,0.06)",
           boxShadow:
-            "0 30px 60px -25px rgba(20,33,61,0.45), 0 10px 24px -10px rgba(20,33,61,0.25)",
+            "0 40px 80px -30px rgba(0,0,0,0.55), 0 16px 30px -12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)",
           animationDelay: "0ms",
         }}
       >
