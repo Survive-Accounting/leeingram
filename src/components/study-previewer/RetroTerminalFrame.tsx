@@ -387,17 +387,44 @@ export default function RetroTerminalFrame({
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <span
-                  style={{
-                    fontSize: "0.78em",
-                    color: PHOSPHOR_DIM,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Ready for Spring '26 finals
-                </span>
+                {notice ? (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className="sa-notice-blink"
+                    style={{
+                      // Sit just outside the green CRT palette so it pops
+                      fontFamily: "Inter, system-ui, sans-serif",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      color: "#FFFFFF",
+                      background: "linear-gradient(180deg, #E11D2E 0%, #B30E1E 100%)",
+                      padding: "6px 12px",
+                      borderRadius: 6,
+                      border: "1px solid rgba(255,255,255,0.25)",
+                      boxShadow:
+                        "0 0 0 1px rgba(0,0,0,0.35), 0 6px 18px rgba(225,29,46,0.45), 0 0 22px rgba(225,29,46,0.55)",
+                      textShadow: "0 1px 0 rgba(0,0,0,0.35)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {notice}
+                  </div>
+                ) : (
+                  <span
+                    style={{
+                      fontSize: "0.78em",
+                      color: PHOSPHOR_DIM,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Ready for Spring '26 finals
+                  </span>
+                )}
               </div>
 
               {welcomeName ? (
