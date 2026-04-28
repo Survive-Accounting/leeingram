@@ -2187,8 +2187,58 @@ export default function SolutionsViewerV2() {
               </div>
             </div>
 
+            {/* Draggable divider — desktop split mode only */}
+            {!isMobileViewport && viewMode === "split" && (
+              <div
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize panels (double-click to reset)"
+                tabIndex={0}
+                onMouseDown={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onTouchStart={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDoubleClick={() => {
+                  setSplitRatio(0.5);
+                  try { sessionStorage.setItem("sa.viewer.splitRatio", "0.5"); } catch { /* ignore */ }
+                }}
+                className="hidden lg:flex items-center justify-center group relative shrink-0"
+                style={{ width: 12, cursor: "col-resize", marginLeft: -6, marginRight: -6 }}
+              >
+                <div
+                  className="h-full w-px transition-colors"
+                  style={{ background: isDragging ? "rgba(206,17,38,0.6)" : "rgba(255,255,255,0.08)" }}
+                />
+                <div
+                  className="absolute inline-flex items-center justify-center rounded-md transition-all"
+                  style={{
+                    width: 22, height: 36,
+                    background: isDragging ? "rgba(206,17,38,0.18)" : "rgba(255,255,255,0.04)",
+                    border: `1px solid ${isDragging ? "rgba(206,17,38,0.5)" : "rgba(255,255,255,0.1)"}`,
+                    color: isDragging ? "#FFB8C0" : "rgba(255,255,255,0.5)",
+                  }}
+                >
+                  <GripVertical className="h-3.5 w-3.5" />
+                </div>
+              </div>
+            )}
+
             {/* RIGHT: Get unstuck fast toolbox */}
-            <div className="lg:sticky lg:top-20 lg:self-start min-w-0">
+            <div
+              className="min-w-0"
+              style={
+                isMobileViewport
+                  ? { display: mobileTab === "helper" ? "block" : "none", width: "100%" }
+                  : {
+                      display: viewMode === "problem" ? "none" : "block",
+                      flexBasis: viewMode === "helper" ? "100%" : `${(1 - splitRatio) * 100}%`,
+                      flexShrink: 0,
+                      minWidth: viewMode === "helper" ? undefined : 320,
+                      paddingLeft: viewMode === "split" ? 12 : 0,
+                      position: viewMode === "split" ? "sticky" : "static",
+                      top: viewMode === "split" ? 80 : undefined,
+                      alignSelf: viewMode === "split" ? "flex-start" : undefined,
+                    }
+              }
+            >
               <InlineExplanation
                 asset={asset}
                 chapter={chapter}
@@ -2206,7 +2256,8 @@ export default function SolutionsViewerV2() {
                 courseName={courseLabel}
               />
             </div>
-          </div>
+            </div>
+          </>
         )}
       </main>
 
