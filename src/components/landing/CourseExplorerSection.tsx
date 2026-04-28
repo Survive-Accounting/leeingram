@@ -397,7 +397,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
   // ─── Render ───
   return (
     <section className="py-16 sm:py-24 px-4 sm:px-6" style={{ background: "#EDEEF1" }}>
-      <div className="mx-auto max-w-[1000px]">
+      <div className="mx-auto max-w-[1120px]">
         {/* Header */}
         <motion.div
           className="text-center mb-10 sm:mb-14"
