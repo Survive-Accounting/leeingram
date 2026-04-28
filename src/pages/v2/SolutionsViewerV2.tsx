@@ -2403,16 +2403,6 @@ export default function SolutionsViewerV2() {
                 )}
               </section>
 
-              {/* Report issue link */}
-              <div className="flex justify-end">
-                <button
-                  onClick={() => setReportOpen(true)}
-                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <AlertTriangle className="h-3 w-3" />
-                  Report issue
-                </button>
-              </div>
             </div>
 
             {/* Draggable divider — desktop split mode only */}
