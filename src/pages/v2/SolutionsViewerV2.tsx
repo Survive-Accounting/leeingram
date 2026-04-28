@@ -2145,24 +2145,21 @@ export default function SolutionsViewerV2() {
         }}
       >
         <div className="max-w-6xl mx-auto px-6 h-14 grid grid-cols-3 items-center gap-4">
-          {/* LEFT — Survive Accounting brand (logo from retro console) */}
+          {/* LEFT — Current course name (contextual, replaces brand logo) */}
           <div className="flex items-center justify-start min-w-0">
             <Link
               to="/my-dashboard"
-              className="inline-flex items-center gap-2 group"
+              className="group inline-flex items-center min-w-0 max-w-full"
               data-embed-allow="true"
-              aria-label="Survive Accounting — back to dashboard"
+              aria-label={courseLabel ? `${courseLabel} — back to dashboard` : "Back to dashboard"}
+              title={courseLabel || "Back to dashboard"}
             >
-              <img
-                src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
-                alt="Survive Accounting"
-                className="h-4 w-auto object-contain select-none transition-opacity group-hover:opacity-95"
-                style={{
-                  filter: "brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
-                  opacity: 0.92,
-                }}
-                draggable={false}
-              />
+              <span
+                className="truncate text-[13px] sm:text-sm font-semibold tracking-tight transition-colors group-hover:text-white"
+                style={{ color: "rgba(255,255,255,0.88)" }}
+              >
+                {courseLabel || "Survive Accounting"}
+              </span>
             </Link>
           </div>
 
