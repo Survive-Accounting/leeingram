@@ -47,6 +47,11 @@ interface StudyPreviewerProps {
   onRequestUnlock?: (action: "open_workspace") => boolean;
   persistChapterKey?: string | null;
   resetSignal?: number;
+
+  /** Personalized welcome shown inside the monitor (dashboard only). */
+  welcomeName?: string | null;
+  /** When true, greets as returning ("Welcome back"); otherwise as new ("Welcome"). */
+  isReturning?: boolean;
 }
 
 export default function StudyPreviewer({
@@ -59,6 +64,8 @@ export default function StudyPreviewer({
   onRequestUnlock,
   persistChapterKey,
   resetSignal,
+  welcomeName,
+  isReturning,
 }: StudyPreviewerProps) {
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [chapterLoading, setChapterLoading] = useState(false);
@@ -330,6 +337,8 @@ export default function StudyPreviewer({
                 activeToolKey={activeTool}
                 canPickTool={chapterChosen}
                 loading={chapterLoading}
+                welcomeName={welcomeName ?? null}
+                isReturning={!!isReturning}
                 onNudgeChapter={handleNudgeChapter}
                 onSelectTool={(key) => {
                   if (key === "feedback") {

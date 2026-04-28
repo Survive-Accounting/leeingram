@@ -28,6 +28,10 @@ interface RetroTerminalFrameProps {
   loading?: boolean;
   /** Called when a user attempts to pick a tool before a chapter is chosen. */
   onNudgeChapter?: () => void;
+  /** Optional first name for a personalized welcome line at the top of the terminal. */
+  welcomeName?: string | null;
+  /** When true, greets as returning ("Welcome back"); otherwise as new ("Welcome"). */
+  isReturning?: boolean;
 }
 
 /**
@@ -44,6 +48,8 @@ export default function RetroTerminalFrame({
   canPickTool = true,
   loading = false,
   onNudgeChapter,
+  welcomeName,
+  isReturning = false,
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
 
@@ -209,9 +215,36 @@ export default function RetroTerminalFrame({
                 </span>
               </div>
 
-              <Line show={bootStep >= 1}>
-                {">"} Survive Accounting Beta v1.0
-              </Line>
+              {welcomeName ? (
+                <div
+                  style={{
+                    opacity: bootStep >= 1 ? 1 : 0,
+                    transform: bootStep >= 1 ? "translateY(0)" : "translateY(4px)",
+                    transition: "opacity 320ms ease-out, transform 320ms ease-out",
+                    marginBottom: "0.6em",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: "'DM Serif Display', serif",
+                      fontWeight: 400,
+                      fontSize: "clamp(22px, 3.4vw, 34px)",
+                      lineHeight: 1.15,
+                      letterSpacing: "0.005em",
+                      color: "#EAFFF2",
+                      textShadow: `0 0 2px ${PHOSPHOR_GLOW}, 0 0 14px ${PHOSPHOR_GLOW}`,
+                    }}
+                  >
+                    {isReturning ? "Welcome back, " : "Welcome, "}
+                    <span style={{ color: PHOSPHOR }}>{welcomeName}</span>
+                    <span style={{ color: PHOSPHOR_DIM }}>.</span>
+                  </div>
+                </div>
+              ) : (
+                <Line show={bootStep >= 1}>
+                  {">"} Survive Accounting Beta v1.0
+                </Line>
+              )}
               <Line show={bootStep >= 2}>
                 {">"} Course selected:{" "}
                 <span style={{ color: "#E8FFF1" }}>{safeCourse}</span>
