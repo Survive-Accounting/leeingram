@@ -11,6 +11,12 @@ const NAVY = "#14213D";
 const RED = "#CE1126";
 const LOGO_FONT = "'DM Serif Display', serif";
 
+const TERMINAL_TOOLS: TerminalTool[] = [
+  { key: "practice", label: "Practice Problem Helper" },
+  { key: "je", label: "Journal Entry Helper", hint: "(coming soon)" },
+  { key: "feedback", label: "Suggest a tool we should build" },
+];
+
 export interface PreviewChapter {
   id: string;
   chapter_number: number;
