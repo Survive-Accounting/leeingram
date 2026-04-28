@@ -206,34 +206,74 @@ export function ViewerOnboardingModal({
             </>
           ) : (
             <>
+              <style>{`
+                @keyframes sa-key-press {
+                  0%, 70%, 100% {
+                    transform: translateY(0);
+                    box-shadow:
+                      0 4px 0 rgba(20,33,61,0.45),
+                      0 6px 10px rgba(20,33,61,0.18),
+                      inset 0 1px 0 rgba(255,255,255,0.85);
+                  }
+                  82% {
+                    transform: translateY(3px);
+                    box-shadow:
+                      0 1px 0 rgba(20,33,61,0.45),
+                      0 2px 4px rgba(20,33,61,0.18),
+                      inset 0 1px 0 rgba(255,255,255,0.65);
+                  }
+                }
+                .sa-f11-key {
+                  animation: sa-key-press 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+                }
+              `}</style>
+              <div className="flex items-center justify-center py-2">
+                <div
+                  aria-hidden
+                  className="sa-f11-key inline-flex items-center justify-center select-none"
+                  style={{
+                    minWidth: 64,
+                    height: 52,
+                    padding: "0 14px",
+                    borderRadius: 8,
+                    background: "linear-gradient(180deg, #FAFBFC 0%, #E5E9EF 100%)",
+                    border: "1px solid #C7CDD6",
+                    color: NAVY,
+                    fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                    fontWeight: 700,
+                    fontSize: 18,
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  F11
+                </div>
+              </div>
+
               <button
                 type="button"
-                onClick={handleOpenFullScreen}
+                onClick={handleClose}
                 className="w-full inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-[14px] font-semibold text-white transition-all hover:brightness-110"
                 style={{
                   background: `linear-gradient(180deg, ${NAVY} 0%, #1A2A4F 100%)`,
                   boxShadow: "0 4px 12px rgba(20,33,61,0.18)",
                 }}
               >
-                <Maximize2 className="h-4 w-4" />
-                Open full screen
+                Got it
               </button>
-              <button
-                type="button"
-                onClick={handleClose}
-                className="w-full text-center text-[13px] font-medium hover:underline"
+
+              <label
+                className="flex items-center justify-center gap-2 cursor-pointer text-[12px] select-none"
                 style={{ color: "#64748B" }}
               >
-                Continue here
-              </button>
-              <button
-                type="button"
-                onClick={handleDismissPermanent}
-                className="w-full text-center text-[11px] hover:underline"
-                style={{ color: "#94A3B8" }}
-              >
-                Don't show this again
-              </button>
+                <input
+                  type="checkbox"
+                  checked={dontShowAgain}
+                  onChange={(e) => setDontShowAgain(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded cursor-pointer"
+                  style={{ accentColor: NAVY }}
+                />
+                Don't show again
+              </label>
             </>
           )}
 
