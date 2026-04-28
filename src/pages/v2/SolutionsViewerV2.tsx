@@ -2464,15 +2464,141 @@ export default function SolutionsViewerV2() {
                   )}
                 </div>
 
-                {/* Problem section — uses SmartTextRenderer to auto-format pipe tables */}
+                {/* Problem section — with reading controls (Show/Hide + One at a time / All at once) */}
                 {asset.survive_problem_text && (
                   <div className="mt-4">
+                    {/* Compact reading control bar */}
                     <div
-                      className="text-[15px] max-w-[68ch] space-y-3 [&_p]:whitespace-pre-wrap [&_p]:text-[15px] [&_*]:!text-white/95 [&_strong]:!text-white [&_th]:!text-white [&_td]:!text-white/90 [&_.font-semibold]:!text-amber-300"
-                      style={{ color: "rgba(255,255,255,0.95)", lineHeight: 1.7 }}
+                      className="flex flex-wrap items-center gap-2 mb-3 text-[11px] font-medium"
+                      style={{ color: "rgba(255,255,255,0.55)" }}
                     >
-                      <SmartTextRenderer text={toYouPerspective(asset.survive_problem_text)} />
+                      <button
+                        type="button"
+                        onClick={() => setProblemBodyOpen((v) => !v)}
+                        className="inline-flex items-center gap-1 h-6 px-1.5 rounded transition-colors hover:text-white hover:bg-white/5"
+                        aria-expanded={problemBodyOpen}
+                      >
+                        {problemBodyOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                        {problemBodyOpen ? "Hide instructions" : "Show instructions"}
+                      </button>
+
+                      {problemBodyOpen && problemChunks.length > 1 && (
+                        <>
+                          <span className="text-white/15">·</span>
+                          <span className="uppercase tracking-[0.1em] text-[10px] text-white/40">Reading</span>
+                          <div
+                            className="inline-flex items-center rounded-md p-0.5"
+                            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                            role="tablist"
+                            aria-label="Reading mode"
+                          >
+                            {([
+                              { id: "chunks", label: "One at a time" },
+                              { id: "all", label: "All at once" },
+                            ] as const).map((opt) => {
+                              const active = readingMode === opt.id;
+                              return (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  role="tab"
+                                  aria-selected={active}
+                                  onClick={() => {
+                                    setReadingMode(opt.id);
+                                    if (opt.id === "chunks") setChunkIndex(0);
+                                  }}
+                                  className="h-6 px-2 rounded text-[11px] font-medium transition-colors"
+                                  style={{
+                                    background: active ? "rgba(206,17,38,0.18)" : "transparent",
+                                    color: active ? "#FFD3D8" : "rgba(255,255,255,0.6)",
+                                    border: active ? "1px solid rgba(206,17,38,0.4)" : "1px solid transparent",
+                                  }}
+                                >
+                                  {opt.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
                     </div>
+
+                    {problemBodyOpen && (
+                      <>
+                        {readingMode === "all" || problemChunks.length <= 1 ? (
+                          <div
+                            className="text-[15px] max-w-[68ch] space-y-3 [&_p]:whitespace-pre-wrap [&_p]:text-[15px] [&_*]:!text-white/95 [&_strong]:!text-white [&_th]:!text-white [&_td]:!text-white/90 [&_.font-semibold]:!text-amber-300"
+                            style={{ color: "rgba(255,255,255,0.95)", lineHeight: 1.7 }}
+                          >
+                            <SmartTextRenderer text={toYouPerspective(asset.survive_problem_text)} />
+                          </div>
+                        ) : (
+                          <div className="max-w-[68ch]">
+                            {/* Show chunks 0..chunkIndex stacked, with the active one labeled */}
+                            <div className="space-y-5">
+                              {problemChunks.slice(0, chunkIndex + 1).map((c, i) => {
+                                const isActive = i === chunkIndex;
+                                return (
+                                  <div
+                                    key={i}
+                                    className="rounded-md transition-opacity"
+                                    style={{
+                                      opacity: isActive ? 1 : 0.7,
+                                    }}
+                                  >
+                                    <div
+                                      className="text-[10px] font-semibold uppercase tracking-[0.14em] mb-1.5"
+                                      style={{ color: isActive ? "#FFB8C0" : "rgba(255,255,255,0.4)" }}
+                                    >
+                                      {c.label}
+                                      <span className="ml-2 text-white/30 normal-case tracking-normal">
+                                        {i + 1} of {problemChunks.length}
+                                      </span>
+                                    </div>
+                                    <div
+                                      className="text-[15px] space-y-3 [&_p]:whitespace-pre-wrap [&_p]:text-[15px] [&_*]:!text-white/95 [&_strong]:!text-white [&_th]:!text-white [&_td]:!text-white/90 [&_.font-semibold]:!text-amber-300"
+                                      style={{ color: "rgba(255,255,255,0.95)", lineHeight: 1.7 }}
+                                    >
+                                      <SmartTextRenderer text={c.text} />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {/* Next / Show all */}
+                            <div className="mt-4 flex items-center gap-3">
+                              {chunkIndex < problemChunks.length - 1 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setChunkIndex((i) => Math.min(i + 1, problemChunks.length - 1))}
+                                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[12px] font-semibold transition-colors hover:brightness-110"
+                                  style={{
+                                    background: "rgba(206,17,38,0.16)",
+                                    border: "1px solid rgba(206,17,38,0.45)",
+                                    color: "#FFD3D8",
+                                  }}
+                                >
+                                  Next
+                                  <ArrowRight className="h-3.5 w-3.5" />
+                                </button>
+                              ) : (
+                                <span className="text-[11px] text-white/40">All sections shown</span>
+                              )}
+                              {chunkIndex > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setChunkIndex(0)}
+                                  className="text-[11px] font-medium text-white/50 hover:text-white/80 transition-colors"
+                                >
+                                  Restart
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
 
