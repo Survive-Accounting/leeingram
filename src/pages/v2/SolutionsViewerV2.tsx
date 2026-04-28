@@ -312,11 +312,13 @@ function NeedHelpModal({
 }
 
 // ── Explanation panel (Sheet from right, full-screen on mobile) ────────
+type WalkStep = { part: string; title: string; restate: string; content: string };
 type ExplanationSections = {
   lees_approach: string;
   how_to_solve: string;
   why_it_works: string;
   lock_it_in: string;
+  walkthrough?: WalkStep[];
 };
 
 type SectionKey = "how_to_solve" | "why_it_works" | "lock_it_in";
