@@ -55,7 +55,7 @@ export function AdminToolsMenu() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isStaff]);
+  }, []);
 
   if (!isStaff) return null;
   if (hidden) return null;
