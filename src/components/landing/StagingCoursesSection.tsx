@@ -226,7 +226,7 @@ export default function StagingCoursesSection({
           className="mt-3 sm:mt-4 text-[15px] sm:text-[16px]"
           style={{ fontFamily: "Inter, sans-serif", color: "#6B7280", lineHeight: 1.55 }}
         >
-          Pick a course. Choose a chapter. Work through problems. When you get stuck, ask for help and keep moving.
+          Pick a course, choose a chapter, start cramming — just in time for finals.
         </p>
       </div>
 
