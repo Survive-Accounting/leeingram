@@ -2088,9 +2088,7 @@ export default function SolutionsViewerV2() {
     setOriginalImagesLoaded({});
     setOriginalLoading(true);
     setOriginalOpen(false);
-    setInstructionsOpen(true);
-    setProblemBodyOpen(true);
-    setChunkIndex(0);
+    setInstructionsOpen(false);
   }, [assetCode]);
 
   useEffect(() => {
