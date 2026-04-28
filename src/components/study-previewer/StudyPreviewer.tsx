@@ -80,7 +80,7 @@ export default function StudyPreviewer({
   const [chapterLoading, setChapterLoading] = useState(false);
   const [activeTool, setActiveTool] = useState<ToolKey | null>(null);
   const [viewerAssetCode, setViewerAssetCode] = useState<string | null>(null);
-  const [terminalNotice, setTerminalNotice] = useState<string | null>(null);
+  
 
   const chapterDropdownRef = useRef<HTMLSelectElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -121,7 +121,6 @@ export default function StudyPreviewer({
     setSelectedChapterId(null);
     setActiveTool(null);
     setViewerAssetCode(null);
-    setTerminalNotice(null);
   }, [resetSignal]);
 
   const handleChapterChange = async (chId: string) => {
