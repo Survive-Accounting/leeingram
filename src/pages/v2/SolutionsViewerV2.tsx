@@ -527,19 +527,19 @@ function StuckSupportModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>What's going on?</DialogTitle>
-          <DialogDescription>
-            Help us fix it or point you in the right direction.
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="space-y-1">
+          <DialogTitle className="text-base">Report an issue</DialogTitle>
+          <DialogDescription className="text-xs">
+            Takes ~30 seconds. We'll review and reply by email.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           <RadioGroup
             value={issueType}
             onValueChange={(v) => setIssueType(v as StuckIssueType)}
-            className="space-y-2"
+            className="space-y-1.5"
           >
             {STUCK_OPTIONS.map((opt) => {
               const selected = issueType === opt.value;
@@ -548,7 +548,7 @@ function StuckSupportModal({
                   key={opt.value}
                   htmlFor={`stuck-${opt.value}`}
                   className={cn(
-                    "flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all",
+                    "flex items-start gap-2.5 rounded-md border p-2.5 cursor-pointer transition-all",
                     selected
                       ? "border-[#CE1126]/60 bg-[#CE1126]/5"
                       : "border-border hover:bg-accent/50",
@@ -556,8 +556,8 @@ function StuckSupportModal({
                 >
                   <RadioGroupItem id={`stuck-${opt.value}`} value={opt.value} className="mt-0.5" />
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold leading-tight">{opt.label}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{opt.description}</div>
+                    <div className="text-[13px] font-semibold leading-tight">{opt.label}</div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{opt.description}</div>
                   </div>
                 </label>
               );
@@ -573,7 +573,7 @@ function StuckSupportModal({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@school.edu"
-                className="mt-1"
+                className="mt-1 h-9"
                 maxLength={255}
               />
             </div>
@@ -586,7 +586,7 @@ function StuckSupportModal({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="What confused you, what looked wrong, or what would make this better?"
-              rows={4}
+              rows={3}
               maxLength={2000}
               className="mt-1 text-sm"
             />
@@ -603,12 +603,12 @@ function StuckSupportModal({
           <Button
             onClick={submit}
             disabled={submitting || note.trim().length < 3}
-            className="w-full"
+            className="w-full h-9"
           >
-            {submitting ? "Sending…" : "Send feedback"}
+            {submitting ? "Sending…" : "Send report"}
           </Button>
           <p className="text-[11px] text-center text-muted-foreground -mt-1">
-            Beta feedback — replies come by email.
+            We'll review and reply by email.
           </p>
         </div>
       </DialogContent>
