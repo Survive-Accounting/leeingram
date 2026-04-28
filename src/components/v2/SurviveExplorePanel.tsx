@@ -55,6 +55,20 @@ const PROMPT_EMOJIS: Record<PromptKey, string> = {
   request_video: "🎥",
 };
 
+// One-line pitch for each idea — shown when the student opens an idea card.
+// These describe what the feature WOULD do; they are not active tools.
+const PROMPT_DESCRIPTIONS: Record<PromptKey, string> = {
+  challenge: "A quick check-yourself prompt. We'd give you a twist on this problem and grade your answer with feedback.",
+  similar_problem: "Generate a fresh practice problem with the same skill, so you can repeat the rep without re-reading the original.",
+  memorize: "A short, exam-ready list of the formulas, accounts, and patterns worth committing to memory for this topic.",
+  journal_entries: "A clean, line-by-line breakdown of every journal entry — what hits which account and why.",
+  financial_statements: "Show how this transaction flows into the income statement, balance sheet, and cash flow statement.",
+  real_world: "A plain-English example of where you'd actually see this in a company's books or news.",
+  professor_tricks: "Common ways professors twist this concept on exams — wording traps, sneaky numbers, and partial-credit pitfalls.",
+  the_why: "The reasoning behind the rule — why GAAP handles it this way, in one short paragraph.",
+  request_video: "Vote for Lee to record a short walkthrough video for this exact problem.",
+};
+
 const EXPLORE_KEYS: PromptKey[] = [
   "challenge",
   "similar_problem",
@@ -124,6 +138,8 @@ export default function SurviveExplorePanel({
   const isEmbed = searchParams.get("embed") === "1";
 
   const [exploreOpen, setExploreOpen] = useState(false);
+  // Which idea is currently expanded (showing its description + vote button).
+  const [previewKey, setPreviewKey] = useState<PromptKey | null>(null);
   const [activeKey, setActiveKey] = useState<PromptKey | null>(null);
   const [responseText, setResponseText] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -311,14 +327,14 @@ export default function SurviveExplorePanel({
       className="mt-4 rounded-2xl border bg-card p-5 shadow-sm space-y-4"
       data-embed-allow="true"
     >
-      {/* Challenge me is now an entry inside "Vote on new ideas" — no standalone CTA */}
-      {/* Explore toggle — always allowed to open even in embed mode so the
-          student can see the prompt menu. Individual prompt clicks then
-          trigger the silent-vote + paywall flow. */}
+      {/* "Vote on new ideas" — secondary by default. These are FUTURE feature
+          ideas, not active study tools. Clicking an idea reveals a short
+          description + a vote button. */}
       <button
         type="button"
         onClick={() => setExploreOpen((v) => !v)}
         className="w-full flex items-center justify-between gap-2 rounded-md px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground hover:bg-muted/50 transition-colors"
+        aria-expanded={exploreOpen}
       >
         <span className="flex items-center gap-1.5">
           <Sparkles className="h-3.5 w-3.5" />
@@ -327,42 +343,79 @@ export default function SurviveExplorePanel({
         {exploreOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
 
-
       {exploreOpen && (
-        <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="space-y-3 animate-in fade-in slide-in-from-top-1 duration-150">
+          <p className="text-[12px] text-muted-foreground -mt-1">
+            Help us decide what to build next. These aren't live yet — tap one to see what it would do, then vote.
+          </p>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {EXPLORE_KEYS.map((k) => {
-              const isActive = activeKey === k;
+              const isOpenCard = previewKey === k;
               const count = votes[k] || 0;
+              const voted = !!hasVoted[k];
               return (
-                <Button
+                <div
                   key={k}
-                  variant={isActive ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => {
-                    if (isEmbed) { logEmbedVoteAndPaywall(k); return; }
-                    fetchPrompt(k);
-                  }}
-                  className="justify-between gap-2 h-9 text-xs font-medium"
-                  title={PROMPT_LABELS[k]}
-                >
-                  <span className="flex items-center gap-1.5 truncate">
-                    <span aria-hidden>{PROMPT_EMOJIS[k]}</span>
-                    <span className="truncate">{PROMPT_LABELS[k]}</span>
-                  </span>
-                  {count > 0 && (
-                    <span
-                      className="shrink-0 rounded-full px-1.5 py-0 text-[10px] font-bold"
-                      style={{ background: "#14213D", color: "#fff", minWidth: 20, textAlign: "center" }}
-                    >
-                      {count}
-                    </span>
+                  className={cn(
+                    "sm:col-span-1 rounded-md border bg-background/40 transition-colors",
+                    isOpenCard ? "sm:col-span-2 border-[#14213D]/40" : "border-border hover:border-foreground/30"
                   )}
-                </Button>
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isEmbed) { logEmbedVoteAndPaywall(k); return; }
+                      setPreviewKey(isOpenCard ? null : k);
+                    }}
+                    className="w-full flex items-center justify-between gap-2 h-9 px-3 text-xs font-medium text-left"
+                    aria-expanded={isOpenCard}
+                    title={PROMPT_LABELS[k]}
+                  >
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <span aria-hidden>{PROMPT_EMOJIS[k]}</span>
+                      <span className="truncate text-muted-foreground">{PROMPT_LABELS[k]}</span>
+                    </span>
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      {count > 0 && (
+                        <span
+                          className="rounded-full px-1.5 py-0 text-[10px] font-bold"
+                          style={{ background: "#14213D", color: "#fff", minWidth: 20, textAlign: "center" }}
+                        >
+                          {count}
+                        </span>
+                      )}
+                      {isOpenCard ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+                    </span>
+                  </button>
+
+                  {isOpenCard && (
+                    <div className="px-3 pb-3 pt-1 space-y-2.5 border-t border-border/60 animate-in fade-in duration-150">
+                      <p className="text-[12.5px] leading-relaxed text-foreground/85">
+                        {PROMPT_DESCRIPTIONS[k]}
+                      </p>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] text-muted-foreground">
+                          {count > 0 ? `${count} ${count === 1 ? "student wants this" : "students want this"}` : "Be the first to vote"}
+                        </span>
+                        <Button
+                          size="sm"
+                          onClick={() => submitVote(k)}
+                          disabled={voted}
+                          className="h-7 px-2.5 text-[11px] gap-1"
+                          variant={voted ? "outline" : "default"}
+                        >
+                          <ThumbsUp className="h-3 w-3" />
+                          {voted ? "Voted" : "Vote for this"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               );
             })}
 
-            {/* 8th card — suggest your own idea (dashed placeholder) */}
+            {/* Suggest your own idea */}
             {!ideaOpen ? (
               <button
                 type="button"
@@ -374,14 +427,14 @@ export default function SurviveExplorePanel({
                 title="Suggest your own idea"
               >
                 <span aria-hidden className="text-sm leading-none">+</span>
-                <span>suggest your own idea</span>
+                <span>Suggest your own idea</span>
               </button>
             ) : (
               <div className="sm:col-span-2 space-y-2 rounded-md border border-dashed border-[#CE1126]/50 bg-[#CE1126]/5 p-3">
                 <Textarea
                   value={idea}
                   onChange={(e) => setIdea(e.target.value.slice(0, 120))}
-                  placeholder="What button would help you study this? (max 120 chars)"
+                  placeholder="What would help you study this? (max 120 chars)"
                   rows={2}
                   className="text-[13px] resize-none"
                   autoFocus
@@ -391,97 +444,13 @@ export default function SurviveExplorePanel({
                     Cancel
                   </Button>
                   <Button size="sm" onClick={submitIdea} disabled={submittingIdea || !idea.trim()}>
-                    {submittingIdea ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send"}
+                    {submittingIdea ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send idea"}
                   </Button>
                 </div>
               </div>
             )}
           </div>
         </div>
-      )}
-
-      {/* Active response */}
-      {activeKey && (
-        <section className="rounded-lg border border-border bg-muted/30 p-4 space-y-3 animate-in fade-in duration-150">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold flex items-center gap-1.5">
-              <span aria-hidden>{PROMPT_EMOJIS[activeKey]}</span>
-              {PROMPT_LABELS[activeKey]}
-            </h3>
-            {!loading && responseText && activeKey !== "challenge" && (
-              <button
-                type="button"
-                onClick={() => submitVote(activeKey)}
-                disabled={!!hasVoted[activeKey]}
-                className={cn(
-                  "inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-md transition-colors",
-                  hasVoted[activeKey]
-                    ? "text-muted-foreground"
-                    : "text-foreground hover:bg-muted"
-                )}
-              >
-                <ThumbsUp className="h-3 w-3" />
-                {hasVoted[activeKey] ? "Thanks!" : "Helpful"}
-              </button>
-            )}
-          </div>
-
-          {loading ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              We're working on it…
-            </div>
-          ) : error ? (
-            <div className="text-sm text-destructive">{error}</div>
-          ) : responseText ? (
-            <ResponseBlock text={responseText} />
-          ) : null}
-
-          {/* Challenge follow-up loop */}
-          {activeKey === "challenge" && !loading && responseText && (
-            <div className="pt-3 border-t border-border space-y-3">
-              {!challengeFeedback && !challengeLoading && (
-                <>
-                  <Label className="text-[12px] font-semibold text-foreground">Your answer</Label>
-                  <Textarea
-                    value={challengeAnswer}
-                    onChange={(e) => setChallengeAnswer(e.target.value)}
-                    placeholder="Type your answer here — show your work or just the result."
-                    rows={4}
-                    className="text-[13px] resize-none"
-                  />
-                  <div className="flex items-center justify-end">
-                    <Button size="sm" onClick={submitChallengeAnswer} disabled={!challengeAnswer.trim()}>
-                      <Send className="h-3.5 w-3.5 mr-1" />
-                      Submit
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {challengeLoading && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Grading your answer…
-                </div>
-              )}
-
-              {challengeError && <div className="text-sm text-destructive">{challengeError}</div>}
-
-              {challengeFeedback && (
-                <div className="space-y-3">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    Lee's feedback
-                  </div>
-                  <ResponseBlock text={challengeFeedback} />
-                  <Button size="sm" variant="outline" onClick={tryAnotherChallenge}>
-                    Try another challenge →
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </section>
       )}
     </div>
   );
