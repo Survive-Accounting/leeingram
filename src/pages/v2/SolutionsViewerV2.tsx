@@ -3282,6 +3282,14 @@ export default function SolutionsViewerV2() {
                     </div>
                   );
                 })()}
+
+                {/* Subtle "Problem clear?" feedback — bottom of the left card */}
+                <ProblemClarityFeedback
+                  asset={asset}
+                  chapter={chapter}
+                  viewMode={viewMode}
+                  instructionsOpen={instructionsOpen}
+                />
               </section>
 
             </div>
