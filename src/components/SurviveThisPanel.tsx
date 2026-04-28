@@ -671,10 +671,9 @@ function MenuView({ onPick, assetId }: { onPick: (key: PromptKey) => void; asset
 // ── Response View ──────────────────────────────────────────────────────
 
 function ResponseView({
-  promptKey, card, email, hasEmail, onEmailSaved, onBack, onRequestVideo, onDownloadPdf, ctx,
+  promptKey, email, hasEmail, onEmailSaved, onBack, onRequestVideo, onDownloadPdf, ctx,
 }: {
   promptKey: PromptKey;
-  card: CardDef;
   email: string;
   hasEmail: boolean;
   onEmailSaved: (e: string) => void;
@@ -690,13 +689,13 @@ function ResponseView({
   const [feedback, setFeedback] = useState<"none" | "yes" | "no">("none");
   const [emailInput, setEmailInput] = useState("");
   const [emailErr, setEmailErr] = useState<string | null>(null);
+  // Challenge follow-up state
+  const [challengeAnswer, setChallengeAnswer] = useState("");
+  const [challengeLoading, setChallengeLoading] = useState(false);
+  const [challengeFeedback, setChallengeFeedback] = useState<string | null>(null);
 
-  // Map UI prompt keys to edge function prompt_type
-  const promptTypeForFn = useMemo(() => {
-    if (promptKey === "journal_entries") return "journal_entry";
-    if (promptKey === "how_to_solve" || promptKey === "study_strategy" || promptKey === "exam_traps" || promptKey === "formulas") return "problem";
-    return "instructions";
-  }, [promptKey]);
+  // UI key === edge function prompt_type (1:1 — no mapping needed)
+  const promptTypeForFn = promptKey;
 
   useEffect(() => {
     let cancelled = false;
