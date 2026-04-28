@@ -353,7 +353,7 @@ export default function StudentDashboard() {
         )}
 
         {/* Previewer entry — the centerpiece */}
-        <div className="space-y-6">
+        <div ref={previewerRef} className="space-y-6 scroll-mt-24">
           <div className="text-center" style={{ maxWidth: 760, margin: "0 auto" }}>
             <div
               className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4"
@@ -372,10 +372,10 @@ export default function StudentDashboard() {
               Free accounting study tools for finals.
             </h2>
             <p
-              className="mt-2 text-[12.5px] sm:text-[13px]"
-              style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
+              className="mt-2 text-[11px]"
+              style={{ color: "#A3AEC2", fontFamily: "Inter, sans-serif" }}
             >
-              Free Beta Access through {expiresStr}
+              Free access expires May 31st
             </p>
           </div>
 
