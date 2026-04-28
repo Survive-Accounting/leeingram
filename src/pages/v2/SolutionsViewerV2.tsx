@@ -1835,7 +1835,7 @@ export default function SolutionsViewerV2() {
         )}
 
         {!loading && asset && (
-          <div className="grid lg:grid-cols-2 gap-6">
+          <div className="grid lg:grid-cols-2 gap-6 SPLIT_MARKER">
             {/* LEFT: Problem + What you need to solve */}
             <div className="space-y-4 min-w-0">
               {/* Card 1: Problem */}
