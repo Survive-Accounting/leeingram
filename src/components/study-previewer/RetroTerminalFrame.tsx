@@ -20,6 +20,8 @@ export interface TerminalTool {
   /** Optional small caption shown after the label, e.g. "(coming soon)" */
   hint?: string;
   disabled?: boolean;
+  /** Visual variant. "ghost" = dashed border, faded — implies user can shape it. */
+  variant?: "default" | "ghost";
 }
 
 interface RetroTerminalFrameProps {
