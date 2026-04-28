@@ -35,6 +35,12 @@ how_to_solve
 - each step is a short imperative phrase
 - include the specific accounts/amounts when relevant
 
+walkthrough (NEW — bite-sized, one entry per lettered instruction part)
+- Return an array. One object per instruction part (a, b, c, …) in the same order as the Instructions list.
+- Each entry MUST have: { "part": "a", "title": "<5-7 word task title>", "restate": "<one short sentence in your tutor voice translating what this part is asking — like 'Just figure out: sale price minus cost.'>", "content": "<2-4 short numbered steps with specific numbers/accounts. Markdown allowed. NO restating the textbook prompt.>" }
+- If there is only ONE instruction (or none), still return a single-entry array with part "a".
+- The walkthrough is the SAME solution as how_to_solve, just split per part. Don't add new info.
+
 why_it_works
 - 1-2 sentences max
 - the conceptual reason the approach is correct
@@ -45,7 +51,7 @@ lock_it_in
 - pattern recognition: "if you see X → think Y"
 - the trigger-to-move mapping a student should memorize
 
-Format: each field is a markdown string (bullets/numbers allowed). No headers inside the fields.`;
+Format: each text field is a markdown string (bullets/numbers allowed). No headers inside the fields.`;
 
 function buildUserPrompt(asset: any): string {
   const parts: string[] = [];
