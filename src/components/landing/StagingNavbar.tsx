@@ -90,15 +90,15 @@ export default function StagingNavbar({
         className="relative w-full px-5 sm:px-8 h-16 flex items-center justify-between"
         style={{ background: "transparent" }}
       >
-        {/* Solid layer — fades in on scroll/hover */}
+        {/* Solid layer — fades in on scroll/hover (navy so the white wordmark + amber dot stay legible) */}
         <div
           aria-hidden
           className="absolute inset-0 border-b pointer-events-none"
           style={{
             background:
-              "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,249,254,0.96) 100%)",
-            borderColor: "rgba(20,33,61,0.08)",
-            boxShadow: "0 4px 16px rgba(20,33,61,0.06), 0 1px 0 rgba(20,33,61,0.04)",
+              "linear-gradient(180deg, rgba(20,33,61,0.96) 0%, rgba(16,26,49,0.96) 100%)",
+            borderColor: "rgba(255,255,255,0.08)",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.25), 0 1px 0 rgba(255,255,255,0.04) inset",
             backdropFilter: "blur(14px)",
             WebkitBackdropFilter: "blur(14px)",
             opacity: isSolid ? 1 : 0,
@@ -112,29 +112,12 @@ export default function StagingNavbar({
           className="relative inline-flex items-center"
           aria-label="Survive Accounting — home"
         >
-          {/* Navy version (on solid bg) */}
+          {/* Single white wordmark with amber dot — works on both transparent and navy solid */}
           <img
             src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
             alt="Survive Accounting"
             className="h-5 sm:h-[22px] w-auto object-contain select-none"
             draggable={false}
-            style={{
-              opacity: isSolid ? 1 : 0,
-              transition: `opacity ${TRANSITION}`,
-            }}
-          />
-          {/* White version (on transparent bg) */}
-          <img
-            aria-hidden
-            src="https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png"
-            alt=""
-            className="h-5 sm:h-[22px] w-auto object-contain select-none absolute inset-0"
-            draggable={false}
-            style={{
-              filter: "brightness(0) invert(1)",
-              opacity: isSolid ? 0 : 1,
-              transition: `opacity ${TRANSITION}`,
-            }}
           />
         </button>
 
@@ -144,7 +127,7 @@ export default function StagingNavbar({
             onClick={handleCourses}
             className="hidden sm:inline-block text-[13px] font-semibold hover:opacity-70"
             style={{
-              color: isSolid ? NAVY : "rgba(255,255,255,0.85)",
+              color: "rgba(255,255,255,0.85)",
               fontFamily: "Inter, sans-serif",
               transition: `color ${TRANSITION}`,
             }}
@@ -157,7 +140,7 @@ export default function StagingNavbar({
             onClick={() => setLoginOpen(true)}
             className="text-[13px] font-medium hover:opacity-100"
             style={{
-              color: isSolid ? "rgba(20,33,61,0.65)" : "rgba(255,255,255,0.7)",
+              color: "rgba(255,255,255,0.7)",
               fontFamily: "Inter, sans-serif",
               transition: `color ${TRANSITION}`,
               opacity: 0.95,
