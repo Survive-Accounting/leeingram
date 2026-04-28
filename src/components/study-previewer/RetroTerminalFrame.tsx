@@ -199,6 +199,12 @@ export default function RetroTerminalFrame({
           100% { background: rgba(124,255,176,0); box-shadow: inset 0 0 0 1px rgba(124,255,176,0); }
         }
         .sa-row-flash { animation: sa-row-flash 520ms ease-out both; }
+        /* Blinking attention notice — sits just outside the CRT palette */
+        @keyframes sa-notice-blink {
+          0%, 100% { opacity: 1; transform: translateY(0); }
+          50%      { opacity: 0.55; transform: translateY(-1px); }
+        }
+        .sa-notice-blink { animation: sa-notice-blink 1.05s ease-in-out infinite; }
       `}</style>
 
       <div className="w-full" style={{ maxWidth: 980 }}>
