@@ -491,11 +491,11 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
             disabled={!selectedChapterId}
           />
         </div>
-        <div className="grid sm:grid-cols-2 gap-4 mb-10">
+        <div className="grid sm:grid-cols-2 gap-5 mb-12">
           <ToolCard
             title="Practice Problem Helper"
             description="Practice smarter with walkthroughs, hints, challenge questions, and deeper explanations."
-            icon={<FileText className="w-5 h-5" />}
+            icon={<Target className="w-6 h-6" strokeWidth={2.2} />}
             active={selectedTool === "practice"}
             disabled={!selectedChapterId}
             onClick={() => handleToolPick("practice")}
@@ -503,7 +503,7 @@ export default function CourseExplorerSection({ onCtaClick }: CourseExplorerSect
           <ToolCard
             title="Journal Entry Helper"
             description="Understand debits, credits, accounts, and calculations in a way that actually sticks."
-            icon={<Brain className="w-5 h-5" />}
+            icon={<BookOpenCheck className="w-6 h-6" strokeWidth={2.2} />}
             active={selectedTool === "je"}
             disabled={!selectedChapterId}
             onClick={() => handleToolPick("je")}
