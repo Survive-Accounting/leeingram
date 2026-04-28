@@ -80,7 +80,7 @@ export default function StudyPreviewer({
   const [chapterLoading, setChapterLoading] = useState(false);
   const [activeTool, setActiveTool] = useState<ToolKey | null>(null);
   const [viewerAssetCode, setViewerAssetCode] = useState<string | null>(null);
-  const [terminalNotice, setTerminalNotice] = useState<string | null>(null);
+  
 
   const chapterDropdownRef = useRef<HTMLSelectElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
@@ -121,7 +121,6 @@ export default function StudyPreviewer({
     setSelectedChapterId(null);
     setActiveTool(null);
     setViewerAssetCode(null);
-    setTerminalNotice(null);
   }, [resetSignal]);
 
   const handleChapterChange = async (chId: string) => {
@@ -153,7 +152,7 @@ export default function StudyPreviewer({
     setSelectedChapterId(chId);
     setViewerAssetCode(first);
     setChapterLoading(false);
-    setTerminalNotice(null);
+    
     if (persistChapterKey) {
       try { localStorage.setItem(persistChapterKey, chId); } catch { /* ignore */ }
     }
@@ -171,11 +170,6 @@ export default function StudyPreviewer({
     }, 50);
   };
 
-  const handleNudgeChapter = () => {
-    setTerminalNotice("Pick a chapter first 👇");
-    chapterDropdownRef.current?.focus();
-    chapterDropdownRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
 
   const selectedChapter = useMemo(
     () => chapters.find((c) => c.id === selectedChapterId) ?? null,
@@ -472,9 +466,10 @@ export default function StudyPreviewer({
         />
 
         <div className="relative">
-          {/* Setup panels — dark control modules above the monitor */}
+          {/* Setup panel — single Course module above the monitor.
+              Chapter selection now lives inside the terminal for a step-by-step flow. */}
           <section
-            className="relative grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 sa-rise"
+            className="relative grid grid-cols-1 gap-3 sm:gap-4 sa-rise max-w-md mx-auto"
             style={{ animationDelay: "120ms" }}
           >
             {/* Module 1 — Course */}
@@ -518,119 +513,30 @@ export default function StudyPreviewer({
                 </div>
               )}
             </div>
-
-            {/* Module 2 — Chapter */}
-            <div
-              className="relative rounded-xl p-3.5 sm:p-4 space-y-2.5"
-              style={{
-                background: `linear-gradient(180deg, ${CHASSIS_TOP} 0%, ${CHASSIS_BOTTOM} 100%)`,
-                border: `1px solid ${chapterChosen ? "rgba(124,255,176,0.30)" : CHASSIS_BORDER}`,
-                boxShadow: chapterChosen
-                  ? "0 8px 20px -10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04), 0 0 14px -4px rgba(124,255,176,0.30)"
-                  : "0 8px 20px -10px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
-                opacity: courseChosen ? 1 : 0.6,
-                transition:
-                  "box-shadow 280ms ease-out, border-color 280ms ease-out, opacity 280ms ease-out",
-              }}
-            >
-              {moduleHeader("Chapter", chapterChosen, chapterChosen, selectedChapterId ?? "")}
-              <SelectShell
-                ref={chapterDropdownRef}
-                value={selectedChapterId ?? ""}
-                onChange={handleChapterChange}
-                accent={!!selectedChapterId}
-                disabled={!courseChosen || chapterLoading || chapters.length === 0}
-                loading={chapterLoading}
-              >
-                <option value="">
-                  {!courseChosen
-                    ? "Pick a course first"
-                    : chapters.length === 0
-                    ? "Loading chapters…"
-                    : "Choose chapter…"}
-                </option>
-                {chapters.map((ch) => (
-                  <option key={ch.id} value={ch.id}>
-                    Ch {ch.chapter_number} — {ch.chapter_name}
-                  </option>
-                ))}
-              </SelectShell>
-            </div>
           </section>
 
-          {/* Signal bus — visually connects the modules to the monitor below */}
+          {/* Signal bus — single center riser from the course module into the monitor */}
           <div
             aria-hidden
             className="relative mx-auto sa-rise"
-            style={{ width: "60%", maxWidth: 420, height: 18, animationDelay: "200ms" }}
+            style={{ width: 1, height: 18, animationDelay: "200ms" }}
           >
-            {/* Two short risers from each module */}
             <span
-              className="absolute top-0"
+              className="absolute inset-0"
               style={{
-                left: "16%",
-                width: 1,
-                height: 9,
-                background: courseChosen ? PHOSPHOR_DIM : CHASSIS_BORDER,
-                boxShadow: courseChosen ? `0 0 6px ${PHOSPHOR_GLOW}` : "none",
+                background: courseChosen ? PHOSPHOR : CHASSIS_BORDER,
+                boxShadow: courseChosen ? `0 0 8px ${PHOSPHOR_GLOW}` : "none",
                 transition: "background 280ms ease-out, box-shadow 280ms ease-out",
               }}
             />
-            <span
-              className="absolute top-0"
-              style={{
-                right: "16%",
-                width: 1,
-                height: 9,
-                background: chapterChosen ? PHOSPHOR_DIM : CHASSIS_BORDER,
-                boxShadow: chapterChosen ? `0 0 6px ${PHOSPHOR_GLOW}` : "none",
-                transition: "background 280ms ease-out, box-shadow 280ms ease-out",
-              }}
-            />
-            {/* Horizontal bus */}
-            <span
-              className="absolute"
-              style={{
-                left: "16%",
-                right: "16%",
-                top: 9,
-                height: 1,
-                background:
-                  courseChosen && chapterChosen
-                    ? `linear-gradient(90deg, ${PHOSPHOR_DIM} 0%, ${PHOSPHOR} 50%, ${PHOSPHOR_DIM} 100%)`
-                    : courseChosen || chapterChosen
-                    ? `linear-gradient(90deg, ${PHOSPHOR_DIM} 0%, ${CHASSIS_BORDER} 100%)`
-                    : CHASSIS_BORDER,
-                boxShadow:
-                  courseChosen && chapterChosen ? `0 0 8px ${PHOSPHOR_GLOW}` : "none",
-                transition: "background 280ms ease-out, box-shadow 280ms ease-out",
-              }}
-            />
-            {/* Center riser into the monitor */}
-            <span
-              className="absolute left-1/2 -translate-x-1/2"
-              style={{
-                top: 9,
-                width: 1,
-                height: 9,
-                background:
-                  courseChosen && chapterChosen ? PHOSPHOR : CHASSIS_BORDER,
-                boxShadow:
-                  courseChosen && chapterChosen ? `0 0 8px ${PHOSPHOR_GLOW}` : "none",
-                transition: "background 280ms ease-out, box-shadow 280ms ease-out",
-              }}
-            />
-            {/* Center node */}
             <span
               className="absolute left-1/2 -translate-x-1/2 rounded-full"
               style={{
                 top: 14,
                 width: 5,
                 height: 5,
-                background:
-                  courseChosen && chapterChosen ? PHOSPHOR : "#3A3A42",
-                boxShadow:
-                  courseChosen && chapterChosen ? `0 0 8px ${PHOSPHOR_GLOW}` : "none",
+                background: courseChosen ? PHOSPHOR : "#3A3A42",
+                boxShadow: courseChosen ? `0 0 8px ${PHOSPHOR_GLOW}` : "none",
                 transition: "background 280ms ease-out, box-shadow 280ms ease-out",
               }}
             />
@@ -654,14 +560,35 @@ export default function StudyPreviewer({
                     ? `Ch ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}`
                     : null
                 }
-                tools={TERMINAL_TOOLS}
+                tools={chapterChosen ? TERMINAL_TOOLS : undefined}
                 activeToolKey={activeTool}
                 canPickTool={chapterChosen}
                 loading={chapterLoading}
                 welcomeName={welcomeName ?? null}
                 isReturning={!!isReturning}
-                notice={terminalNotice}
-                onNudgeChapter={handleNudgeChapter}
+                chapterSelector={
+                  courseChosen && !chapterChosen ? (
+                    <div className="mt-3 max-w-sm">
+                      <SelectShell
+                        ref={chapterDropdownRef}
+                        value={selectedChapterId ?? ""}
+                        onChange={handleChapterChange}
+                        accent={false}
+                        disabled={chapterLoading || chapters.length === 0}
+                        loading={chapterLoading}
+                      >
+                        <option value="">
+                          {chapters.length === 0 ? "Loading chapters…" : "Choose chapter…"}
+                        </option>
+                        {chapters.map((ch) => (
+                          <option key={ch.id} value={ch.id}>
+                            Ch {ch.chapter_number} — {ch.chapter_name}
+                          </option>
+                        ))}
+                      </SelectShell>
+                    </div>
+                  ) : null
+                }
                 onSelectTool={(key) => {
                   if (key === "feedback") {
                     onOpenFeedback();

@@ -36,6 +36,8 @@ interface RetroTerminalFrameProps {
   isReturning?: boolean;
   /** Transient header notice (e.g. "Pick a chapter first"). When set, replaces the readiness badge and blinks. */
   notice?: string | null;
+  /** Optional inline chapter selector rendered inside the terminal once a course is chosen. */
+  chapterSelector?: React.ReactNode;
 }
 
 /**
@@ -55,6 +57,7 @@ export default function RetroTerminalFrame({
   welcomeName,
   isReturning = false,
   notice = null,
+  chapterSelector = null,
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
 
@@ -524,6 +527,19 @@ export default function RetroTerminalFrame({
                   }}
                 />
               </Line>
+
+              {/* Inline chapter selector — appears once a course is chosen, replaced by tools after chapter is set */}
+              {chapterSelector && (
+                <div
+                  style={{
+                    opacity: bootStep >= 5 ? 1 : 0,
+                    transform: bootStep >= 5 ? "translateY(0)" : "translateY(2px)",
+                    transition: "opacity 240ms ease-out, transform 240ms ease-out",
+                  }}
+                >
+                  {chapterSelector}
+                </div>
+              )}
 
               {/* Tool menu — keycap-style rows */}
               {tools && tools.length > 0 && (
