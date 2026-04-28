@@ -789,55 +789,31 @@ function bumpWandCounter(key: string) {
   } catch {}
 }
 
+const WAND_KEY_OPTOUT = "sa_wand_optout";
+const WAND_INTERVAL = 15;
+
 function MagicWandFeedback() {
   const [open, setOpen] = useState(false);
   const [wish, setWish] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Engagement-gated trigger: only open after the student has shown real
-  // interest in the product. Never on initial visit.
+  // Trigger every 15th interaction (problem view), unless opted out.
   useEffect(() => {
-    const check = () => {
-      try {
-        if (localStorage.getItem(WAND_KEY_SHOWN) === "1") return;
-        if (localStorage.getItem(WAND_KEY_DISMISSED) === "1") return;
-
-        const helpClicks = parseInt(localStorage.getItem(WAND_KEY_HELP_CLICKS) || "0", 10) || 0;
-        const views = parseInt(localStorage.getItem(WAND_KEY_VIEWS) || "0", 10) || 0;
-        const firstTs = parseInt(localStorage.getItem(WAND_KEY_FIRST_TS) || "0", 10) || 0;
-        const minutesSinceFirst = firstTs ? (Date.now() - firstTs) / 60000 : 0;
-
-        // Real engagement = clicked into help tools at least 3 times
-        // OR viewed 2+ problems with at least 2 minutes on the platform.
-        const engaged =
-          helpClicks >= 3 ||
-          (views >= 2 && minutesSinceFirst >= 2);
-
-        if (engaged) {
-          localStorage.setItem(WAND_KEY_SHOWN, "1");
-          setOpen(true);
-        }
-      } catch {}
-    };
-    // Stamp first visit if missing, count this view
     try {
-      if (!localStorage.getItem(WAND_KEY_FIRST_TS)) {
-        localStorage.setItem(WAND_KEY_FIRST_TS, String(Date.now()));
-      }
+      if (localStorage.getItem(WAND_KEY_OPTOUT) === "1") return;
       const v = parseInt(localStorage.getItem(WAND_KEY_VIEWS) || "0", 10) || 0;
-      localStorage.setItem(WAND_KEY_VIEWS, String(v + 1));
+      const next = v + 1;
+      localStorage.setItem(WAND_KEY_VIEWS, String(next));
+      if (next > 0 && next % WAND_INTERVAL === 0) {
+        setOpen(true);
+      }
     } catch {}
-
-    check();
-    const onTick = () => check();
-    window.addEventListener("sa-wand-tick", onTick);
-    return () => window.removeEventListener("sa-wand-tick", onTick);
   }, []);
 
-  const dismiss = () => {
-    try {
-      localStorage.setItem(WAND_KEY_DISMISSED, "1");
-    } catch {}
+  const skip = () => setOpen(false);
+
+  const optOut = () => {
+    try { localStorage.setItem(WAND_KEY_OPTOUT, "1"); } catch {}
     setOpen(false);
   };
 
