@@ -487,7 +487,7 @@ export default function RetroTerminalFrame({
                           triggerToolPulse(tool.key);
                           onSelectTool?.(tool.key);
                         }}
-                        className="group flex w-full items-center gap-3 text-left rounded-md transition-all"
+                        className={`group flex w-full items-center gap-3 text-left rounded-md transition-all ${flashedToolKey === tool.key ? "sa-row-flash" : ""}`}
                         style={{
                           padding: "8px 12px",
                           background: isActive
