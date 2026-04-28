@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { isAllowedEmail } from "@/lib/emailWhitelist";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 import { toast } from "sonner";
-import { X, ArrowLeft, Mail, Sparkles, Send, Download, ThumbsUp, ThumbsDown, Share2, Loader2, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
+import DOMPurify from "isomorphic-dompurify";
+import { X, ArrowLeft, Mail, Sparkles, Send, Download, ThumbsUp, ThumbsDown, Share2, Loader2, ChevronRight, ChevronDown, Maximize2, Minimize2 } from "lucide-react";
 
 const LEE_HEADSHOT_URL = "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/ab9844f22ec569cdc37f3bf9da363c50.jpg";
 
@@ -13,26 +14,89 @@ const AMBER = "#F59E0B";
 const AMBER_BG = "#FFFBEB";
 const GREEN = "#16A34A";
 
-type PromptKey = "study_strategy" | "how_to_solve" | "journal_entries" | "formulas" | "exam_traps" | "about_lee" | "request_video";
+type PromptKey =
+  | "walk_through"
+  | "hint"
+  | "setup"
+  | "full_solution"
+  | "challenge"
+  | "similar_problem"
+  | "memorize"
+  | "journal_entries"
+  | "financial_statements"
+  | "real_world"
+  | "professor_tricks"
+  | "the_why"
+  | "about_lee"
+  | "request_video";
 
-interface CardDef {
-  key: PromptKey;
-  emoji: string;
-  title: string;
-  subtitle: string;
-  step: string;
-  highlight?: boolean;
-}
+const PROMPT_LABELS: Record<PromptKey, string> = {
+  walk_through: "Walk me through it",
+  hint: "Give me a hint",
+  setup: "Show the setup",
+  full_solution: "Full solution",
+  challenge: "Challenge me",
+  similar_problem: "Try a similar problem",
+  memorize: "What to memorize",
+  journal_entries: "Journal entries breakdown",
+  financial_statements: "Financial statement view",
+  real_world: "Real world example",
+  professor_tricks: "How your professor will trick you",
+  the_why: "The why behind it",
+  about_lee: "About Lee",
+  request_video: "Request a video",
+};
 
-const CARDS: CardDef[] = [
-  { key: "study_strategy", emoji: "📋", title: "Suggested study strategy", subtitle: "Get a PDF study guide for this problem", step: "01" },
-  { key: "how_to_solve", emoji: "🔢", title: "How to get the answer?", subtitle: "Step-by-step walkthrough", step: "02" },
-  { key: "journal_entries", emoji: "📊", title: "Understand the journal entries?", subtitle: "Why each entry works", step: "03" },
-  { key: "formulas", emoji: "🧮", title: "Memorize the formulas?", subtitle: "Formula breakdown + tips", step: "04" },
-  { key: "exam_traps", emoji: "⚠️", title: "Why is this tricky?", subtitle: "Exam traps to watch for", step: "05" },
-  { key: "about_lee", emoji: "🙋", title: "Learn more about Lee", subtitle: "Who built this and why", step: "06" },
-  { key: "request_video", emoji: "📹", title: "Request a video from Lee", subtitle: "Get a personal video answer", step: "07", highlight: true },
+const PROMPT_EMOJIS: Record<PromptKey, string> = {
+  walk_through: "🚀",
+  hint: "💡",
+  setup: "📄",
+  full_solution: "✅",
+  challenge: "⚡",
+  similar_problem: "🔄",
+  memorize: "🧠",
+  journal_entries: "📝",
+  financial_statements: "📊",
+  real_world: "🌍",
+  professor_tricks: "🎓",
+  the_why: "📖",
+  about_lee: "🙋",
+  request_video: "🎥",
+};
+
+const EXPLORE_KEYS: PromptKey[] = [
+  "similar_problem",
+  "memorize",
+  "journal_entries",
+  "financial_statements",
+  "real_world",
+  "professor_tricks",
+  "the_why",
+  "request_video",
 ];
+
+// Inline CSS prepended to AI HTML responses so tables render cleanly inside the panel.
+const AI_HTML_STYLE = `<style>
+.sa-ai table { width:100%; border-collapse:collapse; font-size:13px; margin:10px 0 14px; }
+.sa-ai th { text-align:left; color:#6B7280; font-weight:600; border-bottom:1px solid #E5E7EB; padding:6px 10px; background:#FAFAFA; }
+.sa-ai td { padding:6px 10px; border-bottom:1px solid #F3F4F6; color:#14213D; font-size:13px; }
+.sa-ai tr.total td { font-weight:700; border-top:1px solid #D1D5DB; border-bottom:none; background:#F8F9FA; }
+.sa-ai ul, .sa-ai ol { margin:8px 0 12px 20px; padding:0; }
+.sa-ai li { margin:4px 0; line-height:1.55; }
+.sa-ai p { margin:8px 0; line-height:1.65; }
+.sa-ai strong { color:#14213D; font-weight:700; }
+.sa-ai em { color:#6B7280; }
+</style>`;
+
+const HTML_DETECT = /<(table|strong|ul|ol|li|br|h[1-6]|div|span|p|em|thead|tbody|tr|th|td)\b/i;
+
+function sanitizeAndStyle(raw: string): string {
+  const cleaned = DOMPurify.sanitize(raw, {
+    ALLOWED_TAGS: ["table", "thead", "tbody", "tr", "th", "td", "strong", "em", "b", "i", "ul", "ol", "li", "p", "br", "div", "span", "h1", "h2", "h3", "h4", "h5", "h6"],
+    ALLOWED_ATTR: ["class"],
+  });
+  return AI_HTML_STYLE + `<div class="sa-ai">${cleaned}</div>`;
+}
 
 interface SurviveThisPanelProps {
   assetId?: string;
