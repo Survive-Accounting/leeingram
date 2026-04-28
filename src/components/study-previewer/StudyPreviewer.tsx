@@ -475,6 +475,36 @@ export default function StudyPreviewer({
       <div className="relative sa-rise" style={{ animationDelay: "0ms" }}>
 
         <div className="relative">
+          {/* Bridge line — soft helper above the course selector */}
+          {!activeTool && (
+            <div
+              className="text-center mb-4 sm:mb-5 sa-rise"
+              style={{ animationDelay: "60ms" }}
+            >
+              <span
+                className="inline-flex items-center gap-2 text-[11px] sm:text-[12px]"
+                style={{
+                  color: "rgba(255,255,255,0.55)",
+                  fontFamily: "Inter, system-ui, sans-serif",
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="inline-block"
+                  style={{ width: 24, height: 1, background: "rgba(255,255,255,0.25)" }}
+                />
+                Preview the study console below
+                <span
+                  aria-hidden
+                  className="inline-block"
+                  style={{ width: 24, height: 1, background: "rgba(255,255,255,0.25)" }}
+                />
+              </span>
+            </div>
+          )}
+
           {/* Setup panel — single Course module above the monitor.
               Chapter selection now lives inside the terminal for a step-by-step flow. */}
           <section
@@ -528,7 +558,7 @@ export default function StudyPreviewer({
           <div
             aria-hidden
             className="relative mx-auto sa-rise"
-            style={{ width: 1, height: 18, animationDelay: "200ms" }}
+            style={{ width: 1, height: 18, animationDelay: "200ms", marginTop: "1.5rem" }}
           >
             <span
               className="absolute inset-0"
@@ -550,36 +580,6 @@ export default function StudyPreviewer({
               }}
             />
           </div>
-
-          {/* Bridge line — soft helper between the selector and the monitor */}
-          {!activeTool && (
-            <div
-              className="text-center mt-10 sm:mt-14 mb-3 sm:mb-4 sa-rise"
-              style={{ animationDelay: "180ms" }}
-            >
-              <span
-                className="inline-flex items-center gap-2 text-[11px] sm:text-[12px]"
-                style={{
-                  color: "rgba(255,255,255,0.55)",
-                  fontFamily: "Inter, system-ui, sans-serif",
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                }}
-              >
-                <span
-                  aria-hidden
-                  className="inline-block"
-                  style={{ width: 24, height: 1, background: "rgba(255,255,255,0.25)" }}
-                />
-                Preview the study console below
-                <span
-                  aria-hidden
-                  className="inline-block"
-                  style={{ width: 24, height: 1, background: "rgba(255,255,255,0.25)" }}
-                />
-              </span>
-            </div>
-          )}
 
           {/* Workspace stage — retro terminal + modern viewer crossfade in the same frame */}
           <div
