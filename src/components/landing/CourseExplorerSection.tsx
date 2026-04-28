@@ -1,5 +1,17 @@
 import { useState, useMemo, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, BookOpen, FileText, Lock, Brain, MessageCircle, X, Send, Sparkles, Target, BookOpenCheck, Check } from "lucide-react";
+
+// Motion presets — subtle, premium, quick
+const EASE = [0.22, 1, 0.36, 1] as const;
+const fadeUp = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: EASE } },
+};
+const stagger = (delayChildren = 0, staggerChildren = 0.06) => ({
+  hidden: {},
+  show: { transition: { delayChildren, staggerChildren } },
+});
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
