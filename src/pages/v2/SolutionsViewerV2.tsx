@@ -2000,6 +2000,7 @@ export default function SolutionsViewerV2() {
                 <MessageCircleQuestion className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Stuck?</span>
               </button>
+            ) : (
               <div />
             )}
           </div>
