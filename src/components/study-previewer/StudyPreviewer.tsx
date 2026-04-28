@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, Check, ChevronDown, Lock } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, ChevronDown, Lock, Target, NotebookPen, Lightbulb } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { ToolKey } from "@/components/dashboard/StudyToolCards";
@@ -21,9 +21,27 @@ const CHASSIS_BORDER = "#2A2A30";
 const MONO_FONT = "'JetBrains Mono', 'SF Mono', ui-monospace, monospace";
 
 const TERMINAL_TOOLS: TerminalTool[] = [
-  { key: "practice", label: "Practice Problem Helper" },
-  { key: "je", label: "Journal Entry Helper" },
-  { key: "feedback", label: "Suggest a tool we should build" },
+  {
+    key: "practice",
+    label: "Practice Problem Helper",
+    description: "Guided explanations for textbook-style problems.",
+    cta: "Open helper",
+    icon: Target,
+  },
+  {
+    key: "je",
+    label: "Journal Entry Helper",
+    description: "Understand JEs instead of memorizing them.",
+    cta: "Open helper",
+    icon: NotebookPen,
+  },
+  {
+    key: "feedback",
+    label: "Help shape what's next",
+    description: "Rank ideas or suggest a tool we should build.",
+    cta: "Open feedback",
+    icon: Lightbulb,
+  },
 ];
 
 export interface PreviewChapter {
