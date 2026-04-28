@@ -2834,14 +2834,19 @@ export default function SolutionsViewerV2() {
                 onAdvanceTask={markTaskDone}
                 onActiveHelperChange={setActiveHelper}
               />
-              <SurviveExplorePanel
-                assetId={asset.id}
-                assetCode={asset.asset_name}
-                problemText={asset.survive_problem_text}
-                instructions={getInstructions(asset).join("\n")}
-                chapterName={chapter ? `Ch ${chapter.chapter_number}: ${chapter.chapter_name}` : ""}
-                courseName={courseLabel}
-              />
+              {/* Subtle "Suggest a new idea" link — replaces the old
+                  "Vote on new ideas" card. Opens the shared
+                  FeatureIdeasModal so vote counts stay unified. */}
+              <div className="mt-3 flex justify-end" data-embed-allow="true">
+                <button
+                  type="button"
+                  onClick={() => setFeatureIdeasOpen(true)}
+                  className="inline-flex items-center gap-1 text-[12px] font-medium transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  Suggest a new idea
+                  <ArrowRight className="h-3 w-3" />
+                </button>
+              </div>
             </div>
             </div>
           </>
