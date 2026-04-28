@@ -456,32 +456,8 @@ export default function StudyPreviewer({
         }
       `}</style>
 
-      {/* Navy frame wrapper — sits as an elevated console on the hero background */}
-      <div
-        className="relative rounded-[28px] px-5 sm:px-8 lg:px-10 pt-9 sm:pt-12 lg:pt-14 pb-5 sm:pb-8 lg:pb-10 sa-rise"
-        style={{
-          background: `linear-gradient(180deg, #1F3160 0%, #243A6E 55%, #2A427C 100%)`,
-          border: "1px solid rgba(255,255,255,0.06)",
-          boxShadow:
-            "0 40px 80px -30px rgba(0,0,0,0.55), 0 16px 30px -12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)",
-          animationDelay: "0ms",
-        }}
-      >
-        {/* Red accent bar */}
-        <div
-          aria-hidden
-          className="absolute left-1/2 -translate-x-1/2 -top-px rounded-b-full"
-          style={{ width: 96, height: 4, background: RED }}
-        />
-        {/* Subtle inner glow */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-[28px]"
-          style={{
-            background:
-              "radial-gradient(120% 60% at 50% 0%, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 60%)",
-          }}
-        />
+      {/* Console wrapper — transparent; lets the hero section background show through */}
+      <div className="relative sa-rise" style={{ animationDelay: "0ms" }}>
 
         <div className="relative">
           {/* Setup panel — single Course module above the monitor.
@@ -560,10 +536,40 @@ export default function StudyPreviewer({
             />
           </div>
 
+          {/* Bridge line — soft helper between the selector and the monitor */}
+          {!activeTool && (
+            <div
+              className="text-center mt-10 sm:mt-14 mb-3 sm:mb-4 sa-rise"
+              style={{ animationDelay: "180ms" }}
+            >
+              <span
+                className="inline-flex items-center gap-2 text-[11px] sm:text-[12px]"
+                style={{
+                  color: "rgba(255,255,255,0.55)",
+                  fontFamily: "Inter, system-ui, sans-serif",
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="inline-block"
+                  style={{ width: 24, height: 1, background: "rgba(255,255,255,0.25)" }}
+                />
+                Preview the study console below
+                <span
+                  aria-hidden
+                  className="inline-block"
+                  style={{ width: 24, height: 1, background: "rgba(255,255,255,0.25)" }}
+                />
+              </span>
+            </div>
+          )}
+
           {/* Workspace stage — retro terminal + modern viewer crossfade in the same frame */}
           <div
             ref={workspaceRef}
-            className="sa-stage sa-rise mt-2"
+            className="sa-stage sa-rise"
             style={{ animationDelay: "240ms" }}
           >
             {/* Layer 1 — Retro terminal launchpad (in flow when no tool, overlay when transitioning out) */}
