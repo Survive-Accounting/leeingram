@@ -1426,6 +1426,68 @@ export default function SolutionsViewerV2() {
   // Per-task checked state, persisted to localStorage per asset.
   const [checkedTasks, setCheckedTasks] = useState<boolean[]>([]);
 
+  // ── Split-view controls ──────────────────────────────────────────────
+  const isMobileViewport = useIsMobile();
+  type ViewMode = "split" | "problem" | "helper";
+  const [viewMode, setViewMode] = useState<ViewMode>("split");
+  const [mobileTab, setMobileTab] = useState<"problem" | "helper">("problem");
+  const [splitRatio, setSplitRatio] = useState<number>(() => {
+    try {
+      const v = Number(sessionStorage.getItem("sa.viewer.splitRatio"));
+      if (Number.isFinite(v) && v >= 0.25 && v <= 0.75) return v;
+    } catch { /* ignore */ }
+    return 0.5;
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const splitContainerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!isDragging) return;
+    const handleMove = (clientX: number) => {
+      const el = splitContainerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      let ratio = (clientX - rect.left) / rect.width;
+      ratio = Math.max(0.25, Math.min(0.75, ratio));
+      setSplitRatio(ratio);
+    };
+    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX);
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches[0]) handleMove(e.touches[0].clientX);
+    };
+    const stop = () => {
+      setIsDragging(false);
+      try { sessionStorage.setItem("sa.viewer.splitRatio", String(splitRatio)); } catch { /* ignore */ }
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", stop);
+    window.addEventListener("touchmove", onTouchMove);
+    window.addEventListener("touchend", stop);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", stop);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", stop);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isDragging, splitRatio]);
+
+  React.useEffect(() => {
+    if (isMobileViewport) return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable) return;
+      if (e.key === "[") setViewMode("problem");
+      else if (e.key === "]") setViewMode("helper");
+      else if (e.key === "\\") setViewMode("split");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isMobileViewport]);
+
   // Reset on asset change
   useEffect(() => {
     setSimplifiedText(null);
