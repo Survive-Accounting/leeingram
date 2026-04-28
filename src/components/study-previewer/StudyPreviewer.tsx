@@ -781,14 +781,80 @@ export default function StudyPreviewer({
                           minHeight: "clamp(380px, 56vw, 560px)",
                         }}
                       >
-                        {activeTool === "practice" && viewerAssetCode && (
-                          <iframe
-                            key={viewerAssetCode}
-                            src={`/v2/solutions/${encodeURIComponent(viewerAssetCode)}`}
-                            title="Practice Problem Helper"
-                            className="w-full block border-0"
-                            style={{ height: "min(85vh, 980px)", background: "#fff" }}
-                          />
+                        {activeTool === "practice" && viewerAssetCode && !iframeError && (
+                          <>
+                            <iframe
+                              key={`${viewerAssetCode}-${iframeReloadKey}`}
+                              src={`/v2/solutions/${encodeURIComponent(viewerAssetCode)}`}
+                              title="Practice Problem Helper"
+                              className="w-full block border-0"
+                              style={{
+                                height: "min(85vh, 980px)",
+                                background: "#fff",
+                                opacity: iframeLoaded ? 1 : 0,
+                                transition: "opacity 200ms ease-out",
+                              }}
+                              onLoad={() => setIframeLoaded(true)}
+                              onError={() => setIframeError(true)}
+                            />
+
+                            {/* Skeleton — only after 500ms of loading */}
+                            {!iframeLoaded && showSkeleton && (
+                              <div
+                                aria-hidden
+                                className="absolute inset-0 flex flex-col gap-3 px-6 py-6"
+                                style={{ background: "#fff" }}
+                              >
+                                <div className="h-4 w-1/3 rounded bg-slate-100 animate-pulse" />
+                                <div className="h-3 w-2/3 rounded bg-slate-100 animate-pulse" />
+                                <div className="h-3 w-1/2 rounded bg-slate-100 animate-pulse" />
+                                <div className="mt-4 h-40 w-full rounded bg-slate-100 animate-pulse" />
+                                <div className="h-3 w-2/5 rounded bg-slate-100 animate-pulse" />
+                                <div className="h-3 w-1/3 rounded bg-slate-100 animate-pulse" />
+                              </div>
+                            )}
+
+                            {/* Subtle status — only if loading exceeds 2s */}
+                            {!iframeLoaded && showSlowStatus && (
+                              <div
+                                className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] tracking-wide"
+                                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                                role="status"
+                              >
+                                Preparing tool…
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {activeTool === "practice" && viewerAssetCode && iframeError && (
+                          <div
+                            className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 gap-3"
+                            style={{ background: "#fff" }}
+                            role="alert"
+                          >
+                            <p className="text-[13.5px]" style={{ color: "#475569" }}>
+                              Tool didn't load. Try again.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIframeError(false);
+                                setIframeLoaded(false);
+                                setShowSkeleton(false);
+                                setShowSlowStatus(false);
+                                setIframeReloadKey((k) => k + 1);
+                              }}
+                              className="inline-flex items-center rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors"
+                              style={{
+                                color: "#14213D",
+                                background: "#F1F5F9",
+                                border: "1px solid #E2E8F0",
+                              }}
+                            >
+                              Retry
+                            </button>
+                          </div>
                         )}
 
                         {activeTool === "practice" && !viewerAssetCode && (
