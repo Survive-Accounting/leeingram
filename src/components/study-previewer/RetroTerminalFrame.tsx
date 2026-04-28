@@ -502,51 +502,91 @@ export default function RetroTerminalFrame({
               {chapterLabel && (
                 <Line show={bootStep >= 2} flashKey={courseTyped.pulseKey}>
                   {">"} Course selected:{" "}
-                  <span
-                    key={`course-${courseTyped.pulseKey}`}
-                    className={courseTyped.pulseKey > 0 ? "sa-value-pulse" : undefined}
-                    style={{ color: "#E8FFF1" }}
-                  >
-                    {courseTyped.text || safeCourse}
-                    {courseTyped.typing && (
+                  {editingCourse && courseSelector ? (
+                    <>
                       <span
-                        aria-hidden
-                        className="inline-block align-[-2px] ml-0.5"
-                        style={{
-                          width: "0.5em",
-                          height: "1em",
-                          background: PHOSPHOR,
-                          boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
-                          animation: "sa-cursor-blink 0.6s steps(1) infinite",
-                        }}
+                        className="inline-block align-middle ml-0.5"
+                        style={{ minWidth: 220, maxWidth: "min(320px, 60%)" }}
+                      >
+                        {courseSelector}
+                      </span>
+                      <ChangeLink
+                        label="cancel"
+                        onClick={() => setEditingCourse(false)}
                       />
-                    )}
-                  </span>
+                    </>
+                  ) : (
+                    <>
+                      <span
+                        key={`course-${courseTyped.pulseKey}`}
+                        className={courseTyped.pulseKey > 0 ? "sa-value-pulse" : undefined}
+                        style={{ color: "#E8FFF1" }}
+                      >
+                        {courseTyped.text || safeCourse}
+                        {courseTyped.typing && (
+                          <span
+                            aria-hidden
+                            className="inline-block align-[-2px] ml-0.5"
+                            style={{
+                              width: "0.5em",
+                              height: "1em",
+                              background: PHOSPHOR,
+                              boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                              animation: "sa-cursor-blink 0.6s steps(1) infinite",
+                            }}
+                          />
+                        )}
+                      </span>
+                      {canChangeCourse && courseSelector && !courseTyped.typing && (
+                        <ChangeLink onClick={() => { setEditingCourse(true); setEditingChapter(false); }} />
+                      )}
+                    </>
+                  )}
                 </Line>
               )}
               <Line show={bootStep >= 3} flashKey={chapterTyped.pulseKey}>
                 {">"} Chapter selected:{" "}
-                {chapterLabel ? (
-                  <span
-                    key={`chapter-${chapterTyped.pulseKey}`}
-                    className={chapterTyped.pulseKey > 0 ? "sa-value-pulse" : undefined}
-                    style={{ color: "#E8FFF1" }}
-                  >
-                    {chapterTyped.text || safeChapter}
-                    {chapterTyped.typing && (
-                      <span
-                        aria-hidden
-                        className="inline-block align-[-2px] ml-0.5"
-                        style={{
-                          width: "0.5em",
-                          height: "1em",
-                          background: PHOSPHOR,
-                          boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
-                          animation: "sa-cursor-blink 0.6s steps(1) infinite",
-                        }}
+                {editingChapter && chapterSelector ? (
+                  <>
+                    <span
+                      className="inline-block align-middle ml-0.5"
+                      style={{ minWidth: 220, maxWidth: "min(320px, 60%)" }}
+                    >
+                      {chapterSelector}
+                    </span>
+                    {chapterLabel && (
+                      <ChangeLink
+                        label="cancel"
+                        onClick={() => setEditingChapter(false)}
                       />
                     )}
-                  </span>
+                  </>
+                ) : chapterLabel ? (
+                  <>
+                    <span
+                      key={`chapter-${chapterTyped.pulseKey}`}
+                      className={chapterTyped.pulseKey > 0 ? "sa-value-pulse" : undefined}
+                      style={{ color: "#E8FFF1" }}
+                    >
+                      {chapterTyped.text || safeChapter}
+                      {chapterTyped.typing && (
+                        <span
+                          aria-hidden
+                          className="inline-block align-[-2px] ml-0.5"
+                          style={{
+                            width: "0.5em",
+                            height: "1em",
+                            background: PHOSPHOR,
+                            boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                            animation: "sa-cursor-blink 0.6s steps(1) infinite",
+                          }}
+                        />
+                      )}
+                    </span>
+                    {canChangeChapter && chapterSelector && !chapterTyped.typing && (
+                      <ChangeLink onClick={() => { setEditingChapter(true); setEditingCourse(false); }} />
+                    )}
+                  </>
                 ) : chapterSelector ? (
                   <span
                     className="inline-block align-middle ml-0.5"
