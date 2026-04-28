@@ -58,6 +58,7 @@
     "file-saver": "^2.0.5",
     "html-to-image": "^1.11.13",
     "input-otp": "^1.4.2",
+    "isomorphic-dompurify": "^3.10.0",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^3.8.2",
     "jszip": "^3.10.1",
