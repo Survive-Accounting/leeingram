@@ -1090,12 +1090,14 @@ function NavigatePanel({
   courseId,
   currentChapterId,
   currentAssetName,
+  courseLabel,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   courseId: string | undefined;
   currentChapterId: string | undefined;
   currentAssetName: string | undefined;
+  courseLabel?: string | null;
 }) {
   const navigate = useNavigate();
 
