@@ -777,12 +777,54 @@ function bumpWandCounter(key: string) {
 }
 
 function MagicWandFeedback() {
-  const [open, setOpen] = useState(true); // available immediately to any previewer
+  const [open, setOpen] = useState(false);
   const [wish, setWish] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Engagement-gated trigger: only open after the student has shown real
+  // interest in the product. Never on initial visit.
+  useEffect(() => {
+    const check = () => {
+      try {
+        if (localStorage.getItem(WAND_KEY_SHOWN) === "1") return;
+        if (localStorage.getItem(WAND_KEY_DISMISSED) === "1") return;
+
+        const helpClicks = parseInt(localStorage.getItem(WAND_KEY_HELP_CLICKS) || "0", 10) || 0;
+        const views = parseInt(localStorage.getItem(WAND_KEY_VIEWS) || "0", 10) || 0;
+        const firstTs = parseInt(localStorage.getItem(WAND_KEY_FIRST_TS) || "0", 10) || 0;
+        const minutesSinceFirst = firstTs ? (Date.now() - firstTs) / 60000 : 0;
+
+        // Real engagement = clicked into help tools at least 3 times
+        // OR viewed 2+ problems with at least 2 minutes on the platform.
+        const engaged =
+          helpClicks >= 3 ||
+          (views >= 2 && minutesSinceFirst >= 2);
+
+        if (engaged) {
+          localStorage.setItem(WAND_KEY_SHOWN, "1");
+          setOpen(true);
+        }
+      } catch {}
+    };
+    // Stamp first visit if missing, count this view
+    try {
+      if (!localStorage.getItem(WAND_KEY_FIRST_TS)) {
+        localStorage.setItem(WAND_KEY_FIRST_TS, String(Date.now()));
+      }
+      const v = parseInt(localStorage.getItem(WAND_KEY_VIEWS) || "0", 10) || 0;
+      localStorage.setItem(WAND_KEY_VIEWS, String(v + 1));
+    } catch {}
+
+    check();
+    const onTick = () => check();
+    window.addEventListener("sa-wand-tick", onTick);
+    return () => window.removeEventListener("sa-wand-tick", onTick);
+  }, []);
+
   const dismiss = () => {
-    // Session-only dismiss: don't permanently suppress on future loads.
+    try {
+      localStorage.setItem(WAND_KEY_DISMISSED, "1");
+    } catch {}
     setOpen(false);
   };
 
@@ -797,9 +839,6 @@ function MagicWandFeedback() {
       userEmail = localStorage.getItem("v2_student_email") || localStorage.getItem("sa_free_user_email") || null;
     } catch {}
     try {
-      // Reuse explanation_feedback table — no migration needed.
-      // asset_id is required, so we use a fixed sentinel UUID for "wand" feedback (00…01)
-      // and tag the reason array so we can filter later.
       await supabase.from("explanation_feedback").insert({
         asset_id: "00000000-0000-0000-0000-000000000001",
         asset_name: "__magic_wand__",
@@ -814,52 +853,45 @@ function MagicWandFeedback() {
       toast.success("Got it — thanks!");
     } finally {
       setSubmitting(false);
+      try { localStorage.setItem(WAND_KEY_DISMISSED, "1"); } catch {}
       setOpen(false);
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed bottom-20 right-4 z-40 w-[min(360px,calc(100vw-2rem))] rounded-2xl border bg-card shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300"
-      role="dialog"
-      aria-label="Quick feedback"
-    >
-      <div className="p-4 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <Wand2 className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold">Quick favor?</span>
-          </div>
-          <button
-            onClick={dismiss}
-            className="text-muted-foreground hover:text-foreground text-xs"
-            aria-label="Dismiss"
-          >
-            Not now
-          </button>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) dismiss(); }}>
+      <DialogContent className="sm:max-w-md">
+        <div className="flex flex-col items-center text-center gap-3 pt-2">
+          <img
+            src={leeHeadshotImg}
+            alt="Lee Ingram"
+            className="h-20 w-20 rounded-full object-cover ring-2 ring-primary/20 shadow-md"
+          />
+          <DialogHeader className="space-y-1.5">
+            <DialogTitle className="text-center">Quick favor?</DialogTitle>
+            <DialogDescription className="text-center">
+              If I could wave a magic wand and make this the perfect study tool for you, what would it do?
+            </DialogDescription>
+          </DialogHeader>
         </div>
-        <p className="text-xs text-muted-foreground leading-snug">
-          If we could wave a magic wand and make this the perfect study tool for you, what would it do?
-        </p>
         <Textarea
           value={wish}
           onChange={(e) => setWish(e.target.value)}
-          placeholder="Tell us anything — what's confusing, what's missing, what would help you cram faster…"
-          rows={3}
-          className="text-sm resize-none"
+          placeholder="Tell me anything — what's confusing, what's missing, what would help you cram faster…"
+          rows={4}
+          className="text-sm resize-none mt-2"
+          autoFocus
         />
         <div className="flex items-center justify-end gap-2 pt-1">
           <Button size="sm" variant="ghost" onClick={dismiss} disabled={submitting}>
-            Skip
+            Not now
           </Button>
           <Button size="sm" onClick={send} disabled={submitting}>
-            {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send"}
+            {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send to Lee"}
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
