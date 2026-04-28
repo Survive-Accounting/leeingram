@@ -1350,22 +1350,40 @@ function InlineExplanation({
               {TOOLBOX_META[activeSection].label}
             </div>
             {loading && !responses[activeSection] ? (
+              // Minimal "typing" indicator — three dots pulsing in
+              // staggered rhythm. Calm, fast, no big spinner or copy.
               <div
-                className="flex items-center gap-2 text-xs"
-                style={{ color: "rgba(255,255,255,0.55)" }}
+                className="flex items-center gap-1.5 py-1"
+                aria-label="Tutor is preparing a response"
+                role="status"
               >
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Thinking…
+                <span
+                  className="inline-block h-1.5 w-1.5 rounded-full animate-pulse"
+                  style={{ background: "rgba(255,255,255,0.55)", animationDelay: "0ms", animationDuration: "1100ms" }}
+                />
+                <span
+                  className="inline-block h-1.5 w-1.5 rounded-full animate-pulse"
+                  style={{ background: "rgba(255,255,255,0.55)", animationDelay: "180ms", animationDuration: "1100ms" }}
+                />
+                <span
+                  className="inline-block h-1.5 w-1.5 rounded-full animate-pulse"
+                  style={{ background: "rgba(255,255,255,0.55)", animationDelay: "360ms", animationDuration: "1100ms" }}
+                />
               </div>
             ) : responses[activeSection] ? (
-              activeSection === "walk_through" ? (
-                <WalkthroughStepper
-                  text={responses.walk_through!}
-                  onReviewFullSolution={() => handleToolboxClick("full_solution")}
-                />
-              ) : (
-                <InlineResponseBlock text={responses[activeSection]!} />
-              )
+              <div
+                key={`${activeSection}-content`}
+                className="animate-fade-in"
+              >
+                {activeSection === "walk_through" ? (
+                  <WalkthroughStepper
+                    text={responses.walk_through!}
+                    onReviewFullSolution={() => handleToolboxClick("full_solution")}
+                  />
+                ) : (
+                  <InlineResponseBlock text={responses[activeSection]!} />
+                )}
+              </div>
             ) : null}
           </section>
         ) : null}
