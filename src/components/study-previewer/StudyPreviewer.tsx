@@ -778,27 +778,6 @@ export default function StudyPreviewer({
                         )}
                       </div>
 
-                      {/* Open in new tab — sits below the screen, no fake chrome */}
-                      {activeTool === "practice" && viewerAssetCode && (
-                        <div className="flex items-center justify-end pt-2.5">
-                          <button
-                            onClick={() =>
-                              window.open(
-                                `/v2/solutions/${encodeURIComponent(viewerAssetCode)}`,
-                                "_blank",
-                                "noopener,noreferrer",
-                              )
-                            }
-                            className="inline-flex items-center gap-1 text-[11.5px] font-medium hover:opacity-100 transition-opacity"
-                            style={{
-                              color: "rgba(255,255,255,0.65)",
-                              fontFamily: "Inter, sans-serif",
-                            }}
-                          >
-                            Open in new tab <ArrowUpRight className="h-3 w-3" />
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
