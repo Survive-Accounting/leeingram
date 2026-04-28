@@ -1563,21 +1563,6 @@ export default function SolutionsViewerV2() {
           <div className="flex items-center gap-2 justify-end">
             <button
               type="button"
-              onClick={openShareModal}
-              title="Share this problem"
-              aria-label="Share this problem"
-              data-embed-allow="true"
-              className="inline-flex items-center justify-center h-9 w-9 rounded-lg transition-all hover:bg-white/10"
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "rgba(255,255,255,0.75)",
-              }}
-            >
-              <Share2 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
               onClick={() => setJumpOpen(true)}
               data-embed-allow="true"
               className="group inline-flex items-center gap-2.5 h-11 pl-3 pr-3.5 rounded-lg text-left transition-all hover:bg-white/10 hover:border-[#CE1126]/50"
