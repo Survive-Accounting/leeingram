@@ -19,6 +19,7 @@ const RESTRICTED_PATHS = [
   "/admin/legacy-links",
   "/admin/ai-features",
   "/asset-stats",
+  "/beta-spring2026",
 ];
 
 /** Paths additionally accessible to lead VAs */
