@@ -9,6 +9,7 @@ import FeedbackToolModal from "@/components/dashboard/FeedbackToolModal";
 import { WelcomeVideoCard, WelcomeVideoModal } from "@/components/dashboard/WelcomeVideoCard";
 import EarlyBirdOptInRow from "@/components/dashboard/EarlyBirdOptInRow";
 import StudyPreviewer from "@/components/study-previewer/StudyPreviewer";
+import { RetroBreadcrumbs, type BreadcrumbCrumb } from "@/components/study-previewer/RetroBreadcrumbs";
 import ShareWithFriendsBand from "@/components/dashboard/ShareWithFriendsBand";
 import { getCourseLabel } from "@/lib/courseLabel";
 
