@@ -307,7 +307,7 @@ export function SignupsTable({ signups, loading }: { signups: SignupRow[]; loadi
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
