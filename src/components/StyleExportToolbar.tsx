@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useIsStaff } from "@/hooks/useIsStaff";
-import { useDevToolFlag } from "@/lib/devToolFlags";
+import { useDevToolFlag, setDevToolFlag } from "@/lib/devToolFlags";
 import { Button } from "@/components/ui/button";
 import {
   Popover, PopoverContent, PopoverTrigger,
