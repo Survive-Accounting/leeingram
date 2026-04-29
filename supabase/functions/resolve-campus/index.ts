@@ -50,18 +50,28 @@ Deno.serve(async (req) => {
     const cleanEmail = email.trim().toLowerCase();
     const isTestMode = cleanEmail.startsWith("satest@");
 
-    // Alias-mode testing: lee+<alias>@survivestudios.com simulates <alias>.edu
-    // (with explicit overrides for olemiss/uark).
+    // Alias-mode testing: <base>+<alias>@<domain> simulates <alias>.edu
+    // (with explicit overrides for olemiss/uark). Enabled for registered
+    // test inboxes only — gmail/icloud forward +aliases natively.
     const ALIAS_OVERRIDES: Record<string, string> = {
       olemiss: "olemiss.edu",
       uark: "uark.edu",
     };
+    const ALIAS_TEST_BASE_EMAILS = new Set([
+      "lee@survivestudios.com",
+      "jking.cim@gmail.com",
+      "valinonorlynmae@gmail.com",
+      "ronavalino.26@gmail.com",
+      "ejking232002@gmail.com",
+      "nrrvm1995@icloud.com",
+    ]);
     const [localPart, realDomain] = cleanEmail.split("@");
     let domain = realDomain;
     let isAliasMode = false;
-    if (realDomain === "survivestudios.com" && localPart.includes("+")) {
+    if (localPart.includes("+")) {
+      const base = localPart.split("+")[0];
       const alias = localPart.split("+")[1]?.trim();
-      if (alias) {
+      if (alias && ALIAS_TEST_BASE_EMAILS.has(`${base}@${realDomain}`)) {
         domain = ALIAS_OVERRIDES[alias] ?? `${alias}.edu`;
         isAliasMode = true;
       }
