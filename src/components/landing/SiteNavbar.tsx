@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
 import StudentLoginModal from "@/components/landing/StudentLoginModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 const NAVY = "#14213D";
 
