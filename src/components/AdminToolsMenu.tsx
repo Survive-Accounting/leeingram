@@ -30,11 +30,11 @@ export function AdminToolsMenu() {
   const [hidden, setHidden] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     // One-time migration: clear stale hidden flag so the bar reappears for staff
-    // after the shortcut change. Safe to remove later.
+    // after the shortcut change. Bump the version when the shortcut changes.
     try {
-      if (!localStorage.getItem("devTool.adminBar.migrated.v2")) {
+      if (!localStorage.getItem("devTool.adminBar.migrated.v3")) {
         localStorage.removeItem(HIDDEN_STORAGE_KEY);
-        localStorage.setItem("devTool.adminBar.migrated.v2", "1");
+        localStorage.setItem("devTool.adminBar.migrated.v3", "1");
         return false;
       }
       return localStorage.getItem(HIDDEN_STORAGE_KEY) === "1";
