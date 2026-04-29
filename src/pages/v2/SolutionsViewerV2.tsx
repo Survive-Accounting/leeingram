@@ -30,6 +30,8 @@ import { buildShareUrl, captureRefFromUrl, logShareClick, attachReferrerOnConver
 import { toYouPerspective } from "@/utils/youPerspective";
 import leeHeadshotImg from "@/assets/lee-headshot-original.png";
 import { ViewerOnboardingModal } from "@/pages/v2/ViewerOnboardingModal";
+import { RetroBreadcrumbs } from "@/components/study-previewer/RetroBreadcrumbs";
+import { FileText, Brain } from "lucide-react";
 
 type Asset = {
   id: string;
