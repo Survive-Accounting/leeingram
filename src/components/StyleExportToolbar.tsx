@@ -264,4 +264,5 @@ function HideEyeButton({ onHide }: { onHide: () => void }) {
     >
       <EyeOff className="h-3 w-3" />
     </button>
+  );
 }
