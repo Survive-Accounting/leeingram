@@ -289,8 +289,8 @@ export default function OnboardingModal({
           )}
         </div>
 
-        {/* Body */}
-        <div className="px-6 py-5 space-y-5">
+        {/* Body (scrollable when content overflows) */}
+        <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1 min-h-0">
           {/* Name row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="First name" required>
