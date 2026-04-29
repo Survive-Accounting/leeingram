@@ -130,7 +130,21 @@ function DashNavbar({
           </span>
         </button>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <button
+            onClick={onShare}
+            className="hidden sm:inline-flex items-center rounded-md text-[12.5px] sm:text-[13px] font-semibold transition-all hover:bg-slate-100 active:scale-95"
+            style={{
+              color: NAVY,
+              padding: "8px 12px",
+              fontFamily: "Inter, sans-serif",
+              border: "1px solid rgba(20,33,61,0.12)",
+              background: "#fff",
+            }}
+          >
+            Share with a friend
+          </button>
+
           <button
             onClick={onFeedback}
             className="inline-flex items-center rounded-md text-[12.5px] sm:text-[13px] font-semibold text-white transition-all hover:opacity-90 active:scale-95"
@@ -141,7 +155,7 @@ function DashNavbar({
               boxShadow: "0 2px 8px rgba(20,33,61,0.18)",
             }}
           >
-            Share Feedback
+            Send feedback
           </button>
 
           {/* Hamburger menu — sign out only */}
@@ -322,12 +336,19 @@ function SecondaryActionsRow({
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const previewerRef = useRef<HTMLDivElement | null>(null);
-  const secondaryRef = useRef<HTMLDivElement | null>(null);
   const scrollToPreviewer = () => {
     previewerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
-  const scrollToShare = () => {
-    secondaryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  const handleShareCopy = async () => {
+    const url = betaNumber
+      ? `https://learn.surviveaccounting.com/?ref=${betaNumber}`
+      : "https://learn.surviveaccounting.com/";
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied — share with a friend");
+    } catch {
+      toast.error("Couldn't copy. Long-press to copy manually.");
+    }
   };
 
   const [email, setEmail] = useState<string | null>(null);
@@ -563,7 +584,7 @@ export default function StudentDashboard() {
       <DashNavbar
         email={email}
         onStudyTools={scrollToPreviewer}
-        onShare={scrollToShare}
+        onShare={handleShareCopy}
         onFeedback={() => setFeedbackOpen(true)}
         onSignOut={handleSignOut}
       />
@@ -621,6 +642,27 @@ export default function StudentDashboard() {
             }}
           />
           <div className="relative mx-auto" style={{ maxWidth: 1080 }}>
+            {/* FREE BETA · OPEN FOR FEEDBACK pill */}
+            <div className="flex justify-center mb-4 sm:mb-5">
+              <div
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10.5px] sm:text-[11px] font-bold uppercase"
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  color: "#FCA5A5",
+                  letterSpacing: "0.18em",
+                  fontFamily: "Inter, sans-serif",
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="inline-block rounded-full"
+                  style={{ width: 6, height: 6, background: RED, boxShadow: `0 0 8px ${RED}` }}
+                />
+                Free Beta · Open for Feedback
+              </div>
+            </div>
+
             <StudyPreviewer
               chapters={chapters}
               fixedCourseLabel={courseLabel ?? null}
@@ -634,24 +676,6 @@ export default function StudentDashboard() {
               onSelectionChange={setPreviewerState}
               resetSignal={resetSignal}
               closeToolSignal={closeToolSignal}
-            />
-
-            {/* Divider between console and secondary actions */}
-            <div
-              ref={secondaryRef}
-              className="mt-10 sm:mt-14 mb-6 sm:mb-8 scroll-mt-24"
-              aria-hidden
-              style={{
-                height: 1,
-                background:
-                  "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0) 100%)",
-              }}
-            />
-
-            {/* Secondary actions — share + feedback, on the navy hero band */}
-            <SecondaryActionsRow
-              betaNumber={betaNumber}
-              onFeedback={() => setFeedbackOpen(true)}
             />
           </div>
         </div>

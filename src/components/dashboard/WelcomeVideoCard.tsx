@@ -69,7 +69,7 @@ export function WelcomeVideoCard({
               className="text-[11.5px] mt-0.5"
               style={{ color: "rgba(255,255,255,0.65)" }}
             >
-              ~90 seconds · Start here
+              90 sec · Start here
             </p>
           </div>
         </div>
