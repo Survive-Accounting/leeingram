@@ -6332,6 +6332,8 @@ export type Database = {
           auth_user_id: string | null
           campus_id: string | null
           created_at: string
+          early_bird_opt_in: boolean
+          early_bird_opt_in_at: string | null
           email: string
           id: string
           name: string | null
@@ -6342,6 +6344,8 @@ export type Database = {
           auth_user_id?: string | null
           campus_id?: string | null
           created_at?: string
+          early_bird_opt_in?: boolean
+          early_bird_opt_in_at?: string | null
           email: string
           id?: string
           name?: string | null
@@ -6352,6 +6356,8 @@ export type Database = {
           auth_user_id?: string | null
           campus_id?: string | null
           created_at?: string
+          early_bird_opt_in?: boolean
+          early_bird_opt_in_at?: string | null
           email?: string
           id?: string
           name?: string | null
