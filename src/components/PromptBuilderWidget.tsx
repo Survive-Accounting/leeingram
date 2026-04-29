@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsStaff } from "@/hooks/useIsStaff";
-import { useDevToolFlag } from "@/lib/devToolFlags";
+import { useDevToolFlag, setDevToolFlag } from "@/lib/devToolFlags";
 import { supabase } from "@/integrations/supabase/client";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 import { toast } from "sonner";
