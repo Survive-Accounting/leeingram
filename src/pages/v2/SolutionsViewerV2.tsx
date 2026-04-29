@@ -2933,7 +2933,8 @@ export default function SolutionsViewerV2() {
         </div>
       </header>
 
-      {/* Retro breadcrumb strip — mobile + desktop */}
+      {/* Retro breadcrumb strip — mobile + desktop. Right side hosts the
+          desktop view-mode menu so we don't need a second toolbar row. */}
       <RetroBreadcrumbs
         crumbs={[
           { label: "home", to: "/" },
@@ -2945,6 +2946,126 @@ export default function SolutionsViewerV2() {
             : []),
           { label: "practice problem helper" },
         ]}
+        rightSlot={
+          <TooltipProvider delayDuration={200}>
+            <Popover>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Change layout"
+                      className="hidden md:inline-flex items-center gap-1.5 h-7 px-2 rounded transition-colors"
+                      style={{
+                        color: "rgba(57,255,122,0.55)",
+                        fontFamily: '"JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, Menlo, Consolas, monospace',
+                        fontSize: 12,
+                        background: "transparent",
+                        border: "1px solid rgba(57,255,122,0.18)",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = "#39FF7A";
+                        e.currentTarget.style.background = "rgba(57,255,122,0.06)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = "rgba(57,255,122,0.55)";
+                        e.currentTarget.style.background = "transparent";
+                      }}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>view</span>
+                    </button>
+                  </PopoverTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6} className="text-xs">Change layout</TooltipContent>
+              </Tooltip>
+              <PopoverContent
+                align="end"
+                sideOffset={8}
+                className="p-2 w-auto"
+                style={{
+                  background: "#0F1A2E",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  color: "#fff",
+                }}
+              >
+                <div
+                  className="text-[10px] font-semibold uppercase mb-2 px-1"
+                  style={{ color: "rgba(255,255,255,0.5)", letterSpacing: "0.08em" }}
+                >
+                  Change layout
+                </div>
+                <div className="flex items-center gap-0.5">
+                  {([
+                    { mode: "problem" as const, Icon: PanelLeftClose, label: "Problem only", hint: "[" },
+                    { mode: "split" as const,   Icon: Columns2,        label: "Split view",   hint: "\\" },
+                    { mode: "split-h" as const, Icon: Rows2,           label: "Stacked view", hint: "-" },
+                    { mode: "helper" as const,  Icon: PanelRightClose, label: "Helper only",  hint: "]" },
+                  ]).map(({ mode, Icon, label, hint }) => {
+                    const active = viewMode === mode;
+                    return (
+                      <Tooltip key={mode}>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => setViewMode(mode)}
+                            aria-label={label}
+                            aria-pressed={active}
+                            className="h-9 w-9 rounded inline-flex items-center justify-center transition-colors"
+                            style={{
+                              background: active ? "#14213D" : "transparent",
+                              color: active ? "#fff" : "rgba(255,255,255,0.6)",
+                              boxShadow: active ? "0 0 0 1px rgba(255,255,255,0.08) inset" : "none",
+                            }}
+                            onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                            onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                          >
+                            <Icon className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" sideOffset={6} className="text-xs">
+                          {label} <span className="opacity-50 ml-1">{hint}</span>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+                <div className="h-px my-2" style={{ background: "rgba(255,255,255,0.08)" }} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSplitRatio(0.5);
+                    try { sessionStorage.setItem("sa.viewer.splitRatio", "0.5"); } catch { /* ignore */ }
+                    setViewMode("split");
+                  }}
+                  disabled={viewMode !== "split"}
+                  className="w-full inline-flex items-center gap-2 h-8 px-2 rounded text-[12px] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ color: "rgba(255,255,255,0.75)" }}
+                  onMouseEnter={(e) => { if (viewMode === "split") e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Reset split 50/50
+                </button>
+                <div className="h-px my-2" style={{ background: "rgba(255,255,255,0.08)" }} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = window.location.pathname + window.location.search;
+                    window.open(url, "_blank", "noopener,noreferrer");
+                  }}
+                  className="w-full inline-flex items-center gap-2 h-8 px-2 rounded text-[12px] transition-colors"
+                  style={{ color: "rgba(255,255,255,0.75)" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Open in new tab
+                </button>
+              </PopoverContent>
+            </Popover>
+          </TooltipProvider>
+        }
       />
 
 
