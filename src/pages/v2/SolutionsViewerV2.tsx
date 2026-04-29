@@ -1958,12 +1958,28 @@ function InlineExplanation({
         className="px-4 pt-3 pb-2 flex items-center gap-2"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
       >
-        <span
-          className="text-[11px] font-medium uppercase tracking-[0.12em]"
-          style={{ color: "rgba(255,255,255,0.55)" }}
-        >
-          Guided Helper
-        </span>
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex items-center gap-1.5 cursor-help">
+                <Sparkles
+                  className="h-3.5 w-3.5"
+                  style={{ color: "rgba(206,17,38,0.85)" }}
+                  aria-hidden
+                />
+                <span
+                  className="text-[11px] font-medium uppercase tracking-[0.12em]"
+                  style={{ color: "rgba(255,255,255,0.55)" }}
+                >
+                  Guided Helper
+                </span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[260px] text-xs leading-snug">
+              All help buttons are AI-assisted and designed to mimic Lee's real tutoring sessions.
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <span
           className="text-[9px] font-semibold uppercase tracking-[0.18em] px-1.5 py-[1px] rounded-sm"
           style={{
@@ -2027,13 +2043,6 @@ function InlineExplanation({
           <span aria-hidden>{TOOLBOX_META.full_solution.emoji}</span>
           {TOOLBOX_META.full_solution.label}
         </button>
-
-        {/* Row 3 — Try new beta tools (collapsible secondary lab) */}
-        <BetaToolsDisclosure
-          activeSection={activeSection}
-          onPick={handleToolboxClick}
-          onPrefetch={prefetchToolbox}
-        />
       </div>
 
       {hasJE && (
@@ -2181,6 +2190,18 @@ function InlineExplanation({
           </div>
         )}
         </div>
+      </div>
+
+      {/* ── Try new beta tools (collapsible secondary lab) — pinned to bottom ── */}
+      <div
+        className="px-4 pt-3 pb-3 border-t"
+        style={{ borderColor: "rgba(255,255,255,0.06)" }}
+      >
+        <BetaToolsDisclosure
+          activeSection={activeSection}
+          onPick={handleToolboxClick}
+          onPrefetch={prefetchToolbox}
+        />
       </div>
     </div>
   );
