@@ -44,10 +44,6 @@ export function StyleExportToolbar() {
   const [sections, setSections] = useState<ExportableSection[]>([]);
 
   useEffect(() => {
-    try { localStorage.setItem(HIDDEN_KEY, hidden ? "1" : "0"); } catch { /* noop */ }
-  }, [hidden]);
-
-  useEffect(() => {
     try { localStorage.setItem(POS_KEY, JSON.stringify(pos)); } catch { /* noop */ }
   }, [pos]);
 
@@ -114,20 +110,6 @@ export function StyleExportToolbar() {
       toast.error(e instanceof Error ? e.message : "Export failed");
     } finally { setBusy(null); }
   };
-
-  if (hidden) {
-    return (
-      <button
-        data-export-ignore
-        onClick={() => setHidden(false)}
-        className="fixed bottom-[72px] left-2 z-[9999] rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-accent-foreground hover:opacity-90 border border-border shadow-md transition-colors"
-        title="Show Style Export toolbar"
-        aria-label="Show Style Export toolbar"
-      >
-        🎨 Style Exporter
-      </button>
-    );
-  }
 
   return (
     <div
@@ -238,8 +220,9 @@ export function StyleExportToolbar() {
             <button
               onClick={() => {
                 setOpen(false);
-                setHidden(true);
+                setDevToolFlag("styleExport", false);
               }}
+              title="Hide — re-enable from Admin Tools menu"
               className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
             >
               <EyeOff className="h-3 w-3" /> Hide
