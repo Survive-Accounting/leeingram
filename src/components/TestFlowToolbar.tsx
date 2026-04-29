@@ -129,9 +129,9 @@ export default function TestFlowToolbar() {
           </button>
           <button
             type="button"
-            onClick={() => setHidden(true)}
+            onClick={() => setDevToolFlag("testBar", false)}
             aria-label="Hide test bar"
-            title="Hide test bar"
+            title="Hide — re-enable from Admin Tools menu"
             className="rounded-md p-1.5 transition hover:bg-amber-100"
             style={{ color: "#92400E" }}
           >
