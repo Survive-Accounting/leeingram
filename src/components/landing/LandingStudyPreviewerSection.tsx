@@ -58,35 +58,50 @@ export default function LandingStudyPreviewerSection({
   onJoinBeta,
 }: LandingStudyPreviewerSectionProps) {
   const [selectedCourseId, setSelectedCourseId] = useState<string>(COURSES[3].id); // default IA2
-  const [chapters, setChapters] = useState<PreviewChapter[]>([]);
-  const [chaptersLoading, setChaptersLoading] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [teamOpen, setTeamOpen] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+
+  const { data: chaptersData, isLoading: chaptersLoading } = useChapters(selectedCourseId);
+  const chapters: PreviewChapter[] = chaptersData ?? [];
+
+  const { prefetchChapters, prefetchChapterEntryAssets } = usePrefetchStudyConsole();
 
   const selectedCourse = useMemo(
     () => COURSES.find((c) => c.id === selectedCourseId) ?? COURSES[0],
     [selectedCourseId],
   );
 
-  // Load chapters whenever the course changes
+  // Prefetch chapter lists for the other courses on idle so toggling courses
+  // is instant after the first one loads.
   useEffect(() => {
-    let cancelled = false;
-    setChaptersLoading(true);
-    setChapters([]);
-    (async () => {
-      const { data } = await supabase
-        .from("chapters")
-        .select("id, chapter_number, chapter_name")
-        .eq("course_id", selectedCourseId)
-        .order("chapter_number", { ascending: true });
-      if (cancelled) return;
-      setChapters((data ?? []) as PreviewChapter[]);
-      setChaptersLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, [selectedCourseId]);
+    const ric = (window as any).requestIdleCallback as
+      | ((cb: () => void, opts?: { timeout: number }) => number)
+      | undefined;
+    const run = () => {
+      COURSES.forEach((c) => {
+        if (c.id !== selectedCourseId) prefetchChapters(c.id);
+      });
+    };
+    let idleId: number | undefined;
+    let timeoutId: number | undefined;
+    if (ric) idleId = ric(run, { timeout: 2500 });
+    else timeoutId = window.setTimeout(run, 1500);
+    return () => {
+      if (idleId !== undefined && (window as any).cancelIdleCallback) {
+        (window as any).cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    };
+  }, [selectedCourseId, prefetchChapters]);
+
+  // Prefetch first-asset RPC for the first chapter as soon as chapters arrive.
+  useEffect(() => {
+    if (chapters.length > 0) {
+      prefetchChapterEntryAssets(chapters[0].id);
+    }
+  }, [chapters, prefetchChapterEntryAssets]);
 
   const handleCourseClick = (id: string) => {
     if (id === selectedCourseId) return;
