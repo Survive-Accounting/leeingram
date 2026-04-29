@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import StudyPreviewer, { type PreviewChapter } from "@/components/study-previewer/StudyPreviewer";
 import { useChapters, usePrefetchStudyConsole } from "@/hooks/useStudyConsoleData";
 import BetaPaywallModal from "./BetaPaywallModal";
-import FeedbackToolModal from "@/components/dashboard/FeedbackToolModal";
+import ShareFeedbackModal from "@/components/dashboard/ShareFeedbackModal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import teamMeetingImg from "@/assets/team-meeting.png";
 
@@ -206,7 +206,7 @@ export default function LandingStudyPreviewerSection({
         onJoinBeta={() => onJoinBeta(selectedCourse.slug)}
       />
 
-      <FeedbackToolModal
+      <ShareFeedbackModal
         open={feedbackOpen}
         email={null}
         onClose={() => setFeedbackOpen(false)}
