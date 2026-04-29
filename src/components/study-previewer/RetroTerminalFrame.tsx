@@ -285,6 +285,22 @@ export default function RetroTerminalFrame({
         .sa-toolgrid-reveal > *:nth-child(1) { animation-delay: 60ms; }
         .sa-toolgrid-reveal > *:nth-child(2) { animation-delay: 160ms; }
         .sa-toolgrid-reveal > *:nth-child(3) { animation-delay: 260ms; }
+        /* Subtle attention blink on the "Choose Textbook Chapter" prompt — pulses brightness + glow until a chapter is chosen. */
+        @keyframes sa-chapter-attention {
+          0%, 100% {
+            color: ${PHOSPHOR};
+            text-shadow: 0 0 6px ${PHOSPHOR_GLOW}, 0 0 14px ${PHOSPHOR_GLOW};
+            opacity: 1;
+          }
+          50% {
+            color: ${PHOSPHOR_DIM};
+            text-shadow: 0 0 1px ${PHOSPHOR_GLOW};
+            opacity: 0.55;
+          }
+        }
+        .sa-chapter-blink {
+          animation: sa-chapter-attention 1.4s ease-in-out infinite;
+        }
       `}</style>
 
       <div className="w-full" style={{ maxWidth: 980 }}>
