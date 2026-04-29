@@ -174,7 +174,74 @@ Deno.serve(async (req) => {
     }
 
     const model = "gpt-5-mini";
-    const userPrompt = buildUserPrompt(asset);
+    const action = "explain_solution";
+    const desiredModel = MODEL_OVERRIDES_BY_ACTION[action] ?? DEFAULT_AI_MODEL;
+    const reasoning = REASONING_BY_ACTION[action] ?? DEFAULT_REASONING_EFFORT;
+
+    async function callOpenAI(modelId: string) {
+      return await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: modelId,
+          reasoning_effort: reasoning,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: userPrompt },
+          ],
+          // gpt-5 family are reasoning models — most tokens go to internal reasoning.
+          // Need a high ceiling so the tool-call output isn't truncated to empty.
+          max_completion_tokens: 8000,
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "return_explanation",
+                description: "Return the explanation sections + per-part walkthrough.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    lees_approach: { type: "string", description: "2-4 bullets on HOW TO THINK / where to start. No calculations." },
+                    how_to_solve: { type: "string", description: "Numbered steps, 3-5 max (full solution)" },
+                    why_it_works: { type: "string", description: "1-2 sentences max" },
+                    lock_it_in: { type: "string", description: "1-2 bullets, 'if you see X → think Y'" },
+                    walkthrough: {
+                      type: "array",
+                      description: "One entry per lettered instruction part (a, b, c, ...). Same solution as how_to_solve, just split per part for bite-sized delivery.",
+                      items: {
+                        type: "object",
+                        properties: {
+                          part: { type: "string", description: "Letter: a, b, c, ..." },
+                          title: { type: "string", description: "5-7 word task title" },
+                          restate: { type: "string", description: "One short sentence in tutor voice translating what this part is asking." },
+                          content: { type: "string", description: "2-4 short numbered steps with specific numbers/accounts. Markdown allowed." },
+                        },
+                        required: ["part", "title", "restate", "content"],
+                        additionalProperties: false,
+                      },
+                    },
+                  },
+                  required: ["lees_approach", "how_to_solve", "why_it_works", "lock_it_in", "walkthrough"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          ],
+          tool_choice: { type: "function", function: { name: "return_explanation" } },
+        }),
+      });
+    }
+
+    let model = desiredModel;
+    let res = await callOpenAI(model);
+    if (!res.ok && res.status === 404 && model !== FALLBACK_AI_MODEL) {
+      console.warn(`Model "${model}" not available — falling back to "${FALLBACK_AI_MODEL}"`);
+      model = FALLBACK_AI_MODEL;
+      res = await callOpenAI(model);
+    }
 
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
