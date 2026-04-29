@@ -247,7 +247,9 @@ export default function OnboardingModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-4 sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[2147483646] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
       style={{
         background: "rgba(15, 23, 42, 0.72)",
         backdropFilter: "blur(8px)",
@@ -256,9 +258,10 @@ export default function OnboardingModal({
       }}
     >
       <div
-        className="w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden flex flex-col"
+        className="w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden flex flex-col my-auto"
         style={{ border: "1px solid #E0E7F0", maxHeight: "calc(100dvh - 2rem)" }}
       >
+
         {/* Header */}
         <div className="px-6 pt-6 pb-2 relative">
           {simulate && (
