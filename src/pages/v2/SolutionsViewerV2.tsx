@@ -2043,13 +2043,6 @@ function InlineExplanation({
           <span aria-hidden>{TOOLBOX_META.full_solution.emoji}</span>
           {TOOLBOX_META.full_solution.label}
         </button>
-
-        {/* Row 3 — Try new beta tools (collapsible secondary lab) */}
-        <BetaToolsDisclosure
-          activeSection={activeSection}
-          onPick={handleToolboxClick}
-          onPrefetch={prefetchToolbox}
-        />
       </div>
 
       {hasJE && (
