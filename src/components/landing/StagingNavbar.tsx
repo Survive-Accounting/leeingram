@@ -22,6 +22,8 @@ export default function StagingNavbar({
   transparentOnTop = false,
 }: StagingNavbarProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
   const [searchParams, setSearchParams] = useSearchParams();
   const [loginOpen, setLoginOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
