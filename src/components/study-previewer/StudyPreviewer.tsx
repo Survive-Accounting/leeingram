@@ -162,6 +162,7 @@ export default function StudyPreviewer({
   // Chapter is "loading" only while the RPC is in-flight for the *current*
   // selection AND we don't yet have data. No artificial delay.
   const chapterLoading = !!selectedChapterId && !entryAssets && entryAssetsFetching;
+  const chapterChosen = !!selectedChapterId && !chapterLoading;
 
   useEffect(() => {
     if (resetSignal === undefined) return;
