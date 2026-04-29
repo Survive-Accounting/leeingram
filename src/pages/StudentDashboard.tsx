@@ -584,7 +584,7 @@ export default function StudentDashboard() {
       <DashNavbar
         email={email}
         onStudyTools={scrollToPreviewer}
-        onShare={scrollToShare}
+        onShare={handleShareCopy}
         onFeedback={() => setFeedbackOpen(true)}
         onSignOut={handleSignOut}
       />
