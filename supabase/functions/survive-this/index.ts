@@ -278,20 +278,18 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-
-    if (!ANTHROPIC_API_KEY) {
-      return new Response(
-        JSON.stringify({ success: false, error: "ANTHROPIC_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
     const sb = createClient(supabaseUrl, serviceKey);
 
     const body = await req.json();
-    const { asset_id, prompt_type, context, skip_cache } = body || {};
-    const skipCache = skip_cache === true;
+    const {
+      asset_id,
+      prompt_type,
+      context,
+      skip_cache,
+      user_id,
+      session_id,
+    } = body || {};
+    const skipCache = skip_cache === true || prompt_type === "challenge_followup";
 
     if (!asset_id || !prompt_type) {
       return new Response(
@@ -300,9 +298,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // STEP 1 — CHECK CACHE (skipped for challenge_followup or when caller passes skip_cache)
+    // Legacy warm-cache: if a row exists in survive_ai_responses, prefer it so
+    // we don't regenerate content we already paid for. Skipped for per-student
+    // challenge follow-ups and explicit skip_cache requests.
     if (!skipCache) {
-      const { data: cached } = await sb
+      const { data: legacy } = await sb
         .from("survive_ai_responses")
         .select("response_text")
         .eq("asset_id", asset_id)
@@ -310,12 +310,12 @@ Deno.serve(async (req) => {
         .limit(1)
         .maybeSingle();
 
-      if (cached?.response_text) {
+      if (legacy?.response_text) {
         return new Response(
           JSON.stringify({
             success: true,
             cached: true,
-            response_text: cached.response_text,
+            response_text: legacy.response_text,
             prompt_type,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -323,82 +323,58 @@ Deno.serve(async (req) => {
       }
     }
 
-    // STEP 2/3 — Build prompts
     const userPrompt = buildUserPrompt(prompt_type, context || {});
+    const maxTokens = prompt_type === "walk_through" ? 4500 : 2000;
 
-    // STEP 4 — CALL ANTHROPIC (Claude Sonnet 4 — direct API per project rules)
-    const model = "claude-sonnet-4-20250514";
-    let responseText = "";
+    const result = await generateTutorResponse({
+      toolType: "survive_this",
+      actionType: prompt_type,
+      systemPrompt: SYSTEM_PROMPT,
+      userPrompt,
+      problemId: asset_id,
+      chapterId: context?.chapter_id ?? null,
+      courseId: context?.course_id ?? null,
+      problemVersion: context?.problem_version ?? null,
+      solutionVersion: context?.solution_version ?? null,
+      userId: user_id ?? null,
+      sessionId: session_id ?? null,
+      maxTokens,
+      skipCache,
+    });
 
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          // walk_through ships ALL steps in one response (split client-side),
-          // so it needs more headroom than the single-shot prompts.
-          max_tokens: prompt_type === "walk_through" ? 4500 : 2000,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: userPrompt }],
-        }),
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error("Anthropic API error:", res.status, errText);
-        return new Response(
-          JSON.stringify({ success: false, error: `Anthropic error: ${res.status} ${errText}` }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-
-      const data = await res.json();
-      responseText = data?.content?.[0]?.text?.trim() || "";
-
-      if (!responseText) {
-        console.error("Empty Anthropic response", { stop_reason: data?.stop_reason, usage: data?.usage });
-        return new Response(
-          JSON.stringify({ success: false, error: "Empty response from Anthropic" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-    } catch (e: any) {
-      console.error("Anthropic call failed:", e);
+    if (!result.success) {
       return new Response(
-        JSON.stringify({ success: false, error: e?.message || "Anthropic call failed" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({ success: false, error: result.error }),
+        {
+          status: result.status ?? 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
-    // STEP 5 — SAVE TO CACHE
-    // Skip the write for challenge_followup (per-student answers) and any
-    // explicit skip_cache request — avoids per-student row pollution and
-    // potential unique-constraint conflicts on (asset_id, prompt_type).
-    if (!skipCache && prompt_type !== "challenge_followup") {
+    // Mirror to the legacy survive_ai_responses table so the rest of the app
+    // (admin tools, fallback reads) keeps working during the transition.
+    if (!skipCache) {
       try {
         await sb.from("survive_ai_responses").insert({
           asset_id,
           prompt_type,
-          response_text: responseText,
-          model_used: model,
+          response_text: result.responseText,
+          model_used: result.modelUsed,
         } as any);
       } catch (e) {
-        console.warn("Cache insert skipped:", (e as any)?.message);
+        // Unique-constraint conflicts are expected on concurrent inserts.
+        console.warn("legacy cache mirror skipped:", (e as any)?.message);
       }
     }
 
-    // STEP 6 — RETURN
     return new Response(
       JSON.stringify({
         success: true,
-        cached: false,
-        response_text: responseText,
+        cached: result.cached,
+        response_text: result.responseText,
         prompt_type,
+        model_used: result.modelUsed,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
