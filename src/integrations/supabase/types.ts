@@ -6375,6 +6375,117 @@ export type Database = {
           },
         ]
       }
+      study_tool_idea_feedback: {
+        Row: {
+          anonymous_id: string | null
+          chapter_id: string | null
+          course_id: string | null
+          created_at: string
+          id: string
+          idea_key: string | null
+          idea_label: string | null
+          metadata: Json | null
+          page_url: string | null
+          session_id: string | null
+          suggestion_text: string | null
+          user_id: string | null
+          vote: string | null
+        }
+        Insert: {
+          anonymous_id?: string | null
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          idea_key?: string | null
+          idea_label?: string | null
+          metadata?: Json | null
+          page_url?: string | null
+          session_id?: string | null
+          suggestion_text?: string | null
+          user_id?: string | null
+          vote?: string | null
+        }
+        Update: {
+          anonymous_id?: string | null
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          idea_key?: string | null
+          idea_label?: string | null
+          metadata?: Json | null
+          page_url?: string | null
+          session_id?: string | null
+          suggestion_text?: string | null
+          user_id?: string | null
+          vote?: string | null
+        }
+        Relationships: []
+      }
+      study_tool_response_feedback: {
+        Row: {
+          action_type: string
+          anonymous_id: string | null
+          asset_id: string | null
+          chapter_id: string | null
+          course_id: string | null
+          created_at: string
+          feedback_text: string | null
+          id: string
+          metadata: Json | null
+          page_url: string | null
+          problem_id: string | null
+          rating: string
+          response_cache_id: string | null
+          response_cache_key: string | null
+          session_id: string | null
+          tool_type: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          anonymous_id?: string | null
+          asset_id?: string | null
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          feedback_text?: string | null
+          id?: string
+          metadata?: Json | null
+          page_url?: string | null
+          problem_id?: string | null
+          rating: string
+          response_cache_id?: string | null
+          response_cache_key?: string | null
+          session_id?: string | null
+          tool_type: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          anonymous_id?: string | null
+          asset_id?: string | null
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          feedback_text?: string | null
+          id?: string
+          metadata?: Json | null
+          page_url?: string | null
+          problem_id?: string | null
+          rating?: string
+          response_cache_id?: string | null
+          response_cache_key?: string | null
+          session_id?: string | null
+          tool_type?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       survive_ai_responses: {
         Row: {
           asset_id: string | null
