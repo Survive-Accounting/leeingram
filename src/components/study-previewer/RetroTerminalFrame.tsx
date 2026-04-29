@@ -783,51 +783,61 @@ export default function RetroTerminalFrame({
               )}
             </div>
 
-            {/* Built by Lee Ingram — bottom-right credit inside the CRT */}
+            {/* Founder signature — bottom-right portrait medallion + label, embedded in CRT */}
             <div
               aria-hidden={false}
-              className="absolute z-20 pointer-events-none flex flex-col items-center gap-1"
+              className="absolute z-20 pointer-events-none flex flex-col items-center gap-1.5"
               style={{
                 right: "clamp(10px, 2.2vw, 22px)",
                 bottom: "clamp(10px, 2.2vw, 22px)",
-                opacity: 0.92,
+                opacity: 0.96,
               }}
             >
+              {/* Outer phosphor halo */}
               <div
-                className="rounded-full overflow-hidden"
+                className="relative rounded-full"
                 style={{
-                  width: 36,
-                  height: 36,
-                  border: `1px solid ${PHOSPHOR_DIM}`,
-                  boxShadow: `0 0 8px ${PHOSPHOR_GLOW}, inset 0 0 6px rgba(0,0,0,0.4)`,
-                  background: "#03130A",
+                  padding: 2,
+                  background: `radial-gradient(circle at 50% 50%, ${PHOSPHOR_GLOW} 0%, rgba(124,255,176,0.15) 55%, rgba(124,255,176,0) 75%)`,
+                  filter: `drop-shadow(0 0 6px ${PHOSPHOR_GLOW})`,
                 }}
               >
-                <img
-                  src={leeHeadshot}
-                  alt="Lee Ingram"
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover"
+                {/* Inner bezel ring */}
+                <div
+                  className="rounded-full overflow-hidden"
                   style={{
-                    objectPosition: "center 15%",
-                    filter: "grayscale(0.3) brightness(0.95) sepia(0.15) hue-rotate(60deg) saturate(1.1)",
+                    width: 40,
+                    height: 40,
+                    border: `1px solid ${PHOSPHOR_DIM}`,
+                    boxShadow: `inset 0 0 6px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(124,255,176,0.18)`,
+                    background: "#03130A",
                   }}
-                />
+                >
+                  <img
+                    src={leeHeadshot}
+                    alt="Lee Ingram"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-full object-cover"
+                    style={{
+                      objectPosition: "center 22%",
+                    }}
+                  />
+                </div>
               </div>
               <div
                 style={{
                   color: PHOSPHOR_DIM,
                   fontFamily:
                     "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
-                  fontSize: 9,
-                  letterSpacing: "0.1em",
+                  fontSize: 8.5,
+                  letterSpacing: "0.22em",
                   textTransform: "uppercase",
-                  textShadow: `0 0 4px ${PHOSPHOR_GLOW}`,
+                  textShadow: `0 0 5px ${PHOSPHOR_GLOW}`,
                   whiteSpace: "nowrap",
                 }}
               >
-                Built by Lee Ingram
+                Founder<span style={{ opacity: 0.55, margin: "0 6px" }}>·</span>Lee Ingram
               </div>
             </div>
           </div>
