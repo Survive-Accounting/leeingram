@@ -295,6 +295,8 @@ export default function StudentDashboard() {
   const [earlyBirdOpted, setEarlyBirdOpted] = useState(true); // default true so the row stays hidden until we know
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
+  const [signedOut, setSignedOut] = useState(false);
+  const [signOutCopied, setSignOutCopied] = useState(false);
   const [verifying, setVerifying] = useState<boolean>(() => {
     const p = new URLSearchParams(window.location.search);
     return p.get("just_paid") === "1" || p.get("checkout") === "success";
@@ -453,6 +455,27 @@ export default function StudentDashboard() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    setAccountOpen(false);
+    setSignedOut(true);
+  };
+
+  const signOutShareUrl = betaNumber
+    ? `https://learn.surviveaccounting.com/?ref=${betaNumber}`
+    : "https://learn.surviveaccounting.com/";
+
+  const handleSignOutShare = async () => {
+    try {
+      await navigator.clipboard.writeText(signOutShareUrl);
+      setSignOutCopied(true);
+      toast.success("Link copied — share with a friend");
+      setTimeout(() => setSignOutCopied(false), 2000);
+    } catch {
+      toast.error("Couldn't copy. Long-press to copy manually.");
+    }
+  };
+
+  const dismissSignOut = () => {
+    setSignedOut(false);
     navigate("/", { replace: true });
   };
 
