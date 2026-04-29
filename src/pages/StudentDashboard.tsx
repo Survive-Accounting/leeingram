@@ -515,20 +515,55 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* Support */}
-        <p
-          className="text-center text-[13px]"
-          style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-        >
-          Need help?{" "}
-          <a
-            href="mailto:lee@surviveaccounting.com"
-            className="underline hover:opacity-80"
-            style={{ color: "#64748B" }}
+        {/* Secondary actions — small, optional */}
+        <section className="max-w-5xl mx-auto px-5 sm:px-8 mt-10 md:mt-12">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <SecondaryCard
+              label="Watch demo"
+              sub="60-second tour"
+              onClick={() => setVideoOpen(true)}
+            />
+            <SecondaryCard
+              label="Share feedback"
+              sub="Tell Lee what to fix"
+              onClick={() => setFeedbackOpen(true)}
+            />
+            <SecondaryCard
+              label="Share beta with a friend"
+              sub="They get free access too"
+              onClick={scrollToShareInline}
+              highlight
+            />
+          </div>
+          {!earlyBirdOpted && userId && (
+            <div className="mt-6">
+              <EarlyBirdOptInRow
+                userId={userId}
+                onOptedIn={() => setEarlyBirdOpted(true)}
+              />
+            </div>
+          )}
+          <div ref={shareRef} className="mt-6 scroll-mt-24">
+            <ShareWithFriendsBand
+              betaNumber={betaNumber}
+              campusName={campusName}
+              compact
+            />
+          </div>
+          <p
+            className="mt-8 text-center text-[12.5px]"
+            style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
           >
-            Lee usually replies within 1–2 business days.
-          </a>
-        </p>
+            Need help?{" "}
+            <a
+              href="mailto:lee@surviveaccounting.com"
+              className="underline hover:opacity-80"
+              style={{ color: "#64748B" }}
+            >
+              Lee usually replies within 1–2 business days.
+            </a>
+          </p>
+        </section>
       </main>
 
       <FeedbackToolModal
