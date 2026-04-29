@@ -1,6 +1,7 @@
 import { useState } from "react";
 // (icon imports removed — no longer used)
 import leeHeadshot from "@/assets/lee-headshot-original.png";
+import welcomeVideoThumbnail from "@/assets/welcome-video-thumbnail.png";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
 import AnimatedArrow from "@/components/landing/AnimatedArrow";
 
