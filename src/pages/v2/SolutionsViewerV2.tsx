@@ -2964,11 +2964,17 @@ export default function SolutionsViewerV2() {
           desktop view-mode menu so we don't need a second toolbar row. */}
       <RetroBreadcrumbs
         crumbs={[
-          { label: "home", to: "/" },
+          { label: "home", onClick: goHome },
           ...(chapter
             ? [{
-                label: `ch ${chapter.chapter_number} ${chapter.chapter_name}`,
-                to: `/cram/${chapter.id}`,
+                label: `ch ${chapter.chapter_number}`,
+                onClick: () => {
+                  if (inIframe) {
+                    try { window.parent?.postMessage({ type: "sa-viewer-go-chapter" }, "*"); } catch { /* ignore */ }
+                  } else {
+                    navigate(`/cram/${chapter.id}`);
+                  }
+                },
               }]
             : []),
           { label: "practice problem helper" },
