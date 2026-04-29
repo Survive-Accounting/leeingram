@@ -617,14 +617,7 @@ export default function RetroTerminalFrame({
                           ) : (
                             <span aria-hidden style={{ width: 16, height: 16 }} />
                           )}
-                          {locked && (
-                            <Lock
-                              size={11}
-                              strokeWidth={2}
-                              aria-hidden
-                              style={{ color: PHOSPHOR_MUTED, opacity: 0.7 }}
-                            />
-                          )}
+                          {/* lock icon removed — cards stay inviting; inline error guides instead */}
                         </div>
 
                         {/* Title */}
