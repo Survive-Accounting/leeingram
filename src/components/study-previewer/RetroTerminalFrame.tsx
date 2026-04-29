@@ -570,7 +570,7 @@ export default function RetroTerminalFrame({
                         "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
                     }}
                   >
-                    {">"} Please choose a chapter first.
+                    {">"} {dashboardMode ? "Choose a textbook chapter first." : "Please choose a chapter first."}
                   </div>
                 )}
               </div>
@@ -804,7 +804,7 @@ export default function RetroTerminalFrame({
                           lineHeight: 1.5,
                         }}
                       >
-                        Help us shape what we build next
+                        Help shape what we build next.
                       </div>
                     </div>
                     {onShareFeedback && (
