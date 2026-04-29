@@ -177,6 +177,21 @@ export default function BetaSpring2026Dashboard() {
   const [filterSource, setFilterSource] = useState<string>("all");
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [slackTesting, setSlackTesting] = useState(false);
+
+  const sendSlackTest = useCallback(async () => {
+    setSlackTesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("beta-slack-test");
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success("Test ping sent — check Slack");
+    } catch (e: any) {
+      toast.error(`Slack test failed: ${e?.message ?? e}`);
+    } finally {
+      setSlackTesting(false);
+    }
+  }, []);
 
   const daysLeft = Math.max(0, Math.ceil((BETA_END.getTime() - Date.now()) / 86400000));
 
