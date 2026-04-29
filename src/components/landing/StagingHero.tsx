@@ -301,12 +301,10 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 >
                   {/* Poster image */}
                   <img
-                    src={`https://vumbnail.com/1187869081.jpg`}
-                    alt=""
-                    aria-hidden
+                    src={welcomeVideoThumbnail}
+                    alt="Lee Ingram welcome"
                     className="absolute inset-0 w-full h-full object-cover"
-                    style={{ opacity: 0.55, zIndex: 0 }}
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                    style={{ opacity: 0.85, zIndex: 0 }}
                   />
                   <div
                     aria-hidden
