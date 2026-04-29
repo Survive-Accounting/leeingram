@@ -17,6 +17,8 @@ export type BreadcrumbCrumb = {
 
 interface RetroBreadcrumbsProps {
   crumbs: BreadcrumbCrumb[];
+  /** Optional content rendered on the right side of the bar (e.g. view switcher trigger). */
+  rightSlot?: React.ReactNode;
 }
 
 /**
@@ -24,7 +26,7 @@ interface RetroBreadcrumbsProps {
  * Sits between the page header and the main content. Mobile-safe: truncates
  * the middle crumb on narrow screens, never wraps.
  */
-export function RetroBreadcrumbs({ crumbs }: RetroBreadcrumbsProps) {
+export function RetroBreadcrumbs({ crumbs, rightSlot }: RetroBreadcrumbsProps) {
   return (
     <div
       className="w-full"
@@ -102,6 +104,9 @@ export function RetroBreadcrumbs({ crumbs }: RetroBreadcrumbsProps) {
             );
           })}
         </nav>
+        {rightSlot ? (
+          <div className="ml-auto shrink-0 flex items-center">{rightSlot}</div>
+        ) : null}
       </div>
     </div>
   );
