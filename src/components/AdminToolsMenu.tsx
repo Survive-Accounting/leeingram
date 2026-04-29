@@ -125,7 +125,7 @@ export function AdminToolsMenu() {
               <div>
                 Hide / show this bar:{" "}
                 <kbd className="inline-flex items-center rounded border border-border bg-muted px-1 py-[1px] font-mono text-[9px] text-foreground">
-                  Ctrl + Shift + A
+                  Ctrl + A
                 </kbd>
               </div>
             </div>
