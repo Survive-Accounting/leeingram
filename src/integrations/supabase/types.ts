@@ -8007,6 +8007,10 @@ export type Database = {
         Args: { asset_id: string }
         Returns: undefined
       }
+      increment_survive_helpful: {
+        Args: { p_asset_id: string; p_prompt_type: string }
+        Returns: undefined
+      }
     }
     Enums: {
       actor_type: "user" | "system" | "ai"
