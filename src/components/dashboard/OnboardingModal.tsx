@@ -25,12 +25,20 @@ interface Props {
   prefillCampusId: string | null;
   prefillCourseId: string | null;
   prefillName: string;
+  /**
+   * Simulate mode — staff-only preview.
+   * - All validation is bypassed (every step's Continue is enabled)
+   * - Submit does NOT call complete-onboarding; it just calls onComplete
+   *   with a stubbed result so changes can be UI-tested freely.
+   */
+  simulate?: boolean;
   onComplete: (result: {
     legacy: boolean;
     beta_number: number | null;
     campus_beta_number: number | null;
     campus_name: string | null;
   }) => void;
+  onClose?: () => void;
 }
 
 type Step = 1 | 2 | 3;
