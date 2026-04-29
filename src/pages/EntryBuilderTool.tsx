@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Lock, RotateCcw, Share2, ChevronRight, Check, X, HelpCircle, ChevronDown } from "lucide-react";
+import { BrandedLoader } from "@/components/study-previewer/BrandedLoader";
 
 const LEARNWORLDS_ENROLL_URL = "https://survivefinancialaccounting.learnworlds.com";
 const PREVIEW_LIMIT = 2;
