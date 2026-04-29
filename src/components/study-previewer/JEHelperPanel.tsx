@@ -83,7 +83,7 @@ function flattenAssets(assets: AssetRow[]): FlatEntry[] {
       sc.entries_by_date.forEach((entry, ei) => {
         if (!entry.rows || entry.rows.length === 0) return;
         const dateLabel = fmtDate((entry as any).entry_date ?? (entry as any).date);
-        const description = deriveDescription(sc.label, a.instructions, dateLabel);
+        const description = deriveDescription(sc.label, a.instruction_list, dateLabel);
         const sourceParts: string[] = [];
         if (a.source_number) sourceParts.push(a.source_number);
         if (sc.label && sc.label !== description) sourceParts.push(sc.label);
