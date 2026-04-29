@@ -830,74 +830,21 @@ export default function StudyPreviewer({
                           </div>
                         )}
 
-                        {activeTool === "je" && jeAssetCode && !iframeError && (
-                          <>
-                            {!iframeLoaded && (
-                              <BrandedLoader
-                                surface="navy"
-                                subtitle={showSlowStatus ? "Preparing tool…" : undefined}
-                              />
-                            )}
-
-                            <iframe
-                              key={`je-${jeAssetCode}-${iframeReloadKey}`}
-                              src={`/v2/solutions/${encodeURIComponent(jeAssetCode)}?focus=je`}
-                              title="Journal Entry Helper"
-                              className="w-full block border-0 relative z-10"
-                              style={{
-                                height: "min(85vh, 980px)",
-                                background: "#fff",
-                              }}
-                              onLoad={() => { setIframeLoaded(true); setStageLockHeight(null); }}
-                              onError={() => setIframeError(true)}
-                            />
-                          </>
-                        )}
-
-                        {activeTool === "je" && jeAssetCode && iframeError && (
-                          <div
-                            className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 gap-3"
-                            style={{ background: "#fff" }}
-                            role="alert"
-                          >
-                            <p className="text-[13.5px]" style={{ color: "#475569" }}>
-                              Tool didn't load. Try again.
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setIframeError(false);
-                                setIframeLoaded(false);
-                                setShowSkeleton(false);
-                                setShowSlowStatus(false);
-                                setIframeReloadKey((k) => k + 1);
-                              }}
-                              className="inline-flex items-center rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors"
-                              style={{
-                                color: "#14213D",
-                                background: "#F1F5F9",
-                                border: "1px solid #E2E8F0",
-                              }}
-                            >
-                              Retry
-                            </button>
-                          </div>
-                        )}
-
-                        {activeTool === "je" && selectedChapterId && !jeAssetCode && (
-                          <div className="flex items-center justify-center text-center px-6 py-24">
-                            <p className="text-[14px]" style={{ color: "#64748B" }}>
-                              No journal entries available for this chapter yet — try another chapter.
-                            </p>
-                          </div>
-                        )}
-
-                        {activeTool === "je" && !selectedChapterId && (
-                          <div className="flex items-center justify-center text-center px-6 py-24">
-                            <p className="text-[14px]" style={{ color: "#64748B" }}>
-                              Pick a chapter first.
-                            </p>
-                          </div>
+                        {activeTool === "je" && (
+                          <JEHelperPanel
+                            chapter={selectedChapter}
+                            onShareFeedback={onOpenFeedback}
+                            onGoHome={() => {
+                              setActiveTool(null);
+                              setSelectedChapterId(null);
+                              setViewerAssetCode(null);
+                              setJeAssetCode(null);
+                              if (persistChapterKey) {
+                                try { localStorage.removeItem(persistChapterKey); } catch { /* ignore */ }
+                              }
+                            }}
+                            onGoChapter={() => setActiveTool(null)}
+                          />
                         )}
                       </div>
 
