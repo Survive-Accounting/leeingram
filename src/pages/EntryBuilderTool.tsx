@@ -224,19 +224,28 @@ export default function EntryBuilderTool() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f1729] text-white flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#0f1729]/90 backdrop-blur">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold tracking-tight text-cyan-400">Entry Builder</span>
-          {chapterName && <span className="text-white/40 text-xs ml-2">{chapterName}</span>}
+    <div className={`${isEmbed ? "min-h-full" : "min-h-screen"} bg-[#0f1729] text-white flex flex-col`}>
+      {/* Header — hidden in embed mode so the V2 laptop chassis owns the chrome */}
+      {!isEmbed && (
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#0f1729]/90 backdrop-blur">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold tracking-tight text-cyan-400">Entry Builder</span>
+            {chapterName && <span className="text-white/40 text-xs ml-2">{chapterName}</span>}
+          </div>
+          {!completed && !showPaywall && (
+            <span className="text-white/50 text-xs">
+              {currentIndex + 1} / {effectiveItems.length}
+            </span>
+          )}
         </div>
-        {!completed && !showPaywall && (
+      )}
+      {isEmbed && !completed && !showPaywall && (
+        <div className="flex items-center justify-end px-4 py-2">
           <span className="text-white/50 text-xs">
             {currentIndex + 1} / {effectiveItems.length}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 flex items-center justify-center p-4">
