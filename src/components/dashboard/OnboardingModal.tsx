@@ -139,6 +139,8 @@ export default function OnboardingModal({
 
   const [role, setRole] = useState<UserRole | null>(null);
   const [majorStatus, setMajorStatus] = useState<MajorStatus | null>(null);
+  const [inGreek, setInGreek] = useState<boolean | null>(null);
+  const [greekOrgName, setGreekOrgName] = useState<string>("");
 
   const canSubmit = useMemo(() => {
     if (simulate) return true;
@@ -169,6 +171,8 @@ export default function OnboardingModal({
           user_role: role,
           accounting_major_status: role === "student" ? majorStatus : null,
           campus_id: prefillCampusId,
+          is_in_greek_life: inGreek,
+          greek_org_other: inGreek ? (greekOrgName.trim() || null) : null,
           onboarding_version: ONBOARDING_VERSION,
         },
       });
@@ -208,6 +212,8 @@ export default function OnboardingModal({
           user_role: role || "other",
           accounting_major_status: role === "student" ? (majorStatus || "not_sure") : null,
           campus_id: prefillCampusId,
+          is_in_greek_life: inGreek,
+          greek_org_other: inGreek ? (greekOrgName.trim() || null) : null,
           onboarding_version: ONBOARDING_VERSION,
         },
       })
@@ -375,6 +381,52 @@ export default function OnboardingModal({
               </div>
             </Field>
           )}
+
+          {/* Optional: Greek life */}
+          <Field
+            label="Are you in a fraternity or sorority?"
+            hint="Optional — we do bulk deals with chapters."
+          >
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                [true, "Yes"],
+                [false, "No"],
+              ] as const).map(([val, label]) => {
+                const active = inGreek === val;
+                return (
+                  <button
+                    key={String(val)}
+                    type="button"
+                    onClick={() => {
+                      setInGreek(val);
+                      if (!val) setGreekOrgName("");
+                    }}
+                    className="rounded-lg py-2.5 text-[13.5px] font-medium transition-all"
+                    style={{
+                      background: active ? NAVY : "#F8FAFC",
+                      color: active ? "#fff" : "#475569",
+                      border: `1px solid ${active ? NAVY : "#E2E8F0"}`,
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            {inGreek === true && (
+              <input
+                value={greekOrgName}
+                onChange={(e) => setGreekOrgName(e.target.value)}
+                placeholder="Which one? e.g. Kappa Alpha"
+                className="mt-2 w-full rounded-lg px-3 py-2.5 text-[15px] outline-none focus:ring-2"
+                style={{
+                  background: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                  color: NAVY,
+                }}
+              />
+            )}
+          </Field>
         </div>
 
         {/* Footer */}
