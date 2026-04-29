@@ -116,6 +116,9 @@ export default function StudyPreviewer({
   resetSignal,
   welcomeName,
   isReturning,
+  campusLabel,
+  dashboardMode = false,
+  betaNote,
   onSelectionChange,
   closeToolSignal,
 }: StudyPreviewerProps) {
