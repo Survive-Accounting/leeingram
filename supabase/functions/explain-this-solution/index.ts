@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { DEFAULT_AI_MODEL, FALLBACK_AI_MODEL, MODEL_OVERRIDES_BY_ACTION, REASONING_BY_ACTION, DEFAULT_REASONING_EFFORT } from "../_shared/aiConfig.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
