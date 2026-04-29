@@ -625,17 +625,26 @@ export default function StudentDashboard() {
               resetSignal={resetSignal}
               closeToolSignal={closeToolSignal}
             />
+
+            {/* Divider between console and secondary actions */}
+            <div
+              ref={secondaryRef}
+              className="mt-10 sm:mt-14 mb-6 sm:mb-8 scroll-mt-24"
+              aria-hidden
+              style={{
+                height: 1,
+                background:
+                  "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0) 100%)",
+              }}
+            />
+
+            {/* Secondary actions — share + feedback, on the navy hero band */}
+            <SecondaryActionsRow
+              betaNumber={betaNumber}
+              onFeedback={() => setFeedbackOpen(true)}
+            />
           </div>
         </div>
-
-        {/* Secondary actions — small, clearly secondary to the console above */}
-        <section ref={secondaryRef} className="max-w-4xl mx-auto px-5 sm:px-8 mt-6 sm:mt-8 scroll-mt-24">
-          <SecondaryActionsRow
-            betaNumber={betaNumber}
-            onWatchDemo={() => setVideoOpen(true)}
-            onFeedback={() => setFeedbackOpen(true)}
-          />
-        </section>
       </main>
 
       <FeedbackToolModal
