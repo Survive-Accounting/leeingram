@@ -519,6 +519,40 @@ export default function StudentDashboard() {
               </p>
             </div>
 
+            {/* Retro breadcrumbs above the terminal screen */}
+            {(() => {
+              const TOOL_LABEL: Record<"practice" | "je", string> = {
+                practice: "practice problem helper",
+                je: "journal entry helper",
+              };
+              const { chapter, activeTool } = previewerState;
+              const hasSelection = !!chapter || !!activeTool;
+              const crumbs: BreadcrumbCrumb[] = [
+                {
+                  label: "home",
+                  ...(hasSelection
+                    ? { onClick: () => setResetSignal((n) => n + 1) }
+                    : {}),
+                },
+              ];
+              if (chapter) {
+                crumbs.push({
+                  label: `ch ${chapter.chapter_number} ${chapter.chapter_name}`,
+                  ...(activeTool
+                    ? { onClick: () => setCloseToolSignal((n) => n + 1) }
+                    : {}),
+                });
+              }
+              if (activeTool) {
+                crumbs.push({ label: TOOL_LABEL[activeTool] });
+              }
+              return (
+                <div className="mb-3">
+                  <RetroBreadcrumbs crumbs={crumbs} />
+                </div>
+              );
+            })()}
+
             <StudyPreviewer
               chapters={chapters}
               fixedCourseLabel={courseLabel ?? campusName ?? null}
@@ -526,6 +560,9 @@ export default function StudentDashboard() {
               persistChapterKey={SELECTED_CHAPTER_KEY}
               welcomeName={firstName || null}
               isReturning={isReturning}
+              onSelectionChange={setPreviewerState}
+              resetSignal={resetSignal}
+              closeToolSignal={closeToolSignal}
             />
           </div>
         </div>
