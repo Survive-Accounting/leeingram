@@ -243,8 +243,8 @@ export default function OnboardingModal({
       }}
     >
       <div
-        className="w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden"
-        style={{ border: "1px solid #E0E7F0" }}
+        className="w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden flex flex-col"
+        style={{ border: "1px solid #E0E7F0", maxHeight: "calc(100dvh - 2rem)" }}
       >
         {/* Header */}
         <div className="px-6 pt-6 pb-2 relative">
