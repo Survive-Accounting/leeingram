@@ -209,6 +209,15 @@ export default function StudentDashboard() {
     return p.get("just_paid") === "1" || p.get("checkout") === "success";
   });
 
+  // Breadcrumb state — driven by StudyPreviewer's onSelectionChange callback.
+  const [previewerState, setPreviewerState] = useState<{
+    chapter: { id: string; chapter_number: number; chapter_name: string } | null;
+    activeTool: "practice" | "je" | null;
+  }>({ chapter: null, activeTool: null });
+  // Bumping these signals tells StudyPreviewer to reset its state.
+  const [resetSignal, setResetSignal] = useState(0);
+  const [closeToolSignal, setCloseToolSignal] = useState(0);
+
 
   // Mark this visit as "welcomed" once the dashboard renders successfully —
   // so the next visit gets "Welcome back" instead of "Thanks for joining".
