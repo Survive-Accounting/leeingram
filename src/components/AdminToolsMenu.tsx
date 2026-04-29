@@ -30,11 +30,11 @@ export function AdminToolsMenu() {
   const [hidden, setHidden] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     // One-time migration: clear stale hidden flag so the bar reappears for staff
-    // after the shortcut change. Safe to remove later.
+    // after the shortcut change. Bump the version when the shortcut changes.
     try {
-      if (!localStorage.getItem("devTool.adminBar.migrated.v2")) {
+      if (!localStorage.getItem("devTool.adminBar.migrated.v3")) {
         localStorage.removeItem(HIDDEN_STORAGE_KEY);
-        localStorage.setItem("devTool.adminBar.migrated.v2", "1");
+        localStorage.setItem("devTool.adminBar.migrated.v3", "1");
         return false;
       }
       return localStorage.getItem(HIDDEN_STORAGE_KEY) === "1";
@@ -43,25 +43,31 @@ export function AdminToolsMenu() {
 
   const { pos, dragHandlers } = useDraggable(POS_STORAGE_KEY, defaultPos(), SIZE);
 
-  // Ctrl+Shift+A or Ctrl+Alt+A toggles the bar (works even when hidden).
+  // Ctrl+A toggles the bar (works even when hidden).
+  // Skip when focus is inside an editable field so Select-All still works.
   // Register regardless of staff status — auth may load late, and we want the
   // shortcut to be reliable across every page.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const isToggle =
-        e.ctrlKey &&
-        !e.metaKey &&
-        (e.shiftKey || e.altKey) &&
-        (e.key === "a" || e.key === "A");
-      if (isToggle) {
-        e.preventDefault();
-        setHidden((prev) => {
-          const next = !prev;
-          try { localStorage.setItem(HIDDEN_STORAGE_KEY, next ? "1" : "0"); } catch { /* noop */ }
-          if (next) setOpen(false);
-          return next;
-        });
-      }
+      if (!e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+      if (e.key !== "a" && e.key !== "A") return;
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      const isEditable =
+        !!t && (
+          tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          tag === "SELECT" ||
+          (t as HTMLElement).isContentEditable
+        );
+      if (isEditable) return;
+      e.preventDefault();
+      setHidden((prev) => {
+        const next = !prev;
+        try { localStorage.setItem(HIDDEN_STORAGE_KEY, next ? "1" : "0"); } catch { /* noop */ }
+        if (next) setOpen(false);
+        return next;
+      });
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -119,7 +125,7 @@ export function AdminToolsMenu() {
               <div>
                 Hide / show this bar:{" "}
                 <kbd className="inline-flex items-center rounded border border-border bg-muted px-1 py-[1px] font-mono text-[9px] text-foreground">
-                  Ctrl + Shift + A
+                  Ctrl + A
                 </kbd>
               </div>
             </div>
