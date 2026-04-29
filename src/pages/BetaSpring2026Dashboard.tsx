@@ -34,7 +34,28 @@ function rangeStart(range: RangeKey): Date {
   }
 }
 
+interface FunnelStep {
+  key: string;
+  label: string;
+  count: number;
+  pctOfSignups: number;
+  dropoffFromPrev: number;
+  dropoffPctFromPrev: number;
+}
+
 interface Metrics {
+  // Top metrics cards
+  totalBetaSignups: number;
+  signupsToday: number;
+  loginsToday: number;
+  activeUsersToday: number;
+  activeUsers7d: number;
+  studentsSelectedChapter: number;
+  studentsOpenedHelper: number;
+  feedbackSubmissions: number;
+  cacheHitRate: number;
+  ghostUsers: number;
+  // Backwards-compatible
   signups: number;
   signupsPrev: number;
   logins7d: number;
@@ -44,10 +65,10 @@ interface Metrics {
   thumbsUp: number;
   thumbsDown: number;
   openFeedback: number;
-  cacheHitRate: number;
   avgLatencyMs: number;
-  ghostUsers: number;
   topTools: Array<{ name: string; count: number }>;
+  // Funnel
+  funnel: FunnelStep[];
 }
 
 interface FeedbackItem {
