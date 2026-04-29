@@ -93,46 +93,36 @@ function DashNavbar({
           Spring 2026 Beta
         </button>
 
-        <div className="flex items-center gap-4 sm:gap-6">
-          <button
-            onClick={onStudyTools}
-            className="hidden sm:inline-block text-[13px] font-semibold hover:opacity-70 transition-opacity"
-            style={linkStyle}
-          >
-            Study tools
-          </button>
-          <button
-            onClick={onShare}
-            className="hidden sm:inline-block text-[13px] font-semibold hover:opacity-70 transition-opacity"
-            style={linkStyle}
-          >
-            Share beta
-          </button>
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={onFeedback}
-            className="text-[13px] font-semibold hover:opacity-70 transition-opacity"
-            style={linkStyle}
+            className="inline-flex items-center rounded-md text-[12.5px] sm:text-[13px] font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+            style={{
+              background: NAVY,
+              padding: "8px 14px",
+              fontFamily: "Inter, sans-serif",
+              boxShadow: "0 2px 8px rgba(20,33,61,0.18)",
+            }}
           >
-            Feedback
+            Share Feedback
           </button>
 
-          {/* Account menu */}
+          {/* Hamburger menu — sign out only */}
           <div ref={accountRef} className="relative">
             <button
               onClick={() => setAccountOpen((v) => !v)}
               aria-haspopup="menu"
               aria-expanded={accountOpen}
-              aria-label="Account menu"
-              className="inline-flex items-center justify-center rounded-full text-[12.5px] font-semibold text-white transition-transform hover:scale-105 active:scale-95"
+              aria-label="Open menu"
+              className="inline-flex items-center justify-center rounded-md transition-colors hover:bg-slate-100 active:scale-95"
               style={{
-                width: 34,
-                height: 34,
-                background: `linear-gradient(180deg, ${NAVY} 0%, #0E1830 100%)`,
-                boxShadow: "0 2px 8px rgba(20,33,61,0.25)",
-                fontFamily: "Inter, sans-serif",
+                width: 38,
+                height: 38,
+                color: NAVY,
+                border: "1px solid rgba(20,33,61,0.10)",
               }}
             >
-              {initial}
+              <Menu className="h-5 w-5" strokeWidth={2} />
             </button>
             {accountOpen && (
               <div
