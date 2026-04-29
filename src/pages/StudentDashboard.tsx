@@ -638,3 +638,46 @@ export default function StudentDashboard() {
     </div>
   );
 }
+
+/* ─── Onboarding Simulator (staff-only, /my-dashboard QA tool) ─── */
+
+function OnboardingSimulator({
+  userId,
+  email,
+  campusId,
+  courseId,
+  fallbackFirstName,
+}: {
+  userId: string | null;
+  email: string | null;
+  campusId: string | null;
+  courseId: string | null;
+  fallbackFirstName: string;
+}) {
+  const isStaff = useIsStaff();
+  const flagOn = useDevToolFlag("simulateOnboarding");
+  // Force-remount the modal each time the flag flips on so internal state
+  // (current step, name, etc.) starts fresh — letting Lee replay it freely.
+  const [runId, setRunId] = useState(0);
+  useEffect(() => {
+    if (flagOn) setRunId((n) => n + 1);
+  }, [flagOn]);
+
+  if (!isStaff || !flagOn || !userId || !email) return null;
+
+  const close = () => setDevToolFlag("simulateOnboarding", false);
+
+  return (
+    <OnboardingModal
+      key={`sim-${runId}`}
+      simulate
+      userId={userId}
+      email={email}
+      prefillCampusId={campusId}
+      prefillCourseId={courseId}
+      prefillName={fallbackFirstName}
+      onComplete={() => close()}
+      onClose={close}
+    />
+  );
+}
