@@ -277,11 +277,11 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 
-    if (!OPENAI_API_KEY) {
+    if (!ANTHROPIC_API_KEY) {
       return new Response(
-        JSON.stringify({ success: false, error: "OPENAI_API_KEY not configured" }),
+        JSON.stringify({ success: false, error: "ANTHROPIC_API_KEY not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -325,54 +325,51 @@ Deno.serve(async (req) => {
     // STEP 2/3 — Build prompts
     const userPrompt = buildUserPrompt(prompt_type, context || {});
 
-    // STEP 4 — CALL OPENAI (o3 reasoning model)
-    const model = "o3";
+    // STEP 4 — CALL ANTHROPIC (Claude Sonnet 4 — direct API per project rules)
+    const model = "claude-sonnet-4-20250514";
     let responseText = "";
 
     try {
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           model,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: userPrompt },
-          ],
-          // o3 is a reasoning model — most tokens go to internal reasoning.
-          // walk_through now returns ALL steps in one call (split client-side),
-          // so we need more headroom for multi-step + tables.
-          max_completion_tokens: prompt_type === "walk_through" ? 4500 : 2000,
-          response_format: { type: "text" },
+          // walk_through ships ALL steps in one response (split client-side),
+          // so it needs more headroom than the single-shot prompts.
+          max_tokens: prompt_type === "walk_through" ? 4500 : 2000,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: userPrompt }],
         }),
       });
 
       if (!res.ok) {
         const errText = await res.text();
-        console.error("OpenAI API error:", res.status, errText);
+        console.error("Anthropic API error:", res.status, errText);
         return new Response(
-          JSON.stringify({ success: false, error: `OpenAI error: ${res.status} ${errText}` }),
+          JSON.stringify({ success: false, error: `Anthropic error: ${res.status} ${errText}` }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
       const data = await res.json();
-      responseText = data?.choices?.[0]?.message?.content?.trim() || "";
+      responseText = data?.content?.[0]?.text?.trim() || "";
 
       if (!responseText) {
-        console.error("Empty OpenAI response", { finish_reason: data?.choices?.[0]?.finish_reason, usage: data?.usage });
+        console.error("Empty Anthropic response", { stop_reason: data?.stop_reason, usage: data?.usage });
         return new Response(
-          JSON.stringify({ success: false, error: "Empty response from OpenAI" }),
+          JSON.stringify({ success: false, error: "Empty response from Anthropic" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
     } catch (e: any) {
-      console.error("OpenAI call failed:", e);
+      console.error("Anthropic call failed:", e);
       return new Response(
-        JSON.stringify({ success: false, error: e?.message || "OpenAI call failed" }),
+        JSON.stringify({ success: false, error: e?.message || "Anthropic call failed" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
