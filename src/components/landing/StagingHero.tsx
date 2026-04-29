@@ -420,6 +420,8 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
 
             <a
               href="https://surviveaccounting.com"
+              target="_blank"
+              rel="noopener noreferrer"
               className="hero-anim-link text-[12px] hover:underline"
               style={{
                 color: "rgba(255,255,255,0.65)",
