@@ -600,7 +600,7 @@ export default function StudentDashboard() {
               betaNote="Free beta access is open through finals. Try the tools and tell us what helps."
               onOpenFeedback={() => setFeedbackOpen(true)}
               persistChapterKey={SELECTED_CHAPTER_KEY}
-              welcomeName={firstName || null}
+              welcomeName={null}
               isReturning={isReturning}
               onSelectionChange={setPreviewerState}
               resetSignal={resetSignal}
