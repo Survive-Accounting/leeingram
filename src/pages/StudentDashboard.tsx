@@ -641,7 +641,7 @@ export default function StudentDashboard() {
         </div>
       </main>
 
-      <FeedbackToolModal
+      <ShareFeedbackModal
         open={feedbackOpen}
         email={email}
         onClose={() => setFeedbackOpen(false)}
