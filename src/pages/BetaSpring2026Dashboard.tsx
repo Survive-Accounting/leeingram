@@ -369,6 +369,8 @@ export default function BetaSpring2026Dashboard() {
           <FeedbackInboxSection />
           {/* AI Feedback Summary */}
           <FeedbackAISummarySection />
+          {/* Top Confusing Chapters + Top Used Tools */}
+          <InsightsSections startDate={rangeStart(range).toISOString()} />
           {/* Student Signups */}
           <SignupsTable signups={signups} loading={loading} />
         </div>
