@@ -1685,6 +1685,31 @@ function InlineExplanation({
         boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px -12px rgba(0,0,0,0.5)",
       }}
     >
+      {/* ── Column micro-label — mirrors the "Example based on …" label on
+          the left column so the two-column layout reads as one balanced
+          workspace. */}
+      <div
+        className="px-4 pt-3 pb-2 flex items-center gap-2"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+      >
+        <span
+          className="text-[11px] font-medium uppercase tracking-[0.12em]"
+          style={{ color: "rgba(255,255,255,0.55)" }}
+        >
+          Guided Helper
+        </span>
+        <span
+          className="text-[9px] font-semibold uppercase tracking-[0.18em] px-1.5 py-[1px] rounded-sm"
+          style={{
+            color: "rgba(206,17,38,0.95)",
+            background: "rgba(206,17,38,0.12)",
+            border: "1px solid rgba(206,17,38,0.35)",
+          }}
+        >
+          Beta
+        </span>
+      </div>
+
       {/* ── Top control bar — action buttons live in a single header strip ── */}
       <div
         className="px-4 pt-4 pb-3 space-y-2.5 border-b"
@@ -1785,9 +1810,32 @@ function InlineExplanation({
           AI HTML stylesheet handles table palette explicitly so totals,
           headers, and contrast all stay readable on the dark panel. */}
       <div
-        className="px-4 py-4 flex-1 min-h-[140px] [&_p]:!text-white/95 [&_li]:!text-white/95 [&_strong]:!text-white"
-        style={{ color: "rgba(255,255,255,0.92)" }}
+        className="relative px-4 py-4 flex-1 min-h-[200px] [&_p]:!text-white/95 [&_li]:!text-white/95 [&_strong]:!text-white"
+        style={{
+          color: "rgba(255,255,255,0.92)",
+          background:
+            "radial-gradient(120% 80% at 50% 0%, rgba(206,17,38,0.06) 0%, rgba(206,17,38,0) 55%), linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)",
+          backgroundColor: "rgba(8,14,28,0.55)",
+          boxShadow:
+            "0 1px 0 rgba(255,255,255,0.04) inset, 0 0 0 1px rgba(255,255,255,0.04) inset",
+        }}
       >
+        {/* Subtle dot-matrix workspace texture */}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none rounded-[2px]"
+          style={{
+            backgroundImage:
+              "radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)",
+            backgroundSize: "14px 14px",
+            backgroundPosition: "0 0",
+            maskImage:
+              "radial-gradient(120% 80% at 50% 30%, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 70%, rgba(0,0,0,0) 100%)",
+            WebkitMaskImage:
+              "radial-gradient(120% 80% at 50% 30%, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 70%, rgba(0,0,0,0) 100%)",
+          }}
+        />
+        <div className="relative">
         {error && (
           <div
             className="mb-3 rounded-md p-3 text-sm"
@@ -1802,16 +1850,25 @@ function InlineExplanation({
         )}
 
         {!activeSection && !error ? (
-          // Empty state — keeps the panel feeling like a tutor response area
-          // rather than a missing section. Lightweight, calm, on-brand.
+          // Empty state — minimal, "alive" with a blinking cursor so the
+          // workspace feels ready rather than missing.
           <div
-            className="flex flex-col items-center justify-center text-center py-8 gap-2"
-            style={{ color: "rgba(255,255,255,0.45)" }}
+            className="flex flex-col items-center justify-center text-center py-10 gap-2"
+            style={{ color: "rgba(255,255,255,0.55)" }}
           >
-            <Sparkles className="h-4 w-4" style={{ color: "rgba(255,255,255,0.35)" }} />
-            <div className="text-[12px] font-medium">
-              Pick an option above and the tutor response will appear here.
+            <Sparkles className="h-4 w-4" style={{ color: "rgba(206,17,38,0.7)" }} />
+            <div className="text-[13px] font-medium tracking-wide flex items-center gap-1">
+              <span>Help responses appear here</span>
+              <span
+                aria-hidden
+                className="inline-block w-[7px] h-[14px] -mb-[2px] ml-0.5"
+                style={{
+                  background: "rgba(255,255,255,0.7)",
+                  animation: "sa-helper-blink 1s steps(2, start) infinite",
+                }}
+              />
             </div>
+            <style>{`@keyframes sa-helper-blink { to { visibility: hidden; } }`}</style>
           </div>
         ) : activeSection ? (
           <section
@@ -1876,6 +1933,7 @@ function InlineExplanation({
             />
           </div>
         )}
+        </div>
       </div>
     </div>
   );
