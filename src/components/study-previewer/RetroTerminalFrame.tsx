@@ -441,15 +441,25 @@ export default function RetroTerminalFrame({
               </div>
 
 
-              {/* Tool grid — 3-column terminal cards. Hidden entirely until a chapter is chosen. */}
-              {tools && tools.length > 0 && canPickTool && (
+              {/* Helper hint when locked */}
+              {tools && tools.length > 0 && !canPickTool && (
+                <div
+                  className="mt-4 mb-1 text-center"
+                  style={{
+                    color: PHOSPHOR_MUTED,
+                    fontSize: 11,
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {">"} Choose a course and chapter first.
+                </div>
+              )}
+
+              {/* Tool grid — always visible. Buttons mute until course + chapter chosen. */}
+              {tools && tools.length > 0 && (
                 <div
                   key={`toolgrid-${activeToolKey ?? "idle"}-${canPickTool ? "ready" : "wait"}`}
-                  className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 sa-toolgrid-reveal"
-                  style={{
-                    opacity: bootStep >= 6 ? 1 : 0,
-                    transition: "opacity 280ms ease-out",
-                  }}
+                  className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 sa-toolgrid-reveal"
                 >
                   {tools.map((tool) => {
                     const isActive = activeToolKey === tool.key;
