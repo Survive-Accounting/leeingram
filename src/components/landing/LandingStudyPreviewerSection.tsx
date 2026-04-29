@@ -206,7 +206,7 @@ export default function LandingStudyPreviewerSection({
         onJoinBeta={() => onJoinBeta(selectedCourse.slug)}
       />
 
-      <FeedbackToolModal
+      <ShareFeedbackModal
         open={feedbackOpen}
         email={null}
         onClose={() => setFeedbackOpen(false)}
