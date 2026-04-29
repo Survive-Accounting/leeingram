@@ -138,23 +138,25 @@ export default function StagingNavbar({
             What's inside
           </button>
 
-          {/* Log in — quiet secondary link */}
-          <button
-            onClick={() => setLoginOpen(true)}
-            className="text-[13px] font-medium hover:opacity-100"
-            style={{
-              color: "rgba(255,255,255,0.7)",
-              fontFamily: "Inter, sans-serif",
-              transition: `color ${TRANSITION}`,
-              opacity: 0.95,
-            }}
-          >
-            Log in
-          </button>
+          {/* Log in — quiet secondary link (only when signed out) */}
+          {!isLoggedIn && (
+            <button
+              onClick={() => setLoginOpen(true)}
+              className="text-[13px] font-medium hover:opacity-100"
+              style={{
+                color: "rgba(255,255,255,0.7)",
+                fontFamily: "Inter, sans-serif",
+                transition: `color ${TRANSITION}`,
+                opacity: 0.95,
+              }}
+            >
+              Log in
+            </button>
+          )}
 
-          {/* Primary CTA — Get free access (hidden on mobile) */}
+          {/* Primary CTA — "Dashboard" when signed in, otherwise "Get free access" */}
           <button
-            onClick={onCtaClick}
+            onClick={isLoggedIn ? () => navigate("/my-dashboard") : onCtaClick}
             className="hidden sm:inline-flex group relative text-[13px] font-semibold active:scale-[0.98] items-center text-white"
             style={{
               borderRadius: 8,
@@ -166,7 +168,7 @@ export default function StagingNavbar({
             }}
           >
             <span className="relative inline-flex items-center group-hover:brightness-110">
-              Get free access <AnimatedArrow />
+              {isLoggedIn ? "Dashboard" : "Get free access"} <AnimatedArrow />
             </span>
           </button>
         </div>
