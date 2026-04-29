@@ -339,73 +339,138 @@ export default function BetaSpring2026Dashboard() {
           {/* Launch Funnel */}
           <LaunchFunnel metrics={metrics} loading={loading} />
 
+          {/* Student Signups — pinned at top per Lee's request */}
+          <CollapsibleSection
+            title="Student Signups"
+            subtitle="Everyone who has completed onboarding"
+            defaultOpen
+            rightLabel={`${signups.length} total`}
+          >
+            <SignupsTable signups={signups} loading={loading} />
+          </CollapsibleSection>
+
+          {/* Slack notifications utility */}
+          <CollapsibleSection
+            title="Slack Notifications"
+            subtitle="New beta signups post to #beta-signups via the existing webhook"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                Click to send a test ping to Slack and confirm wiring.
+              </p>
+              <Button
+                size="sm"
+                onClick={sendSlackTest}
+                disabled={slackTesting}
+                style={{ background: RED, color: "white" }}
+              >
+                {slackTesting ? "Sending…" : "Send test ping"}
+              </Button>
+            </div>
+          </CollapsibleSection>
+
           {/* AI Themes */}
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-lg font-bold" style={{ color: NAVY }}>AI Themes</h2>
-                  <p className="text-xs text-muted-foreground">
-                    Claude clusters free-text feedback into themes you can act on.
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => runClustering(true)}
-                  disabled={aiLoading || !feedback.length}
-                  style={{ background: RED, color: "white" }}
-                >
-                  <Sparkles className={`h-4 w-4 mr-1 ${aiLoading ? "animate-pulse" : ""}`} />
-                  {aiLoading ? "Analyzing…" : themes.length ? "Re-run" : "Run AI clustering"}
-                </Button>
-              </div>
-              {themes.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">
-                  No themes yet. Click "Run AI clustering" to analyze {feedback.length} feedback items.
-                </p>
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {themes.map(t => (
-                    <div key={t.id} className="rounded-lg border border-border p-3 bg-muted/20">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div>
-                          <div className="text-sm font-bold" style={{ color: NAVY }}>{t.label}</div>
-                          <div className="text-[11px] text-muted-foreground">{t.count} item{t.count !== 1 ? "s" : ""}</div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => copyPrompt(buildClusterPrompt(t, feedback))}
-                        >
-                          <Copy className="h-3 w-3 mr-1" /> Prompt
-                        </Button>
+          <CollapsibleSection
+            title="AI Themes"
+            subtitle="Claude clusters free-text feedback into themes you can act on."
+            rightLabel={themes.length ? `${themes.length} themes` : undefined}
+          >
+            <div className="flex items-center justify-end mb-3">
+              <Button
+                size="sm"
+                onClick={() => runClustering(true)}
+                disabled={aiLoading || !feedback.length}
+                style={{ background: RED, color: "white" }}
+              >
+                <Sparkles className={`h-4 w-4 mr-1 ${aiLoading ? "animate-pulse" : ""}`} />
+                {aiLoading ? "Analyzing…" : themes.length ? "Re-run" : "Run AI clustering"}
+              </Button>
+            </div>
+            {themes.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">
+                No themes yet. Click "Run AI clustering" to analyze {feedback.length} feedback items.
+              </p>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2">
+                {themes.map(t => (
+                  <div key={t.id} className="rounded-lg border border-border p-3 bg-muted/20">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div>
+                        <div className="text-sm font-bold" style={{ color: NAVY }}>{t.label}</div>
+                        <div className="text-[11px] text-muted-foreground">{t.count} item{t.count !== 1 ? "s" : ""}</div>
                       </div>
-                      <p className="text-xs text-foreground/80">{t.summary}</p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => copyPrompt(buildClusterPrompt(t, feedback))}
+                      >
+                        <Copy className="h-3 w-3 mr-1" /> Prompt
+                      </Button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    <p className="text-xs text-foreground/80">{t.summary}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CollapsibleSection>
 
           {/* System Emails (preview/test/send beta nurture emails) */}
-          <BetaSystemEmailsSection
-            candidateRecipients={signups.map((s) => ({ email: s.email, label: s.email }))}
-          />
-          {/* Problem Reports (auto-classified bug/issue queue) */}
-          <ProblemReportsSection />
+          <CollapsibleSection
+            title="System Emails"
+            subtitle="Preview, test, and send beta nurture emails"
+          >
+            <BetaSystemEmailsSection
+              candidateRecipients={signups.map((s) => ({ email: s.email, label: s.email }))}
+            />
+          </CollapsibleSection>
+
+          {/* Problem Reports */}
+          <CollapsibleSection
+            title="Problem Reports"
+            subtitle="Auto-classified bug/issue queue"
+          >
+            <ProblemReportsSection />
+          </CollapsibleSection>
+
           {/* Feature Suggestions */}
-          <FeatureSuggestionsSection />
+          <CollapsibleSection
+            title="Feature Suggestions"
+            subtitle="Ideas students submitted"
+          >
+            <FeatureSuggestionsSection />
+          </CollapsibleSection>
+
           {/* Feedback Inbox */}
-          <FeedbackInboxSection />
+          <CollapsibleSection
+            title="Feedback Inbox"
+            subtitle="Raw feedback from students"
+          >
+            <FeedbackInboxSection />
+          </CollapsibleSection>
+
           {/* AI Feedback Summary */}
-          <FeedbackAISummarySection />
-          {/* Top Confusing Chapters + Top Used Tools */}
-          <InsightsSections startDate={rangeStart(range).toISOString()} />
+          <CollapsibleSection
+            title="AI Feedback Summary"
+            subtitle="Claude-generated digest of recent feedback"
+          >
+            <FeedbackAISummarySection />
+          </CollapsibleSection>
+
+          {/* Insights */}
+          <CollapsibleSection
+            title="Top Confusing Chapters & Top Used Tools"
+            subtitle="What's tripping students up and what they're using"
+          >
+            <InsightsSections startDate={rangeStart(range).toISOString()} />
+          </CollapsibleSection>
+
           {/* Inactive Signups */}
-          <InactiveSignupsSection signups={signups} />
-          {/* Student Signups */}
-          <SignupsTable signups={signups} loading={loading} />
+          <CollapsibleSection
+            title="Inactive Signups"
+            subtitle="Signed up but haven't engaged"
+          >
+            <InactiveSignupsSection signups={signups} />
+          </CollapsibleSection>
         </div>
         </div>
       </div>
