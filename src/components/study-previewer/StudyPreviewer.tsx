@@ -896,7 +896,7 @@ const SelectShell = forwardRef<HTMLSelectElement, SelectShellProps>(function Sel
         disabled={disabled}
         className={
           compact
-            ? "w-full appearance-none rounded-[4px] pl-2 pr-7 py-1 text-[12.5px] outline-none transition-all disabled:opacity-60 focus:outline-none"
+            ? "w-full appearance-none rounded-[4px] pl-3 pr-9 py-2.5 sm:py-1 text-[14px] sm:text-[12.5px] outline-none transition-all disabled:opacity-60 focus:outline-none min-h-[44px] sm:min-h-0"
             : "w-full appearance-none rounded-md px-3 py-2.5 pr-9 text-[13.5px] font-medium outline-none transition-all disabled:opacity-60 focus:outline-none"
         }
         style={{
@@ -922,7 +922,7 @@ const SelectShell = forwardRef<HTMLSelectElement, SelectShellProps>(function Sel
       <ChevronDown
         className={
           compact
-            ? "absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none transition-colors"
+            ? "absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none transition-colors"
             : "absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none transition-colors"
         }
         style={{ color: compact ? PHOSPHOR : accent ? PHOSPHOR : "#6B7280" }}
