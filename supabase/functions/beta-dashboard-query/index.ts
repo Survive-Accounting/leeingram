@@ -355,17 +355,29 @@ serve(async (req) => {
       }
     });
 
-    type EvCounts = { logins: number; toolOpens: number; helperClicks: number; total: number; lastEventAt: string | null };
+    type EvCounts = {
+      logins: number; toolOpens: number; helperClicks: number; total: number;
+      lastEventAt: string | null;
+      viewedDashboard: boolean; selectedChapter: boolean;
+      openedHelper: boolean; clickedHelperAction: boolean;
+    };
     const eventMap = new Map<string, EvCounts>();
     (eventRows.data ?? []).forEach((e: any) => {
       const k = (e.email ?? "").toLowerCase();
       if (!k) return;
-      const c = eventMap.get(k) ?? { logins: 0, toolOpens: 0, helperClicks: 0, total: 0, lastEventAt: null };
+      const c = eventMap.get(k) ?? {
+        logins: 0, toolOpens: 0, helperClicks: 0, total: 0, lastEventAt: null,
+        viewedDashboard: false, selectedChapter: false, openedHelper: false, clickedHelperAction: false,
+      };
       c.total += 1;
       const t = String(e.event_type ?? "");
-      if (t === "login" || t === "session_start" || t === "magic_link_login") c.logins += 1;
-      if (t.includes("study_tool") || t.startsWith("tool_")) c.toolOpens += 1;
-      if (t.includes("helper")) c.helperClicks += 1;
+      if (t === "login" || t === "session_start" || t === "magic_link_login" || t === "login_completed") c.logins += 1;
+      if (t.includes("study_tool") || t.startsWith("tool_") || t === "practice_problem_helper_opened" || t === "journal_entry_helper_opened") c.toolOpens += 1;
+      if (t === "helper_action_clicked") c.helperClicks += 1;
+      if (t === "study_console_viewed" || t === "course_viewed" || t === "beta_dashboard_viewed") c.viewedDashboard = true;
+      if (t === "chapter_selected") c.selectedChapter = true;
+      if (t === "practice_problem_helper_opened" || t === "journal_entry_helper_opened") c.openedHelper = true;
+      if (t === "helper_action_clicked") c.clickedHelperAction = true;
       if (!c.lastEventAt || new Date(e.created_at) > new Date(c.lastEventAt)) c.lastEventAt = e.created_at;
       eventMap.set(k, c);
     });
@@ -406,6 +418,10 @@ serve(async (req) => {
         purchaseType: purchase?.purchase_type ?? null,
         pricePaidCents: purchase?.price_paid_cents ?? null,
         purchasedAt: purchase?.created_at ?? null,
+        viewedDashboard: ev.viewedDashboard,
+        selectedChapter: ev.selectedChapter,
+        openedHelper: ev.openedHelper,
+        clickedHelperAction: ev.clickedHelperAction,
       };
     });
 
