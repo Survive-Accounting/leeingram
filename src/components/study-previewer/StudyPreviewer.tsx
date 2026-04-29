@@ -110,6 +110,7 @@ export default function StudyPreviewer({
   const [chapterLoading, setChapterLoading] = useState(false);
   const [activeTool, setActiveTool] = useState<ToolKey | null>(null);
   const [viewerAssetCode, setViewerAssetCode] = useState<string | null>(null);
+  const [jeAssetCode, setJeAssetCode] = useState<string | null>(null);
   const [crtPulseKey, setCrtPulseKey] = useState(0);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeError, setIframeError] = useState(false);
@@ -137,15 +138,27 @@ export default function StudyPreviewer({
       if (stored && chapters.some((c) => c.id === stored)) {
         setSelectedChapterId(stored);
         (async () => {
-          const { data } = await supabase
-            .from("teaching_assets")
-            .select("asset_name, source_number")
-            .eq("chapter_id", stored)
-            .order("source_number", { ascending: true, nullsFirst: false })
-            .order("asset_name", { ascending: true })
-            .limit(1);
+          const [firstRes, jeRes] = await Promise.all([
+            supabase
+              .from("teaching_assets")
+              .select("asset_name, source_number")
+              .eq("chapter_id", stored)
+              .order("source_number", { ascending: true, nullsFirst: false })
+              .order("asset_name", { ascending: true })
+              .limit(1),
+            supabase
+              .from("teaching_assets")
+              .select("asset_name, source_number")
+              .eq("chapter_id", stored)
+              .not("journal_entry_completed_json", "is", null)
+              .order("source_number", { ascending: true, nullsFirst: false })
+              .order("asset_name", { ascending: true })
+              .limit(1),
+          ]);
           if (cancelled) return;
-          setViewerAssetCode(data?.[0]?.asset_name ?? null);
+          const firstAsset = firstRes.data?.[0]?.asset_name ?? null;
+          setViewerAssetCode(firstAsset);
+          setJeAssetCode(jeRes.data?.[0]?.asset_name ?? firstAsset);
         })();
       }
     } catch { /* ignore */ }
@@ -158,6 +171,7 @@ export default function StudyPreviewer({
     setSelectedChapterId(null);
     setActiveTool(null);
     setViewerAssetCode(null);
+    setJeAssetCode(null);
   }, [resetSignal]);
 
   // Listen for navigation intents bubbled up from the V2 viewer iframe so the
@@ -170,6 +184,7 @@ export default function StudyPreviewer({
         setActiveTool(null);
         setSelectedChapterId(null);
         setViewerAssetCode(null);
+        setJeAssetCode(null);
         if (persistChapterKey) {
           try { localStorage.removeItem(persistChapterKey); } catch { /* ignore */ }
         }
@@ -187,6 +202,7 @@ export default function StudyPreviewer({
     if (!chId) {
       setSelectedChapterId(null);
       setViewerAssetCode(null);
+      setJeAssetCode(null);
       setActiveTool(null);
       if (persistChapterKey) {
         try { localStorage.removeItem(persistChapterKey); } catch { /* ignore */ }
@@ -198,22 +214,35 @@ export default function StudyPreviewer({
     setActiveTool(null);
     setChapterLoading(true);
     setViewerAssetCode(null);
+    setJeAssetCode(null);
 
     const ch = chapters.find((c) => c.id === chId);
 
-    const { data } = await supabase
-      .from("teaching_assets")
-      .select("asset_name, source_number")
-      .eq("chapter_id", chId)
-      .order("source_number", { ascending: true, nullsFirst: false })
-      .order("asset_name", { ascending: true })
-      .limit(1);
-    const first = data?.[0]?.asset_name ?? null;
+    const [firstRes, jeRes] = await Promise.all([
+      supabase
+        .from("teaching_assets")
+        .select("asset_name, source_number")
+        .eq("chapter_id", chId)
+        .order("source_number", { ascending: true, nullsFirst: false })
+        .order("asset_name", { ascending: true })
+        .limit(1),
+      supabase
+        .from("teaching_assets")
+        .select("asset_name, source_number")
+        .eq("chapter_id", chId)
+        .not("journal_entry_completed_json", "is", null)
+        .order("source_number", { ascending: true, nullsFirst: false })
+        .order("asset_name", { ascending: true })
+        .limit(1),
+    ]);
+    const first = firstRes.data?.[0]?.asset_name ?? null;
+    const firstJe = jeRes.data?.[0]?.asset_name ?? first;
 
     await new Promise((r) => setTimeout(r, 400));
 
     setSelectedChapterId(chId);
     setViewerAssetCode(first);
+    setJeAssetCode(firstJe);
     setChapterLoading(false);
     
     if (persistChapterKey) {
@@ -229,6 +258,7 @@ export default function StudyPreviewer({
     setActiveTool(null);
     setSelectedChapterId(null);
     setViewerAssetCode(null);
+    setJeAssetCode(null);
     if (persistChapterKey) {
       try { localStorage.removeItem(persistChapterKey); } catch { /* ignore */ }
     }
@@ -799,7 +829,7 @@ export default function StudyPreviewer({
                           </div>
                         )}
 
-                        {activeTool === "je" && selectedChapterId && !iframeError && (
+                        {activeTool === "je" && jeAssetCode && !iframeError && (
                           <>
                             {!iframeLoaded && (
                               <BrandedLoader
@@ -809,23 +839,21 @@ export default function StudyPreviewer({
                             )}
 
                             <iframe
-                              key={`je-${selectedChapterId}-${iframeReloadKey}`}
-                              src={`/tools/entry-builder?chapter_id=${encodeURIComponent(selectedChapterId)}&preview=true&embed=1`}
+                              key={`je-${jeAssetCode}-${iframeReloadKey}`}
+                              src={`/v2/solutions/${encodeURIComponent(jeAssetCode)}?focus=je`}
                               title="Journal Entry Helper"
                               className="w-full block border-0 relative z-10"
                               style={{
                                 height: "min(85vh, 980px)",
-                                background: "#0f1729",
+                                background: "#fff",
                               }}
                               onLoad={() => { setIframeLoaded(true); setStageLockHeight(null); }}
                               onError={() => setIframeError(true)}
                             />
-
-
                           </>
                         )}
 
-                        {activeTool === "je" && selectedChapterId && iframeError && (
+                        {activeTool === "je" && jeAssetCode && iframeError && (
                           <div
                             className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 gap-3"
                             style={{ background: "#fff" }}
@@ -852,6 +880,14 @@ export default function StudyPreviewer({
                             >
                               Retry
                             </button>
+                          </div>
+                        )}
+
+                        {activeTool === "je" && selectedChapterId && !jeAssetCode && (
+                          <div className="flex items-center justify-center text-center px-6 py-24">
+                            <p className="text-[14px]" style={{ color: "#64748B" }}>
+                              No journal entries available for this chapter yet — try another chapter.
+                            </p>
                           </div>
                         )}
 

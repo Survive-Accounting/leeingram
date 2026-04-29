@@ -1495,6 +1495,7 @@ function InlineExplanation({
 }) {
   const [searchParams] = useSearchParams();
   const isEmbed = searchParams.get("embed") === "1";
+  const focusJE = searchParams.get("focus") === "je";
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1518,6 +1519,15 @@ function InlineExplanation({
     setActiveSection(null);
     setError(null);
   }, [asset.asset_name]);
+
+  // Auto-open the Journal Entries dialog when launched as the JE Helper
+  // (?focus=je) — fires once per asset when JE data is available.
+  useEffect(() => {
+    if (focusJE && hasJE) {
+      setJeOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusJE, hasJE, asset.asset_name]);
 
   const buildContext = () => ({
     problem_text: asset.survive_problem_text || "",
