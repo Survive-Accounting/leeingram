@@ -59,11 +59,11 @@ export default function SiteNavbar() {
               </button>
             ))}
             <button
-              onClick={() => setLoginOpen(true)}
+              onClick={() => isLoggedIn ? navigate("/my-dashboard") : setLoginOpen(true)}
               className="text-[13px] font-semibold text-white px-5 py-2 rounded-lg transition-opacity hover:opacity-90"
               style={{ background: NAVY, fontFamily: "Inter, sans-serif", border: "1px solid rgba(255,255,255,0.25)" }}
             >
-              Student Login
+              {isLoggedIn ? "Dashboard" : "Student Login"}
             </button>
           </nav>
 
