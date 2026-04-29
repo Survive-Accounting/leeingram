@@ -136,7 +136,7 @@ export default function LandingStudyPreviewerSection({
             className="text-[30px] sm:text-[42px] leading-[1.1] sa-hero-in mb-16 sm:mb-20"
             style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: "#FFFFFF", animationDelay: "120ms" }}
           >
-            Free accounting study tools for Spring '26 final exams.
+            Free accounting study tools for finals.
           </h2>
         </div>
 
