@@ -1,139 +1,160 @@
-## Two flags before we build
+## Audit findings
 
-**1. Model slug "gpt-5.5" doesn't exist (yet).** OpenAI's current public lineup is `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, and `gpt-5.2`. There is no `gpt-5.5` or `gpt-5.4`. If we ship `model: "gpt-5.5"` to `api.openai.com`, every call returns a 404. **Recommendation:** put `gpt-5.5` in the config exactly as you asked, but I'll wire the helper to log + fall back to `gpt-5` automatically if OpenAI rejects the slug, so the app keeps working. When the real `gpt-5.5` lands, no code change needed — it just starts working. Tell me if you want me to use `gpt-5` outright instead.
+### 1. Study Console (`StudyPreviewer.tsx` + `LandingStudyPreviewerSection.tsx`)
 
-**2. This reverses the project rule "never use OpenAI/Lovable gateway, always Anthropic direct."** Your custom instructions and the saved Anthropic-API-only memory both lock the tutor to Claude. Switching every tutor surface to OpenAI is a deliberate strategic change. I'll proceed and update the memory rule to reflect the new standard ("OpenAI GPT-5.x via centralized config; Anthropic deprecated for tutor surfaces").
+- **Course switcher** (`LandingStudyPreviewerSection`) refetches `chapters` every time `selectedCourseId` changes via raw `useEffect` + `supabase.from('chapters')`. No TanStack cache, no prefetch of the other 3 courses. Switching from IA2 → Intro1 always triggers a fresh round-trip even though chapter lists are tiny and rarely change.
+- **Chapter switcher** (`StudyPreviewer.handleChapterChange`) issues **2 sequential-style queries** to `teaching_assets` to find the first asset and first JE asset, then **awaits a hard `setTimeout(400)`** before showing the new state. Net perceived latency: ~600–900 ms even when DB is fast. The localStorage hydrate effect (lines 133–167) re-runs the same two queries again on mount.
+- **No caching layer**: every chapter visit re-queries the same first-asset row. Same data is then re-queried inside the iframe by `SolutionsViewerV2`.
+- **Iframe loading** is gated by a `BrandedLoader` shown until the iframe `onLoad` fires, plus a `setTimeout(2000)` "showSlowStatus" — but the loader covers the iframe area for 1.5–3 s on every open even when data is warm.
+- The course list (`COURSES`) is hard-coded — fine, but chapter metadata could be the same: a single static-ish payload fetched once.
 
----
+### 2. Practice Problem Helper (`SolutionsViewerV2.tsx`)
 
-## Scope
+- On asset load (line 2727) it fetches the asset, then a parallel pair `(chapter, siblings)`. Reasonable, but **not prefetched** from the Study Console. The Console already knows the first asset code and could warm the asset row before the iframe mounts.
+- Helper buttons (`handleToolboxClick`, line 1593) and `prefetchToolbox` (1628) call `supabase.functions.invoke('survive-this', …)` directly. There's hover prefetch + idle prefetch for `walk_through`, but **no client-side dedupe** of in-flight calls — hammering the same button fires multiple invokes; the server `ai_generation_cache` dedupes the model call, but the Edge Function cold-start + cache-poll path still runs N times.
+- **`survive_ai_responses` legacy cache lookup** runs on every survive-this call before falling back to `ai_generation_cache`. This is the actual reason returning helpers are fast — but cache hits still pay one Edge Function cold-start round-trip (~200–600 ms).
+- Toolbox UI shows **walk_through, hint, setup, full_solution all at the same visual weight** in a 4-button grid. The user wants Walk + Full as primary, the rest as "experimental".
+- 16 viewer route bundle is heavy (3,748 lines). It's eagerly loaded via the iframe `<link rel="prefetch">` (line 651) — good — but the route component itself isn't `React.lazy`'d.
 
-Two combined asks:
-- **A.** Centralize the model + reasoning config and route all tutor AI through one helper.
-- **B.** Add a real database cache (`ai_generation_cache`) with cache-key, pending/completed states, deduping, and admin tooling.
+### 3. AI generation pipeline (already centralized)
 
-Tutor surfaces in scope (all student-facing): `survive-this` (Walk me through it, Hint, Setup, Full solution, JE Helper, Memorize, Real World, The Why, Professor Tricks, Financial Statements, Similar Problem, Challenge), `explain-solution-part`, `explain-this-solution`. Backend/admin generators (`generate-chapter-*`, `bulk-fix`, OCR, etc.) stay on whatever they use today — out of scope.
+- ✅ `_shared/aiConfig.ts` + `_shared/generateTutorResponse.ts` exist and route through `ai_generation_cache` (pending/completed/failed) with cache_key = sha256(course|chapter|problem|tool|action|prompt_v|model|problem_v|solution_v).
+- ✅ Default model `gpt-5.5` with auto-fallback to `gpt-5`.
+- ✅ Server-side dedupe via unique cache_key + 25 s pending poll.
+- ⚠️ `problem_version` and `solution_version` are **never passed** by `survive-this` (or by `SolutionsViewerV2`). That means cache rows are not invalidated when an asset's problem text changes. We should pass `teaching_assets.updated_at` as the version.
+- ⚠️ Legacy `survive_ai_responses` lookup happens **before** `ai_generation_cache`, defeating per-version invalidation in some cases.
 
----
+### 4. Loading screens
 
-## Plan
+- `BrandedLoader` is now a clean phosphor SVG spinner — short, no headshot. Fine to keep but it currently always shows for the full iframe boot, masking content even when the underlying viewer has paint-ready data.
 
-### 1. Central config (server-side)
-New file: `supabase/functions/_shared/aiConfig.ts`
+### 5. Feedback
 
-```ts
-export const DEFAULT_AI_MODEL = "gpt-5.5";
-export const FALLBACK_AI_MODEL = "gpt-5";          // auto-used on 404
-// Future cost-cut options (not active):
-// export const CHEAP_MODEL = "gpt-5.4-mini";
-
-export const REASONING_BY_ACTION: Record<string, "low"|"medium"|"high"> = {
-  hint: "low",
-  setup: "low",
-  full_solution: "medium",
-  walk_through: "medium",
-  journal_entries: "medium",
-  explain_part: "medium",
-  // everything else → DEFAULT_REASONING_EFFORT
-};
-export const DEFAULT_REASONING_EFFORT = "low";
-export const DEFAULT_VERBOSITY = "medium";
-
-export const PROMPT_VERSION = "v1";  // bump to invalidate cache
-export const MODEL_VERSION  = DEFAULT_AI_MODEL;
-```
-
-### 2. Shared tutor helper
-New file: `supabase/functions/_shared/generateTutorResponse.ts`
-
-Single function `generateTutorResponse({ toolType, actionType, courseId, chapterId, problemId, problemVersion, solutionVersion, userId, sessionId, systemPrompt, userPrompt, maxTokens })` that:
-- Computes `cache_key = sha256(courseId|chapterId|problemId|toolType|actionType|PROMPT_VERSION|MODEL_VERSION|problemVersion|solutionVersion)`
-- Looks up `ai_generation_cache` by cache_key
-  - `completed` → return cached row (cache hit logged)
-  - `pending` → poll up to ~25s (250ms intervals) for completion; return result or pending state
-  - missing → atomic upsert with `status='pending'` (unique index on cache_key serializes concurrent callers)
-- Calls OpenAI Chat Completions with model from config + reasoning_effort from action map
-- On 404 (bad model slug): retry once with `FALLBACK_AI_MODEL`, log the swap
-- On 429/402: return friendly error, mark cache row `failed` with error_message, do **not** leave it pending
-- Updates row: `status='completed'`, `response_text`, token counts, latency_ms
-- Inserts log row in `ai_request_log` (see step 3)
-
-API key (`OPENAI_API_KEY`) read from `Deno.env` — never exposed to client. Already configured in secrets.
-
-### 3. Database changes (migration)
-
-```sql
-create table public.ai_generation_cache (
-  id uuid primary key default gen_random_uuid(),
-  cache_key text not null unique,
-  course_id uuid, chapter_id uuid, problem_id uuid,
-  tool_type text not null, action_type text not null,
-  prompt_version text not null, model_version text not null,
-  problem_version text, solution_version text,
-  response_text text, response_json jsonb,
-  status text not null check (status in ('pending','completed','failed')),
-  error_message text,
-  prompt_tokens int, completion_tokens int, total_tokens int,
-  latency_ms int,
-  generated_by_user_id uuid, session_id text,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-create index on ai_generation_cache (problem_id, action_type);
-create index on ai_generation_cache (status, created_at);
-
-create table public.ai_request_log (
-  id uuid primary key default gen_random_uuid(),
-  cache_key text, cache_hit bool not null,
-  tool_type text, action_type text,
-  model_used text, reasoning_effort text,
-  prompt_tokens int, completion_tokens int, total_tokens int,
-  latency_ms int,
-  user_id uuid, session_id text,
-  problem_id uuid, chapter_id uuid,
-  error_message text,
-  created_at timestamptz default now()
-);
-```
-
-RLS: both tables are server-write-only. Public **read** on `ai_generation_cache` for `status='completed'` (so realtime poll from client also works if needed). `ai_request_log`: admin-only read.
-
-A janitor query (run inside the helper itself) marks any `pending` row older than 60s as `failed` so a crashed function never blocks a key forever.
-
-### 4. Refactor edge functions
-
-- **`survive-this/index.ts`**: keep all the prompt-building logic; replace the Anthropic block with a call to `generateTutorResponse(...)`. Pass `toolType="survive_this"`, `actionType=prompt_type`. Drop the old `survive_ai_responses` write (we'll backfill-read it once for cache warming, then deprecate).
-- **`explain-solution-part/index.ts`**: replace OpenAI o3 call with helper. `actionType="explain_part"`. Keep the `survive_solution_explanation_cache` JSON merge for now (legacy compatibility) but source the text from the new cache.
-- **`explain-this-solution/index.ts`**: same treatment, `actionType="explain_solution"`.
-
-No frontend file changes required for the model swap itself — they already call these functions. Frontend changes are only for button-hammer prevention (step 5).
-
-### 5. Frontend hammer-protection
-Touch the three caller files (`SolutionsViewerV2.tsx`, `SurviveThisPanel.tsx`, `StructuredSolutionDisplay.tsx`):
-- Disable the clicked button during in-flight request (most already do; verify all toolbox buttons).
-- One-active-generation-per-session guard via a small Zustand/Context store: if any tutor request is in flight, other tutor buttons show "One response is already loading." toast and no-op. Hover-prefetch already added in last sprint stays — it's a fire-and-forget that the cache absorbs.
-
-### 6. Admin controls
-New admin page `/admin/ai-cache` (Lee-only via existing AccessRestrictedGuard):
-- Filter by chapter / problem / action_type / status
-- Show model, tokens, latency, response preview
-- Buttons: **Regenerate** (deletes row, next click rebuilds), **Mark bad** (sets a `flagged` bool — minor schema add), **Invalidate by chapter / tool / prompt version** (bulk delete)
-
-Not blocking launch — can ship in same PR but behind a "coming soon" tab if time-tight. Recommend shipping minimal version with regenerate + invalidate-by-problem.
-
-### 7. Memory update
-Update `mem://constraints/direct-anthropic-api-access` and Core rule: tutor surfaces now use **OpenAI GPT-5.5 via centralized config** through `_shared/aiConfig.ts` + `generateTutorResponse`. Anthropic remains allowed for non-tutor admin/content generators if those teams haven't migrated.
+- `explanation_feedback` table exists (helpful counts via `increment_survive_helpful` RPC) but no per-response 👍/👎 + free-text on each generated helper response. No dedicated student-beta-feedback table.
 
 ---
 
-## Files touched
-- **New:** `supabase/functions/_shared/aiConfig.ts`, `supabase/functions/_shared/generateTutorResponse.ts`, migration for `ai_generation_cache` + `ai_request_log`, `src/pages/admin/AICachePage.tsx`, small Zustand store `src/stores/aiGenerationLock.ts`
-- **Edited:** `supabase/functions/survive-this/index.ts`, `supabase/functions/explain-solution-part/index.ts`, `supabase/functions/explain-this-solution/index.ts`, `src/pages/v2/SolutionsViewerV2.tsx`, `src/components/SurviveThisPanel.tsx`, `src/components/StructuredSolutionDisplay.tsx`, admin sidebar entry, memory files
-- **Deprecated (read-only):** existing `survive_ai_responses` table — keep around for one release as fallback warm-cache, then drop in a future migration
+## Recommended plan
+
+### Phase 1 — Make switching feel instant (low risk)
+
+**Goal:** course/chapter changes feel <100 ms perceived.
+
+1. **Add TanStack Query** wrappers for the previewer's data:
+   - `useChapters(courseId)` — `staleTime: Infinity, gcTime: 1h`. One query per course, cached for the session.
+   - `useFirstAsset(chapterId)` — combines the "first asset" + "first JE asset" lookups into a single SQL via a new RPC `get_chapter_entry_assets(chapter_id)` returning `{ first_asset_name, first_je_asset_name }`. `staleTime: Infinity`.
+   - `useAssetSummary(assetCode)` — minimal asset row used by `SolutionsViewerV2`, prefetched from the Console before the iframe mounts.
+
+2. **Drop the artificial `setTimeout(400)`** in `handleChapterChange`. The CRT pulse animation (~180 ms) already provides the visual "switch" feedback.
+
+3. **Prefetch siblings** when entering a chapter:
+   - On `handleChapterChange`, call `queryClient.prefetchQuery` for the next chapter in the dropdown order.
+   - On course change, prefetch the chapter list for the *previously selected* and *next* course (so toggling between IA2 and Intro 1 has zero delay).
+
+4. **Files touched:**
+   - `src/components/landing/LandingStudyPreviewerSection.tsx`
+   - `src/components/study-previewer/StudyPreviewer.tsx`
+   - new `src/hooks/useStudyConsoleData.ts`
+   - new migration adding `get_chapter_entry_assets` SQL function (returns 2 fields, security definer, public execute).
+
+5. **Skip the BrandedLoader entirely when the asset row is already warm** — pass a `prewarmed` prop down from Console; if true, render the iframe with `opacity:0.001` until `onLoad`, then fade in 120 ms (no full-screen loader). Loader still shows for cold boots.
+
+### Phase 2 — Helper UI simplification + duplicate-click protection
+
+1. **Reorder toolbox** in `InlineExplanation`:
+   - **Primary row:** Walk me through it (red), Full solution (red ghost). Side by side or stacked.
+   - **Secondary "Try experimental helpers" disclosure:** collapsed by default. Inside: Hint, Show setup, Memorize, The Why, Real World, Professor Tricks, Similar problem, Challenge.
+   - Add a small label: "We're testing new AI tools — your votes shape what stays."
+
+2. **Client-side dedupe**:
+   - Track in-flight `actionType`s in component state (`Set<string>`). If a button is clicked again while pending, no-op + toast "Still loading…".
+   - Disable all toolbox buttons while any one is loading via a single `globalLoading` flag in the existing component. (No Zustand needed — local state is enough; the server cache already handles cross-tab dedupe.)
+
+3. **Pass `problemVersion`** in `buildContext()` (= `asset.updated_at`) so cache busts correctly when problem text changes. Add `updated_at` to the asset SELECT in `SolutionsViewerV2` (line 2738).
+
+4. **Files touched:** `src/pages/v2/SolutionsViewerV2.tsx` only.
+
+### Phase 3 — Beta feedback capture
+
+1. **New migration** — table `student_helper_feedback`:
+   ```
+   id uuid pk default gen_random_uuid()
+   cache_key text             -- joins to ai_generation_cache
+   asset_id uuid              -- denormalized for quick filtering
+   chapter_id uuid
+   action_type text           -- walk_through, hint, …
+   rating smallint not null   -- 1 = up, -1 = down
+   comment text               -- optional short feedback
+   user_id uuid
+   session_id text
+   email text                 -- captured from EmailGate when available
+   created_at timestamptz default now()
+   ```
+   - RLS: anyone (anon + authenticated) may INSERT; SELECT restricted to admins via existing `is_admin()` pattern (or service role only).
+   - Indexes: `(action_type, created_at desc)`, `(asset_id)`, `(chapter_id)`.
+
+2. **UI:** Below every rendered helper response, show two icon buttons (👍 👎) and a collapsible "Tell us why?" textarea (200-char limit). Submitting writes one row to `student_helper_feedback`. After submit, replace controls with a small "Thanks — noted." chip.
+
+3. **Files touched:**
+   - `src/pages/v2/SolutionsViewerV2.tsx` — render feedback bar inside the helper response area (single small subcomponent).
+   - new migration `…_student_helper_feedback.sql`.
+
+4. **Admin retrieval:** out of scope for this sprint — table is ready and Lee can read via existing Cloud SQL view. (A real `/admin/helper-feedback` page can be a follow-up.)
+
+### Phase 4 (optional polish) — Loader trims
+
+- Cap `BrandedLoader` visible time to 250 ms minimum/600 ms maximum: if the iframe `onLoad` fires before 250 ms, still hold for 250 ms to avoid flash; if not loaded by 600 ms, swap to a tiny phosphor pulse in the corner instead of full-screen.
+- Drop the `await new Promise(r => setTimeout(r, 400))` already in scope from Phase 1.
 
 ---
 
-## Open questions
-1. Should I really ship `model: "gpt-5.5"` (with auto-fallback to `gpt-5`), or use `gpt-5` directly until OpenAI announces 5.5?
-2. Confirm OK to switch tutor surfaces from Anthropic → OpenAI and update the memory rule accordingly?
-3. Admin `/admin/ai-cache` page in this PR, or follow-up?
+## Performance bottlenecks (ranked)
+
+1. **`setTimeout(400)` in `handleChapterChange`** — 100 % of chapter switches eat 400 ms unnecessarily. *Phase 1.*
+2. **Two sequential first-asset queries per chapter** — collapse into 1 RPC. *Phase 1.*
+3. **No TanStack caching of chapters/courses** — every switch re-queries. *Phase 1.*
+4. **Iframe boot loader covers warm reloads** — gate by warm flag. *Phase 1.*
+5. **Helper button hammer** — fires multiple Edge Function invocations even though server dedupes. *Phase 2.*
+6. **`problem_version` never sent** — stale-cache risk after asset edits. *Phase 2.*
+
+---
+
+## Acceptance criteria
+
+- Switching course on the landing page Study Console shows the new chapter list in <100 ms when previously visited (TanStack cache hit).
+- Switching chapter does not block on a hard `setTimeout`. New chapter pill + tool selector appears in <150 ms; first-asset code resolves from a single RPC.
+- Opening the Practice Problem Helper for a previously-visited asset does not show the BrandedLoader; the viewer fades in within ~200 ms.
+- Clicking a helper button that already has a cached response in `ai_generation_cache` returns within ~250 ms (network round-trip only) and never re-calls OpenAI.
+- Mashing a helper button only fires one Edge Function invocation; subsequent clicks while pending are ignored with a toast.
+- Walk me through it + Full solution are the only two visible primary buttons. The other 6+ helpers live behind a single "Try experimental helpers" disclosure.
+- Each rendered helper response has 👍 / 👎 controls and an optional short comment. Submissions land in `student_helper_feedback` with `cache_key`, `asset_id`, `action_type`.
+- `gpt-5.5` is still the default model; no hard-coded model strings outside `_shared/aiConfig.ts`.
+- No student-facing route changes; retro terminal styling preserved.
+
+---
+
+## Risks & assumptions
+
+- **Assumption:** `teaching_assets.updated_at` exists on the schema (used as `problem_version`). If not, add an `updated_at` column with a trigger before passing it.
+- **Risk:** Existing `survive_ai_responses` legacy rows will continue to be served (warm cache) and won't carry a `cache_key` — that's fine; the new feedback table allows `cache_key` to be null when the source is the legacy table.
+- **Risk:** Hover-prefetch on every helper button could spike OpenAI usage if someone mouse-skims. Mitigation: prefetch only fires for the two primary buttons (already true for `walk_through`); secondary tools prefetch on `focus` / `mouseenter` only after disclosure is opened.
+- **Risk:** `gpt-5.5` is still not a real OpenAI model slug — the existing fallback to `gpt-5` covers this; no change.
+- **Out of scope:** building the admin viewer for `student_helper_feedback`, redesigning the chapter picker visuals, changing the JE Helper.
+
+---
+
+## Files & migrations summary
+
+**New:**
+- `src/hooks/useStudyConsoleData.ts` (TanStack hooks)
+- migration: `…_get_chapter_entry_assets.sql` (RPC)
+- migration: `…_student_helper_feedback.sql` (table + RLS + indexes)
+
+**Edited:**
+- `src/components/landing/LandingStudyPreviewerSection.tsx` (use TanStack, prefetch siblings)
+- `src/components/study-previewer/StudyPreviewer.tsx` (drop setTimeout, RPC, warm-flag prop)
+- `src/components/study-previewer/BrandedLoader.tsx` (min/max display window)
+- `src/pages/v2/SolutionsViewerV2.tsx` (toolbox reorder, dedupe, problemVersion, feedback bar, asset SELECT adds `updated_at`)
+- `supabase/functions/survive-this/index.ts` (forward `problem_version` from context to `generateTutorResponse`)
+
+**Untouched:** `_shared/aiConfig.ts`, `_shared/generateTutorResponse.ts`, JEHelperPanel, RetroTerminalFrame, all other routes.
