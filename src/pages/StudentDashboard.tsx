@@ -298,7 +298,7 @@ function SecondaryActionsRow({
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
       <SecondaryDarkCard
         variant="share"
-        eyebrow="Spread the word"
+        
         title="Share the beta with a friend"
         sub="Know someone taking accounting? Send them free finals access."
         cta="Copy your share link"
