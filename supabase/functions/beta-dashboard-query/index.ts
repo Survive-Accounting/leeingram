@@ -40,52 +40,118 @@ serve(async (req) => {
     const periodMs = Date.now() - startDt.getTime();
     const prevStartISO = new Date(startDt.getTime() - periodMs).toISOString();
 
+    // "Today" window in UTC for daily counters.
+    const now = new Date();
+    const todayStartISO = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
+    const sevenDaysAgoISO = new Date(now.getTime() - 7 * 86400000).toISOString();
+
     // Service-role client for reads
     const db = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { persistSession: false },
     });
 
-    // ── METRICS ─────────────────────────────────────────────────────
+    // Event name constants (mirrors src/lib/betaEvents.ts).
+    const EV = {
+      LOGIN_COMPLETED: "login_completed",
+      BETA_DASHBOARD_VIEWED: "beta_dashboard_viewed",
+      CHAPTER_SELECTED: "chapter_selected",
+      PRACTICE_HELPER_OPENED: "practice_problem_helper_opened",
+      JE_HELPER_OPENED: "journal_entry_helper_opened",
+      HELPER_ACTION_CLICKED: "helper_action_clicked",
+      FEEDBACK_SUBMITTED: "feedback_submitted",
+      FEATURE_SUGGESTION_SUBMITTED: "feature_suggestion_submitted",
+      PROBLEM_REPORT_SUBMITTED: "problem_report_submitted",
+    };
+    const HELPER_OPEN_NAMES = [EV.PRACTICE_HELPER_OPENED, EV.JE_HELPER_OPENED];
+    const FEEDBACK_SUBMIT_NAMES = [
+      EV.FEEDBACK_SUBMITTED, EV.FEATURE_SUGGESTION_SUBMITTED, EV.PROBLEM_REPORT_SUBMITTED,
+    ];
+    const LOGIN_NAMES = [EV.LOGIN_COMPLETED, "magic_link_login", "session_start"];
+
+    // Helper for distinct-actor counts on student_events.
+    const distinctActor = (rows: any[]) => {
+      const s = new Set<string>();
+      rows.forEach(r => {
+        const k = (r.email ?? "").toLowerCase() || (r.session_id ? `s:${r.session_id}` : "");
+        if (k) s.add(k);
+      });
+      return s.size;
+    };
+
+    // ── METRICS + FUNNEL FETCHES ────────────────────────────────────
     const [
-      signupsCur, signupsPrev, profilesLogins, eventsActive,
-      studyOpens, helperClicks, thumbsHelper, thumbsExpl,
-      openChapterQ, openIssueRep, cacheLog, ghostUsersRows,
+      signupsRange, signupsPrev, signupsToday, signupsTotal,
+      eventsRange, eventsToday, events7d,
+      thumbsHelper, thumbsExpl, openChapterQ, openIssueRep,
+      cacheLog, allSignupsForGhost,
     ] = await Promise.all([
       db.from("student_onboarding").select("id", { count: "exact", head: true })
         .eq("is_legacy", false).gte("created_at", startISO),
       db.from("student_onboarding").select("id", { count: "exact", head: true })
         .eq("is_legacy", false).gte("created_at", prevStartISO).lt("created_at", startISO),
-      db.from("profiles").select("user_id", { count: "exact", head: true })
-        .gte("last_login_at", startISO),
-      db.from("student_events").select("email,session_id").gte("created_at", startISO).limit(5000),
-      db.from("student_events").select("event_type", { count: "exact", head: true })
-        .ilike("event_type", "%study_tool%").gte("created_at", startISO),
-      db.from("ai_request_log").select("tool_type,action_type").gte("created_at", startISO).limit(5000),
+      db.from("student_onboarding").select("id", { count: "exact", head: true })
+        .eq("is_legacy", false).gte("created_at", todayStartISO),
+      db.from("student_onboarding").select("id", { count: "exact", head: true })
+        .eq("is_legacy", false),
+      db.from("student_events").select("email,session_id,event_type,created_at")
+        .gte("created_at", startISO).limit(20000),
+      db.from("student_events").select("email,session_id,event_type")
+        .gte("created_at", todayStartISO).limit(10000),
+      db.from("student_events").select("email,session_id,event_type")
+        .gte("created_at", sevenDaysAgoISO).limit(20000),
       db.from("student_helper_feedback").select("rating").gte("created_at", startISO).limit(5000),
       db.from("explanation_feedback").select("helpful").gte("created_at", startISO).limit(5000),
       db.from("chapter_questions").select("id", { count: "exact", head: true })
         .eq("responded", false).gte("created_at", startISO),
       db.from("problem_issue_reports").select("id", { count: "exact", head: true })
         .gte("created_at", startISO),
-      db.from("ai_request_log").select("cache_hit,latency_ms").gte("created_at", startISO).limit(10000),
+      db.from("ai_request_log").select("cache_hit,latency_ms,tool_type").gte("created_at", startISO).limit(20000),
       db.from("student_onboarding").select("user_id,email")
-        .eq("is_legacy", false).gte("created_at", startISO).limit(1000),
+        .eq("is_legacy", false).limit(2000),
     ]);
 
-    const activeSet = new Set<string>();
-    (eventsActive.data ?? []).forEach((e: any) => {
-      activeSet.add(e.email ?? `anon:${e.session_id ?? "x"}`);
-    });
+    const evRangeRows = eventsRange.data ?? [];
+    const evTodayRows = eventsToday.data ?? [];
+    const ev7dRows = events7d.data ?? [];
 
-    const toolCounts = new Map<string, number>();
-    (helperClicks.data ?? []).forEach((r: any) => {
-      const k = r.tool_type ?? "unknown";
-      toolCounts.set(k, (toolCounts.get(k) ?? 0) + 1);
+    // Event-name index for the range window (powers funnel + several cards).
+    const byName = new Map<string, any[]>();
+    evRangeRows.forEach(r => {
+      const arr = byName.get(r.event_type) ?? [];
+      arr.push(r);
+      byName.set(r.event_type, arr);
     });
-    const topTools = Array.from(toolCounts.entries())
-      .sort((a, b) => b[1] - a[1]).slice(0, 5)
-      .map(([name, count]) => ({ name, count }));
+    const rowsFor = (names: string[]) => names.flatMap(n => byName.get(n) ?? []);
 
+    // ── DAILY + 7-DAY COUNTS ────────────────────────────────────────
+    const loginsTodayRows = evTodayRows.filter(r => LOGIN_NAMES.includes(r.event_type));
+    const loginsToday = distinctActor(loginsTodayRows);
+    const activeUsersToday = distinctActor(evTodayRows);
+    const activeUsers7d = distinctActor(ev7dRows);
+
+    // ── RANGE-SCOPED EVENT-DRIVEN METRICS ───────────────────────────
+    const chapterSelectedRows = rowsFor([EV.CHAPTER_SELECTED]);
+    const studentsSelectedChapter = distinctActor(chapterSelectedRows);
+
+    const helperOpenRowsRange = rowsFor(HELPER_OPEN_NAMES);
+    const studentsOpenedHelper = distinctActor(helperOpenRowsRange);
+
+    // Helper clicks: prefer the standardized event; fall back to ai_request_log volume.
+    const helperActionRows = rowsFor([EV.HELPER_ACTION_CLICKED]);
+    const helperClicksRange = helperActionRows.length > 0
+      ? helperActionRows.length
+      : (cacheLog.data ?? []).length;
+
+    // Study tool opens: helper opens + any legacy "study_tool_*" event names.
+    const legacyStudyToolRows = evRangeRows.filter(r => /study_tool|^tool_/.test(r.event_type));
+    const studyToolOpens = helperOpenRowsRange.length + legacyStudyToolRows.length;
+
+    // Feedback submissions: prefer the standardized events; supplement with
+    // raw submission tables already used by the inbox.
+    const feedbackEventRows = rowsFor(FEEDBACK_SUBMIT_NAMES);
+    const feedbackSubmissionsCount = feedbackEventRows.length;
+
+    // ── THUMBS / CACHE / GHOSTS ─────────────────────────────────────
     const thumbsUp = (thumbsHelper.data ?? []).filter((r: any) => r.rating === 1 || r.rating === "up").length
       + (thumbsExpl.data ?? []).filter((r: any) => r.helpful === true).length;
     const thumbsDown = (thumbsHelper.data ?? []).filter((r: any) => r.rating === -1 || r.rating === 0 || r.rating === "down").length
@@ -99,25 +165,79 @@ serve(async (req) => {
       ? Math.round(cacheRows.reduce((s: number, r: any) => s + (r.latency_ms ?? 0), 0) / totalCache)
       : 0;
 
-    // Ghost users: signed up but no events
-    const signupEmails = new Set((ghostUsersRows.data ?? []).map((r: any) => r.email?.toLowerCase()).filter(Boolean));
-    const activeEmails = new Set<string>();
-    (eventsActive.data ?? []).forEach((e: any) => { if (e.email) activeEmails.add(e.email.toLowerCase()); });
+    const toolCounts = new Map<string, number>();
+    cacheRows.forEach((r: any) => {
+      const k = r.tool_type ?? "unknown";
+      toolCounts.set(k, (toolCounts.get(k) ?? 0) + 1);
+    });
+    const topTools = Array.from(toolCounts.entries())
+      .sort((a, b) => b[1] - a[1]).slice(0, 5)
+      .map(([name, count]) => ({ name, count }));
+
+    // Ghost users: ALL signups (not range-limited) with zero activity ever recorded
+    // in student_events. Uses the range event window as a proxy for "any activity".
+    const allSignupEmails = new Set(
+      (allSignupsForGhost.data ?? []).map((r: any) => r.email?.toLowerCase()).filter(Boolean)
+    );
+    const everActiveEmails = new Set<string>();
+    evRangeRows.forEach(r => { if (r.email) everActiveEmails.add(r.email.toLowerCase()); });
     let ghostCount = 0;
-    signupEmails.forEach(e => { if (!activeEmails.has(e)) ghostCount++; });
+    allSignupEmails.forEach(e => { if (!everActiveEmails.has(e)) ghostCount++; });
+
+    // ── LAUNCH FUNNEL ───────────────────────────────────────────────
+    // Step 1 (Signed up): signups in the selected range.
+    // Steps 2+: distinct actors per event in the same range.
+    const totalBetaSignups = signupsTotal.count ?? 0;
+    const rangeSignups = signupsRange.count ?? 0;
+
+    const funnelSteps = [
+      { key: "signed_up", label: "Signed up", count: rangeSignups },
+      { key: "logged_in", label: "Logged in", count: distinctActor(rowsFor(LOGIN_NAMES)) },
+      { key: "viewed_dashboard", label: "Viewed dashboard", count: distinctActor(rowsFor([EV.BETA_DASHBOARD_VIEWED])) },
+      { key: "selected_chapter", label: "Selected textbook chapter", count: studentsSelectedChapter },
+      { key: "opened_study_tool", label: "Opened study tool", count: studentsOpenedHelper },
+      { key: "clicked_helper_action", label: "Clicked helper action", count: distinctActor(helperActionRows) },
+      { key: "submitted_feedback", label: "Submitted feedback", count: distinctActor(feedbackEventRows) },
+    ];
+    const funnelBase = funnelSteps[0].count || 1;
+    const funnel = funnelSteps.map((s, i) => {
+      const prev = i === 0 ? s.count : funnelSteps[i - 1].count;
+      const dropoff = i === 0 ? 0 : Math.max(0, prev - s.count);
+      return {
+        ...s,
+        pctOfSignups: funnelBase > 0 ? s.count / funnelBase : 0,
+        dropoffFromPrev: dropoff,
+        dropoffPctFromPrev: prev > 0 ? dropoff / prev : 0,
+      };
+    });
 
     const metrics = {
-      signups: signupsCur.count ?? 0,
+      // Top metrics cards (10)
+      totalBetaSignups,
+      signupsToday: signupsToday.count ?? 0,
+      loginsToday,
+      activeUsersToday,
+      activeUsers7d,
+      studentsSelectedChapter,
+      studentsOpenedHelper,
+      feedbackSubmissions: feedbackSubmissionsCount,
+      cacheHitRate,
+      ghostUsers: ghostCount,
+
+      // Backwards-compatible fields (used elsewhere in the page)
+      signups: rangeSignups,
       signupsPrev: signupsPrev.count ?? 0,
-      logins7d: profilesLogins.count ?? 0,
-      activeUsers: activeSet.size,
-      studyToolOpens: studyOpens.count ?? 0,
-      helperClicks: (helperClicks.data ?? []).length,
+      logins7d: distinctActor(ev7dRows.filter(r => LOGIN_NAMES.includes(r.event_type))),
+      activeUsers: distinctActor(evRangeRows),
+      studyToolOpens,
+      helperClicks: helperClicksRange,
       thumbsUp, thumbsDown,
       openFeedback: (openChapterQ.count ?? 0) + (openIssueRep.count ?? 0),
-      cacheHitRate, avgLatencyMs,
-      ghostUsers: ghostCount,
+      avgLatencyMs,
       topTools,
+
+      // Funnel
+      funnel,
     };
 
     // ── FEEDBACK INBOX ──────────────────────────────────────────────
