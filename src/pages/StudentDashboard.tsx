@@ -582,25 +582,12 @@ export default function StudentDashboard() {
         </div>
 
         {/* Secondary actions — small, clearly secondary to the console above */}
-        <section ref={secondaryRef} className="max-w-4xl mx-auto px-5 sm:px-8 mt-8 md:mt-10 scroll-mt-24">
+        <section ref={secondaryRef} className="max-w-4xl mx-auto px-5 sm:px-8 mt-6 sm:mt-8 scroll-mt-24">
           <SecondaryActionsRow
             betaNumber={betaNumber}
             onWatchDemo={() => setVideoOpen(true)}
             onFeedback={() => setFeedbackOpen(true)}
           />
-          <p
-            className="mt-6 text-center text-[12px]"
-            style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-          >
-            Need help?{" "}
-            <a
-              href="mailto:lee@surviveaccounting.com"
-              className="underline hover:opacity-80"
-              style={{ color: "#64748B" }}
-            >
-              Lee usually replies within 1–2 business days.
-            </a>
-          </p>
         </section>
       </main>
 
