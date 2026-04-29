@@ -585,7 +585,7 @@ export default function RetroTerminalFrame({
               {tools && tools.length > 0 && (
                 <div
                   key={`toolgrid-${activeToolKey ?? "idle"}-${canPickTool ? "ready" : "wait"}`}
-                  className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 sa-toolgrid-reveal"
+                  className="mt-4 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 sa-toolgrid-reveal"
                 >
                   {tools.map((tool) => {
                     const isActive = activeToolKey === tool.key;
@@ -663,7 +663,7 @@ export default function RetroTerminalFrame({
                           transform: isActive ? "translateY(1px)" : "translateY(0)",
                           transition:
                             "background 160ms ease-out, border-color 160ms ease-out, box-shadow 200ms ease-out, transform 120ms ease-out, opacity 200ms ease-out",
-                          minHeight: 122,
+                          minHeight: 104,
                           display: "flex",
                           flexDirection: "column",
                           gap: 6,
