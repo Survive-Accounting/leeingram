@@ -28,6 +28,7 @@ interface StagingHeroProps {
 export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [videoPlaying, setVideoPlaying] = useState(false);
 
   const handleSeeHowItWorks = () => {
     // Scroll to the demo / courses section.
