@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -242,9 +242,8 @@ export function SignupsTable({ signups, loading }: { signups: SignupRow[]; loadi
                 const isOpen = expanded.has(s.email);
                 const isGhost = s.totalEvents === 0;
                 return (
-                  <>
+                  <Fragment key={s.email}>
                     <tr
-                      key={s.email}
                       className={`border-b hover:bg-muted/40 cursor-pointer ${isGhost ? "opacity-70" : ""}`}
                       onClick={() => toggle(s.email)}
                     >
