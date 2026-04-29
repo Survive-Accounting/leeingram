@@ -339,6 +339,17 @@ export default function StudentDashboard() {
   const scrollToPreviewer = () => {
     previewerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+  const handleShareCopy = async () => {
+    const url = betaNumber
+      ? `https://learn.surviveaccounting.com/?ref=${betaNumber}`
+      : "https://learn.surviveaccounting.com/";
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied — share with a friend");
+    } catch {
+      toast.error("Couldn't copy. Long-press to copy manually.");
+    }
+  };
 
   const [email, setEmail] = useState<string | null>(null);
   const [purchase, setPurchase] = useState<Purchase | null>(null);
