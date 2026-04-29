@@ -179,6 +179,43 @@ function DashNavbar({
   );
 }
 
+/* ─── Secondary Card ─── */
+
+function SecondaryCard({
+  label,
+  sub,
+  onClick,
+  highlight = false,
+}: {
+  label: string;
+  sub: string;
+  onClick: () => void;
+  highlight?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-left rounded-xl px-4 py-3.5 transition-all hover:-translate-y-0.5 hover:shadow-md"
+      style={{
+        background: "#fff",
+        border: highlight
+          ? `1px solid ${RED}33`
+          : "1px solid rgba(20,33,61,0.10)",
+        boxShadow: "0 2px 8px rgba(20,33,61,0.04)",
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      <div className="text-[13.5px] font-semibold" style={{ color: highlight ? RED : NAVY }}>
+        {label}
+      </div>
+      <div className="mt-0.5 text-[11.5px]" style={{ color: "#64748B" }}>
+        {sub}
+      </div>
+    </button>
+  );
+}
+
 /* ─── Main Page ─── */
 
 export default function StudentDashboard() {
