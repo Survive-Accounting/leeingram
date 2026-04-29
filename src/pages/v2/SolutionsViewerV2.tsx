@@ -2442,6 +2442,21 @@ export default function SolutionsViewerV2() {
     }
   };
 
+  // Detect iframe-embed context. When embedded inside the StudyPreviewer the
+  // breadcrumb home/chapter clicks should bubble up to the parent so the
+  // student lands back on the retro terminal "choose course / chapter" screen
+  // instead of navigating inside the iframe.
+  const inIframe =
+    typeof window !== "undefined" && window.top !== window.self;
+
+  const goHome = () => {
+    if (inIframe) {
+      try { window.parent?.postMessage({ type: "sa-viewer-go-home" }, "*"); } catch { /* ignore */ }
+    } else {
+      navigate("/");
+    }
+  };
+
   const [asset, setAsset] = useState<Asset | null>(null);
   const [chapter, setChapter] = useState<ChapterMeta | null>(null);
   const [siblings, setSiblings] = useState<{ asset_name: string; source_ref: string | null }[]>([]);
