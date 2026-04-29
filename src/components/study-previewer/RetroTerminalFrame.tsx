@@ -107,6 +107,17 @@ export default function RetroTerminalFrame({
   const [crtSweepKey, setCrtSweepKey] = useState(0);
   // Track which row was just clicked so it briefly flashes
   const [flashedToolKey, setFlashedToolKey] = useState<string | null>(null);
+  const [chapterError, setChapterError] = useState(false);
+
+  // Clear the inline chapter error as soon as a chapter is picked.
+  useEffect(() => {
+    if (canPickTool) setChapterError(false);
+  }, [canPickTool]);
+
+  const nudgeChapter = () => {
+    setChapterError(true);
+    onNudgeChapter?.();
+  };
   const firstPulseRef = useRef(true);
   useEffect(() => {
     if (firstPulseRef.current) { firstPulseRef.current = false; return; }
