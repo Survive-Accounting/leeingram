@@ -1532,6 +1532,104 @@ function InlineResponseBlock({ text }: { text: string }) {
   );
 }
 
+// ── Beta tools disclosure ───────────────────────────────────────────────
+// Lives under the two primary helper CTAs. Collapsed by default so the
+// student sees a clean two-button workspace; expands to a chip grid of
+// experimental helpers. Visually secondary on purpose — this is a beta
+// lab, not the main required workflow.
+function BetaToolsDisclosure({
+  activeSection,
+  onPick,
+  onPrefetch,
+}: {
+  activeSection: ToolboxKey | null;
+  onPick: (key: ToolboxKey) => void;
+  onPrefetch: (key: ToolboxKey) => void;
+}) {
+  const activeIsBeta = !!activeSection && BETA_TOOLBOX_KEYS.includes(activeSection);
+  const [open, setOpen] = useState(activeIsBeta);
+  useEffect(() => {
+    if (activeIsBeta) setOpen(true);
+  }, [activeIsBeta]);
+
+  return (
+    <div
+      className="rounded-md"
+      style={{
+        background: "rgba(255,255,255,0.025)",
+        border: "1px dashed rgba(255,255,255,0.10)",
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left rounded-md hover:bg-white/[0.03] transition-colors"
+        aria-expanded={open}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span
+            className="text-[9px] font-semibold uppercase tracking-[0.16em] px-1.5 py-[1px] rounded-sm shrink-0"
+            style={{
+              color: "rgba(206,17,38,0.95)",
+              background: "rgba(206,17,38,0.10)",
+              border: "1px solid rgba(206,17,38,0.30)",
+            }}
+          >
+            Beta lab
+          </span>
+          <span
+            className="text-[12px] font-medium truncate"
+            style={{ color: "rgba(255,255,255,0.85)" }}
+          >
+            Try new beta tools
+          </span>
+        </div>
+        <ChevronDown
+          className={cn("h-3.5 w-3.5 transition-transform shrink-0", open && "rotate-180")}
+          style={{ color: "rgba(255,255,255,0.55)" }}
+        />
+      </button>
+
+      {open && (
+        <div className="px-3 pb-3 pt-0 animate-in fade-in slide-in-from-top-1 duration-150">
+          <p
+            className="text-[11px] leading-snug mb-2.5"
+            style={{ color: "rgba(255,255,255,0.55)" }}
+          >
+            We're testing new study helpers. Try one and tell us what helped.
+          </p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {BETA_TOOLBOX_KEYS.map((k) => {
+              const isActive = activeSection === k;
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => onPick(k)}
+                  onMouseEnter={() => onPrefetch(k)}
+                  onFocus={() => onPrefetch(k)}
+                  title={TOOLBOX_META[k].subtitle}
+                  className="inline-flex items-center justify-start gap-1.5 h-8 px-2.5 rounded-md text-[11.5px] font-medium transition-colors text-left"
+                  style={{
+                    background: isActive ? "rgba(206,17,38,0.18)" : "rgba(255,255,255,0.035)",
+                    border: isActive
+                      ? "1px solid rgba(206,17,38,0.5)"
+                      : "1px solid rgba(255,255,255,0.08)",
+                    color: isActive ? "#FFD3D8" : "rgba(255,255,255,0.78)",
+                  }}
+                >
+                  <span aria-hidden className="shrink-0">{TOOLBOX_META[k].emoji}</span>
+                  <span className="truncate">{TOOLBOX_META[k].label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function InlineExplanation({
   asset,
   chapter,
