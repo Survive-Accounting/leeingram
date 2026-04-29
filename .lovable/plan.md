@@ -1,92 +1,79 @@
 ## Goal
 
-Replace the current "JE Helper" (which just auto-opens the JE dialog inside the Practice Problem Helper iframe) with a **standalone JE Helper screen**. It lives in the same retro-monitor previewer, looks like the Practice Problem Helper visually, but its UX is: study every journal entry in the selected chapter on one screen, each shown as a transaction description + the existing JE table with the account/amount tooltips (matching screenshot 1).
+Refine each JE Helper card so it's slick and study-focused:
+1. Replace the awkward "Part e" header with a concise, AI-generated **transaction description** (e.g. "Initial ROU asset and lease liability").
+2. Move the source reference (e.g. `BE20.15`) to a small **"Open in new tab"** button in the card's top-right that opens that problem in the Practice Problem Helper.
+3. Drop the date subline (it's redundant once the description is clear).
+4. Replace dollar amounts with **`???`** placeholders, but keep the existing `amount_source` tooltip so students can still see where the number would come from.
 
-## What changes
+## What students will see (per card)
 
-### 1. New component: `JEHelperPanel`
-File: `src/components/study-previewer/JEHelperPanel.tsx`
-
-A self-contained, full-screen-inside-the-previewer panel (no iframe). Layout matches the Practice Problem Helper's chrome so it feels like the same hardware, but its content is a scrollable list of journal entries for the selected chapter.
-
-Header (matches PPH header):
-- Left: `SPRING '26 BETA` chip
-- Center: `View Journal Entries · Ch N` button (replaces "Switch Problem")
-  - Opens a lightweight chapter-switcher dropdown (or simply re-uses chapter list — for the demo, this can be a non-interactive label saying `Ch N — name` since chapter selection already happens on the previous screen)
-- Right: `Share Feedback` (same component/handler as PPH)
-
-Breadcrumbs (using existing `RetroBreadcrumbs`):
-- `home` → posts `sa-viewer-go-home` to parent
-- `ch N` → posts `sa-viewer-go-chapter` to parent
-- `je helper` (current)
-
-Body:
-- Heading: `Journal Entries — Ch N: <Chapter Name>`
-- Subheading: `Study every journal entry in this chapter. Hover the ⓘ icons to see why each account is debited/credited and where the numbers come from.`
-- Vertical list of journal-entry cards. Each card:
-  - **Transaction description** (bold, ~14–15px) — e.g. "Record stock-option compensation expense"
-  - **Source pill** (tiny, muted) — e.g. `E15.10 · Part (a)` so students can find the originating problem
-  - **JE table** rendered with the existing `StructuredJEDisplay` / `JournalEntryTable` style (account / debit / credit columns, with `JETooltip` on accounts and amounts) — the exact look in screenshot 1
-- Empty state if no JEs: friendly "This chapter doesn't have journal entries yet" message
-- Loading skeleton while fetching
-
-### 2. Data fetching
-
-In `JEHelperPanel`, on mount + whenever `chapterId` changes:
-
-```sql
-SELECT id, asset_name, source_number, instructions,
-       journal_entry_completed_json, answer_text, journal_entry
-FROM teaching_assets
-WHERE chapter_id = :chapterId
-  AND journal_entry_completed_json IS NOT NULL
-ORDER BY source_number ASC NULLS LAST, asset_name ASC
+```text
+┌────────────────────────────────────────────────────────────────┐
+│ Initial ROU asset and lease liability        [ BE20.15 ↗ ]    │
+├────────────────────────────────────────────────────────────────┤
+│ ACCOUNT                              DEBIT          CREDIT     │
+│ Right-of-Use Asset ⓘ                  ??? ⓘ                    │
+│   Lease Liability ⓘ                                  ??? ⓘ     │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-Then flatten each asset's JE payload into one or more entry cards:
+- ⓘ on accounts → existing `debit_credit_reason`
+- ⓘ on `???` → existing `amount_source`
+- `BE20.15 ↗` button → opens `/v2/solutions/<asset_code>` in a new tab
 
-- If `journal_entry_completed_json` is canonical (`isCanonicalJE`), iterate `scenario_sections[].entries_by_date[]`.
-  - **Transaction description** = scenario `label` (e.g. "Part (a)") if it carries a description, otherwise pull from instructions; fall back to the date string.
-  - For the demo, a robust derivation is:
-    - If scenario `label` looks descriptive (>4 words) → use it
-    - Else use `<source_number> · <scenario.label>` (e.g. `E15.10 · Part (a)`)
-- If the legacy array format, render each group as one card using the existing `JournalEntryTable` (which already handles tooltips via `StructuredJEDisplay` for canonical and falls back gracefully).
+## Description generation (AI, on-the-fly + cached)
 
-For MVP/demo we render each `(scenario, date)` pair as one card containing one JE table. This keeps each card focused on a single transaction.
+New edge function: `supabase/functions/generate-je-transaction-labels/index.ts`
 
-### 3. Wire JE Helper into the previewer (no iframe)
+- Called by JE Helper after assets load, in batches of ~10 entries per call.
+- Auth: direct `api.anthropic.com/v1/messages`, model `claude-sonnet-4-20250514`, using `ANTHROPIC_API_KEY` (per project rule — never the Lovable gateway).
+- Input per entry: scenario label, instruction text snippet for the part letter, the date, and the JE rows (account names + sides only, no dollar amounts needed).
+- Output: a single 4–8-word transaction description in title case, no leading "Record/Recognize/To" verbs unless natural (e.g. "Initial lease payment", "Lease expense and ROU amortization", "Issued bonds at a discount").
+- Tool-calling for structured output: returns `{ labels: [{ key, description }] }` keyed by the same `key` the panel already builds (`assetId-si-ei`).
 
-In `src/components/study-previewer/StudyPreviewer.tsx`:
+### Caching
 
-- Remove the `iframe` branch for `activeTool === "je"` (lines ~833–893).
-- Replace it with `<JEHelperPanel chapterId={selectedChapterId} chapter={selectedChapter} onShareFeedback={onOpenFeedback} onGoHome={...} onGoChapter={...} />`.
-- Drop `jeAssetCode` state and the related Supabase prefetch (no longer needed). Practice Problem Helper still uses `viewerAssetCode` and the iframe — unchanged.
-- The "go home" / "go chapter" actions just call the existing setters locally (same effect as the postMessage path the iframe uses today).
+Add a new column to `teaching_assets`:
+- `je_transaction_labels jsonb` — map of `"<si>-<ei>"` → description.
 
-### 4. Tool-card label
+Flow:
+1. On chapter load, fetch assets (already happening) + their `je_transaction_labels`.
+2. For any `(asset, si, ei)` missing a label, queue it for generation.
+3. Call the edge function in one batch, then `update teaching_assets set je_transaction_labels = ...` per asset (merging into existing JSON).
+4. Render labels as they arrive (skeleton/derived fallback in the meantime so the card never looks broken).
 
-In `TERMINAL_TOOLS` (StudyPreviewer.tsx):
-- Keep the JE Helper card label `Journal Entry Helper` and description `Study every journal entry in this chapter, with the why behind each line.`
-- The `cta` becomes `View Journal Entries`.
+This keeps the demo snappy on second load and across students, while letting any new asset auto-fill the first time it's viewed.
 
-(The "View Journal Entries" wording the user mentioned for the "Switch Problem" spot lives inside the new JEHelperPanel header — see Header above.)
+## Source button → Practice Problem Helper
 
-### 5. Tooltips — preserved as-is
+- Use the asset's `asset_code` (already fetched alongside the JE data — add to the select).
+- Button content: `<source_number> ↗` (e.g. `BE20.15 ↗`); if `source_number` is null fall back to "Open problem".
+- `target="_blank"` `rel="noopener noreferrer"` to `/v2/solutions/<asset_code>` (same URL the iframe uses for the PPH today).
+- Styling: pill-shaped, low-contrast on the navy card (`bg: rgba(255,255,255,0.06)`, white-70 text, ExternalLink icon from lucide).
+- Keep the asset code itself out of the visible UI per the Internal Code Visibility rule — `source_number` is the textbook reference and is fine to show; we only use `asset_code` as the link target.
 
-The existing `StructuredJEDisplay` already renders `JETooltip` for `debit_credit_reason` (account) and `amount_source` (amount). We reuse it directly so screenshot-1 styling and behavior come for free.
+## Amounts → "???"
 
-### 6. SolutionsViewerV2 cleanup (small)
+Inside `JECard` in `JEHelperPanel.tsx`:
+- For each row, render `???` (in monospace, slightly muted) in the appropriate Debit/Credit cell instead of `formatAmount(...)`.
+- Always render the `amount_source` `JETooltip` next to `???` when present, even if the underlying amount is null/zero.
+- The non-active side stays empty (no `???` on the side that has no amount).
 
-Remove the now-unused `?focus=je` auto-open behavior added in the previous round, since the JE Helper no longer routes through the V2 viewer. (The `useEffect` that opens `setJeOpen(true)` when `focusJE` is true can be deleted; harmless to leave but cleaner to remove.)
+## Files
 
-## Files touched
-
-- **new** `src/components/study-previewer/JEHelperPanel.tsx`
-- **edit** `src/components/study-previewer/StudyPreviewer.tsx` (swap iframe branch for the new panel; drop `jeAssetCode` state + JE prefetch query)
-- **edit** `src/pages/v2/SolutionsViewerV2.tsx` (remove `focus=je` auto-open; minor)
+- **edit** `src/components/study-previewer/JEHelperPanel.tsx`
+  - Add `asset_code` to the select.
+  - Carry `asset_code`, `source_number`, and `je_transaction_labels` through `flattenAssets` into each `FlatEntry`.
+  - Replace the `description` derivation: prefer the cached/AI label, fall back to the existing heuristic only while loading.
+  - New header layout: title on the left, `[source_number ↗]` button on the right; remove the `entry.source` subline.
+  - Render `???` + `amount_source` tooltip in place of formatted amounts.
+  - Kick off batched calls to the new edge function for any entries missing a label, then `setEntries` as labels arrive.
+- **new** `supabase/functions/generate-je-transaction-labels/index.ts` — Anthropic-direct, tool-calling for structured `{labels:[...]}` output, validates batch size.
+- **migration** add `je_transaction_labels jsonb` column to `teaching_assets` (nullable, default `null`).
 
 ## Out of scope (for the demo)
 
-- A chapter-switcher inside the JE Helper header (chapter selection happens on the previous retro screen).
-- Filtering / search across entries.
-- Per-entry deep links back to the originating problem (we surface the source code as a pill but don't link it yet).
+- Backfilling labels across all chapters proactively — first view per asset triggers generation.
+- A "Show amounts" toggle — locked to `???` per your direction.
+- Any UI change to PPH itself when opened from the new tab; it loads as today.
