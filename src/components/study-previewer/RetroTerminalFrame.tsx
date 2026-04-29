@@ -537,15 +537,32 @@ export default function RetroTerminalFrame({
               {/* Chapter picker — disabled until course chosen */}
               <div className="mb-1">
                 <div
+                  className={courseLabel && !canPickTool ? "sa-chapter-blink" : ""}
                   style={{
                     color: courseLabel ? PHOSPHOR_DIM : PHOSPHOR_MUTED,
                     fontSize: "0.92em",
                     marginBottom: 4,
                     letterSpacing: "0.02em",
                     transition: "color 240ms ease-out",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
                   }}
                 >
-                  {">"} {dashboardMode ? "Choose Textbook Chapter" : "Choose Chapter"}
+                  {courseLabel && !canPickTool && (
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: PHOSPHOR,
+                        boxShadow: `0 0 8px ${PHOSPHOR_GLOW}, 0 0 14px ${PHOSPHOR_GLOW}`,
+                        display: "inline-block",
+                      }}
+                    />
+                  )}
+                  <span>{">"} {dashboardMode ? "Choose Textbook Chapter" : "Choose Chapter"}</span>
                 </div>
                 <div className="w-full sm:max-w-[360px]" style={{ opacity: courseLabel ? 1 : 0.5 }}>
                   {chapterSelector ?? (
