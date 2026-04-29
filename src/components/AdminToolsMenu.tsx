@@ -9,9 +9,10 @@ import { useDevToolFlag, setDevToolFlag, type DevToolKey } from "@/lib/devToolFl
 import { useDraggable } from "@/components/prompt-builder/useDraggable";
 
 const ITEMS: { key: DevToolKey; label: string; sub: string }[] = [
-  { key: "promptBuilder", label: "Prompt Builder", sub: "Floating draggable prompt tool" },
-  { key: "styleExport",   label: "Style Export",   sub: "Export tokens, screenshots, brief" },
-  { key: "testBar",       label: "Show Test Bar",  sub: "Student-flow path + reset session" },
+  { key: "promptBuilder",      label: "Prompt Builder",      sub: "Floating draggable prompt tool" },
+  { key: "styleExport",        label: "Style Export",        sub: "Export tokens, screenshots, brief" },
+  { key: "testBar",            label: "Show Test Bar",       sub: "Student-flow path + reset session" },
+  { key: "simulateOnboarding", label: "Simulate Onboarding", sub: "Replay the dashboard onboarding modal (no saves)" },
 ];
 
 const HIDDEN_STORAGE_KEY = "devTool.adminBar.hidden";

@@ -12,6 +12,8 @@ import StudyPreviewer from "@/components/study-previewer/StudyPreviewer";
 import { RetroBreadcrumbs, type BreadcrumbCrumb } from "@/components/study-previewer/RetroBreadcrumbs";
 import ShareWithFriendsBand from "@/components/dashboard/ShareWithFriendsBand";
 import { getCourseLabel } from "@/lib/courseLabel";
+import { useDevToolFlag, setDevToolFlag } from "@/lib/devToolFlags";
+import { useIsStaff } from "@/hooks/useIsStaff";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -606,6 +608,17 @@ export default function StudentDashboard() {
         />
       )}
 
+      {/* Staff-only onboarding simulator. Toggled via the Admin Tools menu
+          (Simulate Onboarding). Skips all validation, never writes to the DB —
+          purely for QA-ing the modal's UI/UX. */}
+      <OnboardingSimulator
+        userId={userId}
+        email={email}
+        campusId={campusId}
+        courseId={purchase?.course_id ?? null}
+        fallbackFirstName={fallbackFirstName}
+      />
+
       {verifying && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
@@ -623,5 +636,48 @@ export default function StudentDashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+/* ─── Onboarding Simulator (staff-only, /my-dashboard QA tool) ─── */
+
+function OnboardingSimulator({
+  userId,
+  email,
+  campusId,
+  courseId,
+  fallbackFirstName,
+}: {
+  userId: string | null;
+  email: string | null;
+  campusId: string | null;
+  courseId: string | null;
+  fallbackFirstName: string;
+}) {
+  const isStaff = useIsStaff();
+  const flagOn = useDevToolFlag("simulateOnboarding");
+  // Force-remount the modal each time the flag flips on so internal state
+  // (current step, name, etc.) starts fresh — letting Lee replay it freely.
+  const [runId, setRunId] = useState(0);
+  useEffect(() => {
+    if (flagOn) setRunId((n) => n + 1);
+  }, [flagOn]);
+
+  if (!isStaff || !flagOn || !userId || !email) return null;
+
+  const close = () => setDevToolFlag("simulateOnboarding", false);
+
+  return (
+    <OnboardingModal
+      key={`sim-${runId}`}
+      simulate
+      userId={userId}
+      email={email}
+      prefillCampusId={campusId}
+      prefillCourseId={courseId}
+      prefillName={fallbackFirstName}
+      onComplete={() => close()}
+      onClose={close}
+    />
   );
 }

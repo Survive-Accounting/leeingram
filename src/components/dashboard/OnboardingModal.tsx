@@ -25,12 +25,20 @@ interface Props {
   prefillCampusId: string | null;
   prefillCourseId: string | null;
   prefillName: string;
+  /**
+   * Simulate mode — staff-only preview.
+   * - All validation is bypassed (every step's Continue is enabled)
+   * - Submit does NOT call complete-onboarding; it just calls onComplete
+   *   with a stubbed result so changes can be UI-tested freely.
+   */
+  simulate?: boolean;
   onComplete: (result: {
     legacy: boolean;
     beta_number: number | null;
     campus_beta_number: number | null;
     campus_name: string | null;
   }) => void;
+  onClose?: () => void;
 }
 
 type Step = 1 | 2 | 3;
@@ -41,7 +49,9 @@ export default function OnboardingModal({
   prefillCampusId,
   prefillCourseId,
   prefillName,
+  simulate = false,
   onComplete,
+  onClose,
 }: Props) {
   const isStaff = useIsStaff();
   const [step, setStep] = useState<Step>(1);
@@ -80,8 +90,10 @@ export default function OnboardingModal({
   );
   const isCatchAll = prefilledCampus?.slug === CATCH_ALL_SLUG;
 
-  // Validation per step
+  // Validation per step. In simulate mode every step is freely advanceable so
+  // staff can flip through the UI without filling any field.
   const canAdvance = useMemo(() => {
+    if (simulate) return true;
     if (step === 1) {
       // Name is the only requirement. Campus is either known or optional write-in.
       return name.trim().length > 0;
@@ -96,7 +108,7 @@ export default function OnboardingModal({
       return confidence >= 1 && confidence <= 10;
     }
     return false;
-  }, [step, name, major, inGreek, greekOrgId, greekOther, confidence]);
+  }, [simulate, step, name, major, inGreek, greekOrgId, greekOther, confidence]);
 
   const handleSubmit = async (overrides?: {
     display_name?: string;
@@ -104,6 +116,19 @@ export default function OnboardingModal({
     is_in_greek_life?: boolean;
     confidence_1_10?: number;
   }) => {
+    // Simulate mode — skip the network round-trip entirely. Staff just want
+    // to QA the UI/UX, not write a real onboarding row.
+    if (simulate) {
+      toast.success("Simulated onboarding complete (nothing saved).");
+      onComplete({
+        legacy: false,
+        beta_number: null,
+        campus_beta_number: null,
+        campus_name: null,
+      });
+      return;
+    }
+
     setSubmitting(true);
     try {
       const finalName = (overrides?.display_name ?? name).trim() || "Test User";
@@ -170,7 +195,32 @@ export default function OnboardingModal({
         style={{ border: "1px solid #E0E7F0" }}
       >
         {/* Header / progress */}
-        <div className="px-6 pt-6 pb-3">
+        <div className="px-6 pt-6 pb-3 relative">
+          {simulate && (
+            <div className="absolute top-3 right-3 flex items-center gap-2">
+              <span
+                className="inline-flex items-center gap-1 rounded-full px-2 py-[3px] text-[10px] font-semibold uppercase tracking-wider"
+                style={{
+                  background: "#FEF3C7",
+                  color: "#92400E",
+                  border: "1px solid #FCD34D",
+                }}
+                title="Simulate mode — nothing is being saved"
+              >
+                🧪 Simulate
+              </span>
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Close simulator"
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          )}
           <div className="flex items-center gap-1.5">
             {[1, 2, 3].map((n) => (
               <div

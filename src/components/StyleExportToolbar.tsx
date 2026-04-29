@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useIsStaff } from "@/hooks/useIsStaff";
-import { useDevToolFlag } from "@/lib/devToolFlags";
+import { useDevToolFlag, setDevToolFlag } from "@/lib/devToolFlags";
 import { Button } from "@/components/ui/button";
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -15,7 +15,8 @@ import {
 } from "@/lib/styleExport";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 
-const HIDDEN_KEY = "styleExport.hidden.v1";
+// (Hide button now disables the `styleExport` dev flag — there is no separate
+// floating "show" pill. Re-enable from the Admin Tools menu.)
 
 export function StyleExportToolbar() {
   const isStaff = useIsStaff();
@@ -23,10 +24,6 @@ export function StyleExportToolbar() {
   const allowed = isStaff && flagOn;
   const POS_KEY = "styleExport.launcherPos.v1";
 
-  const [hidden, setHidden] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    try { return localStorage.getItem(HIDDEN_KEY) === "1"; } catch { return false; }
-  });
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
     if (typeof window === "undefined") return { x: 16, y: 152 };
@@ -45,10 +42,6 @@ export function StyleExportToolbar() {
   const dragRef = useRef<{ dx: number; dy: number; moved: boolean } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [sections, setSections] = useState<ExportableSection[]>([]);
-
-  useEffect(() => {
-    try { localStorage.setItem(HIDDEN_KEY, hidden ? "1" : "0"); } catch { /* noop */ }
-  }, [hidden]);
 
   useEffect(() => {
     try { localStorage.setItem(POS_KEY, JSON.stringify(pos)); } catch { /* noop */ }
@@ -117,20 +110,6 @@ export function StyleExportToolbar() {
       toast.error(e instanceof Error ? e.message : "Export failed");
     } finally { setBusy(null); }
   };
-
-  if (hidden) {
-    return (
-      <button
-        data-export-ignore
-        onClick={() => setHidden(false)}
-        className="fixed bottom-[72px] left-2 z-[9999] rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-accent-foreground hover:opacity-90 border border-border shadow-md transition-colors"
-        title="Show Style Export toolbar"
-        aria-label="Show Style Export toolbar"
-      >
-        🎨 Style Exporter
-      </button>
-    );
-  }
 
   return (
     <div
@@ -241,8 +220,9 @@ export function StyleExportToolbar() {
             <button
               onClick={() => {
                 setOpen(false);
-                setHidden(true);
+                setDevToolFlag("styleExport", false);
               }}
+              title="Hide — re-enable from Admin Tools menu"
               className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
             >
               <EyeOff className="h-3 w-3" /> Hide
