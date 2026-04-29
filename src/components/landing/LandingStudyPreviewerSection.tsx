@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import StudyPreviewer, { type PreviewChapter } from "@/components/study-previewer/StudyPreviewer";
 import BetaPaywallModal from "./BetaPaywallModal";
 import FeedbackToolModal from "@/components/dashboard/FeedbackToolModal";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import teamMeetingImg from "@/assets/team-meeting.png";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
