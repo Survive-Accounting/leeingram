@@ -264,7 +264,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         <div className="flex flex-col items-center text-center">
           {/* Welcome video — replaces headshot + "Built by Lee Ingram" */}
           <div
-            className="hero-anim-headshot mb-8 w-full"
+            className="mb-8 w-full"
             style={{ maxWidth: 560 }}
           >
             <div
@@ -318,7 +318,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                   />
                   {/* Play button */}
                   <div
-                    className="relative flex items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-110"
+                    className="relative flex items-center justify-center rounded-full"
                     style={{
                       width: 76,
                       height: 76,
