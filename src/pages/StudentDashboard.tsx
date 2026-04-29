@@ -130,7 +130,21 @@ function DashNavbar({
           </span>
         </button>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <button
+            onClick={onShare}
+            className="hidden sm:inline-flex items-center rounded-md text-[12.5px] sm:text-[13px] font-semibold transition-all hover:bg-slate-100 active:scale-95"
+            style={{
+              color: NAVY,
+              padding: "8px 12px",
+              fontFamily: "Inter, sans-serif",
+              border: "1px solid rgba(20,33,61,0.12)",
+              background: "#fff",
+            }}
+          >
+            Share with a friend
+          </button>
+
           <button
             onClick={onFeedback}
             className="inline-flex items-center rounded-md text-[12.5px] sm:text-[13px] font-semibold text-white transition-all hover:opacity-90 active:scale-95"
@@ -141,7 +155,7 @@ function DashNavbar({
               boxShadow: "0 2px 8px rgba(20,33,61,0.18)",
             }}
           >
-            Share Feedback
+            Send feedback
           </button>
 
           {/* Hamburger menu — sign out only */}
