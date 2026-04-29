@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Copy, RefreshCw, Sparkles, MessageSquare, Bug, Lightbulb, Heart, AlertTriangle, ExternalLink, ArrowLeft, TrendingDown } from "lucide-react";
 import { SignupsTable, type SignupRow } from "@/components/beta-dashboard/SignupsTable";
 import { FeedbackInboxSection } from "@/components/beta-dashboard/FeedbackInboxSection";
+import { FeedbackAISummarySection } from "@/components/beta-dashboard/FeedbackAISummarySection";
 import { useEventTracking } from "@/hooks/useEventTracking";
 import { BETA_EVENTS } from "@/lib/betaEvents";
 
