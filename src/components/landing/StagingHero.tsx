@@ -380,16 +380,17 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               </button>
             </div>
 
-            <p
-              className="hero-anim-link text-[12px]"
+            <a
+              href="https://surviveaccounting.com"
+              className="hero-anim-link text-[12px] hover:underline"
               style={{
                 color: "rgba(255,255,255,0.65)",
                 fontFamily: "Inter, sans-serif",
                 letterSpacing: "0.02em",
               }}
             >
-              Free beta access • Built by Lee Ingram • Accounting tutor since 2015
-            </p>
+              Existing student? Log in to the old course platform →
+            </a>
           </div>
         </div>
       </div>
