@@ -1,5 +1,5 @@
 import React from "react";
-import leeHeadshot from "@/assets/lee-headshot-original.png";
+import leeHeadshot from "@/assets/lee-portrait-terminal.png";
 
 const PHOSPHOR = "#7CFFB0";
 const PHOSPHOR_DIM = "rgba(124,255,176,0.55)";
