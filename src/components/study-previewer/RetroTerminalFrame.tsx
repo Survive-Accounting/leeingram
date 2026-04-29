@@ -378,29 +378,25 @@ export default function RetroTerminalFrame({
                 letterSpacing: "0.02em",
               }}
             >
-              {/* Headline — anchors the screen, replaces logo + boot chrome */}
-              <div
-                style={{
-                  fontFamily: "'DM Serif Display', serif",
-                  fontWeight: 400,
-                  fontSize: "clamp(20px, 3vw, 30px)",
-                  lineHeight: 1.15,
-                  letterSpacing: "0.005em",
-                  color: "#EAFFF2",
-                  textShadow: `0 0 2px ${PHOSPHOR_GLOW}, 0 0 14px ${PHOSPHOR_GLOW}`,
-                  marginBottom: "1.1em",
-                }}
-              >
-                {welcomeName ? (
-                  <>
-                    {isReturning ? "Welcome back, " : "Welcome, "}
-                    <span style={{ color: PHOSPHOR }}>{welcomeName}</span>
-                    <span style={{ color: PHOSPHOR_DIM }}>.</span>
-                  </>
-                ) : (
-                  <>Survive your Spring '26 finals</>
-                )}
-              </div>
+              {/* Headline — only when we have a personalized welcome; otherwise the section heading above the screen carries the title */}
+              {welcomeName && (
+                <div
+                  style={{
+                    fontFamily: "'DM Serif Display', serif",
+                    fontWeight: 400,
+                    fontSize: "clamp(20px, 3vw, 30px)",
+                    lineHeight: 1.15,
+                    letterSpacing: "0.005em",
+                    color: "#EAFFF2",
+                    textShadow: `0 0 2px ${PHOSPHOR_GLOW}, 0 0 14px ${PHOSPHOR_GLOW}`,
+                    marginBottom: "1.1em",
+                  }}
+                >
+                  {isReturning ? "Welcome back, " : "Welcome, "}
+                  <span style={{ color: PHOSPHOR }}>{welcomeName}</span>
+                  <span style={{ color: PHOSPHOR_DIM }}>.</span>
+                </div>
+              )}
 
               {/* Course picker (or read-only display when fixed) */}
               {courseSelector ? (
