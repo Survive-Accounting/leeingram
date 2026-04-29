@@ -578,7 +578,7 @@ export default function RetroTerminalFrame({
                       }}
                     />
                   )}
-                  <span>{">"} {dashboardMode ? "Choose Textbook Chapter" : "Choose Chapter"}</span>
+                  <span>{">"} Choose Textbook Chapter</span>
                 </div>
                 <div className="w-full sm:max-w-[360px]" style={{ opacity: courseLabel ? 1 : 0.5 }}>
                   {chapterSelector ?? (
