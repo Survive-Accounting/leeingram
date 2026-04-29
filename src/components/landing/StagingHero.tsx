@@ -343,7 +343,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
               textShadow: "0 2px 20px rgba(0,0,0,0.3)",
             }}
           >
-            Try the new Survive Accounting cram tools for free during beta. Give us your feedback, and we'll make updates in real-time. Available through final exams.
+            Try the new Survive Accounting cram tools for free during final exams. Give us your feedback, and we'll make updates in real-time.
           </p>
 
           {/* CTA */}
