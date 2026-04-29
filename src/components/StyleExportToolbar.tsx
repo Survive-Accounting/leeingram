@@ -139,6 +139,7 @@ export function StyleExportToolbar() {
             <ChevronDown className="h-3.5 w-3.5 opacity-60" />
           </Button>
         </PopoverTrigger>
+        <HideEyeButton onHide={() => setDevToolFlag("styleExport", false)} />
         <PopoverContent
           align="start"
           side="right"
