@@ -22,13 +22,13 @@ const COURSES: CoursePill[] = [
     id: "11111111-1111-1111-1111-111111111111",
     slug: "intro-accounting-1",
     shortName: "Intro 1",
-    fullName: "Intro Accounting 1",
+    fullName: "Intro Accounting 1 - Financial Principles",
   },
   {
     id: "22222222-2222-2222-2222-222222222222",
     slug: "intro-accounting-2",
     shortName: "Intro 2",
-    fullName: "Intro Accounting 2",
+    fullName: "Intro Accounting 2 - Managerial Principles",
   },
   {
     id: "33333333-3333-3333-3333-333333333333",
