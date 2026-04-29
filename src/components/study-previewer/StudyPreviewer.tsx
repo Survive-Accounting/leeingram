@@ -829,7 +829,7 @@ export default function StudyPreviewer({
                           </div>
                         )}
 
-                        {activeTool === "je" && selectedChapterId && !iframeError && (
+                        {activeTool === "je" && jeAssetCode && !iframeError && (
                           <>
                             {!iframeLoaded && (
                               <BrandedLoader
@@ -839,23 +839,21 @@ export default function StudyPreviewer({
                             )}
 
                             <iframe
-                              key={`je-${selectedChapterId}-${iframeReloadKey}`}
-                              src={`/tools/entry-builder?chapter_id=${encodeURIComponent(selectedChapterId)}&preview=true&embed=1`}
+                              key={`je-${jeAssetCode}-${iframeReloadKey}`}
+                              src={`/v2/solutions/${encodeURIComponent(jeAssetCode)}?focus=je`}
                               title="Journal Entry Helper"
                               className="w-full block border-0 relative z-10"
                               style={{
                                 height: "min(85vh, 980px)",
-                                background: "#0f1729",
+                                background: "#fff",
                               }}
                               onLoad={() => { setIframeLoaded(true); setStageLockHeight(null); }}
                               onError={() => setIframeError(true)}
                             />
-
-
                           </>
                         )}
 
-                        {activeTool === "je" && selectedChapterId && iframeError && (
+                        {activeTool === "je" && jeAssetCode && iframeError && (
                           <div
                             className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 gap-3"
                             style={{ background: "#fff" }}
@@ -882,6 +880,14 @@ export default function StudyPreviewer({
                             >
                               Retry
                             </button>
+                          </div>
+                        )}
+
+                        {activeTool === "je" && selectedChapterId && !jeAssetCode && (
+                          <div className="flex items-center justify-center text-center px-6 py-24">
+                            <p className="text-[14px]" style={{ color: "#64748B" }}>
+                              No journal entries available for this chapter yet — try another chapter.
+                            </p>
                           </div>
                         )}
 
