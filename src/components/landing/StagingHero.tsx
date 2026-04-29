@@ -264,7 +264,7 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
         <div className="flex flex-col items-center text-center">
           {/* Welcome video — replaces headshot + "Built by Lee Ingram" */}
           <div
-            className="hero-anim-headshot mb-8 w-full"
+            className="mb-8 w-full"
             style={{ maxWidth: 560 }}
           >
             <div
