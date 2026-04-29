@@ -49,7 +49,9 @@ export default function OnboardingModal({
   prefillCampusId,
   prefillCourseId,
   prefillName,
+  simulate = false,
   onComplete,
+  onClose,
 }: Props) {
   const isStaff = useIsStaff();
   const [step, setStep] = useState<Step>(1);
