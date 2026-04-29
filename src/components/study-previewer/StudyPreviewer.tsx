@@ -111,7 +111,7 @@ export default function StudyPreviewer({
   closeToolSignal,
 }: StudyPreviewerProps) {
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
-  const [chapterLoading, setChapterLoading] = useState(false);
+  // chapterLoading is derived below from the TanStack RPC fetch state.
   const [activeTool, setActiveTool] = useState<ToolKey | null>(null);
   const [viewerAssetCode, setViewerAssetCode] = useState<string | null>(null);
   const [jeAssetCode, setJeAssetCode] = useState<string | null>(null);
