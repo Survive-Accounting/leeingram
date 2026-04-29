@@ -144,9 +144,7 @@ export function BrandedLoader({
             decoding="async"
             className="w-full h-full object-cover"
             style={{
-              objectPosition: "center 15%",
-              filter:
-                "grayscale(0.3) brightness(0.95) sepia(0.15) hue-rotate(60deg) saturate(1.1)",
+              objectPosition: "center 22%",
             }}
           />
         </div>
