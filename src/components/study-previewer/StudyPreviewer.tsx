@@ -801,18 +801,11 @@ export default function StudyPreviewer({
 
                         {activeTool === "je" && selectedChapterId && !iframeError && (
                           <>
-                            {!iframeLoaded && showSkeleton && (
-                              <div
-                                aria-hidden
-                                className="absolute inset-0 flex flex-col gap-3 px-6 py-6 z-0"
-                                style={{ background: "#0f1729" }}
-                              >
-                                <div className="h-4 w-1/3 rounded bg-white/5 animate-pulse" />
-                                <div className="h-3 w-2/3 rounded bg-white/5 animate-pulse" />
-                                <div className="h-3 w-1/2 rounded bg-white/5 animate-pulse" />
-                                <div className="mt-4 h-40 w-full rounded bg-white/5 animate-pulse" />
-                                <div className="h-3 w-2/5 rounded bg-white/5 animate-pulse" />
-                              </div>
+                            {!iframeLoaded && (
+                              <BrandedLoader
+                                surface="navy"
+                                subtitle={showSlowStatus ? "Preparing tool…" : undefined}
+                              />
                             )}
 
                             <iframe
