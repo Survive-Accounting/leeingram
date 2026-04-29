@@ -85,10 +85,10 @@ function DashNavbar({
     >
       <nav className="max-w-6xl mx-auto h-16 px-5 sm:px-8 flex items-center justify-between">
         <button
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/")}
           className="text-[16px] sm:text-[18px] tracking-tight"
           style={{ fontFamily: LOGO_FONT }}
-          aria-label="Survive Accounting — dashboard"
+          aria-label="Survive Accounting — home"
         >
           <span style={{ color: RED, fontWeight: 800 }}>Survive</span>
           <span style={{ color: NAVY, fontWeight: 400 }}> Accounting</span>
