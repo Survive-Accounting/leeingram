@@ -36,7 +36,7 @@ interface AssetRow {
   id: string;
   asset_name: string;
   source_number: string | null;
-  instructions: string | null;
+  instruction_list: string | null;
   journal_entry_completed_json: any;
 }
 
