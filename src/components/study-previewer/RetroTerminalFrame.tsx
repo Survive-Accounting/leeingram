@@ -53,6 +53,10 @@ interface RetroTerminalFrameProps {
   canChangeCourse?: boolean;
   /** When true, chapter is changeable via inline "Change" affordance. */
   canChangeChapter?: boolean;
+  /** Optional list of upcoming tool ideas — rendered as chips in the secondary "coming soon" section. */
+  comingSoonIdeas?: string[];
+  /** Click handler for the secondary Share Feedback link. */
+  onShareFeedback?: () => void;
 }
 
 /**
