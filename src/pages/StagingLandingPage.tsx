@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import StagingTestimonialsSection from "@/components/landing/StagingTestimonialsSection";
+import WelcomeVideoSection from "@/components/landing/WelcomeVideoSection";
 import ContactForm from "@/components/landing/ContactForm";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { useEventTracking, setStoredEmail } from "@/hooks/useEventTracking";
