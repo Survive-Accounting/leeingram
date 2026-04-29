@@ -102,6 +102,7 @@ const SolutionsQAAdmin = lazy(() => import("./pages/SolutionsQAAdmin"));
 const QACosts = lazy(() => import("./pages/QACosts"));
 const JEDebug = lazy(() => import("./pages/JEDebug"));
 const AssetStatsDashboard = lazy(() => import("./pages/AssetStatsDashboard"));
+const BetaSpring2026Dashboard = lazy(() => import("./pages/BetaSpring2026Dashboard"));
 const SolutionsViewerStaging = lazy(() => import("./pages/SolutionsViewerStaging"));
 const SolutionsViewerV2 = lazy(() => import("./pages/v2/SolutionsViewerV2"));
 const AssetsControlPanelV2 = lazy(() => import("./pages/v2/AssetsControlPanelV2"));
@@ -336,6 +337,7 @@ const AppRoutes = () => {
         <Route path="/je-debug" element={<ProtectedRoute><JEDebug /></ProtectedRoute>} />
         <Route path="/share-leaderboard" element={<Navigate to="/asset-stats" replace />} />
         <Route path="/asset-stats" element={<ProtectedRoute><AssetStatsDashboard /></ProtectedRoute>} />
+        <Route path="/beta-spring2026" element={<ProtectedRoute><BetaSpring2026Dashboard /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
