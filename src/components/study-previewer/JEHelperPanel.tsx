@@ -116,7 +116,7 @@ export default function JEHelperPanel({
     (async () => {
       const { data, error } = await supabase
         .from("teaching_assets")
-        .select("id, asset_name, source_number, instructions, journal_entry_completed_json")
+        .select("id, asset_name, source_number, instruction_list, journal_entry_completed_json")
         .eq("chapter_id", chapter.id)
         .not("journal_entry_completed_json", "is", null)
         .order("source_number", { ascending: true, nullsFirst: false })
