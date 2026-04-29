@@ -13,6 +13,7 @@ import { SignupsTable, type SignupRow } from "@/components/beta-dashboard/Signup
 import { FeedbackInboxSection } from "@/components/beta-dashboard/FeedbackInboxSection";
 import { FeedbackAISummarySection } from "@/components/beta-dashboard/FeedbackAISummarySection";
 import { InsightsSections } from "@/components/beta-dashboard/InsightsSections";
+import { InactiveSignupsSection } from "@/components/beta-dashboard/InactiveSignupsSection";
 import { useEventTracking } from "@/hooks/useEventTracking";
 import { BETA_EVENTS } from "@/lib/betaEvents";
 
@@ -371,6 +372,8 @@ export default function BetaSpring2026Dashboard() {
           <FeedbackAISummarySection />
           {/* Top Confusing Chapters + Top Used Tools */}
           <InsightsSections startDate={rangeStart(range).toISOString()} />
+          {/* Inactive Signups */}
+          <InactiveSignupsSection signups={signups} />
           {/* Student Signups */}
           <SignupsTable signups={signups} loading={loading} />
         </div>
