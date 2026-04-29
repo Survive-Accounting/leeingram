@@ -109,7 +109,7 @@ export function ViewerOnboardingModal({
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
       <DialogContent
-        className="max-w-md p-0 gap-0 border-0 overflow-hidden"
+        className="max-w-md p-0 gap-0 border-0 overflow-hidden [&>button]:hidden"
         style={{ background: "#FFFFFF" }}
       >
         {/* Header band */}
