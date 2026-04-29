@@ -295,6 +295,8 @@ export default function StudentDashboard() {
   const [earlyBirdOpted, setEarlyBirdOpted] = useState(true); // default true so the row stays hidden until we know
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
+  const [signedOut, setSignedOut] = useState(false);
+  const [signOutCopied, setSignOutCopied] = useState(false);
   const [verifying, setVerifying] = useState<boolean>(() => {
     const p = new URLSearchParams(window.location.search);
     return p.get("just_paid") === "1" || p.get("checkout") === "success";
@@ -453,6 +455,26 @@ export default function StudentDashboard() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    setSignedOut(true);
+  };
+
+  const signOutShareUrl = betaNumber
+    ? `https://learn.surviveaccounting.com/?ref=${betaNumber}`
+    : "https://learn.surviveaccounting.com/";
+
+  const handleSignOutShare = async () => {
+    try {
+      await navigator.clipboard.writeText(signOutShareUrl);
+      setSignOutCopied(true);
+      toast.success("Link copied — share with a friend");
+      setTimeout(() => setSignOutCopied(false), 2000);
+    } catch {
+      toast.error("Couldn't copy. Long-press to copy manually.");
+    }
+  };
+
+  const dismissSignOut = () => {
+    setSignedOut(false);
     navigate("/", { replace: true });
   };
 
@@ -587,6 +609,72 @@ export default function StudentDashboard() {
       />
 
       <WelcomeVideoModal open={videoOpen} onClose={() => setVideoOpen(false)} />
+
+      {signedOut && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center px-4"
+          style={{ background: "rgba(15,23,42,0.72)", backdropFilter: "blur(6px)" }}
+          onClick={dismissSignOut}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="signout-title"
+        >
+          <div
+            className="relative w-full max-w-md rounded-2xl bg-white p-7 sm:p-8"
+            style={{
+              fontFamily: "Inter, sans-serif",
+              boxShadow: "0 24px 60px rgba(15,23,42,0.35)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={dismissSignOut}
+              aria-label="Close"
+              className="absolute top-3 right-3 inline-flex items-center justify-center rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              style={{ width: 32, height: 32 }}
+            >
+              ×
+            </button>
+
+            <h2
+              id="signout-title"
+              className="text-[20px] sm:text-[22px] font-bold leading-snug pr-6"
+              style={{ color: NAVY }}
+            >
+              Thanks for trying our free study tools.
+            </h2>
+            <p className="mt-2 text-[14px] leading-relaxed text-slate-600">
+              Tell a friend so they can survive finals too — or send Lee feedback to help shape what comes next.
+            </p>
+
+            <div className="mt-6 flex flex-col gap-2.5">
+              <button
+                onClick={handleSignOutShare}
+                className="w-full inline-flex items-center justify-center rounded-md text-[14px] font-semibold text-white transition-all hover:opacity-90 active:scale-[0.99]"
+                style={{
+                  background: NAVY,
+                  padding: "12px 18px",
+                  boxShadow: "0 2px 10px rgba(20,33,61,0.22)",
+                }}
+              >
+                {signOutCopied ? "Link copied" : "Share with a friend"}
+              </button>
+              <button
+                onClick={() => setFeedbackOpen(true)}
+                className="w-full inline-flex items-center justify-center rounded-md text-[14px] font-semibold transition-colors hover:bg-slate-50"
+                style={{
+                  color: NAVY,
+                  border: "1px solid rgba(20,33,61,0.18)",
+                  background: "#FFFFFF",
+                  padding: "12px 18px",
+                }}
+              >
+                Share feedback
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {needsOnboarding && userId && email && (
         <OnboardingModal
