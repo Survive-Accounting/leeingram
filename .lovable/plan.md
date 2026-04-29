@@ -1,98 +1,96 @@
-## Goal
+## Why "No entry builder set found" appears
 
-Three small but consistent polish items across the study previewer + V2 viewer:
+The Journal Entry Helper tile in the Study Previewer iframes the **legacy** `/tools/entry-builder?chapter_id=…` page (`StudyPreviewer.tsx` line 813). That page (`src/pages/EntryBuilderTool.tsx` line 89) queries the `entry_builder_sets` table — a separate manually-curated dataset that doesn't exist for most chapters yet. When no row is found it bails with `setError("No entry builder set found")`, which is exactly the red banner in your screenshot.
 
-1. Add a persistent **top-left label** inside the retro CRT screen: `Accounting Study Tools (Spring '26 Beta)`.
-2. Simplify the V2 viewer top-bar wordmark — replace the two-line "Survive Accounting · Beta / Built by Lee Ingram · Spring '26" with just `Spring '26 Beta`.
-3. Rework the `BrandedLoader` so it looks like the **same retro CRT screen** (phosphor green on near-black, scanlines, monospace) and shows only Lee's circular headshot + `Built by Lee Ingram` + the spinner. Drop the "Survive Accounting" wordmark from the loader. Color-saturated (navy/red) UI only appears once the tool itself paints.
+Meanwhile the new V2 viewer (`/v2/solutions/:assetCode`) already renders Journal Entries beautifully — it's the same component the Practice Problem Helper uses, just with the JE accordion as one of its sections. We should point the JE Helper at that instead.
 
 ---
 
-## Files to edit
+## Fix
 
-### 1. `src/components/study-previewer/RetroTerminalFrame.tsx`
+Reuse the V2 SolutionsViewer for the JE Helper, deep-linked to the chapter's first JE-bearing asset with the JE accordion auto-opened. No dependency on `entry_builder_sets`.
 
-Add a small phosphor header label at the very top of the CRT terminal content (above the welcome line / course picker). Renders on every state — chapter not chosen, chapter chosen, tool active.
+### 1. `src/pages/v2/SolutionsViewerV2.tsx` — accept `?focus=je`
 
-Insert just before the existing `{welcomeName && (...)}` block around line 381:
+In the existing `searchParams` block (line ~2418-2420), read a new param:
 
 ```tsx
-<div
-  style={{
-    fontFamily: "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
-    color: PHOSPHOR_DIM,
-    fontSize: "0.78em",
-    letterSpacing: "0.18em",
-    textTransform: "uppercase",
-    marginBottom: "1.1em",
-    textShadow: `0 0 4px ${PHOSPHOR_GLOW}`,
-  }}
->
-  Accounting Study Tools <span style={{ opacity: 0.7 }}>(Spring '26 Beta)</span>
-</div>
+const focusJE = searchParams.get("focus") === "je";
 ```
 
-This sits at the top-left of the green tube (matches the user's first screenshot).
+Where the JE accordion is rendered (the section that opens `<StructuredJEDisplay data={asset.journal_entry_completed_json} />` around line 1731-1740), default its `open` state to `true` when `focusJE` is set. Also scroll-into-view on first mount when `focusJE` is true so the student lands on the JEs without hunting.
 
-### 2. `src/pages/v2/SolutionsViewerV2.tsx` (lines ~2872-2906)
+### 2. `src/components/study-previewer/StudyPreviewer.tsx` — pick a JE-bearing asset and re-point the iframe
 
-Replace the two-line Brand wordmark block with a single compact `Spring '26 Beta` chip. Keeps the same `<Link to="/my-dashboard">` behavior so it still navigates back when clicked.
-
+**a. New state alongside `viewerAssetCode` (line 112):**
 ```tsx
-<Link
-  to="/my-dashboard"
-  className="group inline-flex items-center min-w-0 max-w-full"
-  data-embed-allow="true"
-  aria-label="Spring '26 Beta — back to dashboard"
-  title="Spring '26 Beta"
->
-  <span
-    className="truncate text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors group-hover:text-white"
-    style={{ color: "rgba(255,255,255,0.55)" }}
-  >
-    Spring '26 <span style={{ color: "#FF8A95" }}>Beta</span>
-  </span>
-</Link>
+const [jeAssetCode, setJeAssetCode] = useState<string | null>(null);
 ```
 
-### 3. `src/components/study-previewer/BrandedLoader.tsx`
+**b. Update the two asset-fetch blocks** (the localStorage hydrator at lines 139-150 and `handleChapterChange` at lines 204-211) to fire two parallel queries — first asset, and first asset where `journal_entry_completed_json IS NOT NULL`. Fallback to the first asset if no JE-bearing asset exists in the chapter:
 
-Rebuild as a CRT-themed loader. Keep the component API (`subtitle`, `surface`, `absolute`) but in practice we only use the dark surface now (the embedded white-screen iframe wrapper will pass `surface="navy"` so the loader keeps the dark/CRT feel until the colored UI paints).
+```ts
+const [firstRes, jeRes] = await Promise.all([
+  supabase.from("teaching_assets")
+    .select("asset_name, source_number")
+    .eq("chapter_id", chId)
+    .order("source_number", { ascending: true, nullsFirst: false })
+    .order("asset_name", { ascending: true })
+    .limit(1),
+  supabase.from("teaching_assets")
+    .select("asset_name, source_number")
+    .eq("chapter_id", chId)
+    .not("journal_entry_completed_json", "is", null)
+    .order("source_number", { ascending: true, nullsFirst: false })
+    .order("asset_name", { ascending: true })
+    .limit(1),
+]);
+const first = firstRes.data?.[0]?.asset_name ?? null;
+const firstJe = jeRes.data?.[0]?.asset_name ?? first;
+setViewerAssetCode(first);
+setJeAssetCode(firstJe);
+```
 
-Layout (top → bottom, centered):
-- Lee's circular headshot (`@/assets/lee-headshot-original.png`), 56px, ringed in phosphor (matches the small headshot in `RetroTerminalFrame` lines 703-724).
-- Phosphor dual-arc spinner (kept from current implementation, retuned to sit *around* the headshot as a thin orbit ring instead of being separate).
-- Caption: `BUILT BY LEE INGRAM` in JetBrains Mono uppercase, phosphor-dim.
-- Optional `subtitle` (e.g. "Loading problem…") in monospace below.
-- Background: same radial dark-green gradient as the CRT screen (`#052810 → #03130A → #010904`).
-- Add scanlines overlay + faint vignette so it reads as the same hardware.
-- Remove the "Survive Accounting" `DM Serif Display` wordmark entirely.
+Also clear `jeAssetCode` everywhere `viewerAssetCode` is cleared (the home-message handler at line 172, the `resetSignal` effect at line 158, the empty-chapter branch at 188, and `handleCourseChange` at 230).
 
-Pseudostructure:
+**c. Replace the JE Helper iframe block** (lines 802-826) so it points at the V2 viewer with `focus=je`, and shows the same "chapter being finalized" empty state as Practice when no JE asset exists:
 
 ```tsx
-<div role="status" style={{ background: CRT_RADIAL, fontFamily: MONO, color: PHOSPHOR }}>
-  <ScanlinesOverlay />
-  <Vignette />
-  <div className="relative" style={{ width: 96, height: 96 }}>
-    <SpinnerArcs />          {/* orbits the headshot */}
-    <HeadshotCircle src={leeHeadshot} className="absolute inset-2 rounded-full" />
+{activeTool === "je" && jeAssetCode && !iframeError && (
+  <>
+    {!iframeLoaded && (
+      <BrandedLoader
+        surface="navy"
+        subtitle={showSlowStatus ? "Preparing tool…" : undefined}
+      />
+    )}
+    <iframe
+      key={`je-${jeAssetCode}-${iframeReloadKey}`}
+      src={`/v2/solutions/${encodeURIComponent(jeAssetCode)}?focus=je`}
+      title="Journal Entry Helper"
+      className="w-full block border-0 relative z-10"
+      style={{ height: "min(85vh, 980px)", background: "#fff" }}
+      onLoad={() => { setIframeLoaded(true); setStageLockHeight(null); }}
+      onError={() => setIframeError(true)}
+    />
+  </>
+)}
+
+{activeTool === "je" && selectedChapterId && !jeAssetCode && (
+  <div className="flex items-center justify-center text-center px-6 py-24">
+    <p className="text-[14px]" style={{ color: "#64748B" }}>
+      No journal entries available for this chapter yet — try another chapter.
+    </p>
   </div>
-  <div className="mt-4 text-[10px] tracking-[0.18em] uppercase">Built by Lee Ingram</div>
-  {subtitle && <div className="mt-3 text-[11px] opacity-70">{subtitle}</div>}
-</div>
+)}
 ```
 
-The `surface="white"` branch can stay for safety (used by `EntryBuilderTool.tsx`) but should also drop the wordmark — only headshot + spinner + "Built by Lee Ingram" + subtitle. We will keep both surfaces but route the previewer's overlay loader to `surface="navy"` so it visually continues the CRT.
-
-No call-site changes are required in `StudyPreviewer.tsx` or `EntryBuilderTool.tsx` — the prop API stays the same.
+The error-retry and "pick a chapter first" branches stay as-is, just gated on `jeAssetCode` instead of the legacy route.
 
 ---
 
-## Visual outcome
+## Result
 
-- **Home screen (retro):** top-left of the CRT now reads `ACCOUNTING STUDY TOOLS (SPRING '26 BETA)` in dim phosphor monospace.
-- **Loading state when launching a tool:** screen looks like the same green CRT — Lee's headshot in the center with the spinner orbiting it and `BUILT BY LEE INGRAM` underneath. No "Survive Accounting" wordmark, no navy/red.
-- **Tool loaded (V2 viewer):** top-left now just shows a compact `SPRING '26 BETA` chip instead of the two-line wordmark, matching the user's request to declutter.
-
-No data, route, or behavior changes — purely presentational.
+- "Journal Entry Helper" now opens the same polished V2 viewer the Practice Problem Helper uses, jumped straight to the Journal Entries section.
+- The dead `/tools/entry-builder` legacy page is no longer referenced from the previewer (we leave the route in place; nothing else links to it for students).
+- Chapters without any JE-bearing asset show a clean "No journal entries available… try another chapter" message instead of the red error banner.
