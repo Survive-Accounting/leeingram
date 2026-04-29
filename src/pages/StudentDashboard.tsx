@@ -565,43 +565,15 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* Secondary actions — small, optional */}
-        <section className="max-w-5xl mx-auto px-5 sm:px-8 mt-10 md:mt-12">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <SecondaryCard
-              label="Watch demo"
-              sub="60-second tour"
-              onClick={() => setVideoOpen(true)}
-            />
-            <SecondaryCard
-              label="Share feedback"
-              sub="Tell Lee what to fix"
-              onClick={() => setFeedbackOpen(true)}
-            />
-            <SecondaryCard
-              label="Share beta with a friend"
-              sub="They get free access too"
-              onClick={scrollToShare}
-              highlight
-            />
-          </div>
-          {!earlyBirdOpted && userId && (
-            <div className="mt-6">
-              <EarlyBirdOptInRow
-                userId={userId}
-                onOptedIn={() => setEarlyBirdOpted(true)}
-              />
-            </div>
-          )}
-          <div ref={shareRef} className="mt-6 scroll-mt-24">
-            <ShareWithFriendsBand
-              betaNumber={betaNumber}
-              campusName={campusName}
-              compact
-            />
-          </div>
+        {/* Secondary actions — small, clearly secondary to the console above */}
+        <section className="max-w-4xl mx-auto px-5 sm:px-8 mt-8 md:mt-10">
+          <SecondaryActionsRow
+            betaNumber={betaNumber}
+            onWatchDemo={() => setVideoOpen(true)}
+            onFeedback={() => setFeedbackOpen(true)}
+          />
           <p
-            className="mt-8 text-center text-[12.5px]"
+            className="mt-6 text-center text-[12px]"
             style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
           >
             Need help?{" "}
