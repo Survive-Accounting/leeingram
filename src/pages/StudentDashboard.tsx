@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ArrowRight, Menu } from "lucide-react";
 import { toast } from "sonner";
 import OnboardingModal from "@/components/dashboard/OnboardingModal";
-import BetaCountdownStrip from "@/components/dashboard/BetaCountdownStrip";
+
 import FeedbackToolModal from "@/components/dashboard/FeedbackToolModal";
 import { WelcomeVideoModal } from "@/components/dashboard/WelcomeVideoCard";
 
