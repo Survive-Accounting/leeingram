@@ -336,12 +336,8 @@ function SecondaryActionsRow({
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const previewerRef = useRef<HTMLDivElement | null>(null);
-  const secondaryRef = useRef<HTMLDivElement | null>(null);
   const scrollToPreviewer = () => {
     previewerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-  const scrollToShare = () => {
-    secondaryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   const [email, setEmail] = useState<string | null>(null);
