@@ -1764,7 +1764,7 @@ function InlineExplanation({
         </span>
       </div>
 
-      {/* ── Top control bar — action buttons live in a single header strip ── */}
+      {/* ── Top control bar — two primary CTAs + a quiet beta-tools disclosure ── */}
       <div
         className="px-4 pt-4 pb-3 space-y-2.5 border-b"
         style={{
@@ -1772,7 +1772,7 @@ function InlineExplanation({
           background: "rgba(255,255,255,0.015)",
         }}
       >
-        {/* Row 1 — Walk me through it (full width, brand red) */}
+        {/* Row 1 — Walk me through it (primary, brand red) */}
         <button
           type="button"
           onClick={() => handleToolboxClick("walk_through")}
@@ -1792,55 +1792,36 @@ function InlineExplanation({
           {TOOLBOX_META.walk_through.label}
         </button>
 
-        {/* Row 2 — Hint + Setup (two equal columns, dark ghost buttons) */}
-        <div className="grid grid-cols-2 gap-2">
-          {(["hint", "setup"] as ToolboxKey[]).map((k) => {
-            const isActive = activeSection === k;
-            return (
-              <button
-                key={k}
-                type="button"
-                onClick={() => handleToolboxClick(k)}
-                onMouseEnter={() => prefetchToolbox(k)}
-                onFocus={() => prefetchToolbox(k)}
-                title={TOOLBOX_META[k].subtitle}
-                className="inline-flex items-center justify-start gap-2 h-9 px-3 rounded-md text-xs sm:text-[13px] font-medium transition-colors"
-                style={{
-                  background: isActive ? "rgba(206,17,38,0.18)" : "rgba(255,255,255,0.04)",
-                  border: isActive
-                    ? "1px solid rgba(206,17,38,0.5)"
-                    : "1px solid rgba(255,255,255,0.10)",
-                  color: isActive ? "#FFD3D8" : "rgba(255,255,255,0.85)",
-                }}
-              >
-                <span aria-hidden>{TOOLBOX_META[k].emoji}</span>
-                {TOOLBOX_META[k].label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Row 3 — Full solution (full width, dark ghost) */}
+        {/* Row 2 — Full solution (secondary strong CTA, full width) */}
         <button
           type="button"
           onClick={() => handleToolboxClick("full_solution")}
           onMouseEnter={() => prefetchToolbox("full_solution")}
           onFocus={() => prefetchToolbox("full_solution")}
           title={TOOLBOX_META.full_solution.subtitle}
-          className="w-full inline-flex items-center justify-start gap-2 h-9 px-3 rounded-md text-xs sm:text-[13px] font-medium transition-colors"
+          className={cn(
+            "w-full inline-flex items-center justify-center gap-2 h-10 rounded-md text-[13px] font-semibold transition-colors",
+            activeSection === "full_solution" && "ring-1 ring-white/30",
+          )}
           style={{
             background:
-              activeSection === "full_solution" ? "rgba(206,17,38,0.18)" : "rgba(255,255,255,0.04)",
-            border:
               activeSection === "full_solution"
-                ? "1px solid rgba(206,17,38,0.5)"
-                : "1px solid rgba(255,255,255,0.10)",
-            color: activeSection === "full_solution" ? "#FFD3D8" : "rgba(255,255,255,0.85)",
+                ? "rgba(255,255,255,0.10)"
+                : "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.18)",
+            color: "#FFFFFF",
           }}
         >
           <span aria-hidden>{TOOLBOX_META.full_solution.emoji}</span>
           {TOOLBOX_META.full_solution.label}
         </button>
+
+        {/* Row 3 — Try new beta tools (collapsible secondary lab) */}
+        <BetaToolsDisclosure
+          activeSection={activeSection}
+          onPick={handleToolboxClick}
+          onPrefetch={prefetchToolbox}
+        />
       </div>
 
       {hasJE && (
