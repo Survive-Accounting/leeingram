@@ -185,7 +185,111 @@ serve(async (req) => {
 
     feedback.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    return new Response(JSON.stringify({ metrics, feedback }), {
+    // ── STUDENT SIGNUPS ─────────────────────────────────────────────
+    // Full beta signup list (not range-limited) with campus, course, profile,
+    // engagement counts, and paid status.
+    const BETA_START_ISO = "2026-04-01T00:00:00Z";
+    const [signupRows, campusRows, courseRows] = await Promise.all([
+      db.from("student_onboarding")
+        .select("user_id,email,display_name,campus_id,course_id,beta_number,campus_beta_number,confidence_1_10,is_in_greek_life,greek_org_other,syllabus_file_path,welcomed_at,completed_at,created_at")
+        .eq("is_legacy", false)
+        .order("created_at", { ascending: false })
+        .limit(2000),
+      db.from("campuses").select("id,name,slug"),
+      db.from("courses").select("id,course_name,code,slug"),
+    ]);
+
+    const campusMap = new Map<string, any>((campusRows.data ?? []).map((c: any) => [c.id, c]));
+    const courseMap = new Map<string, any>((courseRows.data ?? []).map((c: any) => [c.id, c]));
+
+    const signupEmailsArr = Array.from(
+      new Set((signupRows.data ?? []).map((r: any) => (r.email ?? "").toLowerCase()).filter(Boolean))
+    );
+    const signupUserIds = (signupRows.data ?? []).map((r: any) => r.user_id).filter(Boolean);
+
+    const [profileRows, purchaseRows, eventRows] = await Promise.all([
+      signupUserIds.length
+        ? db.from("profiles").select("user_id,last_login_at").in("user_id", signupUserIds)
+        : Promise.resolve({ data: [] as any[] }),
+      signupEmailsArr.length
+        ? db.from("student_purchases")
+            .select("email,purchase_type,price_paid_cents,created_at,expires_at")
+            .in("email", signupEmailsArr)
+        : Promise.resolve({ data: [] as any[] }),
+      signupEmailsArr.length
+        ? db.from("student_events")
+            .select("email,event_type,created_at")
+            .in("email", signupEmailsArr)
+            .gte("created_at", BETA_START_ISO)
+            .limit(50000)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+
+    const profileMap = new Map<string, any>((profileRows.data ?? []).map((p: any) => [p.user_id, p]));
+    const purchaseMap = new Map<string, any>();
+    (purchaseRows.data ?? []).forEach((p: any) => {
+      const k = (p.email ?? "").toLowerCase();
+      const existing = purchaseMap.get(k);
+      if (!existing || new Date(p.created_at) > new Date(existing.created_at)) {
+        purchaseMap.set(k, p);
+      }
+    });
+
+    type EvCounts = { logins: number; toolOpens: number; helperClicks: number; total: number; lastEventAt: string | null };
+    const eventMap = new Map<string, EvCounts>();
+    (eventRows.data ?? []).forEach((e: any) => {
+      const k = (e.email ?? "").toLowerCase();
+      if (!k) return;
+      const c = eventMap.get(k) ?? { logins: 0, toolOpens: 0, helperClicks: 0, total: 0, lastEventAt: null };
+      c.total += 1;
+      const t = String(e.event_type ?? "");
+      if (t === "login" || t === "session_start" || t === "magic_link_login") c.logins += 1;
+      if (t.includes("study_tool") || t.startsWith("tool_")) c.toolOpens += 1;
+      if (t.includes("helper")) c.helperClicks += 1;
+      if (!c.lastEventAt || new Date(e.created_at) > new Date(c.lastEventAt)) c.lastEventAt = e.created_at;
+      eventMap.set(k, c);
+    });
+
+    const signups = (signupRows.data ?? []).map((r: any) => {
+      const k = (r.email ?? "").toLowerCase();
+      const campus = r.campus_id ? campusMap.get(r.campus_id) : null;
+      const course = r.course_id ? courseMap.get(r.course_id) : null;
+      const profile = r.user_id ? profileMap.get(r.user_id) : null;
+      const purchase = purchaseMap.get(k) ?? null;
+      const ev = eventMap.get(k) ?? { logins: 0, toolOpens: 0, helperClicks: 0, total: 0, lastEventAt: null };
+      return {
+        userId: r.user_id,
+        email: r.email,
+        displayName: r.display_name,
+        campusId: r.campus_id,
+        campusName: campus?.name ?? null,
+        campusSlug: campus?.slug ?? null,
+        courseId: r.course_id,
+        courseName: course?.course_name ?? null,
+        courseCode: course?.code ?? null,
+        courseSlug: course?.slug ?? null,
+        betaNumber: r.beta_number,
+        campusBetaNumber: r.campus_beta_number,
+        confidence: r.confidence_1_10,
+        greek: r.is_in_greek_life ? (r.greek_org_other ?? "yes") : null,
+        hasSyllabus: !!r.syllabus_file_path,
+        welcomedAt: r.welcomed_at,
+        completedAt: r.completed_at,
+        createdAt: r.created_at,
+        lastLoginAt: profile?.last_login_at ?? null,
+        lastEventAt: ev.lastEventAt,
+        logins: ev.logins,
+        toolOpens: ev.toolOpens,
+        helperClicks: ev.helperClicks,
+        totalEvents: ev.total,
+        paid: !!purchase,
+        purchaseType: purchase?.purchase_type ?? null,
+        pricePaidCents: purchase?.price_paid_cents ?? null,
+        purchasedAt: purchase?.created_at ?? null,
+      };
+    });
+
+    return new Response(JSON.stringify({ metrics, feedback, signups }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {

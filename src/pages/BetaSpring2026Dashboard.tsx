@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
+import { Link } from "react-router-dom";
 import { AccessRestrictedGuard } from "@/components/AccessRestrictedGuard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, RefreshCw, Sparkles, MessageSquare, Bug, Lightbulb, Heart, AlertTriangle, ExternalLink } from "lucide-react";
+import { Copy, RefreshCw, Sparkles, MessageSquare, Bug, Lightbulb, Heart, AlertTriangle, ExternalLink, ArrowLeft } from "lucide-react";
+import { SignupsTable, type SignupRow } from "@/components/beta-dashboard/SignupsTable";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -138,6 +139,7 @@ export default function BetaSpring2026Dashboard() {
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
+  const [signups, setSignups] = useState<SignupRow[]>([]);
   const [themes, setThemes] = useState<Theme[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [filterSource, setFilterSource] = useState<string>("all");
@@ -156,6 +158,7 @@ export default function BetaSpring2026Dashboard() {
       if (error) throw error;
       setMetrics(data.metrics);
       setFeedback(data.feedback);
+      setSignups(data.signups ?? []);
     } catch (e: any) {
       console.error(e);
       toast.error("Failed to load dashboard: " + (e?.message ?? "unknown"));
@@ -219,8 +222,22 @@ export default function BetaSpring2026Dashboard() {
   const sources = useMemo(() => Array.from(new Set(feedback.map(f => f.source))), [feedback]);
 
   return (
-    <SurviveSidebarLayout>
-      <AccessRestrictedGuard>
+    <AccessRestrictedGuard>
+      <div className="min-h-screen bg-muted/20">
+        <div className="border-b bg-white">
+          <div className="max-w-[1400px] mx-auto px-6 py-2 flex items-center justify-between">
+            <div className="text-[11px] font-bold tracking-[0.18em] uppercase" style={{ color: NAVY }}>
+              Spring 2026 Beta Dashboard · Internal
+            </div>
+            <Link
+              to="/domains"
+              className="text-[11px] inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-3 w-3" /> Exit
+            </Link>
+          </div>
+        </div>
+        <div className="max-w-[1400px] mx-auto px-6 py-6">
         <div className="space-y-6 pb-20">
           {/* Header */}
           <div
@@ -360,9 +377,12 @@ export default function BetaSpring2026Dashboard() {
               </div>
             </CardContent>
           </Card>
+          {/* Student Signups */}
+          <SignupsTable signups={signups} loading={loading} />
         </div>
-      </AccessRestrictedGuard>
-    </SurviveSidebarLayout>
+        </div>
+      </div>
+    </AccessRestrictedGuard>
   );
 }
 
