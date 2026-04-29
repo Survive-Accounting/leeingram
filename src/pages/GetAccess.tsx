@@ -676,7 +676,7 @@ export default function GetAccess() {
               style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              Free beta · No credit card required · Instant access
+              Free beta · Instant access
             </div>
           </div>
         </div>
