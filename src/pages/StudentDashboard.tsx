@@ -226,6 +226,58 @@ function SecondaryCard({
   );
 }
 
+/* ─── Secondary Actions Row ─── */
+
+function SecondaryActionsRow({
+  betaNumber,
+  onWatchDemo,
+  onFeedback,
+}: {
+  betaNumber: number | null;
+  onWatchDemo: () => void;
+  onFeedback: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const shareUrl = betaNumber
+    ? `https://learn.surviveaccounting.com/?ref=${betaNumber}`
+    : "https://learn.surviveaccounting.com/";
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      toast.success("Link copied — share with a friend");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Couldn't copy. Long-press to copy manually.");
+    }
+  };
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <SecondaryCard
+        title="Watch the 60-second demo"
+        sub="See how to use the beta before you start."
+        cta="Watch Demo"
+        onClick={onWatchDemo}
+      />
+      <SecondaryCard
+        title="Share the beta"
+        sub="Know someone taking accounting? Send them free finals access."
+        cta="Copy Link"
+        ctaDone={copied ? "Copied" : null}
+        onClick={handleCopy}
+      />
+      <SecondaryCard
+        title="Send Lee feedback"
+        sub="Tell me what is helpful, confusing, or missing."
+        cta="Share Feedback"
+        onClick={onFeedback}
+      />
+    </div>
+  );
+}
+
 /* ─── Main Page ─── */
 
 export default function StudentDashboard() {
