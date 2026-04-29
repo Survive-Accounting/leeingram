@@ -1,0 +1,1 @@
+ALTER TABLE public.teaching_assets ADD COLUMN IF NOT EXISTS je_transaction_labels jsonb;
