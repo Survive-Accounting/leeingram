@@ -363,51 +363,7 @@ export default function BetaSpring2026Dashboard() {
           </Card>
 
           {/* Feedback Inbox */}
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <div>
-                  <h2 className="text-lg font-bold" style={{ color: NAVY }}>Feedback Inbox</h2>
-                  <p className="text-xs text-muted-foreground">
-                    {filteredFeedback.length} of {feedback.length} items
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Input
-                    placeholder="Search…"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-[200px] h-9"
-                  />
-                  <Select value={filterSource} onValueChange={setFilterSource}>
-                    <SelectTrigger className="w-[180px] h-9"><SelectValue placeholder="Source" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All sources</SelectItem>
-                      {sources.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterSeverity} onValueChange={setFilterSeverity}>
-                    <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Severity" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All severity</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="low">Low</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2 max-h-[700px] overflow-y-auto">
-                {loading ? (
-                  <p className="text-sm text-muted-foreground">Loading…</p>
-                ) : filteredFeedback.length === 0 ? (
-                  <p className="text-sm text-muted-foreground italic">No feedback matches your filters.</p>
-                ) : filteredFeedback.map(item => (
-                  <FeedbackRow key={`${item.source}-${item.id}`} item={item} onCopy={copyPrompt} />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <FeedbackInboxSection />
           {/* Student Signups */}
           <SignupsTable signups={signups} loading={loading} />
         </div>
