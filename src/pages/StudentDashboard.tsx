@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import OnboardingModal from "@/components/dashboard/OnboardingModal";
 import BetaCountdownStrip from "@/components/dashboard/BetaCountdownStrip";
 import FeedbackToolModal from "@/components/dashboard/FeedbackToolModal";
-import { WelcomeVideoCard, WelcomeVideoModal } from "@/components/dashboard/WelcomeVideoCard";
+import { WelcomeVideoModal } from "@/components/dashboard/WelcomeVideoCard";
 
 import StudyPreviewer from "@/components/study-previewer/StudyPreviewer";
 import { RetroBreadcrumbs, type BreadcrumbCrumb } from "@/components/study-previewer/RetroBreadcrumbs";
