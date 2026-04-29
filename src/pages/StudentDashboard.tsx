@@ -205,50 +205,73 @@ function DashNavbar({
   );
 }
 
-/* ─── Secondary Card ─── */
+/* ─── Secondary Card (dark navy band variant) ─── */
 
-function SecondaryCard({
+function SecondaryDarkCard({
+  eyebrow,
   title,
   sub,
   cta,
   onClick,
   ctaDone,
+  variant,
 }: {
+  eyebrow: string;
   title: string;
   sub: string;
   cta: string;
   onClick: () => void;
-  /** When set, replaces CTA label briefly (e.g. "Copied"). */
   ctaDone?: string | null;
+  variant: "share" | "feedback";
 }) {
+  const accent = RED; // brand red used for both, per request
+  const isShare = variant === "share";
   return (
-    <div
-      className="rounded-lg p-3.5 flex flex-col h-full"
+    <button
+      type="button"
+      onClick={onClick}
+      className="group relative rounded-xl p-5 text-left transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
       style={{
-        background: "#fff",
-        border: "1px solid rgba(20,33,61,0.08)",
-        boxShadow: "0 1px 4px rgba(20,33,61,0.03)",
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
+        border: "1px solid rgba(255,255,255,0.10)",
+        boxShadow: "0 8px 22px rgba(0,0,0,0.25)",
         fontFamily: "Inter, sans-serif",
+        color: "#fff",
       }}
     >
-      <div className="text-[12.5px] font-semibold" style={{ color: NAVY }}>
+      {/* Accent bar */}
+      <div
+        aria-hidden
+        className="absolute left-0 top-4 bottom-4 rounded-r"
+        style={{ width: 3, background: accent, boxShadow: `0 0 12px ${accent}80` }}
+      />
+      <div
+        className="text-[10.5px] font-bold uppercase tracking-[0.18em] pl-3"
+        style={{ color: accent }}
+      >
+        {eyebrow}
+      </div>
+      <div
+        className="mt-1.5 text-[16px] sm:text-[17px] font-bold leading-snug pl-3"
+        style={{ color: "#fff" }}
+      >
         {title}
       </div>
       <div
-        className="mt-1 text-[11.5px] leading-snug flex-1"
-        style={{ color: "#64748B" }}
+        className="mt-1.5 text-[13px] leading-relaxed pl-3"
+        style={{ color: "rgba(255,255,255,0.72)" }}
       >
         {sub}
       </div>
-      <button
-        type="button"
-        onClick={onClick}
-        className="mt-2.5 self-start text-[11.5px] font-semibold hover:opacity-70 transition-opacity"
-        style={{ color: ctaDone ? "#16A34A" : NAVY }}
+      <div
+        className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold pl-3 transition-transform group-hover:translate-x-0.5"
+        style={{ color: ctaDone ? "#86EFAC" : accent }}
       >
-        {ctaDone ?? cta} ▸
-      </button>
-    </div>
+        {ctaDone ?? cta}
+        <span aria-hidden>→</span>
+      </div>
+    </button>
   );
 }
 
@@ -256,11 +279,9 @@ function SecondaryCard({
 
 function SecondaryActionsRow({
   betaNumber,
-  onWatchDemo,
   onFeedback,
 }: {
   betaNumber: number | null;
-  onWatchDemo: () => void;
   onFeedback: () => void;
 }) {
   const [copied, setCopied] = useState(false);
@@ -280,24 +301,22 @@ function SecondaryActionsRow({
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      <SecondaryCard
-        title="Watch the 60-second demo"
-        sub="See how to use the beta before you start."
-        cta="Watch Demo"
-        onClick={onWatchDemo}
-      />
-      <SecondaryCard
-        title="Share the beta"
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+      <SecondaryDarkCard
+        variant="share"
+        eyebrow="Spread the word"
+        title="Share the beta with a friend"
         sub="Know someone taking accounting? Send them free finals access."
-        cta="Copy Link"
-        ctaDone={copied ? "Copied" : null}
+        cta="Copy your share link"
+        ctaDone={copied ? "Link copied" : null}
         onClick={handleCopy}
       />
-      <SecondaryCard
+      <SecondaryDarkCard
+        variant="feedback"
+        eyebrow="Help shape it"
         title="Send Lee feedback"
-        sub="Tell me what is helpful, confusing, or missing."
-        cta="Share Feedback"
+        sub="Tell me what's helpful, confusing, or missing — I read every note."
+        cta="Share feedback"
         onClick={onFeedback}
       />
     </div>
@@ -606,17 +625,26 @@ export default function StudentDashboard() {
               resetSignal={resetSignal}
               closeToolSignal={closeToolSignal}
             />
+
+            {/* Divider between console and secondary actions */}
+            <div
+              ref={secondaryRef}
+              className="mt-10 sm:mt-14 mb-6 sm:mb-8 scroll-mt-24"
+              aria-hidden
+              style={{
+                height: 1,
+                background:
+                  "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0) 100%)",
+              }}
+            />
+
+            {/* Secondary actions — share + feedback, on the navy hero band */}
+            <SecondaryActionsRow
+              betaNumber={betaNumber}
+              onFeedback={() => setFeedbackOpen(true)}
+            />
           </div>
         </div>
-
-        {/* Secondary actions — small, clearly secondary to the console above */}
-        <section ref={secondaryRef} className="max-w-4xl mx-auto px-5 sm:px-8 mt-6 sm:mt-8 scroll-mt-24">
-          <SecondaryActionsRow
-            betaNumber={betaNumber}
-            onWatchDemo={() => setVideoOpen(true)}
-            onFeedback={() => setFeedbackOpen(true)}
-          />
-        </section>
       </main>
 
       <FeedbackToolModal
