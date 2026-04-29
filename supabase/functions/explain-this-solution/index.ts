@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const model = "gpt-5-mini";
+    
     const action = "explain_solution";
     const desiredModel = MODEL_OVERRIDES_BY_ACTION[action] ?? DEFAULT_AI_MODEL;
     const reasoning = REASONING_BY_ACTION[action] ?? DEFAULT_REASONING_EFFORT;
