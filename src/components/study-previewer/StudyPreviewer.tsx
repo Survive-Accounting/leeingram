@@ -793,29 +793,82 @@ export default function StudyPreviewer({
                           </div>
                         )}
 
-                        {activeTool === "je" && (
-                          <div className="px-6 py-16 sm:py-20 max-w-2xl mx-auto text-center">
-                            <h3
-                              className="text-[26px] leading-tight"
-                              style={{ color: NAVY, fontFamily: LOGO_FONT, fontWeight: 400 }}
-                            >
-                              Journal Entry Helper is being built
-                            </h3>
-                            <p className="mt-2 text-[14px]" style={{ color: "#64748B" }}>
-                              Tell us exactly how you'd want this to work and we'll build it
-                              straight from your feedback.
+                        {activeTool === "je" && selectedChapterId && !iframeError && (
+                          <>
+                            {!iframeLoaded && showSkeleton && (
+                              <div
+                                aria-hidden
+                                className="absolute inset-0 flex flex-col gap-3 px-6 py-6 z-0"
+                                style={{ background: "#0f1729" }}
+                              >
+                                <div className="h-4 w-1/3 rounded bg-white/5 animate-pulse" />
+                                <div className="h-3 w-2/3 rounded bg-white/5 animate-pulse" />
+                                <div className="h-3 w-1/2 rounded bg-white/5 animate-pulse" />
+                                <div className="mt-4 h-40 w-full rounded bg-white/5 animate-pulse" />
+                                <div className="h-3 w-2/5 rounded bg-white/5 animate-pulse" />
+                              </div>
+                            )}
+
+                            <iframe
+                              key={`je-${selectedChapterId}-${iframeReloadKey}`}
+                              src={`/tools/entry-builder?chapter_id=${encodeURIComponent(selectedChapterId)}&preview=true&embed=1`}
+                              title="Journal Entry Helper"
+                              className="w-full block border-0 relative z-10"
+                              style={{
+                                height: "min(85vh, 980px)",
+                                background: "#0f1729",
+                              }}
+                              onLoad={() => { setIframeLoaded(true); setStageLockHeight(null); }}
+                              onError={() => setIframeError(true)}
+                            />
+
+                            {!iframeLoaded && showSlowStatus && (
+                              <div
+                                className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] tracking-wide z-20"
+                                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
+                                role="status"
+                              >
+                                Preparing tool…
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {activeTool === "je" && selectedChapterId && iframeError && (
+                          <div
+                            className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 gap-3"
+                            style={{ background: "#fff" }}
+                            role="alert"
+                          >
+                            <p className="text-[13.5px]" style={{ color: "#475569" }}>
+                              Tool didn't load. Try again.
                             </p>
                             <button
                               type="button"
-                              onClick={onOpenFeedback}
-                              className="mt-5 inline-flex items-center gap-1.5 rounded-md px-5 py-2.5 text-[13px] font-semibold text-white transition-all hover:brightness-110"
+                              onClick={() => {
+                                setIframeError(false);
+                                setIframeLoaded(false);
+                                setShowSkeleton(false);
+                                setShowSlowStatus(false);
+                                setIframeReloadKey((k) => k + 1);
+                              }}
+                              className="inline-flex items-center rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors"
                               style={{
-                                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-                                boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
+                                color: "#14213D",
+                                background: "#F1F5F9",
+                                border: "1px solid #E2E8F0",
                               }}
                             >
-                              Tell us what you'd want <ArrowRight className="h-3.5 w-3.5" />
+                              Retry
                             </button>
+                          </div>
+                        )}
+
+                        {activeTool === "je" && !selectedChapterId && (
+                          <div className="flex items-center justify-center text-center px-6 py-24">
+                            <p className="text-[14px]" style={{ color: "#64748B" }}>
+                              Pick a chapter first.
+                            </p>
                           </div>
                         )}
                       </div>
