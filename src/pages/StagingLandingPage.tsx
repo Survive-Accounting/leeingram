@@ -299,6 +299,10 @@ export default function StagingLandingPage() {
         <SocialProofStrip />
       </div>
 
+      <div data-export-id="welcome-video" data-export-label="Welcome Video">
+        <WelcomeVideoSection />
+      </div>
+
       <div data-export-id="testimonials" data-export-label="Testimonials">
         <StagingTestimonialsSection onCtaClick={() => requestAccess({ course: defaultCourse.slug })} />
       </div>
