@@ -2851,11 +2851,9 @@ export default function SolutionsViewerV2() {
           boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 20px -8px rgba(0,0,0,0.4)",
         }}
       >
-        <div className="max-w-6xl mx-auto px-6 h-14 grid grid-cols-3 items-center gap-4">
-          {/* LEFT — Subtle "Built by Lee Ingram" attribution. Course name
-              now lives above the viewer (e.g., the COURSE • ACTIVE pill on
-              the landing mockup), so the header stays calm and personal. */}
-          <div className="flex items-center justify-start min-w-0">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
+          {/* LEFT — "Built by Lee Ingram" (desktop only; mobile hides to reduce noise) */}
+          <div className="hidden sm:flex items-center justify-start min-w-0">
             <Link
               to="/my-dashboard"
               className="group inline-flex items-center min-w-0 max-w-full"
@@ -2864,7 +2862,7 @@ export default function SolutionsViewerV2() {
               title="Built by Lee Ingram"
             >
               <span
-                className="truncate text-[11px] sm:text-[12px] font-medium tracking-wide transition-colors"
+                className="truncate text-[12px] font-medium tracking-wide transition-colors"
                 style={{ color: "rgba(255,255,255,0.45)" }}
               >
                 Built by{" "}
@@ -2877,6 +2875,8 @@ export default function SolutionsViewerV2() {
               </span>
             </Link>
           </div>
+          {/* Mobile: empty placeholder so Switch Problem stays centered */}
+          <div className="sm:hidden" />
 
           {/* CENTER — Switch Problem (primary nav) */}
           <div className="flex items-center justify-center min-w-0">
@@ -2911,26 +2911,41 @@ export default function SolutionsViewerV2() {
             </button>
           </div>
 
-          {/* RIGHT — Share Feedback */}
+          {/* RIGHT — Share Feedback (icon-only on mobile) */}
           <div className="flex items-center gap-2 justify-end">
             <button
               type="button"
               onClick={() => setFeedbackChooserOpen(true)}
               data-embed-allow="true"
               aria-label="Share feedback about this problem"
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-colors hover:bg-white/[0.06]"
+              className="inline-flex items-center justify-center gap-1.5 h-9 w-9 sm:w-auto sm:px-3 rounded-full text-xs font-medium transition-colors hover:bg-white/[0.06]"
               style={{
                 background: "rgba(255,255,255,0.03)",
                 border: "1px solid rgba(255,255,255,0.12)",
                 color: "rgba(255,255,255,0.85)",
               }}
             >
-              <MessageCircleQuestion className="h-3.5 w-3.5" style={{ color: "rgba(255,255,255,0.7)" }} />
+              <MessageCircleQuestion className="h-4 w-4 sm:h-3.5 sm:w-3.5" style={{ color: "rgba(255,255,255,0.7)" }} />
               <span className="hidden sm:inline">Share Feedback</span>
             </button>
           </div>
         </div>
       </header>
+
+      {/* Retro breadcrumb strip — mobile + desktop */}
+      <RetroBreadcrumbs
+        crumbs={[
+          { label: "home", to: "/" },
+          ...(chapter
+            ? [{
+                label: `ch ${chapter.chapter_number} ${chapter.chapter_name}`,
+                to: `/cram/${chapter.id}`,
+              }]
+            : []),
+          { label: "practice problem helper" },
+        ]}
+      />
+
 
       <main
         className="relative max-w-6xl mx-auto px-4 pt-6 pb-32"
