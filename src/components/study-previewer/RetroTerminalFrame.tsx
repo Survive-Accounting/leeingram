@@ -57,6 +57,14 @@ interface RetroTerminalFrameProps {
   comingSoonIdeas?: string[];
   /** Click handler for the secondary Share Feedback link. */
   onShareFeedback?: () => void;
+  /** Dashboard-only: campus name to display as a read-only terminal line. When set,
+   *  course is also rendered as a read-only line (no dropdown, no lock icon). */
+  campusLabel?: string | null;
+  /** Dashboard-only: when true, render the simplified read-only Course/Campus context
+   *  lines and use "Choose Textbook Chapter" wording instead of "Choose Chapter". */
+  dashboardMode?: boolean;
+  /** Dashboard-only: optional short beta note rendered under the welcome line. */
+  betaNote?: string | null;
 }
 
 /**
