@@ -465,9 +465,9 @@ export function PromptBuilderWidget() {
             {sessionAlive ? <Mic className="h-5 w-5 animate-pulse" /> : <Zap className="h-5 w-5" />}
           </button>
           <button
-            onClick={() => setHidden(true)}
+            onClick={() => setDevToolFlag("promptBuilder", false)}
             className="opacity-60 hover:opacity-100 rounded-full bg-background/90 backdrop-blur p-1 text-muted-foreground border border-border shadow-sm transition-opacity"
-            title="Hide"
+            title="Hide — re-enable from Admin Toolbox"
             aria-label="Hide Prompt Builder"
           >
             <EyeOff className="h-3 w-3" />
