@@ -214,20 +214,10 @@ export function StyleExportToolbar() {
             </div>
           )}
 
-          <div className="border-t border-border mt-2 pt-1.5 px-1 flex items-center justify-between">
+          <div className="border-t border-border mt-2 pt-1.5 px-1">
             <span className="text-[10px] text-muted-foreground">
               Lee-only · landing routes
             </span>
-            <button
-              onClick={() => {
-                setOpen(false);
-                setDevToolFlag("styleExport", false);
-              }}
-              title="Hide — re-enable from Admin Tools menu"
-              className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-            >
-              <EyeOff className="h-3 w-3" /> Hide
-            </button>
           </div>
         </PopoverContent>
       </Popover>
