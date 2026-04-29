@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
  * localStorage-backed boolean flags for admin dev tool visibility.
  * Components subscribe via useDevToolFlag().
  */
-export type DevToolKey = "promptBuilder" | "styleExport" | "testBar";
+export type DevToolKey = "promptBuilder" | "styleExport" | "testBar" | "simulateOnboarding";
 
 const STORAGE_PREFIX = "devTool.visible.";
 const EVENT_NAME = "devtool-flag-change";
@@ -13,6 +13,7 @@ const DEFAULTS: Record<DevToolKey, boolean> = {
   promptBuilder: false,
   styleExport: false,
   testBar: false,
+  simulateOnboarding: false,
 };
 
 export function getDevToolFlag(key: DevToolKey): boolean {
