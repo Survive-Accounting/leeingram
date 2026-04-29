@@ -43,6 +43,24 @@ const TERMINAL_TOOLS: TerminalTool[] = [
   },
 ];
 
+/** Dashboard-only copy: simpler, action-oriented descriptions per beta spec. */
+const DASHBOARD_TERMINAL_TOOLS: TerminalTool[] = [
+  {
+    key: "practice",
+    label: "Practice Problem Helper",
+    description: "Guided explanations for textbook-style problems.",
+    cta: "Open Helper",
+    icon: Target,
+  },
+  {
+    key: "je",
+    label: "Journal Entry Helper",
+    description: "Practice journal entries step-by-step.",
+    cta: "Open Helper",
+    icon: NotebookPen,
+  },
+];
+
 const COMING_SOON_IDEAS = [
   "Flashcard Drill",
   "Concept Helper",
