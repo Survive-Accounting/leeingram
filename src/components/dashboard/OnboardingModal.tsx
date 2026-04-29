@@ -243,8 +243,8 @@ export default function OnboardingModal({
       }}
     >
       <div
-        className="w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden"
-        style={{ border: "1px solid #E0E7F0" }}
+        className="w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden flex flex-col"
+        style={{ border: "1px solid #E0E7F0", maxHeight: "calc(100dvh - 2rem)" }}
       >
         {/* Header */}
         <div className="px-6 pt-6 pb-2 relative">
@@ -289,8 +289,8 @@ export default function OnboardingModal({
           )}
         </div>
 
-        {/* Body */}
-        <div className="px-6 py-5 space-y-5">
+        {/* Body (scrollable when content overflows) */}
+        <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1 min-h-0">
           {/* Name row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="First name" required>
