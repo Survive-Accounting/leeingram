@@ -1,118 +1,139 @@
-## Problem-by-problem diagnosis & fix plan
+## Two flags before we build
 
-Six bugs reported across 10 screenshots. All are in the modern Solutions Viewer (`src/pages/v2/SolutionsViewerV2.tsx`) plus one edge function and one missing database RPC. Grouped by root cause.
+**1. Model slug "gpt-5.5" doesn't exist (yet).** OpenAI's current public lineup is `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, and `gpt-5.2`. There is no `gpt-5.5` or `gpt-5.4`. If we ship `model: "gpt-5.5"` to `api.openai.com`, every call returns a 404. **Recommendation:** put `gpt-5.5` in the config exactly as you asked, but I'll wire the helper to log + fall back to `gpt-5` automatically if OpenAI rejects the slug, so the app keeps working. When the real `gpt-5.5` lands, no code change needed — it just starts working. Tell me if you want me to use `gpt-5` outright instead.
 
----
-
-### Issue 1 — White-on-white table headers in tutor responses (Screenshots 1, 2, 5)
-
-**Cause.** The tutor response area at `SolutionsViewerV2.tsx:1758` forces `[&_th]:!text-white [&_td]:!text-white` on its container. The inline AI HTML stylesheet at line 1297 sets `th { background:#FAFAFA; color:#6B7280 }` (light bg, gray text). The `!text-white` override wins for color but background stays light → white text on light gray = invisible. The `td` cells inherit white text on the dark panel (fine) but the `th` row is unreadable.
-
-**Fix.** Remove the blanket `[&_th]:!text-white [&_td]:!text-white/90` overrides on the response window container (line 1758), and rebuild the inline AI HTML stylesheet (lines 1296–1305) so it is dark-panel-native:
-- `th` → background `rgba(255,255,255,0.08)`, color `rgba(255,255,255,0.95)`, font-weight 600
-- `td` → color `rgba(255,255,255,0.92)`, border `rgba(255,255,255,0.08)`
-- `tr.total td` → background `rgba(255,255,255,0.06)`, white text, top border `rgba(255,255,255,0.18)`
-- `strong` → `#FFFFFF`, `em` → `rgba(255,255,255,0.7)`
-
-This guarantees readability on the navy/black tutor panel without needing the `!important` overrides.
+**2. This reverses the project rule "never use OpenAI/Lovable gateway, always Anthropic direct."** Your custom instructions and the saved Anthropic-API-only memory both lock the tutor to Claude. Switching every tutor surface to OpenAI is a deliberate strategic change. I'll proceed and update the memory rule to reflect the new standard ("OpenAI GPT-5.x via centralized config; Anthropic deprecated for tutor surfaces").
 
 ---
 
-### Issue 2 — White-on-white table headers in problem text (Screenshots 3, 4, 9)
+## Scope
 
-**Cause.** `SolutionsViewerV2.tsx:3237` wraps `<SmartTextRenderer>` with `[&_th]:!text-white [&_td]:!text-white/90`. `SmartTextRenderer` renders pipe-tables with header row `background:#1A2E55` (navy) and body rows `background:#FFFFFF / #F8F9FA` (white). Forcing `td` text to white makes body cells invisible; the header row stays readable only because its background is dark.
+Two combined asks:
+- **A.** Centralize the model + reasoning config and route all tutor AI through one helper.
+- **B.** Add a real database cache (`ai_generation_cache`) with cache-key, pending/completed states, deduping, and admin tooling.
 
-**Fix.** Drop the `[&_th]:!text-white [&_td]:!text-white/90` selectors from the wrapper at line 3237 — let `SmartTextRenderer`'s own table palette (navy header / white body / dark text) win. Keep `[&_*]:!text-white/95 [&_strong]:!text-white` for plain prose, but scope it so it does not bleed into tables:
-- Replace with: `[&_p]:!text-white/95 [&_li]:!text-white/95 [&_strong]:!text-white [&_.font-semibold]:!text-amber-300`
-
-Same scoping fix applied to the problem-text wrapper used elsewhere in the viewer (only one instance found; verify and update both if the pattern recurs).
-
----
-
-### Issue 3 — Thumbs up/down throws "Couldn't save that — try again?" (Screenshot 7)
-
-**Cause.** Two `cast()` functions (lines 790 and 980) insert into `public.explanation_feedback`, then call `.select("id").single()`. The table has RLS enabled with only:
-- INSERT policy "Anyone can submit explanation feedback" (`WITH CHECK true`)
-- SELECT policy only for service role
-
-Anonymous users can insert but the chained `.select()` returns 0 rows under RLS → `.single()` throws → toast fires.
-
-**Fix (database migration).** Add an anon-friendly SELECT policy scoped to the row just inserted in this session. Two safe options:
-1. Add a policy: `CREATE POLICY "Insert returns own row" ON public.explanation_feedback FOR SELECT USING (true);` — feedback is anonymous and low-risk; keeping it readable is acceptable, OR
-2. Switch the client to a fire-and-forget pattern (drop `.select().single()`) and skip storing `feedbackId`. This breaks the optional follow-up "reason" update flow.
-
-Recommendation: option 1 (add SELECT policy `USING (true)`) — keeps the reason-follow-up working. Ignore() is acceptable because the table only stores opt-in feedback signals.
-
-Also add an UPDATE policy for the same path so `sendReason()` (lines 819, 1031) can attach a reason to the row it just created:
-`CREATE POLICY "Anyone can attach a reason" ON public.explanation_feedback FOR UPDATE USING (true) WITH CHECK (true);`
+Tutor surfaces in scope (all student-facing): `survive-this` (Walk me through it, Hint, Setup, Full solution, JE Helper, Memorize, Real World, The Why, Professor Tricks, Financial Statements, Similar Problem, Challenge), `explain-solution-part`, `explain-this-solution`. Backend/admin generators (`generate-chapter-*`, `bulk-fix`, OCR, etc.) stay on whatever they use today — out of scope.
 
 ---
 
-### Issue 4 — Feature-idea vote counts disappear on reload (Screenshot 8)
+## Plan
 
-**Cause.** `FeatureIdeasVoting.tsx:166` and `SolutionsViewerV2.tsx:1584` both call `supabase.rpc("increment_survive_helpful", ...)`. That RPC **does not exist** in the database (`SELECT proname FROM pg_proc WHERE proname='increment_survive_helpful'` returns 0 rows). The optimistic local state shows the bumped count for that session; on reload, `useEffect` reads `survive_ai_responses.helpful_count` which was never incremented → 0.
+### 1. Central config (server-side)
+New file: `supabase/functions/_shared/aiConfig.ts`
 
-**Fix (database migration).** Create the missing RPC. It must upsert a row in `survive_ai_responses` for the (asset_id, prompt_type) pair and increment `helpful_count` atomically:
+```ts
+export const DEFAULT_AI_MODEL = "gpt-5.5";
+export const FALLBACK_AI_MODEL = "gpt-5";          // auto-used on 404
+// Future cost-cut options (not active):
+// export const CHEAP_MODEL = "gpt-5.4-mini";
 
-```sql
-CREATE OR REPLACE FUNCTION public.increment_survive_helpful(
-  p_asset_id uuid, p_prompt_type text
-) RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-BEGIN
-  INSERT INTO public.survive_ai_responses (asset_id, prompt_type, helpful_count)
-  VALUES (p_asset_id, p_prompt_type, 1)
-  ON CONFLICT (asset_id, prompt_type)
-  DO UPDATE SET helpful_count = COALESCE(survive_ai_responses.helpful_count, 0) + 1;
-END $$;
-GRANT EXECUTE ON FUNCTION public.increment_survive_helpful(uuid, text) TO anon, authenticated;
+export const REASONING_BY_ACTION: Record<string, "low"|"medium"|"high"> = {
+  hint: "low",
+  setup: "low",
+  full_solution: "medium",
+  walk_through: "medium",
+  journal_entries: "medium",
+  explain_part: "medium",
+  // everything else → DEFAULT_REASONING_EFFORT
+};
+export const DEFAULT_REASONING_EFFORT = "low";
+export const DEFAULT_VERBOSITY = "medium";
+
+export const PROMPT_VERSION = "v1";  // bump to invalidate cache
+export const MODEL_VERSION  = DEFAULT_AI_MODEL;
 ```
 
-(Verify a unique index on `(asset_id, prompt_type)` exists; add one if missing — the survive-this edge function also relies on it.)
+### 2. Shared tutor helper
+New file: `supabase/functions/_shared/generateTutorResponse.ts`
+
+Single function `generateTutorResponse({ toolType, actionType, courseId, chapterId, problemId, problemVersion, solutionVersion, userId, sessionId, systemPrompt, userPrompt, maxTokens })` that:
+- Computes `cache_key = sha256(courseId|chapterId|problemId|toolType|actionType|PROMPT_VERSION|MODEL_VERSION|problemVersion|solutionVersion)`
+- Looks up `ai_generation_cache` by cache_key
+  - `completed` → return cached row (cache hit logged)
+  - `pending` → poll up to ~25s (250ms intervals) for completion; return result or pending state
+  - missing → atomic upsert with `status='pending'` (unique index on cache_key serializes concurrent callers)
+- Calls OpenAI Chat Completions with model from config + reasoning_effort from action map
+- On 404 (bad model slug): retry once with `FALLBACK_AI_MODEL`, log the swap
+- On 429/402: return friendly error, mark cache row `failed` with error_message, do **not** leave it pending
+- Updates row: `status='completed'`, `response_text`, token counts, latency_ms
+- Inserts log row in `ai_request_log` (see step 3)
+
+API key (`OPENAI_API_KEY`) read from `Deno.env` — never exposed to client. Already configured in secrets.
+
+### 3. Database changes (migration)
+
+```sql
+create table public.ai_generation_cache (
+  id uuid primary key default gen_random_uuid(),
+  cache_key text not null unique,
+  course_id uuid, chapter_id uuid, problem_id uuid,
+  tool_type text not null, action_type text not null,
+  prompt_version text not null, model_version text not null,
+  problem_version text, solution_version text,
+  response_text text, response_json jsonb,
+  status text not null check (status in ('pending','completed','failed')),
+  error_message text,
+  prompt_tokens int, completion_tokens int, total_tokens int,
+  latency_ms int,
+  generated_by_user_id uuid, session_id text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+create index on ai_generation_cache (problem_id, action_type);
+create index on ai_generation_cache (status, created_at);
+
+create table public.ai_request_log (
+  id uuid primary key default gen_random_uuid(),
+  cache_key text, cache_hit bool not null,
+  tool_type text, action_type text,
+  model_used text, reasoning_effort text,
+  prompt_tokens int, completion_tokens int, total_tokens int,
+  latency_ms int,
+  user_id uuid, session_id text,
+  problem_id uuid, chapter_id uuid,
+  error_message text,
+  created_at timestamptz default now()
+);
+```
+
+RLS: both tables are server-write-only. Public **read** on `ai_generation_cache` for `status='completed'` (so realtime poll from client also works if needed). `ai_request_log`: admin-only read.
+
+A janitor query (run inside the helper itself) marks any `pending` row older than 60s as `failed` so a crashed function never blocks a key forever.
+
+### 4. Refactor edge functions
+
+- **`survive-this/index.ts`**: keep all the prompt-building logic; replace the Anthropic block with a call to `generateTutorResponse(...)`. Pass `toolType="survive_this"`, `actionType=prompt_type`. Drop the old `survive_ai_responses` write (we'll backfill-read it once for cache warming, then deprecate).
+- **`explain-solution-part/index.ts`**: replace OpenAI o3 call with helper. `actionType="explain_part"`. Keep the `survive_solution_explanation_cache` JSON merge for now (legacy compatibility) but source the text from the new cache.
+- **`explain-this-solution/index.ts`**: same treatment, `actionType="explain_solution"`.
+
+No frontend file changes required for the model swap itself — they already call these functions. Frontend changes are only for button-hammer prevention (step 5).
+
+### 5. Frontend hammer-protection
+Touch the three caller files (`SolutionsViewerV2.tsx`, `SurviveThisPanel.tsx`, `StructuredSolutionDisplay.tsx`):
+- Disable the clicked button during in-flight request (most already do; verify all toolbox buttons).
+- One-active-generation-per-session guard via a small Zustand/Context store: if any tutor request is in flight, other tutor buttons show "One response is already loading." toast and no-op. Hover-prefetch already added in last sprint stays — it's a fire-and-forget that the cache absorbs.
+
+### 6. Admin controls
+New admin page `/admin/ai-cache` (Lee-only via existing AccessRestrictedGuard):
+- Filter by chapter / problem / action_type / status
+- Show model, tokens, latency, response preview
+- Buttons: **Regenerate** (deletes row, next click rebuilds), **Mark bad** (sets a `flagged` bool — minor schema add), **Invalidate by chapter / tool / prompt version** (bulk delete)
+
+Not blocking launch — can ship in same PR but behind a "coming soon" tab if time-tight. Recommend shipping minimal version with regenerate + invalidate-by-problem.
+
+### 7. Memory update
+Update `mem://constraints/direct-anthropic-api-access` and Core rule: tutor surfaces now use **OpenAI GPT-5.5 via centralized config** through `_shared/aiConfig.ts` + `generateTutorResponse`. Anthropic remains allowed for non-tutor admin/content generators if those teams haven't migrated.
 
 ---
 
-### Issue 5 — "Walk me through it" 30-60 s on first click (Screenshot 10)
-
-**Cause.** `supabase/functions/survive-this/index.ts` calls **OpenAI o3** (`max_completion_tokens: 4500` for walk_through). o3 is a reasoning model with very high latency — multi-step + table generation regularly takes 30-60 s on a cold call. Subsequent clicks are fast because the result is cached in `survive_ai_responses`. The viewer's idle-time prefetch (lines 1543–1578) only fires for `walk_through` and only after `requestIdleCallback`, so the first user typically still pays the latency.
-
-**Two-part fix:**
-
-**A. Switch the model to Claude Sonnet 4 via direct Anthropic call** (matches the project's locked AI rule from `mem://core` — never use Lovable AI gateway, always direct `api.anthropic.com`). Edits in `survive-this/index.ts`:
-- Replace OpenAI fetch with POST to `https://api.anthropic.com/v1/messages` using `ANTHROPIC_API_KEY`, model `claude-sonnet-4-20250514`, `max_tokens: 4500` for walk_through and 2000 otherwise, system + user message format, response read from `data.content[0].text`.
-- Drop `OPENAI_API_KEY` requirement.
-
-Sonnet 4 returns a multi-step walkthrough in ~5–10 s vs 30–60 s for o3.
-
-**B. Strengthen the prefetch.** In `SolutionsViewerV2.tsx`:
-- Move the idle prefetch to fire immediately when the asset loads (not gated by `requestIdleCallback` 2.5 s delay) but still backgrounded with `setTimeout(prefetch, 300)`.
-- Additionally trigger prefetch for `setup` and `hint` on **hover** of those buttons (mouseenter handler), so a user who hovers before clicking gets an instant response.
-
-Both changes together turn the first-click experience from 30-60 s into typically <2 s (cache hit) or <10 s worst case.
+## Files touched
+- **New:** `supabase/functions/_shared/aiConfig.ts`, `supabase/functions/_shared/generateTutorResponse.ts`, migration for `ai_generation_cache` + `ai_request_log`, `src/pages/admin/AICachePage.tsx`, small Zustand store `src/stores/aiGenerationLock.ts`
+- **Edited:** `supabase/functions/survive-this/index.ts`, `supabase/functions/explain-solution-part/index.ts`, `supabase/functions/explain-this-solution/index.ts`, `src/pages/v2/SolutionsViewerV2.tsx`, `src/components/SurviveThisPanel.tsx`, `src/components/StructuredSolutionDisplay.tsx`, admin sidebar entry, memory files
+- **Deprecated (read-only):** existing `survive_ai_responses` table — keep around for one release as fallback warm-cache, then drop in a future migration
 
 ---
 
-### Technical change list
-
-**Files to edit:**
-- `src/pages/v2/SolutionsViewerV2.tsx`
-  - Line 1297-1305: rewrite inline AI HTML CSS for dark panel
-  - Line 1758: remove `[&_th]:!text-white [&_td]:!text-white/90`
-  - Line 3237: replace `[&_*]` blanket override with scoped per-element overrides that exclude tables
-  - Lines 1543-1578 + button mouseenter handlers: stronger prefetch (immediate + hover-triggered for setup/hint)
-- `supabase/functions/survive-this/index.ts`: swap OpenAI o3 call for direct Anthropic Sonnet 4 call
-
-**Database migration (single migration file):**
-1. Add SELECT policy `USING (true)` on `public.explanation_feedback`
-2. Add UPDATE policy `USING (true) WITH CHECK (true)` on `public.explanation_feedback`
-3. Ensure `survive_ai_responses` has unique index on `(asset_id, prompt_type)`
-4. Create `public.increment_survive_helpful(uuid, text)` SECURITY DEFINER function and grant EXECUTE to anon + authenticated
-
-**No new secrets required** — `ANTHROPIC_API_KEY` is already configured.
-
----
-
-### Out of scope / not changed
-
-- The "Stacked view" tooltip in screenshot 6 was inspected; the popover renders dark navy with white icons and is readable. No change needed unless the user wants the toolbar restyled.
-- The voting UI itself (FeatureIdeasVoting) needs no client changes once the RPC exists.
+## Open questions
+1. Should I really ship `model: "gpt-5.5"` (with auto-fallback to `gpt-5`), or use `gpt-5` directly until OpenAI announces 5.5?
+2. Confirm OK to switch tutor surfaces from Anthropic → OpenAI and update the memory rule accordingly?
+3. Admin `/admin/ai-cache` page in this PR, or follow-up?

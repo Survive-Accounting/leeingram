@@ -158,6 +158,147 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_generation_cache: {
+        Row: {
+          action_type: string
+          cache_key: string
+          chapter_id: string | null
+          completion_tokens: number | null
+          course_id: string | null
+          created_at: string
+          error_message: string | null
+          flagged: boolean
+          generated_by_user_id: string | null
+          id: string
+          latency_ms: number | null
+          model_version: string
+          problem_id: string | null
+          problem_version: string | null
+          prompt_tokens: number | null
+          prompt_version: string
+          response_json: Json | null
+          response_text: string | null
+          session_id: string | null
+          solution_version: string | null
+          status: string
+          tool_type: string
+          total_tokens: number | null
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          cache_key: string
+          chapter_id?: string | null
+          completion_tokens?: number | null
+          course_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          flagged?: boolean
+          generated_by_user_id?: string | null
+          id?: string
+          latency_ms?: number | null
+          model_version: string
+          problem_id?: string | null
+          problem_version?: string | null
+          prompt_tokens?: number | null
+          prompt_version: string
+          response_json?: Json | null
+          response_text?: string | null
+          session_id?: string | null
+          solution_version?: string | null
+          status: string
+          tool_type: string
+          total_tokens?: number | null
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          cache_key?: string
+          chapter_id?: string | null
+          completion_tokens?: number | null
+          course_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          flagged?: boolean
+          generated_by_user_id?: string | null
+          id?: string
+          latency_ms?: number | null
+          model_version?: string
+          problem_id?: string | null
+          problem_version?: string | null
+          prompt_tokens?: number | null
+          prompt_version?: string
+          response_json?: Json | null
+          response_text?: string | null
+          session_id?: string | null
+          solution_version?: string | null
+          status?: string
+          tool_type?: string
+          total_tokens?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_request_log: {
+        Row: {
+          action_type: string | null
+          cache_hit: boolean
+          cache_key: string | null
+          chapter_id: string | null
+          completion_tokens: number | null
+          created_at: string
+          error_message: string | null
+          id: string
+          latency_ms: number | null
+          model_used: string | null
+          problem_id: string | null
+          prompt_tokens: number | null
+          reasoning_effort: string | null
+          session_id: string | null
+          tool_type: string | null
+          total_tokens: number | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type?: string | null
+          cache_hit: boolean
+          cache_key?: string | null
+          chapter_id?: string | null
+          completion_tokens?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          latency_ms?: number | null
+          model_used?: string | null
+          problem_id?: string | null
+          prompt_tokens?: number | null
+          reasoning_effort?: string | null
+          session_id?: string | null
+          tool_type?: string | null
+          total_tokens?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string | null
+          cache_hit?: boolean
+          cache_key?: string | null
+          chapter_id?: string | null
+          completion_tokens?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          latency_ms?: number | null
+          model_used?: string | null
+          problem_id?: string | null
+          prompt_tokens?: number | null
+          reasoning_effort?: string | null
+          session_id?: string | null
+          tool_type?: string | null
+          total_tokens?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       answer_packages: {
         Row: {
           answer_payload: Json
