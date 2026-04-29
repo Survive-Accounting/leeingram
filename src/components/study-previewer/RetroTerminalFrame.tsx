@@ -285,6 +285,22 @@ export default function RetroTerminalFrame({
         .sa-toolgrid-reveal > *:nth-child(1) { animation-delay: 60ms; }
         .sa-toolgrid-reveal > *:nth-child(2) { animation-delay: 160ms; }
         .sa-toolgrid-reveal > *:nth-child(3) { animation-delay: 260ms; }
+        /* Subtle attention blink on the "Choose Textbook Chapter" prompt — pulses brightness + glow until a chapter is chosen. */
+        @keyframes sa-chapter-attention {
+          0%, 100% {
+            color: ${PHOSPHOR};
+            text-shadow: 0 0 6px ${PHOSPHOR_GLOW}, 0 0 14px ${PHOSPHOR_GLOW};
+            opacity: 1;
+          }
+          50% {
+            color: ${PHOSPHOR_DIM};
+            text-shadow: 0 0 1px ${PHOSPHOR_GLOW};
+            opacity: 0.55;
+          }
+        }
+        .sa-chapter-blink {
+          animation: sa-chapter-attention 1.4s ease-in-out infinite;
+        }
       `}</style>
 
       <div className="w-full" style={{ maxWidth: 980 }}>
@@ -396,21 +412,23 @@ export default function RetroTerminalFrame({
                 letterSpacing: "0.02em",
               }}
             >
-              {/* Persistent top-left product label — same hardware, every state */}
+              {/* Persistent top-left product logo — same hardware, every state */}
               <div
                 style={{
-                  fontFamily:
-                    "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
-                  color: PHOSPHOR_DIM,
-                  fontSize: "0.78em",
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
                   marginBottom: "1.1em",
-                  textShadow: `0 0 4px ${PHOSPHOR_GLOW}`,
+                  filter: `drop-shadow(0 0 6px ${PHOSPHOR_GLOW}) drop-shadow(0 0 14px rgba(124,255,176,0.25))`,
                 }}
               >
-                Accounting Study Tools{" "}
-                <span style={{ opacity: 0.7 }}>(Spring '26 Beta)</span>
+                <img
+                  src={LOGO_URL}
+                  alt="Survive Accounting"
+                  style={{
+                    height: "clamp(22px, 2.6vw, 30px)",
+                    width: "auto",
+                    display: "block",
+                    opacity: 0.92,
+                  }}
+                />
               </div>
 
               {/* Headline — only when we have a personalized welcome; otherwise the section heading above the screen carries the title */}
@@ -535,15 +553,32 @@ export default function RetroTerminalFrame({
               {/* Chapter picker — disabled until course chosen */}
               <div className="mb-1">
                 <div
+                  className={courseLabel && !canPickTool ? "sa-chapter-blink" : ""}
                   style={{
                     color: courseLabel ? PHOSPHOR_DIM : PHOSPHOR_MUTED,
                     fontSize: "0.92em",
                     marginBottom: 4,
                     letterSpacing: "0.02em",
                     transition: "color 240ms ease-out",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
                   }}
                 >
-                  {">"} {dashboardMode ? "Choose Textbook Chapter" : "Choose Chapter"}
+                  {courseLabel && !canPickTool && (
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: PHOSPHOR,
+                        boxShadow: `0 0 8px ${PHOSPHOR_GLOW}, 0 0 14px ${PHOSPHOR_GLOW}`,
+                        display: "inline-block",
+                      }}
+                    />
+                  )}
+                  <span>{">"} {dashboardMode ? "Choose Textbook Chapter" : "Choose Chapter"}</span>
                 </div>
                 <div className="w-full sm:max-w-[360px]" style={{ opacity: courseLabel ? 1 : 0.5 }}>
                   {chapterSelector ?? (
