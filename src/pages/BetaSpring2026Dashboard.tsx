@@ -178,6 +178,21 @@ export default function BetaSpring2026Dashboard() {
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [slackTesting, setSlackTesting] = useState(false);
+  const [auditSending, setAuditSending] = useState(false);
+
+  const sendEmailAuditDigest = useCallback(async () => {
+    setAuditSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-email-audit-digest");
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`Audit digest sent to lee@survivestudios.com (${(data as any)?.count ?? "?"} emails)`);
+    } catch (e: any) {
+      toast.error(`Audit digest failed: ${e?.message ?? e}`);
+    } finally {
+      setAuditSending(false);
+    }
+  }, []);
 
   const sendSlackTest = useCallback(async () => {
     setSlackTesting(true);
@@ -363,6 +378,26 @@ export default function BetaSpring2026Dashboard() {
             rightLabel={`${signups.length} total`}
           >
             <SignupsTable signups={signups} loading={loading} />
+          </CollapsibleSection>
+
+          {/* System email audit */}
+          <CollapsibleSection
+            title="System Email Audit"
+            subtitle="Sends a single digest of every system email (subject, trigger, purpose, rendered HTML) to lee@survivestudios.com"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                Reply to that email with new HTML for any template — we'll batch-update them in one pass.
+              </p>
+              <Button
+                size="sm"
+                onClick={sendEmailAuditDigest}
+                disabled={auditSending}
+                style={{ background: RED, color: "white" }}
+              >
+                {auditSending ? "Sending…" : "Send audit digest"}
+              </Button>
+            </div>
           </CollapsibleSection>
 
           {/* Slack notifications utility */}
