@@ -76,8 +76,20 @@ function deriveFallback(scenarioLabel: string, instructions: string | null, date
   return dateLabel ? `Entry — ${dateLabel}` : "Journal Entry";
 }
 
+/** Build a signature from account names + sides only (amounts ignored) so duplicate
+ *  JEs across problems collapse to a single card. */
+function entrySignature(rows: CanonicalJERow[]): string {
+  return rows
+    .map((r) => {
+      const side = (r.credit != null && r.credit !== 0) ? "C" : "D";
+      return `${side}:${(r.account_name || "").trim().toLowerCase()}`;
+    })
+    .join("|");
+}
+
 function flattenAssets(assets: AssetRow[]): FlatEntry[] {
   const out: FlatEntry[] = [];
+  const seen = new Set<string>();
   for (const a of assets) {
     const payload = a.journal_entry_completed_json;
     if (!isCanonicalJE(payload)) continue;
@@ -85,6 +97,9 @@ function flattenAssets(assets: AssetRow[]): FlatEntry[] {
     canonical.scenario_sections.forEach((sc, si) => {
       sc.entries_by_date.forEach((entry, ei) => {
         if (!entry.rows || entry.rows.length === 0) return;
+        const sig = entrySignature(entry.rows);
+        if (seen.has(sig)) return;
+        seen.add(sig);
         const rawDate = (entry as any).entry_date ?? (entry as any).date ?? null;
         const dateLabel = fmtDate(rawDate);
         const fallback = deriveFallback(sc.label, a.instruction_list, dateLabel);
