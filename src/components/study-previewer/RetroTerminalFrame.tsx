@@ -550,7 +550,7 @@ export default function RetroTerminalFrame({
                         onClick={() => {
                           if (isDisabled) return;
                           if (!canPickTool) {
-                            onNudgeChapter?.();
+                            nudgeChapter();
                             return;
                           }
                           triggerToolPulse(tool.key);
