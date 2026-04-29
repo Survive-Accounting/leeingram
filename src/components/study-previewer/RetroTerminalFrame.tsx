@@ -743,7 +743,7 @@ export default function RetroTerminalFrame({
                           lineHeight: 1.5,
                         }}
                       >
-                        Help shape what we build next. Vote on ideas or suggest a tool you'd actually use.
+                        Help us shape what we build next
                       </div>
                     </div>
                     {onShareFeedback && (
