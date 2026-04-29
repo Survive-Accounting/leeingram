@@ -3364,6 +3364,51 @@ export type Database = {
           },
         ]
       }
+      feedback_inbox_status: {
+        Row: {
+          archived_at: string | null
+          copied_at: string | null
+          created_at: string
+          fixed_at: string | null
+          id: string
+          notes: string | null
+          reviewed_at: string | null
+          source_id: string
+          source_table: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          copied_at?: string | null
+          created_at?: string
+          fixed_at?: string | null
+          id?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          source_id: string
+          source_table: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          copied_at?: string | null
+          created_at?: string
+          fixed_at?: string | null
+          id?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          source_id?: string
+          source_table?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       flashcard_decks: {
         Row: {
           chapter_id: string | null
