@@ -583,6 +583,20 @@ export default function StudentDashboard() {
           >
             Test out the free study tools below.
           </p>
+
+          <a
+            href="https://surviveaccounting.com"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-[13px] sm:text-[14px] font-semibold transition-all hover:-translate-y-0.5 hover:shadow-md"
+            style={{
+              background: "#fff",
+              border: `1px solid rgba(20,33,61,0.15)`,
+              color: NAVY,
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            <span style={{ color: "rgba(20,33,61,0.6)", fontWeight: 500 }}>Existing student?</span>
+            <span>Log in to the old course platform →</span>
+          </a>
         </div>
 
         {/* Previewer entry — the centerpiece (full-bleed navy hero band) */}
