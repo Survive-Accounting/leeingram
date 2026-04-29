@@ -3134,7 +3134,7 @@ export default function SolutionsViewerV2() {
             >
               {/* Card 1: Problem */}
               <section
-                className="rounded-[10px] p-8"
+                className="rounded-[10px] p-5 sm:p-8"
                 style={{
                   background: "#1A2B5C",
                   border: "1px solid rgba(255,255,255,0.08)",
