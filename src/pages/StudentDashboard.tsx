@@ -10,7 +10,7 @@ import { WelcomeVideoCard, WelcomeVideoModal } from "@/components/dashboard/Welc
 
 import StudyPreviewer from "@/components/study-previewer/StudyPreviewer";
 import { RetroBreadcrumbs, type BreadcrumbCrumb } from "@/components/study-previewer/RetroBreadcrumbs";
-import ShareWithFriendsBand from "@/components/dashboard/ShareWithFriendsBand";
+
 import { getCourseLabel } from "@/lib/courseLabel";
 import { useDevToolFlag, setDevToolFlag } from "@/lib/devToolFlags";
 import { useIsStaff } from "@/hooks/useIsStaff";
