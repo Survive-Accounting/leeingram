@@ -1520,6 +1520,15 @@ function InlineExplanation({
     setError(null);
   }, [asset.asset_name]);
 
+  // Auto-open the Journal Entries dialog when launched as the JE Helper
+  // (?focus=je) — fires once per asset when JE data is available.
+  useEffect(() => {
+    if (focusJE && hasJE) {
+      setJeOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusJE, hasJE, asset.asset_name]);
+
   const buildContext = () => ({
     problem_text: asset.survive_problem_text || "",
     instructions: [asset.instruction_1, asset.instruction_2, asset.instruction_3, asset.instruction_4, asset.instruction_5, asset.instruction_list]
