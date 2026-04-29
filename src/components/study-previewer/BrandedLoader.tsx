@@ -1,5 +1,5 @@
 import React from "react";
-import leeHeadshot from "@/assets/lee-headshot-original.png";
+import leeHeadshot from "@/assets/lee-portrait-terminal.png";
 
 const PHOSPHOR = "#7CFFB0";
 const PHOSPHOR_DIM = "rgba(124,255,176,0.55)";
@@ -144,9 +144,7 @@ export function BrandedLoader({
             decoding="async"
             className="w-full h-full object-cover"
             style={{
-              objectPosition: "center 15%",
-              filter:
-                "grayscale(0.3) brightness(0.95) sepia(0.15) hue-rotate(60deg) saturate(1.1)",
+              objectPosition: "center 22%",
             }}
           />
         </div>
