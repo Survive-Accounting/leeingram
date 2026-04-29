@@ -6,11 +6,11 @@ import { toast } from "sonner";
 import OnboardingModal from "@/components/dashboard/OnboardingModal";
 import BetaCountdownStrip from "@/components/dashboard/BetaCountdownStrip";
 import FeedbackToolModal from "@/components/dashboard/FeedbackToolModal";
-import { WelcomeVideoCard, WelcomeVideoModal } from "@/components/dashboard/WelcomeVideoCard";
-import EarlyBirdOptInRow from "@/components/dashboard/EarlyBirdOptInRow";
+import { WelcomeVideoModal } from "@/components/dashboard/WelcomeVideoCard";
+
 import StudyPreviewer from "@/components/study-previewer/StudyPreviewer";
 import { RetroBreadcrumbs, type BreadcrumbCrumb } from "@/components/study-previewer/RetroBreadcrumbs";
-import ShareWithFriendsBand from "@/components/dashboard/ShareWithFriendsBand";
+
 import { getCourseLabel } from "@/lib/courseLabel";
 import { useDevToolFlag, setDevToolFlag } from "@/lib/devToolFlags";
 import { useIsStaff } from "@/hooks/useIsStaff";
@@ -182,37 +182,99 @@ function DashNavbar({
 /* ─── Secondary Card ─── */
 
 function SecondaryCard({
-  label,
+  title,
   sub,
+  cta,
   onClick,
-  highlight = false,
+  ctaDone,
 }: {
-  label: string;
+  title: string;
   sub: string;
+  cta: string;
   onClick: () => void;
-  highlight?: boolean;
+  /** When set, replaces CTA label briefly (e.g. "Copied"). */
+  ctaDone?: string | null;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="text-left rounded-xl px-4 py-3.5 transition-all hover:-translate-y-0.5 hover:shadow-md"
+    <div
+      className="rounded-lg p-3.5 flex flex-col h-full"
       style={{
         background: "#fff",
-        border: highlight
-          ? `1px solid ${RED}33`
-          : "1px solid rgba(20,33,61,0.10)",
-        boxShadow: "0 2px 8px rgba(20,33,61,0.04)",
+        border: "1px solid rgba(20,33,61,0.08)",
+        boxShadow: "0 1px 4px rgba(20,33,61,0.03)",
         fontFamily: "Inter, sans-serif",
       }}
     >
-      <div className="text-[13.5px] font-semibold" style={{ color: highlight ? RED : NAVY }}>
-        {label}
+      <div className="text-[12.5px] font-semibold" style={{ color: NAVY }}>
+        {title}
       </div>
-      <div className="mt-0.5 text-[11.5px]" style={{ color: "#64748B" }}>
+      <div
+        className="mt-1 text-[11.5px] leading-snug flex-1"
+        style={{ color: "#64748B" }}
+      >
         {sub}
       </div>
-    </button>
+      <button
+        type="button"
+        onClick={onClick}
+        className="mt-2.5 self-start text-[11.5px] font-semibold hover:opacity-70 transition-opacity"
+        style={{ color: ctaDone ? "#16A34A" : NAVY }}
+      >
+        {ctaDone ?? cta} ▸
+      </button>
+    </div>
+  );
+}
+
+/* ─── Secondary Actions Row ─── */
+
+function SecondaryActionsRow({
+  betaNumber,
+  onWatchDemo,
+  onFeedback,
+}: {
+  betaNumber: number | null;
+  onWatchDemo: () => void;
+  onFeedback: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const shareUrl = betaNumber
+    ? `https://learn.surviveaccounting.com/?ref=${betaNumber}`
+    : "https://learn.surviveaccounting.com/";
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      toast.success("Link copied — share with a friend");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Couldn't copy. Long-press to copy manually.");
+    }
+  };
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <SecondaryCard
+        title="Watch the 60-second demo"
+        sub="See how to use the beta before you start."
+        cta="Watch Demo"
+        onClick={onWatchDemo}
+      />
+      <SecondaryCard
+        title="Share the beta"
+        sub="Know someone taking accounting? Send them free finals access."
+        cta="Copy Link"
+        ctaDone={copied ? "Copied" : null}
+        onClick={handleCopy}
+      />
+      <SecondaryCard
+        title="Send Lee feedback"
+        sub="Tell me what is helpful, confusing, or missing."
+        cta="Share Feedback"
+        onClick={onFeedback}
+      />
+    </div>
   );
 }
 
@@ -221,12 +283,12 @@ function SecondaryCard({
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const previewerRef = useRef<HTMLDivElement | null>(null);
-  const shareRef = useRef<HTMLDivElement | null>(null);
+  const secondaryRef = useRef<HTMLDivElement | null>(null);
   const scrollToPreviewer = () => {
     previewerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const scrollToShare = () => {
-    shareRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    secondaryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   const [email, setEmail] = useState<string | null>(null);
@@ -555,43 +617,15 @@ export default function StudentDashboard() {
           </div>
         </div>
 
-        {/* Secondary actions — small, optional */}
-        <section className="max-w-5xl mx-auto px-5 sm:px-8 mt-10 md:mt-12">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <SecondaryCard
-              label="Watch demo"
-              sub="60-second tour"
-              onClick={() => setVideoOpen(true)}
-            />
-            <SecondaryCard
-              label="Share feedback"
-              sub="Tell Lee what to fix"
-              onClick={() => setFeedbackOpen(true)}
-            />
-            <SecondaryCard
-              label="Share beta with a friend"
-              sub="They get free access too"
-              onClick={scrollToShare}
-              highlight
-            />
-          </div>
-          {!earlyBirdOpted && userId && (
-            <div className="mt-6">
-              <EarlyBirdOptInRow
-                userId={userId}
-                onOptedIn={() => setEarlyBirdOpted(true)}
-              />
-            </div>
-          )}
-          <div ref={shareRef} className="mt-6 scroll-mt-24">
-            <ShareWithFriendsBand
-              betaNumber={betaNumber}
-              campusName={campusName}
-              compact
-            />
-          </div>
+        {/* Secondary actions — small, clearly secondary to the console above */}
+        <section ref={secondaryRef} className="max-w-4xl mx-auto px-5 sm:px-8 mt-8 md:mt-10 scroll-mt-24">
+          <SecondaryActionsRow
+            betaNumber={betaNumber}
+            onWatchDemo={() => setVideoOpen(true)}
+            onFeedback={() => setFeedbackOpen(true)}
+          />
           <p
-            className="mt-8 text-center text-[12.5px]"
+            className="mt-6 text-center text-[12px]"
             style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
           >
             Need help?{" "}
