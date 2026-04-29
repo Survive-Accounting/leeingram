@@ -130,25 +130,11 @@ export default function LandingStudyPreviewerSection({
             FREE BETA · OPEN FOR FEEDBACK
           </div>
           <h2
-            className="text-[30px] sm:text-[42px] leading-[1.1] sa-hero-in"
+            className="text-[30px] sm:text-[42px] leading-[1.1] sa-hero-in mb-16 sm:mb-20"
             style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: "#FFFFFF", animationDelay: "120ms" }}
           >
             Free accounting study tools for finals.
           </h2>
-          <p
-            className="mt-4 mb-10 sm:mb-14 text-[15px] sm:text-[16px] sa-hero-in"
-            style={{ color: "rgba(255,255,255,0.72)", fontFamily: "Inter, sans-serif", animationDelay: "200ms" }}
-          >
-            <button
-              type="button"
-              onClick={() => setPaywallOpen(true)}
-              className="font-semibold transition-colors hover:text-white focus:outline-none focus:text-white"
-              style={{ color: "#FFFFFF" }}
-            >
-              Create a free account
-            </button>
-            {" "}to unlock the beta tools and start studying.
-          </p>
         </div>
 
         {/* Previewer (course selector lives inside) */}
