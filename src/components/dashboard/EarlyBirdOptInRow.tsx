@@ -25,6 +25,22 @@ export default function EarlyBirdOptInRow({ userId, onOptedIn }: Props) {
         .update({ early_bird_opt_in: true })
         .eq("user_id", userId);
       if (error) throw error;
+      // Mirror to students table so admin dashboards can list opt-ins quickly.
+      try {
+        const { data: u } = await supabase.auth.getUser();
+        const email = u?.user?.email?.toLowerCase();
+        if (email) {
+          await supabase
+            .from("students")
+            .update({
+              early_bird_opt_in: true,
+              early_bird_opt_in_at: new Date().toISOString(),
+            })
+            .eq("email", email);
+        }
+      } catch (mirrorErr) {
+        console.warn("[EarlyBirdOptInRow] students mirror failed", mirrorErr);
+      }
       toast.success("You're on the early-bird list ✓");
       // Brief delay so the user sees the check before it disappears.
       setTimeout(() => onOptedIn?.(), 600);
