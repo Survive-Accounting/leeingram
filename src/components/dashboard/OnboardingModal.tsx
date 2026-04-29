@@ -212,6 +212,8 @@ export default function OnboardingModal({
           user_role: role || "other",
           accounting_major_status: role === "student" ? (majorStatus || "not_sure") : null,
           campus_id: prefillCampusId,
+          is_in_greek_life: inGreek,
+          greek_org_other: inGreek ? (greekOrgName.trim() || null) : null,
           onboarding_version: ONBOARDING_VERSION,
         },
       })
