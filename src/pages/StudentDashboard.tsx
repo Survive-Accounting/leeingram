@@ -86,11 +86,37 @@ function DashNavbar({
       <nav className="max-w-6xl mx-auto h-16 px-5 sm:px-8 flex items-center justify-between">
         <button
           onClick={() => navigate("/")}
-          className="text-[11px] font-bold uppercase tracking-[0.18em] hover:opacity-70 transition-opacity"
+          className="flex items-baseline gap-2 hover:opacity-80 transition-opacity text-left"
           style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
           aria-label="Spring 2026 Beta — home"
         >
-          Spring 2026 Beta
+          <span className="text-[11px] font-bold uppercase tracking-[0.18em] whitespace-nowrap">
+            Spring 2026 Beta
+          </span>
+          <span
+            className="hidden sm:inline text-[11px]"
+            style={{ color: "rgba(20,33,61,0.35)" }}
+          >
+            ·
+          </span>
+          <span
+            className="hidden sm:inline text-[11.5px]"
+            style={{ color: "rgba(20,33,61,0.65)", fontWeight: 500 }}
+          >
+            Expires May 15, 2026
+          </span>
+          <span
+            className="hidden sm:inline text-[11px]"
+            style={{ color: "rgba(20,33,61,0.35)" }}
+          >
+            ·
+          </span>
+          <span
+            className="hidden sm:inline text-[11.5px] font-semibold"
+            style={{ color: RED }}
+          >
+            {betaDaysLeft} {betaDaysLeft === 1 ? "day" : "days"} left
+          </span>
         </button>
 
         <div className="flex items-center gap-2 sm:gap-3">
