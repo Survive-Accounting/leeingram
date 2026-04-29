@@ -178,6 +178,40 @@ Deno.serve(async (req) => {
     campus_name = c?.name ?? null;
   }
 
+  // Fire-and-forget Slack notification for new beta signups (skip legacy users).
+  // We reuse SLACK_WEBHOOK_URL; the message is tagged so it's clear it's a
+  // beta-signup event even though the existing webhook may post elsewhere.
+  if (!isLegacy) {
+    try {
+      const webhookUrl = Deno.env.get("SLACK_WEBHOOK_URL");
+      if (webhookUrl) {
+        const roleLabel: Record<string, string> = {
+          student: "Student",
+          parent: "Parent",
+          professor: "Professor",
+          cpa_professional: "CPA / Professional",
+          other: "Other",
+        };
+        const lines = [
+          `🆕 *New Spring '26 beta signup* (#beta-signups)`,
+          `*Name:* ${displayName || "—"}`,
+          `*Email:* ${email}`,
+          `*Role:* ${roleLabel[role] ?? role}`,
+          beta_number ? `*Beta #:* ${beta_number}${campus_beta_number ? ` (campus #${campus_beta_number})` : ""}` : null,
+          campus_name ? `*Campus:* ${campus_name}` : null,
+        ].filter(Boolean).join("\n");
+        // Don't await — never block onboarding response on Slack.
+        fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: lines }),
+        }).catch((e) => console.error("[complete-onboarding] slack:", e));
+      }
+    } catch (e) {
+      console.error("[complete-onboarding] slack notify failed:", e);
+    }
+  }
+
   return new Response(
     JSON.stringify({
       ok: true,
