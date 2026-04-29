@@ -6,6 +6,7 @@ import type { ToolKey } from "@/components/dashboard/StudyToolCards";
 import RetroTerminalFrame, {
   type TerminalTool,
 } from "@/components/study-previewer/RetroTerminalFrame";
+import { BrandedLoader } from "@/components/study-previewer/BrandedLoader";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
