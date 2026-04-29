@@ -252,3 +252,16 @@ function ToolbarItem({
     </button>
   );
 }
+
+function HideEyeButton({ onHide }: { onHide: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onHide}
+      className="opacity-0 group-hover:opacity-100 rounded-full bg-background/90 backdrop-blur p-1.5 text-muted-foreground hover:text-foreground border border-border shadow-sm transition-opacity"
+      title="Hide — re-enable from Admin Toolbox"
+      aria-label="Hide Style Export"
+    >
+      <EyeOff className="h-3 w-3" />
+    </button>
+}
