@@ -1621,6 +1621,25 @@ function InlineExplanation({
     }
   };
 
+  // Hover-time prefetch for the secondary toolbox buttons. The first paint of
+  // each section can take several seconds against the AI, so we kick off the
+  // request as soon as the student's cursor lands on the button — by the time
+  // they actually click, the response is usually already cached.
+  const prefetchToolbox = (key: ToolboxKey) => {
+    if (isEmbed || responses[key]) return;
+    supabase.functions
+      .invoke("survive-this", {
+        body: { asset_id: asset.id, prompt_type: key, context: buildContext() },
+      })
+      .then(({ data, error }) => {
+        if (error || !data?.success) return;
+        const text = data.response_text || data.response || "";
+        if (!text) return;
+        setResponses((p) => (p[key] ? p : { ...p, [key]: text }));
+      })
+      .catch(() => { /* silent — click handler will surface real errors */ });
+  };
+
   // Print PDF — reuses simplify-problem cache + generateSimplifiedPracticePdf
   const handlePrintPdf = async () => {
     setError(null);
