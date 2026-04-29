@@ -547,7 +547,6 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: BG_GRADIENT }}>
-      <BetaCountdownStrip />
       <DashNavbar
         email={email}
         onStudyTools={scrollToPreviewer}
@@ -557,6 +556,22 @@ export default function StudentDashboard() {
       />
 
       <main className="flex-1 w-full mx-auto pt-2 sm:pt-4 pb-16">
+        {/* Welcome heading — sits above the retro console */}
+        <div className="px-5 sm:px-8 pt-4 sm:pt-6 pb-3 sm:pb-4 max-w-6xl mx-auto w-full">
+          <h1
+            className="text-[22px] sm:text-[28px] font-bold leading-tight"
+            style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+          >
+            {greeting}.
+          </h1>
+          <p
+            className="mt-1 text-[14px] sm:text-[15px]"
+            style={{ color: "rgba(20,33,61,0.7)", fontFamily: "Inter, sans-serif" }}
+          >
+            Test out the free study tools below.
+          </p>
+        </div>
+
         {/* Previewer entry — the centerpiece (full-bleed navy hero band) */}
         <div
           ref={previewerRef}
@@ -577,41 +592,6 @@ export default function StudentDashboard() {
             }}
           />
           <div className="relative mx-auto" style={{ maxWidth: 1080 }}>
-
-            {/* Retro breadcrumbs above the terminal screen */}
-            {(() => {
-              const TOOL_LABEL: Record<"practice" | "je", string> = {
-                practice: "practice problem helper",
-                je: "journal entry helper",
-              };
-              const { chapter, activeTool } = previewerState;
-              const hasSelection = !!chapter || !!activeTool;
-              const crumbs: BreadcrumbCrumb[] = [
-                {
-                  label: "home",
-                  ...(hasSelection
-                    ? { onClick: () => setResetSignal((n) => n + 1) }
-                    : {}),
-                },
-              ];
-              if (chapter) {
-                crumbs.push({
-                  label: `ch ${chapter.chapter_number} ${chapter.chapter_name}`,
-                  ...(activeTool
-                    ? { onClick: () => setCloseToolSignal((n) => n + 1) }
-                    : {}),
-                });
-              }
-              if (activeTool) {
-                crumbs.push({ label: TOOL_LABEL[activeTool] });
-              }
-              return (
-                <div className="mb-3">
-                  <RetroBreadcrumbs crumbs={crumbs} />
-                </div>
-              );
-            })()}
-
             <StudyPreviewer
               chapters={chapters}
               fixedCourseLabel={courseLabel ?? null}
