@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import MagicLinkModal from "./MagicLinkModal";
 import AnimatedArrow from "./AnimatedArrow";
+import { useAuth } from "@/contexts/AuthContext";
 
 const NAVY = "#14213D";
 const RED = "#CC0000";
