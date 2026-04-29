@@ -277,21 +277,14 @@ export function ViewerOnboardingModal({
             </>
           )}
 
-          {/* Subtle viral share — only when logged in */}
-          {userId && (
-            <div className="pt-3" style={{ borderTop: "1px solid #F1F5F9" }}>
-              <ReferralShareStrip userId={userId} variant="light" />
-            </div>
-          )}
-
-          {/* Mobile + not logged in — still hint at sharing without the strip */}
+          {/* Mobile + not logged in — still hint at picking it up on a laptop */}
           {isMobile && !userId && (
             <div
               className="pt-3 text-center text-[11px]"
               style={{ borderTop: "1px solid #F1F5F9", color: "#94A3B8" }}
             >
               <Laptop className="h-3 w-3 inline mr-1 -mt-0.5" />
-              Sign in to invite friends and unlock more.
+              Open this on your laptop for the best experience.
             </div>
           )}
         </div>
