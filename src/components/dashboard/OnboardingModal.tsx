@@ -116,6 +116,19 @@ export default function OnboardingModal({
     is_in_greek_life?: boolean;
     confidence_1_10?: number;
   }) => {
+    // Simulate mode — skip the network round-trip entirely. Staff just want
+    // to QA the UI/UX, not write a real onboarding row.
+    if (simulate) {
+      toast.success("Simulated onboarding complete (nothing saved).");
+      onComplete({
+        legacy: false,
+        beta_number: null,
+        campus_beta_number: null,
+        campus_name: null,
+      });
+      return;
+    }
+
     setSubmitting(true);
     try {
       const finalName = (overrides?.display_name ?? name).trim() || "Test User";
