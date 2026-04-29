@@ -102,6 +102,8 @@ export default function StudyPreviewer({
   resetSignal,
   welcomeName,
   isReturning,
+  onSelectionChange,
+  closeToolSignal,
 }: StudyPreviewerProps) {
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [chapterLoading, setChapterLoading] = useState(false);
