@@ -139,6 +139,8 @@ export default function OnboardingModal({
 
   const [role, setRole] = useState<UserRole | null>(null);
   const [majorStatus, setMajorStatus] = useState<MajorStatus | null>(null);
+  const [inGreek, setInGreek] = useState<boolean | null>(null);
+  const [greekOrgName, setGreekOrgName] = useState<string>("");
 
   const canSubmit = useMemo(() => {
     if (simulate) return true;
