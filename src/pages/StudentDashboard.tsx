@@ -65,6 +65,17 @@ function DashNavbar({
     return () => window.removeEventListener("mousedown", handler);
   }, [accountOpen]);
 
+  const BETA_END = new Date("2026-05-15T23:59:59Z").getTime();
+  const [betaDaysLeft, setBetaDaysLeft] = useState<number>(() =>
+    Math.max(0, Math.ceil((BETA_END - Date.now()) / (1000 * 60 * 60 * 24))),
+  );
+  useEffect(() => {
+    const t = setInterval(() => {
+      setBetaDaysLeft(Math.max(0, Math.ceil((BETA_END - Date.now()) / (1000 * 60 * 60 * 24))));
+    }, 60_000);
+    return () => clearInterval(t);
+  }, [BETA_END]);
+
   const initial = (email?.[0] ?? "?").toUpperCase();
 
   const linkStyle: React.CSSProperties = {
