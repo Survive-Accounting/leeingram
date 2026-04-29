@@ -12,7 +12,7 @@
  *   student@olemiss.edu             → no simulation (real user)
  */
 
-const TEST_DOMAIN = "survivestudios.com";
+import { isAliasTestBase } from "./emailWhitelist";
 
 // Explicit alias → domain overrides for short aliases that don't match
 // the "{alias}.edu" convention.
@@ -53,7 +53,7 @@ export function parseEmail(rawEmail: string): ParsedEmail | null {
     alias = rawAlias.length > 0 ? rawAlias : null;
   }
 
-  const isAliasMode = realDomain === TEST_DOMAIN && !!alias;
+  const isAliasMode = !!alias && isAliasTestBase(`${baseEmail}@${realDomain}`);
   let simulatedDomain = realDomain;
   if (isAliasMode && alias) {
     simulatedDomain = ALIAS_DOMAIN_OVERRIDES[alias] ?? `${alias}.edu`;
