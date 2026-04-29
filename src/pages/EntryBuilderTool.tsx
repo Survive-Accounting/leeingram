@@ -210,8 +210,8 @@ export default function EntryBuilderTool() {
 
   if (loading) {
     return (
-      <div className={`${isEmbed ? "min-h-full" : "min-h-screen"} bg-[#0f1729] flex items-center justify-center`}>
-        <div className="text-white/60 text-sm animate-pulse">Loading Entry Builder...</div>
+      <div className={`${isEmbed ? "min-h-full" : "min-h-screen"} relative bg-[#0f1729]`} style={{ minHeight: isEmbed ? "60vh" : undefined }}>
+        <BrandedLoader subtitle="Loading Entry Builder…" surface="navy" />
       </div>
     );
   }
