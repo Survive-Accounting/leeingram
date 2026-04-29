@@ -28,6 +28,7 @@ interface StagingHeroProps {
 export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [videoPlaying, setVideoPlaying] = useState(false);
 
   const handleSeeHowItWorks = () => {
     // Scroll to the demo / courses section.
@@ -261,61 +262,98 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
 
       <div className="relative z-10 mx-auto max-w-[760px] px-4 sm:px-6 py-10 md:py-24 w-full">
         <div className="flex flex-col items-center text-center">
-          {/* Headshot — opens About modal */}
-          <button
-            type="button"
-            onClick={() => setAboutOpen(true)}
-            aria-label="About Lee Ingram"
-            className="hero-anim-headshot mb-5 rounded-full transition-transform hover:-translate-y-0.5 hover:scale-[1.03]"
-            style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+          {/* Welcome video — replaces headshot + "Built by Lee Ingram" */}
+          <div
+            className="hero-anim-headshot mb-8 w-full"
+            style={{ maxWidth: 560 }}
           >
             <div
-              className="rounded-full overflow-hidden relative"
+              className="relative w-full overflow-hidden rounded-2xl"
               style={{
-                width: 120,
-                height: 120,
-                border: "3px solid #FFFFFF",
+                paddingTop: "56.25%",
+                background: "#000",
+                border: "1px solid rgba(255,255,255,0.12)",
                 boxShadow:
-                  "0 8px 24px rgba(20,33,61,0.18), 0 0 0 1px rgba(20,33,61,0.06)",
-                background: "linear-gradient(135deg, #DDE7F5 0%, #C8D6EC 100%)",
+                  "0 20px 60px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04)",
               }}
             >
-              <img
-                src={leeHeadshot}
-                alt="Lee Ingram"
-                loading="eager"
-                decoding="async"
-                onLoad={() => setImgLoaded(true)}
-                className="w-full h-full object-cover hero-anim-headshot-img"
-                style={{
-                  objectPosition: "center 15%",
-                  opacity: imgLoaded ? undefined : 0,
-                }}
-              />
+              {videoPlaying ? (
+                <iframe
+                  src="https://player.vimeo.com/video/1187869081?h=e85670e031&autoplay=1&title=0&byline=0&portrait=0&dnt=1"
+                  title="Welcome from Lee Ingram"
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                  style={{ border: 0 }}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setVideoPlaying(true)}
+                  aria-label="Play welcome video"
+                  className="absolute inset-0 w-full h-full flex items-center justify-center group cursor-pointer"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(20,33,61,0.55) 0%, rgba(20,33,61,0.25) 100%)",
+                    backdropFilter: "blur(2px)",
+                  }}
+                >
+                  {/* Poster image */}
+                  <img
+                    src={`https://vumbnail.com/1187869081.jpg`}
+                    alt=""
+                    aria-hidden
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ opacity: 0.55, zIndex: 0 }}
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  />
+                  <div
+                    aria-hidden
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(20,33,61,0.45) 0%, rgba(20,33,61,0.2) 100%)",
+                      zIndex: 1,
+                    }}
+                  />
+                  {/* Play button */}
+                  <div
+                    className="relative flex items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-110"
+                    style={{
+                      width: 76,
+                      height: 76,
+                      background: "rgba(255,255,255,0.96)",
+                      boxShadow:
+                        "0 10px 30px rgba(0,0,0,0.35), 0 0 0 8px rgba(255,255,255,0.12)",
+                      zIndex: 2,
+                    }}
+                  >
+                    <svg
+                      width="28"
+                      height="28"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      style={{ marginLeft: 4 }}
+                      aria-hidden
+                    >
+                      <path d="M6 4l14 8-14 8V4z" fill="#14213D" />
+                    </svg>
+                  </div>
+                  <span
+                    className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[12px] font-semibold tracking-wide"
+                    style={{
+                      color: "rgba(255,255,255,0.92)",
+                      fontFamily: "Inter, sans-serif",
+                      textShadow: "0 1px 6px rgba(0,0,0,0.45)",
+                      zIndex: 2,
+                    }}
+                  >
+                    Watch the welcome — 60 sec
+                  </span>
+                </button>
+              )}
             </div>
-          </button>
-
-
-
-          {/* Identity — entire line is the About link */}
-          <button
-            type="button"
-            onClick={() => setAboutOpen(true)}
-            className="hero-anim-eyebrow mb-8 text-[13px] font-semibold transition-colors"
-            style={{
-              color: "rgba(255,255,255,0.85)",
-              background: "none",
-              border: "none",
-              padding: 0,
-              fontFamily: "Inter, sans-serif",
-              cursor: "pointer",
-            }}
-          >
-            Built by{" "}
-            <span className="underline decoration-[1px] underline-offset-[3px] decoration-[rgba(255,255,255,0.4)] group-hover:decoration-[rgba(255,255,255,0.9)]">
-              Lee Ingram
-            </span>
-          </button>
+          </div>
 
           {/* Headline */}
           <h1
