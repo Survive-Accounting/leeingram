@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, Check, ChevronDown, Lock, Target, NotebookPen, Lightbulb } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, ChevronDown, Lock, Target, NotebookPen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { ToolKey } from "@/components/dashboard/StudyToolCards";
