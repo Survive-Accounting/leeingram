@@ -15,7 +15,8 @@ import {
 } from "@/lib/styleExport";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 
-const HIDDEN_KEY = "styleExport.hidden.v1";
+// (Hide button now disables the `styleExport` dev flag — there is no separate
+// floating "show" pill. Re-enable from the Admin Tools menu.)
 
 export function StyleExportToolbar() {
   const isStaff = useIsStaff();
@@ -23,10 +24,6 @@ export function StyleExportToolbar() {
   const allowed = isStaff && flagOn;
   const POS_KEY = "styleExport.launcherPos.v1";
 
-  const [hidden, setHidden] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    try { return localStorage.getItem(HIDDEN_KEY) === "1"; } catch { return false; }
-  });
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
     if (typeof window === "undefined") return { x: 16, y: 152 };
