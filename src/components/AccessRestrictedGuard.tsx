@@ -25,6 +25,9 @@ const RESTRICTED_PATHS = [
 /** Paths additionally accessible to lead VAs */
 const LEAD_VA_PATHS = ["/admin/ai-features"];
 
+/** Paths accessible to ANY VA account (any role) — in addition to Lee */
+const ANY_VA_PATHS = ["/beta-spring2026"];
+
 export function useIsLee() {
   const { user } = useAuth();
   return LEE_EMAILS.includes(user?.email ?? "");
