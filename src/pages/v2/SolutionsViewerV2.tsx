@@ -31,6 +31,7 @@ import { toYouPerspective } from "@/utils/youPerspective";
 import leeHeadshotImg from "@/assets/lee-headshot-original.png";
 import { ViewerOnboardingModal } from "@/pages/v2/ViewerOnboardingModal";
 import { RetroBreadcrumbs } from "@/components/study-previewer/RetroBreadcrumbs";
+import { BrandedLoader } from "@/components/study-previewer/BrandedLoader";
 import { FileText, Brain, Eye, ExternalLink } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
