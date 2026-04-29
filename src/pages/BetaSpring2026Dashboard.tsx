@@ -15,6 +15,7 @@ import { FeedbackAISummarySection } from "@/components/beta-dashboard/FeedbackAI
 import { InsightsSections } from "@/components/beta-dashboard/InsightsSections";
 import { InactiveSignupsSection } from "@/components/beta-dashboard/InactiveSignupsSection";
 import { ProblemReportsSection } from "@/components/beta-dashboard/ProblemReportsSection";
+import { FeatureSuggestionsSection } from "@/components/beta-dashboard/FeatureSuggestionsSection";
 import { useEventTracking } from "@/hooks/useEventTracking";
 import { BETA_EVENTS } from "@/lib/betaEvents";
 
@@ -316,6 +317,21 @@ export default function BetaSpring2026Dashboard() {
             </div>
           </div>
 
+          {/* Fetch error banner */}
+          {fetchError && (
+            <Card className="border-2" style={{ borderColor: RED }}>
+              <CardContent className="p-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <AlertTriangle className="h-4 w-4" style={{ color: RED }} />
+                  <span><strong>Dashboard failed to load:</strong> {fetchError}</span>
+                </div>
+                <Button size="sm" variant="outline" onClick={fetchData}>
+                  <RefreshCw className="h-4 w-4 mr-1" /> Retry
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Top Metrics Cards */}
           <MetricsGrid metrics={metrics} loading={loading} />
 
@@ -373,6 +389,8 @@ export default function BetaSpring2026Dashboard() {
 
           {/* Problem Reports (auto-classified bug/issue queue) */}
           <ProblemReportsSection />
+          {/* Feature Suggestions */}
+          <FeatureSuggestionsSection />
           {/* Feedback Inbox */}
           <FeedbackInboxSection />
           {/* AI Feedback Summary */}
