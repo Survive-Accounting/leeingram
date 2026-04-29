@@ -779,30 +779,6 @@ export default function RetroTerminalFrame({
                     )}
                   </div>
 
-                  {comingSoonIdeas && comingSoonIdeas.length > 0 && (
-                    <div className="mt-2.5 flex flex-wrap gap-1.5">
-                      {comingSoonIdeas.map((idea) => (
-                        <span
-                          key={idea}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 4,
-                            padding: "3px 8px",
-                            borderRadius: 999,
-                            border: `1px dashed rgba(124,255,176,0.28)`,
-                            color: PHOSPHOR_MUTED,
-                            fontSize: 10,
-                            letterSpacing: "0.04em",
-                            fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace",
-                          }}
-                        >
-                          <span aria-hidden style={{ opacity: 0.7 }}>+</span>
-                          {idea}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
               )}
             </div>
