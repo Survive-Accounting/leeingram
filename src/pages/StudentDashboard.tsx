@@ -12,6 +12,8 @@ import StudyPreviewer from "@/components/study-previewer/StudyPreviewer";
 import { RetroBreadcrumbs, type BreadcrumbCrumb } from "@/components/study-previewer/RetroBreadcrumbs";
 import ShareWithFriendsBand from "@/components/dashboard/ShareWithFriendsBand";
 import { getCourseLabel } from "@/lib/courseLabel";
+import { useDevToolFlag, setDevToolFlag } from "@/lib/devToolFlags";
+import { useIsStaff } from "@/hooks/useIsStaff";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
