@@ -12,7 +12,7 @@
  *   student@olemiss.edu             → no simulation (real user)
  */
 
-const TEST_DOMAIN = "survivestudios.com";
+import { isAliasTestBase } from "./emailWhitelist";
 
 // Explicit alias → domain overrides for short aliases that don't match
 // the "{alias}.edu" convention.
