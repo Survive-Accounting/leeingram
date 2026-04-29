@@ -519,7 +519,7 @@ export default function RetroTerminalFrame({
               {tools && tools.length > 0 && (
                 <div
                   key={`toolgrid-${activeToolKey ?? "idle"}-${canPickTool ? "ready" : "wait"}`}
-                  className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 sa-toolgrid-reveal"
+                  className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 sa-toolgrid-reveal"
                 >
                   {tools.map((tool) => {
                     const isActive = activeToolKey === tool.key;
