@@ -356,278 +356,90 @@ export default function RetroTerminalFrame({
 
             {/* Terminal content */}
             <div
-              className="relative h-full w-full px-5 sm:px-8 md:px-12 py-6 sm:py-8 md:py-10 flex flex-col text-left"
+              className="relative h-full w-full px-4 sm:px-7 md:px-10 py-5 sm:py-7 md:py-8 flex flex-col text-left"
               style={{
                 fontFamily:
                   "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
                 color: PHOSPHOR,
                 fontSize: "clamp(12px, 1.45vw, 15px)",
-                lineHeight: 1.7,
+                lineHeight: 1.55,
                 textShadow: `0 0 1px ${PHOSPHOR_GLOW}, 0 0 8px ${PHOSPHOR_GLOW}`,
                 letterSpacing: "0.02em",
               }}
             >
-              {/* Header chrome — branded logo + readiness status */}
+              {/* Headline — anchors the screen, replaces logo + boot chrome */}
               <div
-                className="flex items-center justify-between mb-4 sm:mb-6 pb-2 gap-3"
                 style={{
-                  borderBottom: `1px dashed ${PHOSPHOR_DIM}`,
+                  fontFamily: "'DM Serif Display', serif",
+                  fontWeight: 400,
+                  fontSize: "clamp(20px, 3vw, 30px)",
+                  lineHeight: 1.15,
+                  letterSpacing: "0.005em",
+                  color: "#EAFFF2",
+                  textShadow: `0 0 2px ${PHOSPHOR_GLOW}, 0 0 14px ${PHOSPHOR_GLOW}`,
+                  marginBottom: "1.1em",
                 }}
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <img
-                    src={LOGO_URL}
-                    alt="Survive Accounting"
-                    className="h-5 sm:h-6 w-auto object-contain select-none"
-                    style={{
-                      // Phosphor tint: knock the white logo into the green palette
-                      filter:
-                        "brightness(0) saturate(100%) invert(92%) sepia(38%) saturate(640%) hue-rotate(76deg) brightness(105%) contrast(101%) drop-shadow(0 0 4px rgba(124,255,176,0.45))",
-                      opacity: 0.95,
-                    }}
-                    draggable={false}
-                  />
-                  <TooltipProvider delayDuration={150}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          aria-label="What's a green cathode monitor?"
-                          className="inline-flex items-center justify-center rounded-full transition-opacity focus:outline-none"
-                          style={{
-                            width: 16,
-                            height: 16,
-                            color: PHOSPHOR_DIM,
-                            opacity: 0.7,
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-                          onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.7")}
-                        >
-                          <Info className="h-3.5 w-3.5" strokeWidth={1.75} />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        side="top"
-                        align="start"
-                        sideOffset={8}
-                        className="border max-w-[280px] p-3"
-                        style={{
-                          background: "rgba(8,18,12,0.96)",
-                          borderColor: "rgba(124,255,176,0.35)",
-                          color: "#E8FFF1",
-                          fontFamily:
-                            "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
-                          boxShadow:
-                            "0 8px 24px rgba(0,0,0,0.55), 0 0 18px rgba(124,255,176,0.18)",
-                        }}
-                      >
-                        <div
-                          className="text-[11px] uppercase mb-1.5"
-                          style={{
-                            color: PHOSPHOR,
-                            letterSpacing: "0.12em",
-                            textShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
-                          }}
-                        >
-                          What's a green cathode monitor?
-                        </div>
-                        <p
-                          className="text-[12px] leading-relaxed m-0"
-                          style={{ color: "rgba(232,255,241,0.85)" }}
-                        >
-                          Before modern flat screens, accountants and office
-                          workers often used monochrome CRT monitors like these.
-                          Green-screen terminals were common in the 70s and 80s,
-                          so this is our little nod to old-school accounting tech.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                {notice ? (
-                  <div
-                    role="status"
-                    aria-live="polite"
-                    className="sa-notice-blink"
-                    style={{
-                      // Sit just outside the green CRT palette so it pops
-                      fontFamily: "Inter, system-ui, sans-serif",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      letterSpacing: "0.06em",
-                      textTransform: "uppercase",
-                      color: "#FFFFFF",
-                      background: "linear-gradient(180deg, #E11D2E 0%, #B30E1E 100%)",
-                      padding: "6px 12px",
-                      borderRadius: 6,
-                      border: "1px solid rgba(255,255,255,0.25)",
-                      boxShadow:
-                        "0 0 0 1px rgba(0,0,0,0.35), 0 6px 18px rgba(225,29,46,0.45), 0 0 22px rgba(225,29,46,0.55)",
-                      textShadow: "0 1px 0 rgba(0,0,0,0.35)",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {notice}
-                  </div>
-                ) : (
-                  <span
-                    style={{
-                      fontSize: "0.78em",
-                      color: PHOSPHOR_DIM,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    Survive Your Spring '26 Finals
-                  </span>
-                )}
-              </div>
-
-              {welcomeName ? (
-                <div
-                  style={{
-                    opacity: bootStep >= 1 ? 1 : 0,
-                    transform: bootStep >= 1 ? "translateY(0)" : "translateY(4px)",
-                    transition: "opacity 320ms ease-out, transform 320ms ease-out",
-                    marginBottom: "0.6em",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: "'DM Serif Display', serif",
-                      fontWeight: 400,
-                      fontSize: "clamp(22px, 3.4vw, 34px)",
-                      lineHeight: 1.15,
-                      letterSpacing: "0.005em",
-                      color: "#EAFFF2",
-                      textShadow: `0 0 2px ${PHOSPHOR_GLOW}, 0 0 14px ${PHOSPHOR_GLOW}`,
-                    }}
-                  >
+                {welcomeName ? (
+                  <>
                     {isReturning ? "Welcome back, " : "Welcome, "}
                     <span style={{ color: PHOSPHOR }}>{welcomeName}</span>
                     <span style={{ color: PHOSPHOR_DIM }}>.</span>
-                  </div>
-                </div>
-              ) : (
-                <Line show={bootStep >= 1}>
-                  {">"} Survive Accounting: Spring '26 Beta
-                </Line>
-              )}
-              {chapterLabel && (
-                <Line show={bootStep >= 2} flashKey={courseTyped.pulseKey}>
-                  {">"} Course selected:{" "}
-                  {editingCourse && courseSelector ? (
-                    <>
-                      <span
-                        className="inline-block align-middle ml-0.5"
-                        style={{ minWidth: 220, maxWidth: "min(320px, 60%)" }}
-                      >
-                        {courseSelector}
-                      </span>
-                      <ChangeLink
-                        label="cancel"
-                        onClick={() => setEditingCourse(false)}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <span
-                        key={`course-${courseTyped.pulseKey}`}
-                        className={courseTyped.pulseKey > 0 ? "sa-value-pulse" : undefined}
-                        style={{ color: "#E8FFF1" }}
-                      >
-                        {courseTyped.text || safeCourse}
-                        {courseTyped.typing && (
-                          <span
-                            aria-hidden
-                            className="inline-block align-[-2px] ml-0.5"
-                            style={{
-                              width: "0.5em",
-                              height: "1em",
-                              background: PHOSPHOR,
-                              boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
-                              animation: "sa-cursor-blink 0.6s steps(1) infinite",
-                            }}
-                          />
-                        )}
-                      </span>
-                      {canChangeCourse && courseSelector && !courseTyped.typing && (
-                        <ChangeLink onClick={() => { setEditingCourse(true); setEditingChapter(false); }} />
-                      )}
-                    </>
-                  )}
-                </Line>
-              )}
-              <Line show={bootStep >= 3} flashKey={chapterTyped.pulseKey}>
-                {">"} Chapter selected:{" "}
-                {editingChapter && chapterSelector ? (
-                  <>
-                    <span
-                      className="inline-block align-middle ml-0.5"
-                      style={{ minWidth: 220, maxWidth: "min(320px, 60%)" }}
-                    >
-                      {chapterSelector}
-                    </span>
-                    {chapterLabel && (
-                      <ChangeLink
-                        label="cancel"
-                        onClick={() => setEditingChapter(false)}
-                      />
-                    )}
                   </>
-                ) : chapterLabel ? (
-                  <>
-                    <span
-                      key={`chapter-${chapterTyped.pulseKey}`}
-                      className={chapterTyped.pulseKey > 0 ? "sa-value-pulse" : undefined}
-                      style={{ color: "#E8FFF1" }}
-                    >
-                      {chapterTyped.text || safeChapter}
-                      {chapterTyped.typing && (
-                        <span
-                          aria-hidden
-                          className="inline-block align-[-2px] ml-0.5"
-                          style={{
-                            width: "0.5em",
-                            height: "1em",
-                            background: PHOSPHOR,
-                            boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
-                            animation: "sa-cursor-blink 0.6s steps(1) infinite",
-                          }}
-                        />
-                      )}
-                    </span>
-                    {canChangeChapter && chapterSelector && !chapterTyped.typing && (
-                      <ChangeLink onClick={() => { setEditingChapter(true); setEditingCourse(false); }} />
-                    )}
-                  </>
-                ) : chapterSelector ? (
-                  <span
-                    className="inline-block align-middle ml-0.5"
-                    style={{ minWidth: 220, maxWidth: "min(320px, 60%)" }}
-                  >
-                    {chapterSelector}
-                  </span>
                 ) : (
-                  <span style={{ color: PHOSPHOR_MUTED }}>—</span>
+                  <>Survive your Spring '26 finals</>
                 )}
-              </Line>
-              <Line show={bootStep >= 4}>{">"}</Line>
-              <Line show={bootStep >= 5}>
-                <span style={{ color: PHOSPHOR_DIM }}>{promptLabel}</span>
-                <span
-                  aria-hidden
-                  className="inline-block align-[-2px] ml-2"
+              </div>
+
+              {/* Course picker */}
+              {courseSelector && (
+                <div className="mb-3 sm:mb-3.5">
+                  <div
+                    style={{
+                      color: PHOSPHOR_DIM,
+                      fontSize: "0.92em",
+                      marginBottom: 4,
+                      letterSpacing: "0.02em",
+                    }}
+                  >
+                    {">"} Choose Course
+                  </div>
+                  <div style={{ maxWidth: 360 }}>{courseSelector}</div>
+                </div>
+              )}
+
+              {/* Chapter picker — disabled until course chosen */}
+              <div className="mb-1">
+                <div
                   style={{
-                    width: "0.55em",
-                    height: "1.05em",
-                    background: PHOSPHOR,
-                    boxShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
-                    animation: "sa-cursor-blink 1.05s steps(1) infinite",
+                    color: courseLabel ? PHOSPHOR_DIM : PHOSPHOR_MUTED,
+                    fontSize: "0.92em",
+                    marginBottom: 4,
+                    letterSpacing: "0.02em",
+                    transition: "color 240ms ease-out",
                   }}
-                />
-              </Line>
+                >
+                  {">"} Choose Chapter
+                </div>
+                <div style={{ maxWidth: 360, opacity: courseLabel ? 1 : 0.5 }}>
+                  {chapterSelector ?? (
+                    <div
+                      className="w-full rounded-[4px] px-2 py-1 text-[12.5px] flex items-center justify-between"
+                      style={{
+                        background: "rgba(8,28,16,0.4)",
+                        border: `1px solid ${PHOSPHOR_MUTED}`,
+                        color: PHOSPHOR_MUTED,
+                        fontFamily:
+                          "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
+                      }}
+                    >
+                      <span>Choose course first…</span>
+                      <Lock className="h-3 w-3 ml-2 shrink-0" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
 
               {/* Tool grid — 3-column terminal cards. Hidden entirely until a chapter is chosen. */}
               {tools && tools.length > 0 && canPickTool && (
