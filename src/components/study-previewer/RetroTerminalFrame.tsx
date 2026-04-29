@@ -396,21 +396,23 @@ export default function RetroTerminalFrame({
                 letterSpacing: "0.02em",
               }}
             >
-              {/* Persistent top-left product label — same hardware, every state */}
+              {/* Persistent top-left product logo — same hardware, every state */}
               <div
                 style={{
-                  fontFamily:
-                    "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
-                  color: PHOSPHOR_DIM,
-                  fontSize: "0.78em",
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
                   marginBottom: "1.1em",
-                  textShadow: `0 0 4px ${PHOSPHOR_GLOW}`,
+                  filter: `drop-shadow(0 0 6px ${PHOSPHOR_GLOW}) drop-shadow(0 0 14px rgba(124,255,176,0.25))`,
                 }}
               >
-                Accounting Study Tools{" "}
-                <span style={{ opacity: 0.7 }}>(Spring '26 Beta)</span>
+                <img
+                  src={LOGO_URL}
+                  alt="Survive Accounting"
+                  style={{
+                    height: "clamp(22px, 2.6vw, 30px)",
+                    width: "auto",
+                    display: "block",
+                    opacity: 0.92,
+                  }}
+                />
               </div>
 
               {/* Headline — only when we have a personalized welcome; otherwise the section heading above the screen carries the title */}
