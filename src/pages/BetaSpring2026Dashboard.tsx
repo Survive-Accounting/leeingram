@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, RefreshCw, Sparkles, MessageSquare, Bug, Lightbulb, Heart, AlertTriangle, ExternalLink, ArrowLeft } from "lucide-react";
+import { Copy, RefreshCw, Sparkles, MessageSquare, Bug, Lightbulb, Heart, AlertTriangle, ExternalLink, ArrowLeft, TrendingDown } from "lucide-react";
 import { SignupsTable, type SignupRow } from "@/components/beta-dashboard/SignupsTable";
+import { useEventTracking } from "@/hooks/useEventTracking";
+import { BETA_EVENTS } from "@/lib/betaEvents";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -190,6 +192,11 @@ export default function BetaSpring2026Dashboard() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const { trackEvent } = useEventTracking();
+  useEffect(() => {
+    trackEvent(BETA_EVENTS.BETA_DASHBOARD_VIEWED, { source: "internal_admin" });
+  }, [trackEvent]);
+
   const runClustering = async (force = false) => {
     if (!feedback.length) return;
     setAiLoading(true);
@@ -300,8 +307,11 @@ export default function BetaSpring2026Dashboard() {
             </div>
           </div>
 
-          {/* Metrics Grid */}
+          {/* Top Metrics Cards */}
           <MetricsGrid metrics={metrics} loading={loading} />
+
+          {/* Launch Funnel */}
+          <LaunchFunnel metrics={metrics} loading={loading} />
 
           {/* AI Themes */}
           <Card>
