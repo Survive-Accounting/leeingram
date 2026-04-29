@@ -409,72 +409,16 @@ export default function StudentDashboard() {
         onSignOut={handleSignOut}
       />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-5 sm:px-8 pt-10 md:pt-12 pb-20 space-y-12 md:space-y-14">
-        {/* Welcome header */}
-        <section aria-label="Welcome">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5">
-            <div>
-              <h1
-                className="text-[22px] sm:text-[26px] leading-tight"
-                style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: NAVY }}
-              >
-                {firstName ? `Welcome back, ${firstName}.` : "Welcome back."}
-              </h1>
-              <p
-                className="mt-1 text-[13px] sm:text-[14px]"
-                style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
-              >
-                {courseLabel && campusName
-                  ? `Let's Survive ${courseLabel} at ${campusName}.`
-                  : courseLabel
-                    ? `Let's Survive ${courseLabel}.`
-                    : "Let's get you ready for finals."}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={scrollToPreviewer}
-              className="self-start sm:self-end inline-flex items-center gap-1.5 text-[12.5px] font-semibold hover:underline transition-opacity"
-              style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
-            >
-              Go to study tools <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-6 items-stretch">
-            <div ref={shareRef} className="md:col-span-7 scroll-mt-24">
-              <ShareWithFriendsBand
-                betaNumber={betaNumber}
-                campusName={campusName}
-                compact
-              />
-            </div>
-            <div className="md:col-span-5">
-              <WelcomeVideoCard onClick={() => setVideoOpen(true)} fullWidth />
-            </div>
-          </div>
-        </section>
-
-        {!earlyBirdOpted && userId && (
-          <div className="text-center md:text-left">
-            <EarlyBirdOptInRow
-              userId={userId}
-              onOptedIn={() => setEarlyBirdOpted(true)}
-            />
-          </div>
-        )}
-
+      <main className="flex-1 w-full mx-auto pt-6 md:pt-8 pb-16">
         {/* Previewer entry — the centerpiece (full-bleed navy hero band) */}
         <div
           ref={previewerRef}
           className="relative scroll-mt-24"
           style={{
-            // Full-bleed breakout from the constrained <main> container
-            marginLeft: "calc(50% - 50vw)",
-            marginRight: "calc(50% - 50vw)",
             paddingLeft: "1rem",
             paddingRight: "1rem",
-            paddingTop: "5rem",
-            paddingBottom: "5rem",
+            paddingTop: "3rem",
+            paddingBottom: "4rem",
             background: `radial-gradient(120% 80% at 50% 0%, #1A2A4F 0%, ${NAVY} 55%, #0E1830 100%)`,
             borderTop: "1px solid rgba(255,255,255,0.06)",
             borderBottom: "1px solid rgba(0,0,0,0.25)",
