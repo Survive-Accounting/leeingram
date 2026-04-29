@@ -65,7 +65,7 @@ export default function BetaPaywallModal({ open, onOpenChange, onJoinBeta }: Bet
               className="text-center mt-4 text-[12px]"
               style={{ color: "#9CA3AF" }}
             >
-              100% free · No credit card required
+              100% free during beta
             </p>
           </div>
         </div>

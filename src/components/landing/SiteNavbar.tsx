@@ -3,11 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
 import StudentLoginModal from "@/components/landing/StudentLoginModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 const NAVY = "#14213D";
 
 export default function SiteNavbar() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
   const [aboutOpen, setAboutOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -56,11 +59,11 @@ export default function SiteNavbar() {
               </button>
             ))}
             <button
-              onClick={() => setLoginOpen(true)}
+              onClick={() => isLoggedIn ? navigate("/my-dashboard") : setLoginOpen(true)}
               className="text-[13px] font-semibold text-white px-5 py-2 rounded-lg transition-opacity hover:opacity-90"
               style={{ background: NAVY, fontFamily: "Inter, sans-serif", border: "1px solid rgba(255,255,255,0.25)" }}
             >
-              Student Login
+              {isLoggedIn ? "Dashboard" : "Student Login"}
             </button>
           </nav>
 
@@ -88,11 +91,15 @@ export default function SiteNavbar() {
               </button>
             ))}
             <button
-              onClick={() => { setLoginOpen(true); setMenuOpen(false); }}
+              onClick={() => {
+                setMenuOpen(false);
+                if (isLoggedIn) navigate("/my-dashboard");
+                else setLoginOpen(true);
+              }}
               className="block w-full text-center text-[14px] font-semibold text-white py-2.5 mt-2 rounded-lg"
               style={{ background: NAVY, fontFamily: "Inter, sans-serif", border: "1px solid rgba(255,255,255,0.25)" }}
             >
-              Student Login
+              {isLoggedIn ? "Dashboard" : "Student Login"}
             </button>
           </div>
         )}

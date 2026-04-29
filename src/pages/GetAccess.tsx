@@ -607,19 +607,6 @@ export default function GetAccess() {
               >
                 Free beta access through your Spring &rsquo;26 final exams
               </div>
-              <div
-                className="mt-1 text-[12px] leading-snug"
-                style={{ color: "#64748B" }}
-              >
-                Use it as much as you want while beta access is open.
-              </div>
-              <div
-                className="mt-2 text-[11.5px] leading-snug"
-                style={{ color: "#94A3B8" }}
-              >
-                After beta, semester access will be $250. You&rsquo;ll only pay
-                if you choose to renew.
-              </div>
               <label className="mt-3 inline-flex items-start gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -689,7 +676,7 @@ export default function GetAccess() {
               style={{ color: "#64748B", fontFamily: "Inter, sans-serif" }}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              Free beta · No credit card required · Instant access
+              Free beta · Instant access
             </div>
           </div>
         </div>
