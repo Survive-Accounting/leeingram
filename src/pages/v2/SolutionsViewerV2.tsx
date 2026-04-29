@@ -1292,16 +1292,18 @@ const TOOLBOX_META: Record<ToolboxKey, { label: string; emoji: string; subtitle:
 
 // Inline HTML detection + sanitizer — mirrors SurviveExplorePanel's renderer
 // so survive-this responses with tables/lists render cleanly here too.
+// Tutor response panel is on a dark navy background — table palette must
+// be dark-native so headers and totals don't disappear into a light strip.
 const INLINE_AI_HTML_STYLE = `<style>
 .sa-inline-ai table { width:100%; border-collapse:collapse; font-size:13px; margin:10px 0 14px; }
-.sa-inline-ai th { text-align:left; color:#6B7280; font-weight:600; border-bottom:1px solid #E5E7EB; padding:6px 10px; background:#FAFAFA; }
-.sa-inline-ai td { padding:6px 10px; border-bottom:1px solid #F3F4F6; color:#14213D; font-size:13px; }
-.sa-inline-ai tr.total td { font-weight:700; border-top:1px solid #D1D5DB; border-bottom:none; background:#F8F9FA; }
-.sa-inline-ai ul, .sa-inline-ai ol { margin:8px 0 12px 20px; padding:0; }
+.sa-inline-ai th { text-align:left; color:rgba(255,255,255,0.95); font-weight:600; border-bottom:1px solid rgba(255,255,255,0.18); padding:6px 10px; background:rgba(255,255,255,0.08); }
+.sa-inline-ai td { padding:6px 10px; border-bottom:1px solid rgba(255,255,255,0.08); color:rgba(255,255,255,0.92); font-size:13px; }
+.sa-inline-ai tr.total td { font-weight:700; border-top:1px solid rgba(255,255,255,0.25); border-bottom:none; background:rgba(255,255,255,0.06); color:#FFFFFF; }
+.sa-inline-ai ul, .sa-inline-ai ol { margin:8px 0 12px 20px; padding:0; color:rgba(255,255,255,0.92); }
 .sa-inline-ai li { margin:4px 0; line-height:1.55; }
-.sa-inline-ai p { margin:8px 0; line-height:1.65; }
-.sa-inline-ai strong { color:#14213D; font-weight:700; }
-.sa-inline-ai em { color:#6B7280; }
+.sa-inline-ai p { margin:8px 0; line-height:1.65; color:rgba(255,255,255,0.92); }
+.sa-inline-ai strong { color:#FFFFFF; font-weight:700; }
+.sa-inline-ai em { color:rgba(255,255,255,0.7); }
 </style>`;
 const INLINE_HTML_DETECT = /<(table|strong|ul|ol|li|br|h[1-6]|div|span|p|em|thead|tbody|tr|th|td)\b/i;
 
@@ -1754,8 +1756,11 @@ function InlineExplanation({
       )}
 
       {/* ── Response window — chat-style output area ─────────────────── */}
+      {/* Note: do NOT blanket-force [&_th] / [&_td] colors here — the inline
+          AI HTML stylesheet handles table palette explicitly so totals,
+          headers, and contrast all stay readable on the dark panel. */}
       <div
-        className="px-4 py-4 flex-1 min-h-[140px] [&_*]:!text-white/95 [&_strong]:!text-white [&_th]:!text-white [&_td]:!text-white/90"
+        className="px-4 py-4 flex-1 min-h-[140px] [&_p]:!text-white/95 [&_li]:!text-white/95 [&_strong]:!text-white"
         style={{ color: "rgba(255,255,255,0.92)" }}
       >
         {error && (
@@ -3233,8 +3238,12 @@ export default function SolutionsViewerV2() {
                     comfortable reading width and generous line-height. */}
                 {asset.survive_problem_text && (
                   <div className="mt-4">
+                    {/* Scope text-color overrides to prose elements only — do NOT
+                        force td/th colors. SmartTextRenderer renders pipe tables
+                        with a white body and dark text; forcing white globally
+                        makes those cells invisible. */}
                     <div
-                      className="text-[15px] max-w-[68ch] space-y-3 [&_p]:whitespace-pre-wrap [&_p]:text-[15px] [&_*]:!text-white/95 [&_strong]:!text-white [&_th]:!text-white [&_td]:!text-white/90 [&_.font-semibold]:!text-amber-300"
+                      className="text-[15px] max-w-[68ch] space-y-3 [&_p]:whitespace-pre-wrap [&_p]:text-[15px] [&_p]:!text-white/95 [&_li]:!text-white/95 [&_strong]:!text-white [&_.font-semibold]:!text-amber-300"
                       style={{ color: "rgba(255,255,255,0.95)", lineHeight: 1.7 }}
                     >
                       <SmartTextRenderer text={toYouPerspective(asset.survive_problem_text)} />
