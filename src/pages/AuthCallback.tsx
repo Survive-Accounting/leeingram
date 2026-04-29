@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { getStoredFingerprint, getDeviceName } from "@/hooks/useDeviceFingerprint";
-import { sendMagicLink } from "@/lib/sendMagicLink";
+
 
 const registerDevice = async (studentId: string, email: string) => {
   try {
