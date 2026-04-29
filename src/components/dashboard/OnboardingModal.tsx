@@ -2,22 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import GreekOrgSearch from "./GreekOrgSearch";
 import { useIsStaff } from "@/hooks/useIsStaff";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
+const ONBOARDING_VERSION = "spring_2026_beta_v1";
 
-interface Campus {
-  id: string;
-  name: string;
-  slug: string;
-}
-const CATCH_ALL_SLUG = "general";
-interface Course {
-  id: string;
-  course_name: string;
-}
+type UserRole = "student" | "parent" | "professor" | "cpa_professional" | "other";
+type MajorStatus = "yes" | "no" | "not_sure";
 
 interface Props {
   userId: string;
@@ -26,10 +18,8 @@ interface Props {
   prefillCourseId: string | null;
   prefillName: string;
   /**
-   * Simulate mode — staff-only preview.
-   * - All validation is bypassed (every step's Continue is enabled)
-   * - Submit does NOT call complete-onboarding; it just calls onComplete
-   *   with a stubbed result so changes can be UI-tested freely.
+   * Simulate mode — staff-only preview. Submit does NOT call complete-onboarding;
+   * it just calls onComplete with a stubbed result so changes can be UI-tested freely.
    */
   simulate?: boolean;
   onComplete: (result: {
@@ -41,83 +31,124 @@ interface Props {
   onClose?: () => void;
 }
 
-type Step = 1 | 2 | 3;
+const ROLE_OPTIONS: { value: UserRole; label: string; emoji: string }[] = [
+  { value: "student", label: "Student", emoji: "🎓" },
+  { value: "parent", label: "Parent", emoji: "👨‍👩‍👧" },
+  { value: "professor", label: "Professor", emoji: "📚" },
+  { value: "cpa_professional", label: "CPA or professional", emoji: "💼" },
+  { value: "other", label: "Other", emoji: "✨" },
+];
+
+const MAJOR_OPTIONS: { value: MajorStatus; label: string }[] = [
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" },
+  { value: "not_sure", label: "Not sure" },
+];
+
+/** Try to split a "Full Name" prefill into first/last. */
+function splitName(full: string): { first: string; last: string } {
+  const parts = full.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { first: "", last: "" };
+  if (parts.length === 1) return { first: parts[0], last: "" };
+  return { first: parts[0], last: parts.slice(1).join(" ") };
+}
 
 export default function OnboardingModal({
-  userId,
+  userId: _userId,
   email,
   prefillCampusId,
-  prefillCourseId,
+  prefillCourseId: _prefillCourseId,
   prefillName,
   simulate = false,
   onComplete,
   onClose,
 }: Props) {
   const isStaff = useIsStaff();
-  const [step, setStep] = useState<Step>(1);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form state
-  const [name, setName] = useState(prefillName);
-  const [campusId, setCampusId] = useState<string | null>(prefillCampusId);
-  const [campuses, setCampuses] = useState<Campus[]>([]);
-  const [courseId] = useState<string | null>(prefillCourseId);
-  const [campusWriteIn, setCampusWriteIn] = useState("");
-  const [editCampus, setEditCampus] = useState(false);
-
-  const [major, setMajor] = useState<"yes" | "no" | "definitely_not" | null>(null);
-  const [inGreek, setInGreek] = useState<boolean | null>(null);
-  const [greekOrgId, setGreekOrgId] = useState<string | null>(null);
-  const [greekOther, setGreekOther] = useState("");
-
-  const [confidence, setConfidence] = useState<number>(5);
-
-  // Load campus list
+  // Pull first/last from auth metadata if the parent didn't supply them.
+  const [authFirst, setAuthFirst] = useState<string>("");
+  const [authLast, setAuthLast] = useState<string>("");
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      const meta = (data.user?.user_metadata || {}) as Record<string, unknown>;
+      const first =
+        (meta.first_name as string) ||
+        (meta.given_name as string) ||
+        "";
+      const last =
+        (meta.last_name as string) ||
+        (meta.family_name as string) ||
+        "";
+      const full = (meta.full_name as string) || (meta.name as string) || "";
+      if (cancelled) return;
+      if (first || last) {
+        setAuthFirst(first || "");
+        setAuthLast(last || "");
+      } else if (full) {
+        const s = splitName(full);
+        setAuthFirst(s.first);
+        setAuthLast(s.last);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const initial = useMemo(() => splitName(prefillName || ""), [prefillName]);
+
+  const [firstName, setFirstName] = useState<string>(initial.first);
+  const [lastName, setLastName] = useState<string>(initial.last);
+
+  // Backfill from auth metadata if user hasn't typed anything yet.
+  useEffect(() => {
+    if (!firstName && authFirst) setFirstName(authFirst);
+    if (!lastName && authLast) setLastName(authLast);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authFirst, authLast]);
+
+  const [campusName, setCampusName] = useState<string | null>(null);
+  useEffect(() => {
+    if (!prefillCampusId) {
+      setCampusName(null);
+      return;
+    }
+    let cancelled = false;
     (async () => {
       const { data } = await supabase
         .from("campuses")
-        .select("id, name, slug")
-        .eq("status", "active")
-        .order("name", { ascending: true });
-      setCampuses((data || []) as Campus[]);
+        .select("name, slug")
+        .eq("id", prefillCampusId)
+        .maybeSingle();
+      if (cancelled) return;
+      // Hide the catch-all campus from the read-only context line — it's not
+      // a real school the student would recognize.
+      if (data && data.slug !== "general") {
+        setCampusName(data.name);
+      } else {
+        setCampusName(null);
+      }
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [prefillCampusId]);
 
-  const prefilledCampus = useMemo(
-    () => campuses.find((c) => c.id === campusId) || null,
-    [campuses, campusId],
-  );
-  const isCatchAll = prefilledCampus?.slug === CATCH_ALL_SLUG;
+  const [role, setRole] = useState<UserRole | null>(null);
+  const [majorStatus, setMajorStatus] = useState<MajorStatus | null>(null);
 
-  // Validation per step. In simulate mode every step is freely advanceable so
-  // staff can flip through the UI without filling any field.
-  const canAdvance = useMemo(() => {
+  const canSubmit = useMemo(() => {
     if (simulate) return true;
-    if (step === 1) {
-      // Name is the only requirement. Campus is either known or optional write-in.
-      return name.trim().length > 0;
-    }
-    if (step === 2) {
-      if (!major) return false;
-      if (inGreek === null) return false;
-      if (inGreek && !greekOrgId && !greekOther.trim()) return false;
-      return true;
-    }
-    if (step === 3) {
-      return confidence >= 1 && confidence <= 10;
-    }
-    return false;
-  }, [simulate, step, name, major, inGreek, greekOrgId, greekOther, confidence]);
+    if (!firstName.trim()) return false;
+    if (!role) return false;
+    if (role === "student" && !majorStatus) return false;
+    return true;
+  }, [simulate, firstName, role, majorStatus]);
 
-  const handleSubmit = async (overrides?: {
-    display_name?: string;
-    is_accounting_major?: "yes" | "no" | "definitely_not";
-    is_in_greek_life?: boolean;
-    confidence_1_10?: number;
-  }) => {
-    // Simulate mode — skip the network round-trip entirely. Staff just want
-    // to QA the UI/UX, not write a real onboarding row.
+  const handleSubmit = async () => {
     if (simulate) {
       toast.success("Simulated onboarding complete (nothing saved).");
       onComplete({
@@ -128,26 +159,17 @@ export default function OnboardingModal({
       });
       return;
     }
-
+    if (!canSubmit || submitting) return;
     setSubmitting(true);
     try {
-      const finalName = (overrides?.display_name ?? name).trim() || "Test User";
-      const finalMajor = overrides?.is_accounting_major ?? major;
-      const finalGreek = overrides?.is_in_greek_life ?? inGreek;
-      const finalConfidence = overrides?.confidence_1_10 ?? confidence;
-
       const { data, error } = await supabase.functions.invoke("complete-onboarding", {
         body: {
-          display_name: finalName,
-          campus_id: campusId,
-          campus_other: !campusId || isCatchAll ? (campusWriteIn.trim() || null) : null,
-          course_id: courseId,
-          syllabus_file_path: null,
-          is_accounting_major: finalMajor,
-          is_in_greek_life: finalGreek,
-          greek_org_id: finalGreek ? greekOrgId : null,
-          greek_org_other: finalGreek ? (greekOther.trim() || null) : null,
-          confidence_1_10: finalConfidence,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          user_role: role,
+          accounting_major_status: role === "student" ? majorStatus : null,
+          campus_id: prefillCampusId,
+          onboarding_version: ONBOARDING_VERSION,
         },
       });
       if (error || !data?.ok) {
@@ -166,18 +188,42 @@ export default function OnboardingModal({
     }
   };
 
-  // Admin-only: skip current step (or finish with safe defaults on step 3)
+  // Admin-only: bypass with safe defaults
   const handleAdminSkip = () => {
-    if (step < 3) {
-      setStep(((step + 1) as Step));
+    if (simulate) {
+      onComplete({
+        legacy: false,
+        beta_number: null,
+        campus_beta_number: null,
+        campus_name: null,
+      });
       return;
     }
-    handleSubmit({
-      display_name: name.trim() || prefillName.trim() || "Admin Test",
-      is_accounting_major: major ?? "no",
-      is_in_greek_life: inGreek ?? false,
-      confidence_1_10: confidence,
-    });
+    setSubmitting(true);
+    supabase.functions
+      .invoke("complete-onboarding", {
+        body: {
+          first_name: firstName.trim() || authFirst || "Admin",
+          last_name: lastName.trim() || authLast || "",
+          user_role: role || "other",
+          accounting_major_status: role === "student" ? (majorStatus || "not_sure") : null,
+          campus_id: prefillCampusId,
+          onboarding_version: ONBOARDING_VERSION,
+        },
+      })
+      .then(({ data, error }) => {
+        if (error || !data?.ok) {
+          toast.error(error?.message || data?.error || "Couldn't save");
+          setSubmitting(false);
+          return;
+        }
+        onComplete({
+          legacy: !!data.legacy,
+          beta_number: data.beta_number ?? null,
+          campus_beta_number: data.campus_beta_number ?? null,
+          campus_name: data.campus_name ?? null,
+        });
+      });
   };
 
   return (
@@ -194,8 +240,8 @@ export default function OnboardingModal({
         className="w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden"
         style={{ border: "1px solid #E0E7F0" }}
       >
-        {/* Header / progress */}
-        <div className="px-6 pt-6 pb-3 relative">
+        {/* Header */}
+        <div className="px-6 pt-6 pb-2 relative">
           {simulate && (
             <div className="absolute top-3 right-3 flex items-center gap-2">
               <span
@@ -221,227 +267,113 @@ export default function OnboardingModal({
               )}
             </div>
           )}
-          <div className="flex items-center gap-1.5">
-            {[1, 2, 3].map((n) => (
-              <div
-                key={n}
-                className="flex-1 h-1 rounded-full transition-all"
-                style={{
-                  background: n <= step ? RED : "#E5E7EB",
-                }}
-              />
-            ))}
-          </div>
-          <p className="mt-3 text-[11.5px] uppercase tracking-widest" style={{ color: "#94A3B8" }}>
-            Step {step} of 3
-          </p>
           <h2
-            className="mt-1 text-[22px] sm:text-[26px] leading-tight"
+            className="text-[24px] sm:text-[28px] leading-tight"
             style={{ color: NAVY, fontFamily: "'DM Serif Display', serif", fontWeight: 400 }}
           >
-            {step === 1 && "Let's get you set up"}
-            {step === 2 && "A bit about you"}
-            {step === 3 && "How ready do you feel?"}
+            Let's get you set up
           </h2>
+          <p className="mt-1.5 text-[13.5px]" style={{ color: "#64748B" }}>
+            A couple quick questions so I can improve the beta.
+          </p>
+          {campusName && (
+            <p className="mt-2 text-[12px]" style={{ color: "#94A3B8" }}>
+              Campus: <span style={{ color: NAVY, fontWeight: 600 }}>{campusName}</span>
+            </p>
+          )}
         </div>
 
-        <div className="px-6 pb-6 space-y-5">
-          {step === 1 && (
-            <>
-              <Field label="Your full name" required>
-                <input
-                  autoFocus
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Lee Ingram"
-                  className="w-full rounded-lg px-3 py-2.5 text-[15px] outline-none focus:ring-2"
-                  style={{
-                    background: "#F8FAFC",
-                    border: "1px solid #E2E8F0",
-                    color: NAVY,
-                  }}
-                />
-              </Field>
+        {/* Body */}
+        <div className="px-6 py-5 space-y-5">
+          {/* Name row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field label="First name" required>
+              <input
+                autoFocus={!firstName}
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="First"
+                className="w-full rounded-lg px-3 py-2.5 text-[15px] outline-none focus:ring-2"
+                style={{
+                  background: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                  color: NAVY,
+                }}
+              />
+            </Field>
+            <Field label="Last name">
+              <input
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Last"
+                className="w-full rounded-lg px-3 py-2.5 text-[15px] outline-none focus:ring-2"
+                style={{
+                  background: "#F8FAFC",
+                  border: "1px solid #E2E8F0",
+                  color: NAVY,
+                }}
+              />
+            </Field>
+          </div>
 
-              {prefilledCampus && !isCatchAll && !editCampus ? (
-                <Field label="Your campus">
-                  <div
-                    className="flex items-center justify-between rounded-lg px-3 py-2.5 text-[14px]"
-                    style={{
-                      background: "#F8FAFC",
-                      border: "1px solid #E2E8F0",
-                      color: NAVY,
-                    }}
-                  >
-                    <span className="font-medium">{prefilledCampus.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => setEditCampus(true)}
-                      className="text-[12px] underline"
-                      style={{ color: "#64748B" }}
-                    >
-                      Not right?
-                    </button>
-                  </div>
-                </Field>
-              ) : (!prefilledCampus || isCatchAll) ? (
-                <Field
-                  label="Your campus"
-                  optional
-                  hint="We don't have your school in the system yet — type it in or skip. We'll clean it up later."
-                >
-                  <input
-                    value={campusWriteIn}
-                    onChange={(e) => setCampusWriteIn(e.target.value)}
-                    placeholder="e.g. Ole Miss, University of Alabama…"
-                    className="w-full rounded-lg px-3 py-2.5 text-[15px] outline-none focus:ring-2"
-                    style={{
-                      background: "#F8FAFC",
-                      border: "1px solid #E2E8F0",
-                      color: NAVY,
-                    }}
-                  />
-                </Field>
-              ) : (
-                <Field label="Your campus" required>
-                  <select
-                    value={campusId ?? ""}
-                    onChange={(e) => setCampusId(e.target.value || null)}
-                    className="w-full rounded-lg px-3 py-2.5 text-[15px] outline-none"
-                    style={{
-                      background: "#F8FAFC",
-                      border: "1px solid #E2E8F0",
-                      color: NAVY,
-                    }}
-                  >
-                    <option value="">Select your campus…</option>
-                    {campuses
-                      .filter((c) => c.slug !== CATCH_ALL_SLUG)
-                      .map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                  </select>
-                </Field>
-              )}
-            </>
+          {email && (
+            <p className="text-[12px] -mt-2" style={{ color: "#94A3B8" }}>
+              Signed in as <span style={{ color: NAVY, fontWeight: 600 }}>{email}</span>
+            </p>
           )}
 
-          {step === 2 && (
-            <>
-              <Field label="Are you majoring in accounting?" required>
-                <div className="grid grid-cols-3 gap-2">
-                  {([
-                    ["yes", "Yes"],
-                    ["no", "No"],
-                    ["definitely_not", "Definitely not"],
-                  ] as const).map(([val, label]) => (
+          {/* Role */}
+          <Field label="Who are you?" required>
+            <div className="grid grid-cols-1 gap-2">
+              {ROLE_OPTIONS.map((opt) => {
+                const active = role === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      setRole(opt.value);
+                      if (opt.value !== "student") setMajorStatus(null);
+                    }}
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-left text-[14.5px] font-medium transition-all"
+                    style={{
+                      background: active ? NAVY : "#F8FAFC",
+                      color: active ? "#fff" : "#334155",
+                      border: `1px solid ${active ? NAVY : "#E2E8F0"}`,
+                    }}
+                  >
+                    <span className="text-[18px] leading-none">{opt.emoji}</span>
+                    <span>{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+
+          {/* Conditional: only for students */}
+          {role === "student" && (
+            <Field label="Are you majoring in accounting?" required>
+              <div className="grid grid-cols-3 gap-2">
+                {MAJOR_OPTIONS.map((opt) => {
+                  const active = majorStatus === opt.value;
+                  return (
                     <button
-                      key={val}
+                      key={opt.value}
                       type="button"
-                      onClick={() => setMajor(val)}
+                      onClick={() => setMajorStatus(opt.value)}
                       className="rounded-lg py-2.5 text-[13.5px] font-medium transition-all"
                       style={{
-                        background: major === val ? NAVY : "#F8FAFC",
-                        color: major === val ? "#fff" : "#475569",
-                        border: `1px solid ${major === val ? NAVY : "#E2E8F0"}`,
+                        background: active ? NAVY : "#F8FAFC",
+                        color: active ? "#fff" : "#475569",
+                        border: `1px solid ${active ? NAVY : "#E2E8F0"}`,
                       }}
                     >
-                      {label}
+                      {opt.label}
                     </button>
-                  ))}
-                </div>
-              </Field>
-
-              <Field
-                label="Are you in a fraternity or sorority?"
-                required
-                hint="We do bulk member deals with chapters."
-              >
-                <div className="grid grid-cols-2 gap-2">
-                  {([
-                    [true, "Yes"],
-                    [false, "No"],
-                  ] as const).map(([val, label]) => (
-                    <button
-                      key={String(val)}
-                      type="button"
-                      onClick={() => {
-                        setInGreek(val);
-                        if (!val) {
-                          setGreekOrgId(null);
-                          setGreekOther("");
-                        }
-                      }}
-                      className="rounded-lg py-2.5 text-[13.5px] font-medium transition-all"
-                      style={{
-                        background: inGreek === val ? NAVY : "#F8FAFC",
-                        color: inGreek === val ? "#fff" : "#475569",
-                        border: `1px solid ${inGreek === val ? NAVY : "#E2E8F0"}`,
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-
-                {inGreek && (
-                  <div className="mt-3">
-                    <GreekOrgSearch
-                      campusId={campusId}
-                      selectedOrgId={greekOrgId}
-                      otherText={greekOther}
-                      onSelect={setGreekOrgId}
-                      onOtherChange={setGreekOther}
-                    />
-                  </div>
-                )}
-              </Field>
-            </>
-          )}
-
-          {step === 3 && (
-            <>
-              <Field
-                label="Confidence for your next exam"
-                required
-                hint="1 = panicking, 10 = bring it on."
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px] w-8" style={{ color: "#94A3B8" }}>
-                    1
-                  </span>
-                  <input
-                    type="range"
-                    min={1}
-                    max={10}
-                    step={1}
-                    value={confidence}
-                    onChange={(e) => setConfidence(Number(e.target.value))}
-                    className="flex-1 accent-[var(--brand-red)]"
-                    style={{ accentColor: RED }}
-                  />
-                  <span className="text-[12px] w-8 text-right" style={{ color: "#94A3B8" }}>
-                    10
-                  </span>
-                </div>
-                <div
-                  className="mt-2 inline-flex items-center justify-center rounded-full px-3 py-1 text-[13px] font-semibold"
-                  style={{
-                    background: NAVY,
-                    color: "#fff",
-                    minWidth: 40,
-                  }}
-                >
-                  {confidence} / 10
-                </div>
-              </Field>
-
-              <p className="text-[12.5px] leading-relaxed" style={{ color: "#64748B" }}>
-                You're {email}. We'll use this to tailor what we recommend you tackle first.
-              </p>
-            </>
+                  );
+                })}
+              </div>
+            </Field>
           )}
         </div>
 
@@ -450,16 +382,7 @@ export default function OnboardingModal({
           className="px-6 py-4 flex items-center justify-between gap-3"
           style={{ borderTop: "1px solid #F1F5F9", background: "#FAFBFC" }}
         >
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => setStep((s) => (s > 1 ? ((s - 1) as Step) : s))}
-              disabled={step === 1 || submitting}
-              className="text-[13px] font-medium disabled:opacity-30"
-              style={{ color: "#64748B" }}
-            >
-              ← Back
-            </button>
+          <div>
             {isStaff && (
               <button
                 type="button"
@@ -469,39 +392,24 @@ export default function OnboardingModal({
                 style={{ color: "#94A3B8" }}
                 title="Admin only"
               >
-                Admin: skip {step < 3 ? "step →" : "& submit"}
+                Admin: skip
               </button>
             )}
           </div>
 
-          {step < 3 ? (
-            <button
-              type="button"
-              disabled={!canAdvance}
-              onClick={() => setStep((s) => ((s + 1) as Step))}
-              className="rounded-md px-5 py-2.5 text-[13.5px] font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-                boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
-              }}
-            >
-              Continue
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={!canAdvance || submitting}
-              onClick={() => handleSubmit()}
-              className="inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-[13.5px] font-semibold text-white transition-all disabled:opacity-40"
-              style={{
-                background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
-                boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
-              }}
-            >
-              {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              Enter the beta
-            </button>
-          )}
+          <button
+            type="button"
+            disabled={!canSubmit || submitting}
+            onClick={handleSubmit}
+            className="inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-[13.5px] font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              background: `linear-gradient(180deg, ${RED} 0%, #A8101F 100%)`,
+              boxShadow: "0 4px 12px rgba(206,17,38,0.25)",
+            }}
+          >
+            {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            Start studying
+          </button>
         </div>
       </div>
     </div>
@@ -511,13 +419,11 @@ export default function OnboardingModal({
 function Field({
   label,
   required,
-  optional,
   hint,
   children,
 }: {
   label: string;
   required?: boolean;
-  optional?: boolean;
   hint?: string;
   children: React.ReactNode;
 }) {
@@ -532,11 +438,6 @@ function Field({
             </span>
           )}
         </label>
-        {optional && (
-          <span className="text-[11px]" style={{ color: "#94A3B8" }}>
-            optional
-          </span>
-        )}
       </div>
       {children}
       {hint && (
