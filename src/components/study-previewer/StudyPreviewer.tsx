@@ -202,6 +202,7 @@ export default function StudyPreviewer({
     if (!chId) {
       setSelectedChapterId(null);
       setViewerAssetCode(null);
+      setJeAssetCode(null);
       setActiveTool(null);
       if (persistChapterKey) {
         try { localStorage.removeItem(persistChapterKey); } catch { /* ignore */ }
@@ -213,22 +214,35 @@ export default function StudyPreviewer({
     setActiveTool(null);
     setChapterLoading(true);
     setViewerAssetCode(null);
+    setJeAssetCode(null);
 
     const ch = chapters.find((c) => c.id === chId);
 
-    const { data } = await supabase
-      .from("teaching_assets")
-      .select("asset_name, source_number")
-      .eq("chapter_id", chId)
-      .order("source_number", { ascending: true, nullsFirst: false })
-      .order("asset_name", { ascending: true })
-      .limit(1);
-    const first = data?.[0]?.asset_name ?? null;
+    const [firstRes, jeRes] = await Promise.all([
+      supabase
+        .from("teaching_assets")
+        .select("asset_name, source_number")
+        .eq("chapter_id", chId)
+        .order("source_number", { ascending: true, nullsFirst: false })
+        .order("asset_name", { ascending: true })
+        .limit(1),
+      supabase
+        .from("teaching_assets")
+        .select("asset_name, source_number")
+        .eq("chapter_id", chId)
+        .not("journal_entry_completed_json", "is", null)
+        .order("source_number", { ascending: true, nullsFirst: false })
+        .order("asset_name", { ascending: true })
+        .limit(1),
+    ]);
+    const first = firstRes.data?.[0]?.asset_name ?? null;
+    const firstJe = jeRes.data?.[0]?.asset_name ?? first;
 
     await new Promise((r) => setTimeout(r, 400));
 
     setSelectedChapterId(chId);
     setViewerAssetCode(first);
+    setJeAssetCode(firstJe);
     setChapterLoading(false);
     
     if (persistChapterKey) {
@@ -244,6 +258,7 @@ export default function StudyPreviewer({
     setActiveTool(null);
     setSelectedChapterId(null);
     setViewerAssetCode(null);
+    setJeAssetCode(null);
     if (persistChapterKey) {
       try { localStorage.removeItem(persistChapterKey); } catch { /* ignore */ }
     }
