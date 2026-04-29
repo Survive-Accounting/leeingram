@@ -149,10 +149,10 @@ export default function StagingNavbar({
             Log in
           </button>
 
-          {/* Primary CTA — Get free access */}
+          {/* Primary CTA — Get free access (hidden on mobile) */}
           <button
             onClick={onCtaClick}
-            className="group relative text-[13px] font-semibold active:scale-[0.98] inline-flex items-center text-white"
+            className="hidden sm:inline-flex group relative text-[13px] font-semibold active:scale-[0.98] items-center text-white"
             style={{
               borderRadius: 8,
               padding: "9px 16px",
