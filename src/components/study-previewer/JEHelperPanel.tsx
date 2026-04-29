@@ -193,7 +193,8 @@ export default function JEHelperPanel({
           for (const [assetId, newLabels] of byAsset) {
             // Merge with whatever's already cached on the row
             const existing = (data ?? []).find((d: any) => d.id === assetId);
-            const merged = { ...(existing?.je_transaction_labels ?? {}), ...newLabels };
+            const existingLabels = (existing?.je_transaction_labels ?? {}) as Record<string, string>;
+            const merged = { ...existingLabels, ...newLabels };
             await supabase
               .from("teaching_assets")
               .update({ je_transaction_labels: merged })
