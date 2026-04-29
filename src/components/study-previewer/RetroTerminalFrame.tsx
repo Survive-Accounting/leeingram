@@ -477,28 +477,30 @@ export default function RetroTerminalFrame({
                     </div>
                   )}
                 </div>
+                {/* Inline error — appears only after a chapter-required action */}
+                {chapterError && !canPickTool && (
+                  <div
+                    role="alert"
+                    className="mt-2"
+                    style={{
+                      color: "#FFB86B",
+                      fontSize: 11,
+                      letterSpacing: "0.03em",
+                      fontFamily:
+                        "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
+                    }}
+                  >
+                    {">"} Please choose a chapter first.
+                  </div>
+                )}
               </div>
 
-
-              {/* Helper hint when locked */}
-              {tools && tools.length > 0 && !canPickTool && (
-                <div
-                  className="mt-4 mb-1 text-center"
-                  style={{
-                    color: PHOSPHOR_MUTED,
-                    fontSize: 11,
-                    letterSpacing: "0.04em",
-                  }}
-                >
-                  {">"} Choose a course and chapter first.
-                </div>
-              )}
 
               {/* Tool grid — always visible. Buttons mute until course + chapter chosen. */}
               {tools && tools.length > 0 && (
                 <div
                   key={`toolgrid-${activeToolKey ?? "idle"}-${canPickTool ? "ready" : "wait"}`}
-                  className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 sa-toolgrid-reveal"
+                  className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 sa-toolgrid-reveal"
                 >
                   {tools.map((tool) => {
                     const isActive = activeToolKey === tool.key;
