@@ -531,7 +531,7 @@ export default function StudentDashboard() {
             <SecondaryCard
               label="Share beta with a friend"
               sub="They get free access too"
-              onClick={scrollToShareInline}
+              onClick={scrollToShare}
               highlight
             />
           </div>
