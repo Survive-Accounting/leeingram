@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { SurviveSidebarLayout } from "@/components/SurviveSidebarLayout";
+import { Link } from "react-router-dom";
 import { AccessRestrictedGuard } from "@/components/AccessRestrictedGuard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, RefreshCw, Sparkles, MessageSquare, Bug, Lightbulb, Heart, AlertTriangle, ExternalLink } from "lucide-react";
+import { Copy, RefreshCw, Sparkles, MessageSquare, Bug, Lightbulb, Heart, AlertTriangle, ExternalLink, ArrowLeft } from "lucide-react";
+import { SignupsTable, type SignupRow } from "@/components/beta-dashboard/SignupsTable";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
