@@ -269,6 +269,17 @@ export default function StudyPreviewer({
     [chapters, selectedChapterId],
   );
 
+  // Emit selection state up so the parent can render breadcrumbs.
+  useEffect(() => {
+    onSelectionChange?.({ chapter: selectedChapter, activeTool });
+  }, [selectedChapter, activeTool, onSelectionChange]);
+
+  // External signal to close the active tool only (chapter stays selected).
+  useEffect(() => {
+    if (closeToolSignal === undefined) return;
+    setActiveTool(null);
+  }, [closeToolSignal]);
+
   const selectedCourseLabel = useMemo(
     () => courses?.find((c) => c.id === selectedCourseId)?.fullName ?? null,
     [courses, selectedCourseId],
