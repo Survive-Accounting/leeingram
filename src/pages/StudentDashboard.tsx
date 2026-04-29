@@ -642,6 +642,27 @@ export default function StudentDashboard() {
             }}
           />
           <div className="relative mx-auto" style={{ maxWidth: 1080 }}>
+            {/* FREE BETA · OPEN FOR FEEDBACK pill */}
+            <div className="flex justify-center mb-4 sm:mb-5">
+              <div
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10.5px] sm:text-[11px] font-bold uppercase"
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  color: "#FCA5A5",
+                  letterSpacing: "0.18em",
+                  fontFamily: "Inter, sans-serif",
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="inline-block rounded-full"
+                  style={{ width: 6, height: 6, background: RED, boxShadow: `0 0 8px ${RED}` }}
+                />
+                Free Beta · Open for Feedback
+              </div>
+            </div>
+
             <StudyPreviewer
               chapters={chapters}
               fixedCourseLabel={courseLabel ?? null}
@@ -655,24 +676,6 @@ export default function StudentDashboard() {
               onSelectionChange={setPreviewerState}
               resetSignal={resetSignal}
               closeToolSignal={closeToolSignal}
-            />
-
-            {/* Divider between console and secondary actions */}
-            <div
-              ref={secondaryRef}
-              className="mt-10 sm:mt-14 mb-6 sm:mb-8 scroll-mt-24"
-              aria-hidden
-              style={{
-                height: 1,
-                background:
-                  "linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0) 100%)",
-              }}
-            />
-
-            {/* Secondary actions — share + feedback, on the navy hero band */}
-            <SecondaryActionsRow
-              betaNumber={betaNumber}
-              onFeedback={() => setFeedbackOpen(true)}
             />
           </div>
         </div>
