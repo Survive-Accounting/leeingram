@@ -618,7 +618,7 @@ export default function StudentDashboard() {
         </div>
 
         {/* Secondary actions — small, clearly secondary to the console above */}
-        <section className="max-w-4xl mx-auto px-5 sm:px-8 mt-8 md:mt-10">
+        <section ref={secondaryRef} className="max-w-4xl mx-auto px-5 sm:px-8 mt-8 md:mt-10 scroll-mt-24">
           <SecondaryActionsRow
             betaNumber={betaNumber}
             onWatchDemo={() => setVideoOpen(true)}
