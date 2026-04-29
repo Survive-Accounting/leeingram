@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsStaff } from "@/hooks/useIsStaff";
-import { useDevToolFlag } from "@/lib/devToolFlags";
+import { useDevToolFlag, setDevToolFlag } from "@/lib/devToolFlags";
 import { toast } from "sonner";
 import { X } from "lucide-react";
 
-const HIDDEN_KEY = "testFlowToolbar.hidden.v1";
+// (Hide button now disables the `testBar` dev flag — there is no separate
+// floating "show" pill. Re-enable from the Admin Tools menu.)
 
 /**
  * Top-of-page testing strip:
@@ -29,14 +30,6 @@ export default function TestFlowToolbar() {
   const isStaff = useIsStaff();
   const flagOn = useDevToolFlag("testBar");
   const allowed = isStaff && flagOn;
-  const [hidden, setHidden] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    try { return localStorage.getItem(HIDDEN_KEY) === "1"; } catch { return false; }
-  });
-
-  useEffect(() => {
-    try { localStorage.setItem(HIDDEN_KEY, hidden ? "1" : "0"); } catch { /* noop */ }
-  }, [hidden]);
 
   const activeIdx = (() => {
     for (let i = STEPS.length - 1; i >= 0; i--) {
@@ -64,26 +57,6 @@ export default function TestFlowToolbar() {
   };
 
   if (!allowed) return null;
-
-  if (hidden) {
-    return (
-      <button
-        type="button"
-        onClick={() => setHidden(false)}
-        className="fixed bottom-2 left-2 z-[100] rounded-full px-2.5 py-1 text-[10px] font-semibold transition hover:opacity-90"
-        style={{
-          background: "#FFF8E1",
-          color: "#92400E",
-          border: "1px solid #F4D58D",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-          fontFamily: "Inter, sans-serif",
-        }}
-        title="Show test flow toolbar"
-      >
-        🧪 Show test bar
-      </button>
-    );
-  }
 
   return (
     <div
