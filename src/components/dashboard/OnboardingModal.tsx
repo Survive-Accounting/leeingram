@@ -90,8 +90,10 @@ export default function OnboardingModal({
   );
   const isCatchAll = prefilledCampus?.slug === CATCH_ALL_SLUG;
 
-  // Validation per step
+  // Validation per step. In simulate mode every step is freely advanceable so
+  // staff can flip through the UI without filling any field.
   const canAdvance = useMemo(() => {
+    if (simulate) return true;
     if (step === 1) {
       // Name is the only requirement. Campus is either known or optional write-in.
       return name.trim().length > 0;
@@ -106,7 +108,7 @@ export default function OnboardingModal({
       return confidence >= 1 && confidence <= 10;
     }
     return false;
-  }, [step, name, major, inGreek, greekOrgId, greekOther, confidence]);
+  }, [simulate, step, name, major, inGreek, greekOrgId, greekOther, confidence]);
 
   const handleSubmit = async (overrides?: {
     display_name?: string;
