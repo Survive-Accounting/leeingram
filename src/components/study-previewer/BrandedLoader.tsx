@@ -1,5 +1,4 @@
 import React from "react";
-import leeHeadshot from "@/assets/lee-portrait-terminal.png";
 
 const PHOSPHOR = "#7CFFB0";
 const PHOSPHOR_DIM = "rgba(124,255,176,0.55)";
@@ -76,92 +75,32 @@ export function BrandedLoader({
         }}
       />
 
-      {/* Headshot + orbiting spinner */}
-      <div className="relative" style={{ width: 96, height: 96 }}>
-        {/* Outer orbit arc — clockwise */}
+      {/* Phosphor spinner */}
+      <div className="relative" style={{ width: 72, height: 72 }}>
         <svg
-          width="96"
-          height="96"
-          viewBox="0 0 96 96"
+          width="72"
+          height="72"
+          viewBox="0 0 72 72"
           fill="none"
           aria-hidden="true"
           style={{ position: "absolute", inset: 0 }}
         >
-          <circle cx="48" cy="48" r="44" stroke={PHOSPHOR_FAINT} strokeWidth="1.5" />
+          <circle cx="36" cy="36" r="30" stroke={PHOSPHOR_FAINT} strokeWidth="1.5" />
           <circle
-            cx="48"
-            cy="48"
-            r="44"
+            cx="36"
+            cy="36"
+            r="30"
             stroke={PHOSPHOR}
             strokeWidth="1.75"
             strokeLinecap="round"
-            strokeDasharray="80 220"
+            strokeDasharray="50 160"
             style={{
-              transformOrigin: "48px 48px",
+              transformOrigin: "36px 36px",
               animation: "sa-loader-spin 1.6s linear infinite",
               filter: `drop-shadow(0 0 6px ${PHOSPHOR_GLOW})`,
             }}
           />
         </svg>
-        {/* Inner orbit arc — counter-clockwise */}
-        <svg
-          width="96"
-          height="96"
-          viewBox="0 0 96 96"
-          fill="none"
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0 }}
-        >
-          <circle
-            cx="48"
-            cy="48"
-            r="38"
-            stroke={PHOSPHOR}
-            strokeWidth="1.25"
-            strokeLinecap="round"
-            strokeDasharray="32 160"
-            opacity="0.7"
-            style={{
-              transformOrigin: "48px 48px",
-              animation: "sa-loader-spin-rev 2.4s linear infinite",
-            }}
-          />
-        </svg>
-        {/* Headshot */}
-        <div
-          className="absolute rounded-full overflow-hidden"
-          style={{
-            inset: 14,
-            border: `1px solid ${PHOSPHOR_DIM}`,
-            boxShadow: `0 0 10px ${PHOSPHOR_GLOW}, inset 0 0 8px rgba(0,0,0,0.45)`,
-            background: "#03130A",
-          }}
-        >
-          <img
-            src={leeHeadshot}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="w-full h-full object-cover"
-            style={{
-              objectPosition: "center 22%",
-            }}
-          />
-        </div>
-      </div>
-
-      <div
-        style={{
-          marginTop: 16,
-          fontFamily: MONO,
-          fontSize: 10.5,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: PHOSPHOR_DIM,
-          textShadow: `0 0 4px ${PHOSPHOR_GLOW}`,
-        }}
-      >
-        Built by Lee Ingram
       </div>
 
       {subtitle ? (

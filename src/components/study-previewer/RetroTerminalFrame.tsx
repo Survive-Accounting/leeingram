@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ComponentType, type SVGProps } from "react";
 import { Info, Lock } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import leeHeadshot from "@/assets/lee-portrait-terminal.png";
+
 
 const PHOSPHOR = "#7CFFB0";
 const PHOSPHOR_DIM = "rgba(124,255,176,0.55)";
@@ -783,63 +783,6 @@ export default function RetroTerminalFrame({
               )}
             </div>
 
-            {/* Founder signature — bottom-right portrait medallion + label, embedded in CRT */}
-            <div
-              aria-hidden={false}
-              className="absolute z-20 pointer-events-none flex flex-col items-center gap-1.5"
-              style={{
-                right: "clamp(10px, 2.2vw, 22px)",
-                bottom: "clamp(10px, 2.2vw, 22px)",
-                opacity: 0.96,
-              }}
-            >
-              {/* Outer phosphor halo */}
-              <div
-                className="relative rounded-full"
-                style={{
-                  padding: 2,
-                  background: `radial-gradient(circle at 50% 50%, ${PHOSPHOR_GLOW} 0%, rgba(124,255,176,0.15) 55%, rgba(124,255,176,0) 75%)`,
-                  filter: `drop-shadow(0 0 6px ${PHOSPHOR_GLOW})`,
-                }}
-              >
-                {/* Inner bezel ring */}
-                <div
-                  className="rounded-full overflow-hidden"
-                  style={{
-                    width: 40,
-                    height: 40,
-                    border: `1px solid ${PHOSPHOR_DIM}`,
-                    boxShadow: `inset 0 0 6px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(124,255,176,0.18)`,
-                    background: "#03130A",
-                  }}
-                >
-                  <img
-                    src={leeHeadshot}
-                    alt="Lee Ingram"
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover"
-                    style={{
-                      objectPosition: "center 22%",
-                    }}
-                  />
-                </div>
-              </div>
-              <div
-                style={{
-                  color: PHOSPHOR_DIM,
-                  fontFamily:
-                    "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
-                  fontSize: 8.5,
-                  letterSpacing: "0.22em",
-                  textTransform: "uppercase",
-                  textShadow: `0 0 5px ${PHOSPHOR_GLOW}`,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Founder<span style={{ opacity: 0.55, margin: "0 6px" }}>·</span>Lee Ingram
-              </div>
-            </div>
           </div>
         </div>
 
