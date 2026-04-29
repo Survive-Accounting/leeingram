@@ -14,6 +14,7 @@ import { FeedbackInboxSection } from "@/components/beta-dashboard/FeedbackInboxS
 import { FeedbackAISummarySection } from "@/components/beta-dashboard/FeedbackAISummarySection";
 import { InsightsSections } from "@/components/beta-dashboard/InsightsSections";
 import { InactiveSignupsSection } from "@/components/beta-dashboard/InactiveSignupsSection";
+import { ProblemReportsSection } from "@/components/beta-dashboard/ProblemReportsSection";
 import { useEventTracking } from "@/hooks/useEventTracking";
 import { BETA_EVENTS } from "@/lib/betaEvents";
 
@@ -366,6 +367,8 @@ export default function BetaSpring2026Dashboard() {
             </CardContent>
           </Card>
 
+          {/* Problem Reports (auto-classified bug/issue queue) */}
+          <ProblemReportsSection />
           {/* Feedback Inbox */}
           <FeedbackInboxSection />
           {/* AI Feedback Summary */}
