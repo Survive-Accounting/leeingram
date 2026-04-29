@@ -25,39 +25,50 @@ const RESTRICTED_PATHS = [
 /** Paths additionally accessible to lead VAs */
 const LEAD_VA_PATHS = ["/admin/ai-features"];
 
+/** Paths accessible to ANY VA account (any role) — in addition to Lee */
+const ANY_VA_PATHS = ["/beta-spring2026"];
+
 export function useIsLee() {
   const { user } = useAuth();
   return LEE_EMAILS.includes(user?.email ?? "");
 }
 
-function useIsLeadVa() {
+function useVaRole(): { isAnyVa: boolean; isLeadVa: boolean } {
   const { user } = useAuth();
-  const [isLead, setIsLead] = useState(false);
+  const [state, setState] = useState({ isAnyVa: false, isLeadVa: false });
   useEffect(() => {
     let cancelled = false;
     const email = user?.email;
-    if (!email) { setIsLead(false); return; }
+    if (!email) { setState({ isAnyVa: false, isLeadVa: false }); return; }
     (async () => {
       const { data } = await (supabase as any)
         .from("va_accounts")
         .select("role")
         .eq("email", email)
         .maybeSingle();
-      if (!cancelled) setIsLead(data?.role === "lead_va");
+      if (!cancelled) {
+        setState({
+          isAnyVa: !!data?.role,
+          isLeadVa: data?.role === "lead_va",
+        });
+      }
     })();
     return () => { cancelled = true; };
   }, [user?.email]);
-  return isLead;
+  return state;
 }
 
 export function AccessRestrictedGuard({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const isLee = useIsLee();
-  const isLeadVa = useIsLeadVa();
+  const { isAnyVa, isLeadVa } = useVaRole();
 
   if (isLee) return <>{children}</>;
   if (isLeadVa && LEAD_VA_PATHS.some((p) => location.pathname.startsWith(p))) {
+    return <>{children}</>;
+  }
+  if (isAnyVa && ANY_VA_PATHS.some((p) => location.pathname.startsWith(p))) {
     return <>{children}</>;
   }
 
