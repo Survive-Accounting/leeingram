@@ -110,6 +110,19 @@ export default function OnboardingModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authFirst, authLast]);
 
+  // Lock background scroll while the modal is open so the page underneath
+  // can't be interacted with.
+  useEffect(() => {
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+    };
+  }, []);
+
   const [campusName, setCampusName] = useState<string | null>(null);
   useEffect(() => {
     if (!prefillCampusId) {
