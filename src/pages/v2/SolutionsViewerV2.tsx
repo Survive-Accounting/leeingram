@@ -1301,15 +1301,48 @@ function ExplanationFeedback({ asset, onShareClick }: { asset: Asset; onShareCli
   );
 }
 
-// Primary toolbox keys map directly to `survive-this` edge function prompt types.
-type ToolboxKey = "walk_through" | "hint" | "setup" | "full_solution";
+// Toolbox keys map directly to `survive-this` edge function prompt types.
+// Two are surfaced as primary CTAs; the rest live behind the "Try new beta
+// tools" disclosure so the helper feels focused rather than overwhelming.
+type ToolboxKey =
+  | "walk_through"
+  | "full_solution"
+  | "hint"
+  | "setup"
+  | "challenge"
+  | "similar_problem"
+  | "memorize"
+  | "journal_entries"
+  | "real_world"
+  | "professor_tricks"
+  | "the_why";
 
 const TOOLBOX_META: Record<ToolboxKey, { label: string; emoji: string; subtitle: string }> = {
-  walk_through:  { label: "Walk me through it", emoji: "🚀", subtitle: "Full step-by-step solution" },
-  hint:          { label: "Give me a hint",     emoji: "💡", subtitle: "One nudge — no spoilers" },
-  setup:         { label: "Show the setup",     emoji: "📄", subtitle: "Tables, formulas, structure" },
-  full_solution: { label: "Full solution",      emoji: "✅", subtitle: "Just the answer" },
+  walk_through:     { label: "Walk me through it",            emoji: "🚀", subtitle: "Full step-by-step solution" },
+  full_solution:    { label: "Full solution",                 emoji: "✅", subtitle: "Just the answer" },
+  hint:             { label: "Give me a hint",                emoji: "💡", subtitle: "One nudge — no spoilers" },
+  setup:            { label: "Show the setup",                emoji: "📄", subtitle: "Tables, formulas, structure" },
+  challenge:        { label: "Challenge me",                  emoji: "🧠", subtitle: "A thinking question" },
+  similar_problem:  { label: "Try a similar problem",         emoji: "🔁", subtitle: "Same structure, new numbers" },
+  memorize:         { label: "What to memorize",              emoji: "📌", subtitle: "Cheat sheet for the exam" },
+  journal_entries:  { label: "Journal entries breakdown",     emoji: "📒", subtitle: "Account-by-account walk" },
+  real_world:       { label: "Real world example",            emoji: "🌎", subtitle: "Where this shows up in business" },
+  professor_tricks: { label: "How your professor will trick you", emoji: "🎯", subtitle: "Common exam traps" },
+  the_why:          { label: "The why behind it",             emoji: "🤔", subtitle: "Why this rule exists" },
 };
+
+// Order of buttons inside the "Try new beta tools" disclosure.
+const BETA_TOOLBOX_KEYS: ToolboxKey[] = [
+  "hint",
+  "setup",
+  "challenge",
+  "similar_problem",
+  "memorize",
+  "journal_entries",
+  "real_world",
+  "professor_tricks",
+  "the_why",
+];
 
 // Inline HTML detection + sanitizer — mirrors SurviveExplorePanel's renderer
 // so survive-this responses with tables/lists render cleanly here too.
