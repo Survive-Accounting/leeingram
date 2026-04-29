@@ -154,7 +154,7 @@ export default function RetroTerminalFrame({
       const tool = tools[n - 1];
       if (!tool || tool.disabled) return;
       if (!canPickTool) {
-        onNudgeChapter?.();
+        nudgeChapter();
         return;
       }
       triggerToolPulse(tool.key);
