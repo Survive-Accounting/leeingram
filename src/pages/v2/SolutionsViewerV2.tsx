@@ -1933,6 +1933,7 @@ function InlineExplanation({
             />
           </div>
         )}
+        </div>
       </div>
     </div>
   );
