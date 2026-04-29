@@ -22,7 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,7 @@ import { toYouPerspective } from "@/utils/youPerspective";
 import leeHeadshotImg from "@/assets/lee-headshot-original.png";
 import { ViewerOnboardingModal } from "@/pages/v2/ViewerOnboardingModal";
 import { RetroBreadcrumbs } from "@/components/study-previewer/RetroBreadcrumbs";
+import { BrandedLoader } from "@/components/study-previewer/BrandedLoader";
 import { FileText, Brain, Eye, ExternalLink } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -2442,6 +2443,21 @@ export default function SolutionsViewerV2() {
     }
   };
 
+  // Detect iframe-embed context. When embedded inside the StudyPreviewer the
+  // breadcrumb home/chapter clicks should bubble up to the parent so the
+  // student lands back on the retro terminal "choose course / chapter" screen
+  // instead of navigating inside the iframe.
+  const inIframe =
+    typeof window !== "undefined" && window.top !== window.self;
+
+  const goHome = () => {
+    if (inIframe) {
+      try { window.parent?.postMessage({ type: "sa-viewer-go-home" }, "*"); } catch { /* ignore */ }
+    } else {
+      navigate("/");
+    }
+  };
+
   const [asset, setAsset] = useState<Asset | null>(null);
   const [chapter, setChapter] = useState<ChapterMeta | null>(null);
   const [siblings, setSiblings] = useState<{ asset_name: string; source_ref: string | null }[]>([]);
@@ -2853,26 +2869,38 @@ export default function SolutionsViewerV2() {
         }}
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
-          {/* LEFT — "Built by Lee Ingram" (desktop only; mobile hides to reduce noise) */}
+          {/* LEFT — Brand wordmark + Built by Lee Ingram (desktop only) */}
           <div className="hidden sm:flex items-center justify-start min-w-0">
             <Link
               to="/my-dashboard"
-              className="group inline-flex items-center min-w-0 max-w-full"
+              className="group inline-flex flex-col min-w-0 max-w-full leading-tight"
               data-embed-allow="true"
-              aria-label="Built by Lee Ingram — back to dashboard"
-              title="Built by Lee Ingram"
+              aria-label="Survive Accounting Beta · Built by Lee Ingram — back to dashboard"
+              title="Survive Accounting Beta · Spring '26"
             >
               <span
-                className="truncate text-[12px] font-medium tracking-wide transition-colors"
-                style={{ color: "rgba(255,255,255,0.45)" }}
+                className="truncate transition-colors"
+                style={{
+                  fontFamily: '"DM Serif Display", Georgia, serif',
+                  fontSize: 13,
+                  color: "rgba(255,255,255,0.85)",
+                  lineHeight: 1.15,
+                }}
+              >
+                Survive Accounting · <span style={{ color: "#FF8A95" }}>Beta</span>
+              </span>
+              <span
+                className="truncate text-[11px] font-medium tracking-wide transition-colors"
+                style={{ color: "rgba(255,255,255,0.45)", marginTop: 1 }}
               >
                 Built by{" "}
                 <span
                   className="font-semibold transition-colors group-hover:text-white"
-                  style={{ color: "rgba(255,255,255,0.78)" }}
+                  style={{ color: "rgba(255,255,255,0.72)" }}
                 >
                   Lee Ingram
-                </span>
+                </span>{" "}
+                · Spring '26
               </span>
             </Link>
           </div>
@@ -2937,11 +2965,17 @@ export default function SolutionsViewerV2() {
           desktop view-mode menu so we don't need a second toolbar row. */}
       <RetroBreadcrumbs
         crumbs={[
-          { label: "home", to: "/" },
+          { label: "home", onClick: goHome },
           ...(chapter
             ? [{
-                label: `ch ${chapter.chapter_number} ${chapter.chapter_name}`,
-                to: `/cram/${chapter.id}`,
+                label: `ch ${chapter.chapter_number}`,
+                onClick: () => {
+                  if (inIframe) {
+                    try { window.parent?.postMessage({ type: "sa-viewer-go-chapter" }, "*"); } catch { /* ignore */ }
+                  } else {
+                    navigate(`/cram/${chapter.id}`);
+                  }
+                },
               }]
             : []),
           { label: "practice problem helper" },
@@ -3076,12 +3110,8 @@ export default function SolutionsViewerV2() {
             "radial-gradient(ellipse 60% 40% at 30% 15%, rgba(99,52,180,0.035) 0%, transparent 65%), radial-gradient(ellipse 50% 35% at 75% 60%, rgba(80,130,255,0.03) 0%, transparent 70%)",
         }}>
         {loading && (
-          <div className="space-y-3 max-w-3xl">
-            <Skeleton className="h-6 w-2/3" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-5/6" />
-            <Skeleton className="h-32 w-full mt-6" />
+          <div className="relative" style={{ minHeight: "60vh" }}>
+            <BrandedLoader subtitle="Loading problem…" surface="navy" />
           </div>
         )}
 

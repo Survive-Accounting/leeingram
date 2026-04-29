@@ -6,6 +6,7 @@ import type { ToolKey } from "@/components/dashboard/StudyToolCards";
 import RetroTerminalFrame, {
   type TerminalTool,
 } from "@/components/study-previewer/RetroTerminalFrame";
+import { BrandedLoader } from "@/components/study-previewer/BrandedLoader";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -158,6 +159,29 @@ export default function StudyPreviewer({
     setActiveTool(null);
     setViewerAssetCode(null);
   }, [resetSignal]);
+
+  // Listen for navigation intents bubbled up from the V2 viewer iframe so the
+  // breadcrumb home/chapter clicks return the student to the previewer's
+  // terminal screen instead of navigating inside the iframe.
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      const type = (event.data as { type?: string } | null)?.type;
+      if (type === "sa-viewer-go-home") {
+        setActiveTool(null);
+        setSelectedChapterId(null);
+        setViewerAssetCode(null);
+        if (persistChapterKey) {
+          try { localStorage.removeItem(persistChapterKey); } catch { /* ignore */ }
+        }
+      } else if (type === "sa-viewer-go-chapter") {
+        // Keep the chapter selected; just close the active tool so the student
+        // lands on the per-chapter tool selector.
+        setActiveTool(null);
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [persistChapterKey]);
 
   const handleChapterChange = async (chId: string) => {
     if (!chId) {
@@ -714,20 +738,12 @@ export default function StudyPreviewer({
                       >
                         {activeTool === "practice" && viewerAssetCode && !iframeError && (
                           <>
-                            {/* Skeleton sits behind the iframe and is covered as the iframe paints */}
-                            {!iframeLoaded && showSkeleton && (
-                              <div
-                                aria-hidden
-                                className="absolute inset-0 flex flex-col gap-3 px-6 py-6 z-0"
-                                style={{ background: "#fff" }}
-                              >
-                                <div className="h-4 w-1/3 rounded bg-slate-100 animate-pulse" />
-                                <div className="h-3 w-2/3 rounded bg-slate-100 animate-pulse" />
-                                <div className="h-3 w-1/2 rounded bg-slate-100 animate-pulse" />
-                                <div className="mt-4 h-40 w-full rounded bg-slate-100 animate-pulse" />
-                                <div className="h-3 w-2/5 rounded bg-slate-100 animate-pulse" />
-                                <div className="h-3 w-1/3 rounded bg-slate-100 animate-pulse" />
-                              </div>
+                            {/* Branded loader sits behind the iframe and is covered as the iframe paints */}
+                            {!iframeLoaded && (
+                              <BrandedLoader
+                                surface="navy"
+                                subtitle={showSlowStatus ? "Preparing tool…" : undefined}
+                              />
                             )}
 
                             <iframe
@@ -742,16 +758,6 @@ export default function StudyPreviewer({
                               onLoad={() => { setIframeLoaded(true); setStageLockHeight(null); }}
                               onError={() => setIframeError(true)}
                             />
-
-                            {!iframeLoaded && showSlowStatus && (
-                              <div
-                                className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] tracking-wide z-20"
-                                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                                role="status"
-                              >
-                                Preparing tool…
-                              </div>
-                            )}
                           </>
                         )}
 
@@ -795,18 +801,11 @@ export default function StudyPreviewer({
 
                         {activeTool === "je" && selectedChapterId && !iframeError && (
                           <>
-                            {!iframeLoaded && showSkeleton && (
-                              <div
-                                aria-hidden
-                                className="absolute inset-0 flex flex-col gap-3 px-6 py-6 z-0"
-                                style={{ background: "#0f1729" }}
-                              >
-                                <div className="h-4 w-1/3 rounded bg-white/5 animate-pulse" />
-                                <div className="h-3 w-2/3 rounded bg-white/5 animate-pulse" />
-                                <div className="h-3 w-1/2 rounded bg-white/5 animate-pulse" />
-                                <div className="mt-4 h-40 w-full rounded bg-white/5 animate-pulse" />
-                                <div className="h-3 w-2/5 rounded bg-white/5 animate-pulse" />
-                              </div>
+                            {!iframeLoaded && (
+                              <BrandedLoader
+                                surface="navy"
+                                subtitle={showSlowStatus ? "Preparing tool…" : undefined}
+                              />
                             )}
 
                             <iframe
@@ -822,15 +821,7 @@ export default function StudyPreviewer({
                               onError={() => setIframeError(true)}
                             />
 
-                            {!iframeLoaded && showSlowStatus && (
-                              <div
-                                className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] tracking-wide z-20"
-                                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                                role="status"
-                              >
-                                Preparing tool…
-                              </div>
-                            )}
+
                           </>
                         )}
 

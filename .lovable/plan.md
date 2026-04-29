@@ -1,69 +1,123 @@
-## Two changes to the V2 Solutions Viewer header
+## Four changes to the V2 viewer + previewer experience
 
-### 1. Rename "Open in full screen" → "Open in new tab"
+### 1. Bring back the "Survive Accounting Beta · Spring '26" brand line
 
-The button at `src/pages/v2/SolutionsViewerV2.tsx` lines 3086–3109 already does exactly the right thing — it calls `window.open(url, "_blank", "noopener,noreferrer")`, which opens the viewer in a fresh tab outside the iframe. The student then has the option to F11/maximize themselves, which gets them to true full screen.
-
-Change just the labels:
-
-- `aria-label="Open in full screen"` → `aria-label="Open in new tab"`
-- `<TooltipContent>Open in full screen</TooltipContent>` → `Open in new tab`
-
-No behavior change.
-
-### 2. Collapse the desktop view-switcher row into the breadcrumb bar
-
-**Today** the viewer renders three stacked horizontal strips between the header and the content:
+Add a small wordmark to the V2 viewer's sticky top bar in `src/pages/v2/SolutionsViewerV2.tsx` (around line 2856–2878, the LEFT cell that currently holds "Built by Lee Ingram"). Two-line stacked layout in the same cell:
 
 ```text
-[ retro breadcrumb bar             ]
-[ floating view-mode toolbar  →    ]   ← ~44px of empty real estate
-[ problem | guided helper          ]
+Survive Accounting · Beta              ← display font, white 80%
+Built by Lee Ingram · Spring '26       ← inter, white 45%
 ```
 
-The middle strip is the source of the "too much space" complaint. We pull it into the breadcrumb bar so the layout becomes:
+- Display line uses `'DM Serif Display'`, 13px, `rgba(255,255,255,0.85)`
+- Sub-line keeps the existing "Built by Lee Ingram" link styling (12px, dim white) and appends "· Spring '26"
+- Stays a clickable link to `/my-dashboard`
+- Hidden on mobile (matches current `hidden sm:flex`) — mobile already hides this cell to keep the Switch Problem button centered
+
+This restores the brand identity without occupying any new vertical space.
+
+### 2. Shorten breadcrumb chapter crumb to "ch #" only
+
+In `SolutionsViewerV2.tsx` around line 2941–2945 the chapter crumb is currently:
+
+```tsx
+label: `ch ${chapter.chapter_number} ${chapter.chapter_name}`,
+```
+
+Change to:
+
+```tsx
+label: `ch ${chapter.chapter_number}`,
+```
+
+Result on mobile and desktop:
 
 ```text
-[ retro breadcrumb …  /  ch 13  /  practice problem helper        👁 view ]
-[ problem | guided helper                                                 ]
+> home  /  ch 13  /  practice problem helper        👁 view
 ```
 
-The view switcher only appears when the eye icon is clicked.
+Much less horizontal pressure on small screens. The full chapter name is still visible in the Switch Problem button's `title` attribute and via the chapter tooltip.
 
-#### Implementation
+### 3. Make breadcrumb home/chapter actually return to the previewer "home"
 
-**A. `src/components/study-previewer/RetroBreadcrumbs.tsx`** — add an optional `rightSlot?: React.ReactNode` prop. Render it on the right edge of the bar with `ml-auto` and `shrink-0`. Breadcrumbs keep their existing truncation behavior so a long chapter name yields to the right-slot button. No styling changes for callers that don't pass `rightSlot`.
+Today the V2 viewer renders inside an iframe on both `/` (landing demo) and `/my-dashboard`. The breadcrumb crumbs use plain `to` links, so clicking them navigates **inside the iframe** to `/` or `/cram/:chapterId` — neither of which lands the student back on the retro terminal "Choose your course / Choose your chapter" screen.
 
-**B. `src/pages/v2/SolutionsViewerV2.tsx`** — build a `ViewModeMenu` component (inline, same file) that wraps a shadcn `Popover`:
+Use the existing `postMessage` channel (already wired for `sa-embed-paywall` at lines 1577 and 2439) to bubble navigation intent up to the parent.
 
-- **Trigger**: small phosphor-green Eye icon button styled to match the breadcrumb bar (12px font, mono, `rgba(57,255,122,0.55)` color, hover → solid green). Hidden on mobile (`hidden md:inline-flex`) — mobile already has its own Problem/Helper toggle.
-- **Popover content** (anchored bottom-right of trigger, dark navy panel matching the existing toolbar):
-  - Small label: "Change layout"
-  - The same four layout buttons that exist today: Problem only / Split / Stacked / Helper only (icons + tooltip hints `[ \ - ]`)
-  - Divider
-  - "Reset split 50/50" button (disabled unless `viewMode === "split"`)
-  - Divider
-  - "Open in new tab" button (the renamed maximize action)
-- Selecting a layout updates `viewMode` and **closes** the popover.
-- Keyboard shortcuts (`[`, `\`, `-`, `]`) keep working unchanged — they're wired elsewhere.
+**A. In `SolutionsViewerV2.tsx`** — replace the two crumb objects with `onClick` handlers that detect iframe context and post messages, falling back to direct navigation when standalone:
 
-Pass the trigger as `<RetroBreadcrumbs rightSlot={<ViewModeMenu …/>} />`.
+```tsx
+const inIframe = typeof window !== "undefined" && window.top !== window.self;
 
-**C. Delete the old toolbar row** at `SolutionsViewerV2.tsx` lines 3018–3112 (the `<div className="hidden md:flex justify-end mb-3">…`). Everything inside it now lives in the popover.
+const goHome = () => {
+  if (inIframe) {
+    window.parent?.postMessage({ type: "sa-viewer-go-home" }, "*");
+  } else {
+    navigate("/");
+  }
+};
 
-#### Why this UX
+const goChapter = () => {
+  if (inIframe) {
+    window.parent?.postMessage({ type: "sa-viewer-go-chapter" }, "*");
+  } else if (chapter) {
+    navigate(`/cram/${chapter.id}`);
+  }
+};
+```
 
-- **No extra vertical space** when the student isn't actively reconfiguring layout.
-- **Discoverable**: the eye icon + "view" label + tooltip "Change layout" makes the affordance obvious without occupying real estate.
-- **One trigger, one menu** — students no longer have to scan a row of 6 small icons to find the action they want; they open the menu, see labeled options, click one.
-- **Mobile is unchanged** — it already uses the stacked Problem/Helper toggle, so the eye trigger stays hidden there.
+Crumbs become:
 
-#### Out of scope
+```tsx
+{ label: "home", onClick: goHome },
+{ label: `ch ${chapter.chapter_number}`, onClick: goChapter },
+{ label: "practice problem helper" },
+```
 
-- Mobile view-switcher behavior (already correct).
-- The header above the breadcrumb bar — leaving it alone.
-- The keyboard shortcut layer.
+(`RetroBreadcrumbs` already supports both `to` and `onClick`.)
 
-#### Open question
+**B. In `src/components/study-previewer/StudyPreviewer.tsx`** — add a parent-side listener that handles those two messages:
 
-Want the eye trigger to also show a tiny text label ("view") next to the icon for first-time discoverability, or icon-only with tooltip? My default is **icon + "view" label** on desktop since the bar has plenty of room and it makes the feature self-explanatory; tell me if you want icon-only.
+- `sa-viewer-go-home` → call the existing reset path: `setActiveTool(null); setSelectedChapterId(null); setViewerAssetCode(null);` and clear `persistChapterKey` from localStorage. This lands on the bare "Choose course / Choose chapter" terminal.
+- `sa-viewer-go-chapter` → only reset the active tool (`setActiveTool(null)`), keeping the chapter selected. This lands on the tool-selection state for the same chapter (Practice / JE Helper / Help shape what's next).
+
+Course selection is already persisted, so the prefilled-course requirement is satisfied automatically — we just don't touch `selectedCourseId`.
+
+**C. Listener cleanup** — register inside a `useEffect` with `window.addEventListener("message", …)` and a cleanup that removes it. Validate `event.data?.type` before acting.
+
+This gives students two redundant paths home (Switch Problem button + breadcrumb) without ever leaving the parent page.
+
+### 4. Better loading screen — "Built by Lee Ingram" branded spinner
+
+Today, three loading states overlap awkwardly inside the laptop chassis:
+
+- The previewer iframe wrapper shows a white skeleton with placeholder bars.
+- The V2 viewer (or Entry Builder tool) renders its own dark loading screen with raw text like "Loading Entry Builder…".
+- A "Preparing tool…" status floats at the bottom after 2s.
+
+Build one shared component `src/components/study-previewer/BrandedLoader.tsx` and use it in three places.
+
+**Component design:**
+- Centered in the available area, dark navy background (`#0F1A2E`) so it looks intentional whether the iframe has painted yet or not
+- Wordmark: "Survive Accounting" in DM Serif Display (24px, white 90%)
+- Sub-line: "Built by Lee Ingram" in Inter (11px, white 45%, letter-spacing 0.1em uppercase)
+- Spinner: a custom phosphor-green ring rotating around the wordmark — uses two concentric SVG arcs, the outer arc rotating at 1.4s, the inner arc counter-rotating at 2.2s. Color matches the existing terminal phosphor `#39FF7A` with a subtle glow filter. Fades in over 200ms so quick loads don't flash.
+- Optional `subtitle` prop for context like "Loading Entry Builder…" or "Preparing tool…"
+
+**Wire into:**
+1. `StudyPreviewer.tsx` — replace the white-bar skeleton block (lines ~718–731 for Practice and ~798–814 for JE) with `<BrandedLoader subtitle="Preparing tool…" />`. Drop the now-unused `showSkeleton` / `showSlowStatus` text — the loader is its own polished default and doesn't need a separate "slow" variant. Keep the 12s timeout that flips to `iframeError`.
+2. `EntryBuilderTool.tsx` — replace the line-213 `<div className="text-white/60 text-sm animate-pulse">Loading Entry Builder...</div>` with `<BrandedLoader subtitle="Loading Entry Builder…" />` so the embedded view matches.
+3. `SolutionsViewerV2.tsx` — at the top-level `loading` block (~lines 2956–2964) currently rendering generic shadcn `<Skeleton>` strips, swap in `<BrandedLoader subtitle="Loading problem…" />`. (Keep skeletons elsewhere if any cell-level loading remains.)
+
+This removes the duplicated raw "Loading…" text, eliminates the white-flash skeleton, and gives every loading state the same branded identity. Image 3's "two stacked Admin Tools badges" is the Lovable Visual Edit overlay — not real UI — so it'll disappear in the published build regardless.
+
+### Out of scope
+
+- Mobile viewer header (already minimal — Switch Problem stays centered).
+- The keyboard shortcut layer for view modes.
+- Changing the V1 standalone `/tools/entry-builder` page outside the embed.
+- Course-prefill UI for the home reset — already handled by existing `selectedCourseId` persistence in the parent components; no extra work needed.
+
+### Open question
+
+For the spinner, do you want **phosphor green** (matches the retro terminal aesthetic the previewer already uses) or **brand red `#CE1126`** (matches the rest of the V2 viewer chrome)? My default is phosphor green because the loader is most visible inside the laptop chassis where the breadcrumb bar is already green — it'll feel like one cohesive system. Tell me if you'd rather it be red.
