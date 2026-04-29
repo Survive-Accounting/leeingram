@@ -62,6 +62,7 @@ export default function LandingStudyPreviewerSection({
   const [chaptersLoading, setChaptersLoading] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [teamOpen, setTeamOpen] = useState(false);
   const [resetKey, setResetKey] = useState(0);
 
   const selectedCourse = useMemo(
