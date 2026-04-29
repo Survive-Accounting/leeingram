@@ -6388,6 +6388,7 @@ export type Database = {
       }
       student_onboarding: {
         Row: {
+          accounting_major_status: string | null
           beta_number: number | null
           campus_beta_number: number | null
           campus_id: string | null
@@ -6399,18 +6400,23 @@ export type Database = {
           display_name: string | null
           early_bird_opt_in: boolean
           email: string
+          first_name: string | null
           greek_org_id: string | null
           greek_org_other: string | null
           id: string
           is_accounting_major: string | null
           is_in_greek_life: boolean | null
           is_legacy: boolean
+          last_name: string | null
+          onboarding_version: string | null
           syllabus_file_path: string | null
           updated_at: string
           user_id: string
+          user_role: string | null
           welcomed_at: string | null
         }
         Insert: {
+          accounting_major_status?: string | null
           beta_number?: number | null
           campus_beta_number?: number | null
           campus_id?: string | null
@@ -6422,18 +6428,23 @@ export type Database = {
           display_name?: string | null
           early_bird_opt_in?: boolean
           email: string
+          first_name?: string | null
           greek_org_id?: string | null
           greek_org_other?: string | null
           id?: string
           is_accounting_major?: string | null
           is_in_greek_life?: boolean | null
           is_legacy?: boolean
+          last_name?: string | null
+          onboarding_version?: string | null
           syllabus_file_path?: string | null
           updated_at?: string
           user_id: string
+          user_role?: string | null
           welcomed_at?: string | null
         }
         Update: {
+          accounting_major_status?: string | null
           beta_number?: number | null
           campus_beta_number?: number | null
           campus_id?: string | null
@@ -6445,15 +6456,19 @@ export type Database = {
           display_name?: string | null
           early_bird_opt_in?: boolean
           email?: string
+          first_name?: string | null
           greek_org_id?: string | null
           greek_org_other?: string | null
           id?: string
           is_accounting_major?: string | null
           is_in_greek_life?: boolean | null
           is_legacy?: boolean
+          last_name?: string | null
+          onboarding_version?: string | null
           syllabus_file_path?: string | null
           updated_at?: string
           user_id?: string
+          user_role?: string | null
           welcomed_at?: string | null
         }
         Relationships: [
