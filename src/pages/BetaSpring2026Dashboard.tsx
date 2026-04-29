@@ -163,8 +163,9 @@ Constraints: keep dark navy + brand red, do not break existing student dashboard
 const BETA_END = new Date("2026-05-15T23:59:59-05:00");
 
 export default function BetaSpring2026Dashboard() {
-  const [range, setRange] = useState<RangeKey>("14d");
+  const [range, setRange] = useState<RangeKey>("7d");
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
   const [signups, setSignups] = useState<SignupRow[]>([]);
@@ -178,6 +179,7 @@ export default function BetaSpring2026Dashboard() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
     const start = rangeStart(range).toISOString();
     try {
       const { data, error } = await supabase.functions.invoke("beta-dashboard-query", {
@@ -189,7 +191,9 @@ export default function BetaSpring2026Dashboard() {
       setSignups(data.signups ?? []);
     } catch (e: any) {
       console.error(e);
-      toast.error("Failed to load dashboard: " + (e?.message ?? "unknown"));
+      const msg = e?.message ?? "unknown error";
+      setFetchError(msg);
+      toast.error("Failed to load dashboard: " + msg);
     } finally {
       setLoading(false);
     }
