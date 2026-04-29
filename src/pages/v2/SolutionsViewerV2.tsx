@@ -1495,6 +1495,7 @@ function InlineExplanation({
 }) {
   const [searchParams] = useSearchParams();
   const isEmbed = searchParams.get("embed") === "1";
+  const focusJE = searchParams.get("focus") === "je";
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
