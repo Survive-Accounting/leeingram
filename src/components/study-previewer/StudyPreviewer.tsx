@@ -80,6 +80,14 @@ interface StudyPreviewerProps {
   welcomeName?: string | null;
   /** When true, greets as returning ("Welcome back"); otherwise as new ("Welcome"). */
   isReturning?: boolean;
+
+  /** Fires when chapter selection or active tool changes — for breadcrumbs etc. */
+  onSelectionChange?: (state: {
+    chapter: PreviewChapter | null;
+    activeTool: ToolKey | null;
+  }) => void;
+  /** External signal to clear the active tool only (chapter stays selected). */
+  closeToolSignal?: number;
 }
 
 export default function StudyPreviewer({
