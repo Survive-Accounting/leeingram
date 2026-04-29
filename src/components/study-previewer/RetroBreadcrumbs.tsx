@@ -104,6 +104,9 @@ export function RetroBreadcrumbs({ crumbs, rightSlot }: RetroBreadcrumbsProps) {
             );
           })}
         </nav>
+        {rightSlot ? (
+          <div className="ml-auto shrink-0 flex items-center">{rightSlot}</div>
+        ) : null}
       </div>
     </div>
   );
