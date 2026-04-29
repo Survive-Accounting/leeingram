@@ -53,7 +53,7 @@ export function parseEmail(rawEmail: string): ParsedEmail | null {
     alias = rawAlias.length > 0 ? rawAlias : null;
   }
 
-  const isAliasMode = realDomain === TEST_DOMAIN && !!alias;
+  const isAliasMode = !!alias && isAliasTestBase(`${baseEmail}@${realDomain}`);
   let simulatedDomain = realDomain;
   if (isAliasMode && alias) {
     simulatedDomain = ALIAS_DOMAIN_OVERRIDES[alias] ?? `${alias}.edu`;
