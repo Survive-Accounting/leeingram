@@ -71,22 +71,35 @@ Deno.serve(async (req) => {
   if (!courseId) return bad("Course not found", 404);
 
   // Upsert student
+  const earlyBird = !!body.earlyBirdOptIn;
   let studentId: string | null = null;
   try {
     const { data: existing } = await supabase
       .from("students")
-      .select("id, campus_id")
+      .select("id, campus_id, early_bird_opt_in")
       .eq("email", email)
       .maybeSingle();
     if (existing) {
       studentId = existing.id;
-      if (campusId && !existing.campus_id) {
-        await supabase.from("students").update({ campus_id: campusId }).eq("id", existing.id);
+      const updates: Record<string, unknown> = {};
+      if (campusId && !existing.campus_id) updates.campus_id = campusId;
+      // Only flip to true (don't undo a prior opt-in)
+      if (earlyBird && !existing.early_bird_opt_in) {
+        updates.early_bird_opt_in = true;
+        updates.early_bird_opt_in_at = new Date().toISOString();
+      }
+      if (Object.keys(updates).length > 0) {
+        await supabase.from("students").update(updates).eq("id", existing.id);
       }
     } else {
       const { data: created, error } = await supabase
         .from("students")
-        .insert({ email, campus_id: campusId })
+        .insert({
+          email,
+          campus_id: campusId,
+          early_bird_opt_in: earlyBird,
+          early_bird_opt_in_at: earlyBird ? new Date().toISOString() : null,
+        })
         .select("id")
         .single();
       if (error) console.error("[claim-free-beta] student insert:", error);
