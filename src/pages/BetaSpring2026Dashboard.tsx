@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, RefreshCw, Sparkles, MessageSquare, Bug, Lightbulb, Heart, AlertTriangle, ExternalLink, ArrowLeft } from "lucide-react";
+import { Copy, RefreshCw, Sparkles, MessageSquare, Bug, Lightbulb, Heart, AlertTriangle, ExternalLink, ArrowLeft, TrendingDown } from "lucide-react";
 import { SignupsTable, type SignupRow } from "@/components/beta-dashboard/SignupsTable";
+import { useEventTracking } from "@/hooks/useEventTracking";
+import { BETA_EVENTS } from "@/lib/betaEvents";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -34,7 +36,28 @@ function rangeStart(range: RangeKey): Date {
   }
 }
 
+interface FunnelStep {
+  key: string;
+  label: string;
+  count: number;
+  pctOfSignups: number;
+  dropoffFromPrev: number;
+  dropoffPctFromPrev: number;
+}
+
 interface Metrics {
+  // Top metrics cards
+  totalBetaSignups: number;
+  signupsToday: number;
+  loginsToday: number;
+  activeUsersToday: number;
+  activeUsers7d: number;
+  studentsSelectedChapter: number;
+  studentsOpenedHelper: number;
+  feedbackSubmissions: number;
+  cacheHitRate: number;
+  ghostUsers: number;
+  // Backwards-compatible
   signups: number;
   signupsPrev: number;
   logins7d: number;
@@ -44,10 +67,10 @@ interface Metrics {
   thumbsUp: number;
   thumbsDown: number;
   openFeedback: number;
-  cacheHitRate: number;
   avgLatencyMs: number;
-  ghostUsers: number;
   topTools: Array<{ name: string; count: number }>;
+  // Funnel
+  funnel: FunnelStep[];
 }
 
 interface FeedbackItem {
@@ -169,6 +192,11 @@ export default function BetaSpring2026Dashboard() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const { trackEvent } = useEventTracking();
+  useEffect(() => {
+    trackEvent(BETA_EVENTS.BETA_DASHBOARD_VIEWED, { source: "internal_admin" });
+  }, [trackEvent]);
+
   const runClustering = async (force = false) => {
     if (!feedback.length) return;
     setAiLoading(true);
@@ -279,8 +307,11 @@ export default function BetaSpring2026Dashboard() {
             </div>
           </div>
 
-          {/* Metrics Grid */}
+          {/* Top Metrics Cards */}
           <MetricsGrid metrics={metrics} loading={loading} />
+
+          {/* Launch Funnel */}
+          <LaunchFunnel metrics={metrics} loading={loading} />
 
           {/* AI Themes */}
           <Card>
@@ -387,25 +418,30 @@ export default function BetaSpring2026Dashboard() {
 }
 
 function MetricsGrid({ metrics, loading }: { metrics: Metrics | null; loading: boolean }) {
+  const pct = (n?: number) => n != null ? `${Math.round(n * 100)}%` : undefined;
   const cards = [
-    { label: "Signups", value: metrics?.signups, delta: metrics ? metrics.signups - metrics.signupsPrev : undefined },
-    { label: "Logins (7d)", value: metrics?.logins7d },
-    { label: "Active Users", value: metrics?.activeUsers },
-    { label: "Study Tool Opens", value: metrics?.studyToolOpens },
-    { label: "Helper Clicks", value: metrics?.helperClicks },
+    { label: "Total beta signups", value: metrics?.totalBetaSignups },
+    { label: "New signups today", value: metrics?.signupsToday, accent: (metrics?.signupsToday ?? 0) > 0 },
+    { label: "Logins today", value: metrics?.loginsToday },
+    { label: "Active users today", value: metrics?.activeUsersToday },
+    { label: "Active users (7d)", value: metrics?.activeUsers7d },
+    { label: "Selected a chapter", value: metrics?.studentsSelectedChapter, sub: "in selected range" },
+    { label: "Opened a helper", value: metrics?.studentsOpenedHelper, sub: "in selected range" },
+    { label: "Feedback submissions", value: metrics?.feedbackSubmissions, sub: "in selected range" },
     {
-      label: "👍 / 👎",
-      value: metrics ? `${metrics.thumbsUp} / ${metrics.thumbsDown}` : undefined,
-    },
-    { label: "Open Feedback", value: metrics?.openFeedback, accent: (metrics?.openFeedback ?? 0) > 0 },
-    {
-      label: "AI Cache Hit Rate",
-      value: metrics ? `${Math.round(metrics.cacheHitRate * 100)}%` : undefined,
+      label: "AI cache hit rate",
+      value: pct(metrics?.cacheHitRate),
       sub: metrics ? `${metrics.avgLatencyMs}ms avg` : undefined,
+    },
+    {
+      label: "Signed up but inactive",
+      value: metrics?.ghostUsers,
+      sub: "no events recorded",
+      accent: (metrics?.ghostUsers ?? 0) > 0,
     },
   ];
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
       {cards.map((c, i) => (
         <Card key={i} className={c.accent ? "border-2" : ""} style={c.accent ? { borderColor: RED } : undefined}>
           <CardContent className="p-4">
@@ -414,15 +450,94 @@ function MetricsGrid({ metrics, loading }: { metrics: Metrics | null; loading: b
               {loading ? "…" : (c.value ?? "—")}
             </p>
             {c.sub && <p className="text-[10px] text-muted-foreground mt-1">{c.sub}</p>}
-            {typeof c.delta === "number" && c.delta !== 0 && (
-              <p className={`text-[10px] mt-1 ${c.delta > 0 ? "text-green-600" : "text-red-600"}`}>
-                {c.delta > 0 ? "+" : ""}{c.delta} vs prior period
-              </p>
-            )}
           </CardContent>
         </Card>
       ))}
     </div>
+  );
+}
+
+function LaunchFunnel({ metrics, loading }: { metrics: Metrics | null; loading: boolean }) {
+  const steps = metrics?.funnel ?? [];
+  const max = steps.reduce((m, s) => Math.max(m, s.count), 0) || 1;
+  return (
+    <Card>
+      <CardContent className="p-5">
+        <div className="flex items-end justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-lg font-bold" style={{ color: NAVY }}>Launch Funnel</h2>
+            <p className="text-xs text-muted-foreground">
+              Distinct students at each step within the selected date range. Drop-off is from the previous step.
+            </p>
+          </div>
+        </div>
+
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : steps.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">No funnel data yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <th className="py-2 pr-2 w-6">#</th>
+                  <th className="py-2 pr-2">Step</th>
+                  <th className="py-2 pr-2 w-[35%]">Volume</th>
+                  <th className="py-2 pr-2 text-right">Count</th>
+                  <th className="py-2 pr-2 text-right">% of signups</th>
+                  <th className="py-2 pr-2 text-right">Drop-off from prev</th>
+                </tr>
+              </thead>
+              <tbody>
+                {steps.map((s, i) => {
+                  const widthPct = (s.count / max) * 100;
+                  const dropoffPct = Math.round(s.dropoffPctFromPrev * 100);
+                  const dropoffBad = i > 0 && s.dropoffPctFromPrev >= 0.5;
+                  return (
+                    <tr key={s.key} className="border-b hover:bg-muted/30">
+                      <td className="py-2 pr-2 text-xs text-muted-foreground">{i + 1}</td>
+                      <td className="py-2 pr-2 font-medium" style={{ color: NAVY }}>{s.label}</td>
+                      <td className="py-2 pr-2">
+                        <div className="h-3 rounded bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded"
+                            style={{
+                              width: `${Math.max(2, widthPct)}%`,
+                              background: i === 0 ? NAVY : RED,
+                              opacity: i === 0 ? 1 : 0.85,
+                            }}
+                          />
+                        </div>
+                      </td>
+                      <td className="py-2 pr-2 text-right tabular-nums font-bold" style={{ color: NAVY }}>
+                        {s.count}
+                      </td>
+                      <td className="py-2 pr-2 text-right tabular-nums text-xs">
+                        {Math.round(s.pctOfSignups * 100)}%
+                      </td>
+                      <td className="py-2 pr-2 text-right tabular-nums text-xs">
+                        {i === 0 ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : (
+                          <span
+                            className={`inline-flex items-center gap-1 ${dropoffBad ? "font-bold" : ""}`}
+                            style={{ color: dropoffBad ? RED : "#6B7280" }}
+                          >
+                            <TrendingDown className="h-3 w-3" />
+                            {s.dropoffFromPrev} ({dropoffPct}%)
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
