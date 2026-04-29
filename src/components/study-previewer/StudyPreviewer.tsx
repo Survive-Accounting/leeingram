@@ -821,15 +821,7 @@ export default function StudyPreviewer({
                               onError={() => setIframeError(true)}
                             />
 
-                            {!iframeLoaded && showSlowStatus && (
-                              <div
-                                className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] tracking-wide z-20"
-                                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                                role="status"
-                              >
-                                Preparing tool…
-                              </div>
-                            )}
+
                           </>
                         )}
 
