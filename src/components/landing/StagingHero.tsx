@@ -1,6 +1,7 @@
 import { useState } from "react";
 // (icon imports removed — no longer used)
 import leeHeadshot from "@/assets/lee-headshot-original.png";
+import welcomeVideoThumbnail from "@/assets/welcome-video-thumbnail.png";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
 import AnimatedArrow from "@/components/landing/AnimatedArrow";
 
@@ -300,12 +301,10 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                 >
                   {/* Poster image */}
                   <img
-                    src={`https://vumbnail.com/1187869081.jpg`}
-                    alt=""
-                    aria-hidden
+                    src={welcomeVideoThumbnail}
+                    alt="Lee Ingram welcome"
                     className="absolute inset-0 w-full h-full object-cover"
-                    style={{ opacity: 0.55, zIndex: 0 }}
-                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                    style={{ opacity: 0.85, zIndex: 0 }}
                   />
                   <div
                     aria-hidden
