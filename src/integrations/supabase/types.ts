@@ -823,6 +823,60 @@ export type Database = {
           },
         ]
       }
+      beta_feedback_summaries: {
+        Row: {
+          categories: Json | null
+          created_at: string
+          date_range_end: string
+          date_range_start: string
+          feedback_count: number
+          filters: Json
+          generated_by_user_id: string | null
+          id: string
+          model_used: string | null
+          quick_wins: Json | null
+          suggested_prompts: Json | null
+          summary_text: string | null
+          top_chapters: Json | null
+          top_features: Json | null
+          top_issues: Json | null
+        }
+        Insert: {
+          categories?: Json | null
+          created_at?: string
+          date_range_end: string
+          date_range_start: string
+          feedback_count?: number
+          filters?: Json
+          generated_by_user_id?: string | null
+          id?: string
+          model_used?: string | null
+          quick_wins?: Json | null
+          suggested_prompts?: Json | null
+          summary_text?: string | null
+          top_chapters?: Json | null
+          top_features?: Json | null
+          top_issues?: Json | null
+        }
+        Update: {
+          categories?: Json | null
+          created_at?: string
+          date_range_end?: string
+          date_range_start?: string
+          feedback_count?: number
+          filters?: Json
+          generated_by_user_id?: string | null
+          id?: string
+          model_used?: string | null
+          quick_wins?: Json | null
+          suggested_prompts?: Json | null
+          summary_text?: string | null
+          top_chapters?: Json | null
+          top_features?: Json | null
+          top_issues?: Json | null
+        }
+        Relationships: []
+      }
       bulk_fix_queue: {
         Row: {
           assets_errored: number
