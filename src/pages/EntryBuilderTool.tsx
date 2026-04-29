@@ -209,7 +209,7 @@ export default function EntryBuilderTool() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f1729] flex items-center justify-center">
+      <div className={`${isEmbed ? "min-h-full" : "min-h-screen"} bg-[#0f1729] flex items-center justify-center`}>
         <div className="text-white/60 text-sm animate-pulse">Loading Entry Builder...</div>
       </div>
     );
@@ -217,7 +217,7 @@ export default function EntryBuilderTool() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0f1729] flex items-center justify-center">
+      <div className={`${isEmbed ? "min-h-full" : "min-h-screen"} bg-[#0f1729] flex items-center justify-center`}>
         <div className="text-red-400 text-sm">{error}</div>
       </div>
     );
