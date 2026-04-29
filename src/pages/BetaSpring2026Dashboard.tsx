@@ -380,6 +380,26 @@ export default function BetaSpring2026Dashboard() {
             <SignupsTable signups={signups} loading={loading} />
           </CollapsibleSection>
 
+          {/* System email audit */}
+          <CollapsibleSection
+            title="System Email Audit"
+            subtitle="Sends a single digest of every system email (subject, trigger, purpose, rendered HTML) to lee@survivestudios.com"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                Reply to that email with new HTML for any template — we'll batch-update them in one pass.
+              </p>
+              <Button
+                size="sm"
+                onClick={sendEmailAuditDigest}
+                disabled={auditSending}
+                style={{ background: RED, color: "white" }}
+              >
+                {auditSending ? "Sending…" : "Send audit digest"}
+              </Button>
+            </div>
+          </CollapsibleSection>
+
           {/* Slack notifications utility */}
           <CollapsibleSection
             title="Slack Notifications"
