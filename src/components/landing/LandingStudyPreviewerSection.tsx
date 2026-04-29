@@ -176,18 +176,6 @@ export default function LandingStudyPreviewerSection({
           resetSignal={resetKey}
         />
 
-        {/* Meet the team link */}
-        <div className="text-center mt-6">
-          <button
-            type="button"
-            onClick={() => setTeamOpen(true)}
-            className="text-[12px] uppercase tracking-[0.18em] font-semibold transition-colors hover:text-white"
-            style={{ color: "rgba(255,255,255,0.55)" }}
-          >
-            Meet the team building this together →
-          </button>
-        </div>
-
       </div>
 
       <Dialog open={teamOpen} onOpenChange={setTeamOpen}>
