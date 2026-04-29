@@ -36,14 +36,13 @@ const TERMINAL_TOOLS: TerminalTool[] = [
     cta: "Open helper",
     icon: NotebookPen,
   },
-  {
-    key: "feedback",
-    label: "Help shape what's next",
-    description: "Rank ideas or suggest a tool we should build.",
-    cta: "Share Feedback",
-    icon: Lightbulb,
-    variant: "ghost",
-  },
+];
+
+const COMING_SOON_IDEAS = [
+  "Flashcard Drill",
+  "Concept Helper",
+  "Formula Guide",
+  "Exam Cram Sheet",
 ];
 
 export interface PreviewChapter {
