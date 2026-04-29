@@ -160,6 +160,29 @@ export default function StudyPreviewer({
     setViewerAssetCode(null);
   }, [resetSignal]);
 
+  // Listen for navigation intents bubbled up from the V2 viewer iframe so the
+  // breadcrumb home/chapter clicks return the student to the previewer's
+  // terminal screen instead of navigating inside the iframe.
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      const type = (event.data as { type?: string } | null)?.type;
+      if (type === "sa-viewer-go-home") {
+        setActiveTool(null);
+        setSelectedChapterId(null);
+        setViewerAssetCode(null);
+        if (persistChapterKey) {
+          try { localStorage.removeItem(persistChapterKey); } catch { /* ignore */ }
+        }
+      } else if (type === "sa-viewer-go-chapter") {
+        // Keep the chapter selected; just close the active tool so the student
+        // lands on the per-chapter tool selector.
+        setActiveTool(null);
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, [persistChapterKey]);
+
   const handleChapterChange = async (chId: string) => {
     if (!chId) {
       setSelectedChapterId(null);
