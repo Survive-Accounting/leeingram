@@ -2974,7 +2974,46 @@ export default function SolutionsViewerV2() {
 
         {!loading && asset && (
           <>
-            {/* Mobile Problem/Helper toggle removed for cleaner UI */}
+            {/* Mobile Problem ↔ Helper toggle. Stacked, full-width, large tap targets.
+                Tapping the active button switches to the OTHER pane (acts as a toggle). */}
+            {isMobileViewport && (
+              <div className="md:hidden mb-4 grid grid-cols-2 gap-2" role="tablist" aria-label="View mode">
+                {([
+                  { key: "problem" as const, Icon: FileText, label: "Problem" },
+                  { key: "helper" as const, Icon: Brain, label: "Guided Helper" },
+                ]).map(({ key, Icon, label }) => {
+                  const active = mobileTab === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => {
+                        // Click the active tab → switch to the other one (toggle behavior)
+                        if (active) {
+                          setMobileTab(key === "problem" ? "helper" : "problem");
+                        } else {
+                          setMobileTab(key);
+                        }
+                      }}
+                      className="inline-flex items-center justify-center gap-2 h-11 rounded-md text-sm font-semibold transition-all active:scale-[0.98]"
+                      style={{
+                        background: active ? "#CE1126" : "rgba(255,255,255,0.04)",
+                        border: `1px solid ${active ? "#CE1126" : "rgba(255,255,255,0.12)"}`,
+                        color: active ? "#fff" : "rgba(255,255,255,0.85)",
+                        boxShadow: active
+                          ? "0 4px 14px -4px rgba(206,17,38,0.5), 0 1px 0 rgba(255,255,255,0.15) inset"
+                          : "none",
+                      }}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Desktop: floating view-mode toolbar */}
             <div className="hidden md:flex justify-end mb-3">
