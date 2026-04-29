@@ -10,7 +10,8 @@ const MONO = `"JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, Menlo, Con
 
 export type BreadcrumbCrumb = {
   label: string;
-  to?: string; // omit for current crumb
+  to?: string; // route link → renders <Link>
+  onClick?: () => void; // in-page action → renders <button>
 };
 
 interface RetroBreadcrumbsProps {
