@@ -56,14 +56,15 @@ Deno.serve(async (req) => {
       part_steps,
       chapter_name,
       topic_name,
+      chapter_id,
+      course_id,
+      user_id,
+      session_id,
     } = await req.json();
 
     if (!asset_id || !part_label) {
       throw new Error("asset_id and part_label are required");
     }
-
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured");
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -76,35 +77,26 @@ Answer: ${part_answer ?? "Journal entry"}
 
 The student already has the step-by-step solution. Explain the concept behind this part and how it shows up on exams.`;
 
-    const aiResp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "o3",
-        max_completion_tokens: 800,
-        response_format: { type: "text" },
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userMessage },
-        ],
-      }),
+    const result = await generateTutorResponse({
+      toolType: "explain_part",
+      actionType: "explain_part",
+      systemPrompt: SYSTEM_PROMPT,
+      userPrompt: userMessage,
+      problemId: asset_id,
+      chapterId: chapter_id ?? null,
+      courseId: course_id ?? null,
+      // Per-part variation: include part_label in the cache surface so each part
+      // gets its own cached row.
+      problemVersion: `part:${part_label}`,
+      userId: user_id ?? null,
+      sessionId: session_id ?? null,
+      maxTokens: 800,
     });
 
-    if (!aiResp.ok) {
-      const errText = await aiResp.text();
-      throw new Error(`OpenAI ${aiResp.status}: ${errText.slice(0, 500)}`);
+    if (!result.success) {
+      throw new Error(result.error);
     }
-
-    const aiData = await aiResp.json();
-    const explanation: string =
-      aiData.choices?.[0]?.message?.content?.trim() ?? "";
-
-    if (!explanation) {
-      throw new Error("Empty explanation returned from AI");
-    }
+    const explanation = result.responseText;
 
     // Merge into cache
     const { data: row, error: fetchErr } = await sb
