@@ -149,10 +149,11 @@ export default function RetroTerminalFrame({
   };
 
   // Sequential reveal of the boot lines for a tasteful "entering the system" feel.
+  // Kept fast so the dashboard becomes usable quickly on mobile.
   useEffect(() => {
     setBootStep(0);
     const timers: number[] = [];
-    const steps = [180, 380, 580, 760, 940, 1120];
+    const steps = [60, 140, 220, 300, 380, 460];
     steps.forEach((delay, i) => {
       timers.push(window.setTimeout(() => setBootStep(i + 1), delay));
     });
@@ -194,7 +195,7 @@ export default function RetroTerminalFrame({
     "https://lwfiles.mycourse.app/672bc379cd024d536f651ecc-public/1554d231f0e2bf121ac35937c4d438ca.png";
 
   return (
-    <div className="w-full flex justify-center px-2 sm:px-6 py-6 sm:py-10 animate-fade-in">
+    <div className="w-full flex justify-center px-1 sm:px-6 py-2 sm:py-10 animate-fade-in">
       <style>{`
         @keyframes sa-cursor-blink {
           0%, 49% { opacity: 1; }
@@ -289,7 +290,7 @@ export default function RetroTerminalFrame({
       <div className="w-full" style={{ maxWidth: 980 }}>
         {/* Laptop lid */}
         <div
-          className="relative rounded-t-[18px] p-3 sm:p-4"
+          className="relative rounded-t-[14px] sm:rounded-t-[18px] p-2 sm:p-4"
           style={{
             background: "linear-gradient(180deg, #1F1F23 0%, #141417 100%)",
             border: "1px solid #2A2A30",
@@ -311,7 +312,7 @@ export default function RetroTerminalFrame({
               background:
                 "radial-gradient(120% 80% at 50% 30%, #052810 0%, #03130A 60%, #010904 100%)",
               border: "1px solid #0A1A12",
-              minHeight: "clamp(380px, 56vw, 560px)",
+              minHeight: "clamp(320px, 56vw, 560px)",
               animation: "sa-crt-flicker 6s ease-in-out infinite",
             }}
           >
@@ -384,7 +385,7 @@ export default function RetroTerminalFrame({
 
             {/* Terminal content */}
             <div
-              className="relative h-full w-full px-4 sm:px-7 md:px-10 py-5 sm:py-7 md:py-8 flex flex-col text-left"
+              className="relative h-full w-full px-3 sm:px-7 md:px-10 py-4 sm:py-7 md:py-8 flex flex-col text-left"
               style={{
                 fontFamily:
                   "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
