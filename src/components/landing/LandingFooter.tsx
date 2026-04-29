@@ -157,6 +157,17 @@ export default function LandingFooter({
             >
               In memory of my twin Ben Ingram (1993–2017)
             </p>
+            {isStaff && (
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("admin-tools:toggle"))}
+                className="text-[11px] underline transition-opacity hover:opacity-100"
+                style={{ color: "rgba(255,255,255,0.4)", fontFamily: "Inter, sans-serif" }}
+                title="Show / hide Admin Toolbox (Ctrl+A)"
+              >
+                Admin Tools
+              </button>
+            )}
           </div>
         </div>
       </footer>
