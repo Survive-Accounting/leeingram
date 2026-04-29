@@ -3110,12 +3110,8 @@ export default function SolutionsViewerV2() {
             "radial-gradient(ellipse 60% 40% at 30% 15%, rgba(99,52,180,0.035) 0%, transparent 65%), radial-gradient(ellipse 50% 35% at 75% 60%, rgba(80,130,255,0.03) 0%, transparent 70%)",
         }}>
         {loading && (
-          <div className="space-y-3 max-w-3xl">
-            <Skeleton className="h-6 w-2/3" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-5/6" />
-            <Skeleton className="h-32 w-full mt-6" />
+          <div className="relative" style={{ minHeight: "60vh" }}>
+            <BrandedLoader subtitle="Loading problem…" surface="navy" />
           </div>
         )}
 
