@@ -110,6 +110,7 @@ export default function StudyPreviewer({
   const [chapterLoading, setChapterLoading] = useState(false);
   const [activeTool, setActiveTool] = useState<ToolKey | null>(null);
   const [viewerAssetCode, setViewerAssetCode] = useState<string | null>(null);
+  const [jeAssetCode, setJeAssetCode] = useState<string | null>(null);
   const [crtPulseKey, setCrtPulseKey] = useState(0);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeError, setIframeError] = useState(false);
@@ -137,15 +138,27 @@ export default function StudyPreviewer({
       if (stored && chapters.some((c) => c.id === stored)) {
         setSelectedChapterId(stored);
         (async () => {
-          const { data } = await supabase
-            .from("teaching_assets")
-            .select("asset_name, source_number")
-            .eq("chapter_id", stored)
-            .order("source_number", { ascending: true, nullsFirst: false })
-            .order("asset_name", { ascending: true })
-            .limit(1);
+          const [firstRes, jeRes] = await Promise.all([
+            supabase
+              .from("teaching_assets")
+              .select("asset_name, source_number")
+              .eq("chapter_id", stored)
+              .order("source_number", { ascending: true, nullsFirst: false })
+              .order("asset_name", { ascending: true })
+              .limit(1),
+            supabase
+              .from("teaching_assets")
+              .select("asset_name, source_number")
+              .eq("chapter_id", stored)
+              .not("journal_entry_completed_json", "is", null)
+              .order("source_number", { ascending: true, nullsFirst: false })
+              .order("asset_name", { ascending: true })
+              .limit(1),
+          ]);
           if (cancelled) return;
-          setViewerAssetCode(data?.[0]?.asset_name ?? null);
+          const firstAsset = firstRes.data?.[0]?.asset_name ?? null;
+          setViewerAssetCode(firstAsset);
+          setJeAssetCode(jeRes.data?.[0]?.asset_name ?? firstAsset);
         })();
       }
     } catch { /* ignore */ }
@@ -158,6 +171,7 @@ export default function StudyPreviewer({
     setSelectedChapterId(null);
     setActiveTool(null);
     setViewerAssetCode(null);
+    setJeAssetCode(null);
   }, [resetSignal]);
 
   // Listen for navigation intents bubbled up from the V2 viewer iframe so the
@@ -170,6 +184,7 @@ export default function StudyPreviewer({
         setActiveTool(null);
         setSelectedChapterId(null);
         setViewerAssetCode(null);
+        setJeAssetCode(null);
         if (persistChapterKey) {
           try { localStorage.removeItem(persistChapterKey); } catch { /* ignore */ }
         }
