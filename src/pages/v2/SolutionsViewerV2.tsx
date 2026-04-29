@@ -2853,26 +2853,38 @@ export default function SolutionsViewerV2() {
         }}
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
-          {/* LEFT — "Built by Lee Ingram" (desktop only; mobile hides to reduce noise) */}
+          {/* LEFT — Brand wordmark + Built by Lee Ingram (desktop only) */}
           <div className="hidden sm:flex items-center justify-start min-w-0">
             <Link
               to="/my-dashboard"
-              className="group inline-flex items-center min-w-0 max-w-full"
+              className="group inline-flex flex-col min-w-0 max-w-full leading-tight"
               data-embed-allow="true"
-              aria-label="Built by Lee Ingram — back to dashboard"
-              title="Built by Lee Ingram"
+              aria-label="Survive Accounting Beta · Built by Lee Ingram — back to dashboard"
+              title="Survive Accounting Beta · Spring '26"
             >
               <span
-                className="truncate text-[12px] font-medium tracking-wide transition-colors"
-                style={{ color: "rgba(255,255,255,0.45)" }}
+                className="truncate transition-colors"
+                style={{
+                  fontFamily: '"DM Serif Display", Georgia, serif',
+                  fontSize: 13,
+                  color: "rgba(255,255,255,0.85)",
+                  lineHeight: 1.15,
+                }}
+              >
+                Survive Accounting · <span style={{ color: "#FF8A95" }}>Beta</span>
+              </span>
+              <span
+                className="truncate text-[11px] font-medium tracking-wide transition-colors"
+                style={{ color: "rgba(255,255,255,0.45)", marginTop: 1 }}
               >
                 Built by{" "}
                 <span
                   className="font-semibold transition-colors group-hover:text-white"
-                  style={{ color: "rgba(255,255,255,0.78)" }}
+                  style={{ color: "rgba(255,255,255,0.72)" }}
                 >
                   Lee Ingram
-                </span>
+                </span>{" "}
+                · Spring '26
               </span>
             </Link>
           </div>
