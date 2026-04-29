@@ -6096,6 +6096,57 @@ export type Database = {
           },
         ]
       }
+      student_helper_feedback: {
+        Row: {
+          action_type: string
+          asset_id: string | null
+          cache_key: string | null
+          chapter_id: string | null
+          comment: string | null
+          course_id: string | null
+          created_at: string
+          email: string | null
+          id: string
+          rating: number
+          session_id: string | null
+          tool_type: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          asset_id?: string | null
+          cache_key?: string | null
+          chapter_id?: string | null
+          comment?: string | null
+          course_id?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          rating: number
+          session_id?: string | null
+          tool_type?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          asset_id?: string | null
+          cache_key?: string | null
+          chapter_id?: string | null
+          comment?: string | null
+          course_id?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          rating?: number
+          session_id?: string | null
+          tool_type?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       student_onboarding: {
         Row: {
           beta_number: number | null
@@ -8131,6 +8182,13 @@ export type Database = {
       get_campus_price: {
         Args: { p_campus_slug: string; p_product_type: string }
         Returns: number
+      }
+      get_chapter_entry_assets: {
+        Args: { p_chapter_id: string }
+        Returns: {
+          first_asset_name: string
+          first_je_asset_name: string
+        }[]
       }
       get_paid_student_count_for_campus: {
         Args: { p_campus_slug: string }

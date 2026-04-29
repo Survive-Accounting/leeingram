@@ -807,6 +807,27 @@ function HelperResponseThumbs({
       if (error) throw error;
       setFeedbackId(data?.id ?? null);
       setVote(helpful ? "up" : "down");
+
+      // Dual-write to dedicated student-beta feedback table (new). Non-blocking.
+      try {
+        let userId: string | null = null;
+        try {
+          const { data: u } = await supabase.auth.getUser();
+          userId = u.user?.id ?? null;
+        } catch {}
+        await (supabase as any).from("student_helper_feedback").insert({
+          asset_id: asset.id,
+          chapter_id: chapter?.id ?? null,
+          course_id: (chapter as any)?.course_id ?? null,
+          tool_type: "survive_this",
+          action_type: section,
+          rating: helpful ? 1 : -1,
+          user_id: userId,
+          email,
+          user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 200) : null,
+        });
+      } catch { /* non-blocking */ }
+
       if (!helpful) setReasonsOpen(true);
       else toast.success("Thanks for the feedback.");
     } catch {

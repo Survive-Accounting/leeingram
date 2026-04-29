@@ -8,6 +8,10 @@ import RetroTerminalFrame, {
 } from "@/components/study-previewer/RetroTerminalFrame";
 import { BrandedLoader } from "@/components/study-previewer/BrandedLoader";
 import JEHelperPanel from "@/components/study-previewer/JEHelperPanel";
+import {
+  useChapterEntryAssets,
+  usePrefetchStudyConsole,
+} from "@/hooks/useStudyConsoleData";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
@@ -107,7 +111,7 @@ export default function StudyPreviewer({
   closeToolSignal,
 }: StudyPreviewerProps) {
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
-  const [chapterLoading, setChapterLoading] = useState(false);
+  // chapterLoading is derived below from the TanStack RPC fetch state.
   const [activeTool, setActiveTool] = useState<ToolKey | null>(null);
   const [viewerAssetCode, setViewerAssetCode] = useState<string | null>(null);
   const [jeAssetCode, setJeAssetCode] = useState<string | null>(null);
@@ -126,45 +130,39 @@ export default function StudyPreviewer({
   const courseChosen = courses
     ? !!selectedCourseId
     : !!fixedCourseLabel;
-  const chapterChosen = !!selectedChapterId && !chapterLoading;
+  // chapterChosen is computed below, after chapterLoading is derived.
 
-  // Restore from localStorage — also hydrate the first asset code so the
-  // Practice Problem Helper has something to load on first click.
+  // Restore from localStorage on mount — only restore the chapter id; the
+  // first-asset codes will be filled in by the TanStack RPC hook below.
   useEffect(() => {
     if (!persistChapterKey) return;
-    let cancelled = false;
     try {
       const stored = localStorage.getItem(persistChapterKey);
       if (stored && chapters.some((c) => c.id === stored)) {
         setSelectedChapterId(stored);
-        (async () => {
-          const [firstRes, jeRes] = await Promise.all([
-            supabase
-              .from("teaching_assets")
-              .select("asset_name, source_number")
-              .eq("chapter_id", stored)
-              .order("source_number", { ascending: true, nullsFirst: false })
-              .order("asset_name", { ascending: true })
-              .limit(1),
-            supabase
-              .from("teaching_assets")
-              .select("asset_name, source_number")
-              .eq("chapter_id", stored)
-              .not("journal_entry_completed_json", "is", null)
-              .order("source_number", { ascending: true, nullsFirst: false })
-              .order("asset_name", { ascending: true })
-              .limit(1),
-          ]);
-          if (cancelled) return;
-          const firstAsset = firstRes.data?.[0]?.asset_name ?? null;
-          setViewerAssetCode(firstAsset);
-          setJeAssetCode(jeRes.data?.[0]?.asset_name ?? firstAsset);
-        })();
       }
     } catch { /* ignore */ }
-    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persistChapterKey, chapters.length]);
+
+  // Single source of truth for the chapter's first-asset codes via RPC.
+  // Cached for the session by TanStack — switching chapters back and forth
+  // never re-queries.
+  const { data: entryAssets, isFetching: entryAssetsFetching } =
+    useChapterEntryAssets(selectedChapterId ?? null);
+  const { prefetchChapterEntryAssets } = usePrefetchStudyConsole();
+
+  // Mirror the RPC result into the local viewer state used by the iframe.
+  useEffect(() => {
+    if (!entryAssets) return;
+    setViewerAssetCode(entryAssets.first_asset_name);
+    setJeAssetCode(entryAssets.first_je_asset_name ?? entryAssets.first_asset_name);
+  }, [entryAssets]);
+
+  // Chapter is "loading" only while the RPC is in-flight for the *current*
+  // selection AND we don't yet have data. No artificial delay.
+  const chapterLoading = !!selectedChapterId && !entryAssets && entryAssetsFetching;
+  const chapterChosen = !!selectedChapterId && !chapterLoading;
 
   useEffect(() => {
     if (resetSignal === undefined) return;
@@ -198,7 +196,7 @@ export default function StudyPreviewer({
     return () => window.removeEventListener("message", handler);
   }, [persistChapterKey]);
 
-  const handleChapterChange = async (chId: string) => {
+  const handleChapterChange = (chId: string) => {
     if (!chId) {
       setSelectedChapterId(null);
       setViewerAssetCode(null);
@@ -212,44 +210,21 @@ export default function StudyPreviewer({
     // Always reset any open tool — switching chapters returns the user to the
     // terminal tool-selection state for the new chapter.
     setActiveTool(null);
-    setChapterLoading(true);
+    // Optimistically clear stale codes so the iframe doesn't briefly show the
+    // previous chapter's first asset. The RPC hook will repopulate on success.
     setViewerAssetCode(null);
     setJeAssetCode(null);
-
-    const ch = chapters.find((c) => c.id === chId);
-
-    const [firstRes, jeRes] = await Promise.all([
-      supabase
-        .from("teaching_assets")
-        .select("asset_name, source_number")
-        .eq("chapter_id", chId)
-        .order("source_number", { ascending: true, nullsFirst: false })
-        .order("asset_name", { ascending: true })
-        .limit(1),
-      supabase
-        .from("teaching_assets")
-        .select("asset_name, source_number")
-        .eq("chapter_id", chId)
-        .not("journal_entry_completed_json", "is", null)
-        .order("source_number", { ascending: true, nullsFirst: false })
-        .order("asset_name", { ascending: true })
-        .limit(1),
-    ]);
-    const first = firstRes.data?.[0]?.asset_name ?? null;
-    const firstJe = jeRes.data?.[0]?.asset_name ?? first;
-
-    await new Promise((r) => setTimeout(r, 400));
-
     setSelectedChapterId(chId);
-    setViewerAssetCode(first);
-    setJeAssetCode(firstJe);
-    setChapterLoading(false);
-    
+
     if (persistChapterKey) {
       try { localStorage.setItem(persistChapterKey, chId); } catch { /* ignore */ }
     }
 
-    
+    // Prefetch the next chapter's entry assets so consecutive switches are
+    // instant.
+    const idx = chapters.findIndex((c) => c.id === chId);
+    const next = chapters[idx + 1];
+    if (next) prefetchChapterEntryAssets(next.id);
   };
 
   // Course changes from the inline terminal selector — reset chapter + tool so
