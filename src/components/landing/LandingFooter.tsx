@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AboutLeeModal } from "@/components/AboutLeeModal";
 import StudentLoginModal from "@/components/landing/StudentLoginModal";
+import { useIsStaff } from "@/hooks/useIsStaff";
 
 const NAVY = "#14213D";
 const RED = "#CC0000";
@@ -24,6 +25,7 @@ export default function LandingFooter({
   const [aboutOpen, setAboutOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
+  const isStaff = useIsStaff();
 
   const linkClass =
     "block text-[13px] text-left no-underline hover:underline transition-colors";
@@ -155,6 +157,17 @@ export default function LandingFooter({
             >
               In memory of my twin Ben Ingram (1993–2017)
             </p>
+            {isStaff && (
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent("admin-tools:toggle"))}
+                className="text-[11px] underline transition-opacity hover:opacity-100"
+                style={{ color: "rgba(255,255,255,0.4)", fontFamily: "Inter, sans-serif" }}
+                title="Show / hide Admin Toolbox (Ctrl+A)"
+              >
+                Admin Tools
+              </button>
+            )}
           </div>
         </div>
       </footer>

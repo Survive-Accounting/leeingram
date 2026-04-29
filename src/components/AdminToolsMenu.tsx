@@ -28,17 +28,14 @@ export function AdminToolsMenu() {
   const isStaff = useIsStaff();
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    // One-time migration: clear stale hidden flag so the bar reappears for staff
-    // after the shortcut change. Bump the version when the shortcut changes.
+    if (typeof window === "undefined") return true;
+    // Default hidden — toggled via the footer "Admin Tools" link (admins only)
+    // or the Ctrl+A keyboard shortcut. Persist across reloads.
     try {
-      if (!localStorage.getItem("devTool.adminBar.migrated.v3")) {
-        localStorage.removeItem(HIDDEN_STORAGE_KEY);
-        localStorage.setItem("devTool.adminBar.migrated.v3", "1");
-        return false;
-      }
-      return localStorage.getItem(HIDDEN_STORAGE_KEY) === "1";
-    } catch { return false; }
+      const v = localStorage.getItem(HIDDEN_STORAGE_KEY);
+      // If unset, default to hidden ("1").
+      return v == null ? true : v === "1";
+    } catch { return true; }
   });
 
   const { pos, dragHandlers } = useDraggable(POS_STORAGE_KEY, defaultPos(), SIZE);
@@ -70,7 +67,19 @@ export function AdminToolsMenu() {
       });
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const onToggle = () => {
+      setHidden((prev) => {
+        const next = !prev;
+        try { localStorage.setItem(HIDDEN_STORAGE_KEY, next ? "1" : "0"); } catch { /* noop */ }
+        if (next) setOpen(false);
+        return next;
+      });
+    };
+    window.addEventListener("admin-tools:toggle", onToggle);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("admin-tools:toggle", onToggle);
+    };
   }, []);
 
   if (!isStaff) return null;
