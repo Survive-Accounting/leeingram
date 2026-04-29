@@ -455,7 +455,6 @@ export default function StudentDashboard() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    setAccountOpen(false);
     setSignedOut(true);
   };
 
