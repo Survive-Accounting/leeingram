@@ -804,7 +804,7 @@ export default function RetroTerminalFrame({
                           lineHeight: 1.5,
                         }}
                       >
-                        Help us shape what we build next
+                        Help shape what we build next.
                       </div>
                     </div>
                     {onShareFeedback && (
