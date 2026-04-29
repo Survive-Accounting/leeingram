@@ -750,13 +750,22 @@ function HelperResponseThumbs({
   const [reasonsOpen, setReasonsOpen] = useState(false);
   const [reasonSent, setReasonSent] = useState(false);
   const [feedbackId, setFeedbackId] = useState<string | null>(null);
+  const [betaFeedbackId, setBetaFeedbackId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [textOpen, setTextOpen] = useState(false);
+  const [textValue, setTextValue] = useState("");
+  const [textSent, setTextSent] = useState(false);
+  const [textSending, setTextSending] = useState(false);
 
   useEffect(() => {
     setVote(null);
     setReasonsOpen(false);
     setReasonSent(false);
     setFeedbackId(null);
+    setBetaFeedbackId(null);
+    setTextOpen(false);
+    setTextValue("");
+    setTextSent(false);
   }, [section, asset.asset_name]);
 
   const buildContext = async () => {
@@ -774,6 +783,7 @@ function HelperResponseThumbs({
     } catch {}
     return {
       email,
+      userId,
       context: {
         user_id: userId,
         problem_id: asset.id,
@@ -791,7 +801,7 @@ function HelperResponseThumbs({
     if (vote || submitting) return;
     setSubmitting(true);
     try {
-      const { email, context } = await buildContext();
+      const { email, userId, context } = await buildContext();
       const { data, error } = await supabase
         .from("explanation_feedback")
         .insert({
@@ -808,13 +818,8 @@ function HelperResponseThumbs({
       setFeedbackId(data?.id ?? null);
       setVote(helpful ? "up" : "down");
 
-      // Dual-write to dedicated student-beta feedback table (new). Non-blocking.
+      // Dual-write to the dedicated student-beta feedback tables. Non-blocking.
       try {
-        let userId: string | null = null;
-        try {
-          const { data: u } = await supabase.auth.getUser();
-          userId = u.user?.id ?? null;
-        } catch {}
         await (supabase as any).from("student_helper_feedback").insert({
           asset_id: asset.id,
           chapter_id: chapter?.id ?? null,
@@ -826,6 +831,27 @@ function HelperResponseThumbs({
           email,
           user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 200) : null,
         });
+      } catch { /* non-blocking */ }
+
+      // New beta-launch table — captures rating row up front so an optional
+      // text comment can be linked back to it.
+      try {
+        const { data: beta } = await (supabase as any)
+          .from("study_tool_response_feedback")
+          .insert({
+            asset_id: asset.id,
+            chapter_id: chapter?.id ?? null,
+            course_id: (chapter as any)?.course_id ?? null,
+            tool_type: "survive_this",
+            action_type: section,
+            rating: helpful ? "up" : "down",
+            user_id: userId,
+            page_url: typeof window !== "undefined" ? window.location.href : null,
+            user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 200) : null,
+          })
+          .select("id")
+          .single();
+        if (beta?.id) setBetaFeedbackId(beta.id);
       } catch { /* non-blocking */ }
 
       if (!helpful) setReasonsOpen(true);
@@ -848,31 +874,53 @@ function HelperResponseThumbs({
       toast.success("Thanks for the feedback.");
       setReasonsOpen(false);
     } catch {
-      // Silent — the original thumb is already saved, so we don't want
-      // to pester the student with a retry toast.
+      // Silent — the original thumb is already saved.
       setReasonSent(false);
     }
   };
 
-  // Confirmed view — quiet acknowledgment, no action.
-  if (vote && !reasonsOpen) {
-    return (
-      <div
-        className="flex items-center justify-end gap-1.5 text-[11px]"
-        style={{ color: "rgba(255,255,255,0.45)" }}
-      >
-        <Check className="h-3 w-3" />
-        Thanks for the feedback.
-      </div>
-    );
-  }
+  const sendText = async () => {
+    const trimmed = textValue.trim().slice(0, 2000);
+    if (!trimmed || textSent || textSending) return;
+    setTextSending(true);
+    try {
+      if (betaFeedbackId) {
+        await (supabase as any)
+          .from("study_tool_response_feedback")
+          .update({ feedback_text: trimmed })
+          .eq("id", betaFeedbackId);
+      } else {
+        // Fallback — no row yet (e.g., text submitted before vote insert
+        // resolved); insert a neutral row so the comment isn't lost.
+        const { email, userId } = await buildContext();
+        await (supabase as any).from("study_tool_response_feedback").insert({
+          asset_id: asset.id,
+          chapter_id: chapter?.id ?? null,
+          course_id: (chapter as any)?.course_id ?? null,
+          tool_type: "survive_this",
+          action_type: section,
+          rating: vote ?? "neutral",
+          feedback_text: trimmed,
+          user_id: userId,
+          page_url: typeof window !== "undefined" ? window.location.href : null,
+          user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 200) : null,
+        });
+      }
+      setTextSent(true);
+      toast.success("Thanks — this helps improve the beta.");
+    } catch {
+      toast.error("Couldn't send that — try again?");
+    } finally {
+      setTextSending(false);
+    }
+  };
 
   return (
     <div className="flex flex-col items-end gap-2">
       <div className="flex items-center gap-2">
         <span
           className="text-[11px] font-medium"
-          style={{ color: "rgba(255,255,255,0.45)" }}
+          style={{ color: "rgba(255,255,255,0.55)" }}
         >
           Was this helpful?
         </span>
@@ -882,13 +930,14 @@ function HelperResponseThumbs({
             onClick={() => cast(true)}
             disabled={!!vote || submitting}
             aria-label="Mark response as helpful"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-white/10 disabled:opacity-50 disabled:cursor-default"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-white/10 disabled:cursor-default"
             style={{
               background: vote === "up" ? "rgba(34,197,94,0.18)" : "transparent",
               border: vote === "up"
                 ? "1px solid rgba(34,197,94,0.5)"
                 : "1px solid rgba(255,255,255,0.10)",
               color: vote === "up" ? "#86EFAC" : "rgba(255,255,255,0.7)",
+              opacity: vote && vote !== "up" ? 0.4 : 1,
             }}
           >
             <ThumbsUp className="h-3.5 w-3.5" />
@@ -898,23 +947,36 @@ function HelperResponseThumbs({
             onClick={() => cast(false)}
             disabled={!!vote || submitting}
             aria-label="Mark response as not helpful"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-white/10 disabled:opacity-50 disabled:cursor-default"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-white/10 disabled:cursor-default"
             style={{
               background: vote === "down" ? "rgba(206,17,38,0.18)" : "transparent",
               border: vote === "down"
                 ? "1px solid rgba(206,17,38,0.5)"
                 : "1px solid rgba(255,255,255,0.10)",
               color: vote === "down" ? "#FFD3D8" : "rgba(255,255,255,0.7)",
+              opacity: vote && vote !== "down" ? 0.4 : 1,
             }}
           >
             <ThumbsDown className="h-3.5 w-3.5" />
           </button>
         </div>
+
+        {/* Add a comment toggle — visible after a vote, before the text
+            box opens. Keeps the resting state minimal. */}
+        {vote && !textOpen && !textSent && (
+          <button
+            type="button"
+            onClick={() => setTextOpen(true)}
+            className="text-[11px] underline-offset-2 hover:underline"
+            style={{ color: "rgba(255,255,255,0.55)" }}
+          >
+            Add a comment
+          </button>
+        )}
       </div>
 
-      {/* Reason chips — only after thumbs-down. Optional; clicking
-          isn't required because the thumb itself is already saved. */}
-      {reasonsOpen && (
+      {/* Reason chips — only after thumbs-down. Optional. */}
+      {reasonsOpen && !reasonSent && (
         <div className="flex flex-wrap items-center justify-end gap-1.5 max-w-[320px] animate-fade-in">
           <span
             className="text-[10px] font-medium uppercase tracking-[0.1em] mr-1"
@@ -946,6 +1008,58 @@ function HelperResponseThumbs({
           >
             Skip
           </button>
+        </div>
+      )}
+
+      {/* Optional text feedback — opens on demand after a vote. */}
+      {textOpen && !textSent && (
+        <div className="w-full max-w-[360px] flex flex-col gap-1.5 animate-in fade-in slide-in-from-bottom-1 duration-150">
+          <textarea
+            value={textValue}
+            onChange={(e) => setTextValue(e.target.value.slice(0, 2000))}
+            placeholder="Tell Lee what helped or what felt confusing…"
+            rows={2}
+            maxLength={2000}
+            className="w-full text-[12px] rounded-md p-2 resize-none focus:outline-none focus:ring-1 focus:ring-white/30"
+            style={{
+              background: "rgba(0,0,0,0.25)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "rgba(255,255,255,0.95)",
+            }}
+          />
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => { setTextOpen(false); setTextValue(""); }}
+              className="text-[11px] underline-offset-2 hover:underline"
+              style={{ color: "rgba(255,255,255,0.45)" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={sendText}
+              disabled={!textValue.trim() || textSending}
+              className="inline-flex items-center h-7 px-2.5 rounded-md text-[11px] font-semibold transition-colors disabled:opacity-50"
+              style={{
+                background: "rgba(206,17,38,0.85)",
+                color: "#FFFFFF",
+                border: "1px solid rgba(206,17,38,1)",
+              }}
+            >
+              {textSending ? "Sending…" : "Send feedback"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {textSent && (
+        <div
+          className="flex items-center gap-1.5 text-[11px]"
+          style={{ color: "rgba(255,255,255,0.55)" }}
+        >
+          <Check className="h-3 w-3" />
+          Thanks — this helps improve the beta.
         </div>
       )}
     </div>
