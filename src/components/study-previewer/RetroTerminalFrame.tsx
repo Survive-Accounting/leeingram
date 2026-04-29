@@ -391,8 +391,8 @@ export default function RetroTerminalFrame({
                 )}
               </div>
 
-              {/* Course picker */}
-              {courseSelector && (
+              {/* Course picker (or read-only display when fixed) */}
+              {courseSelector ? (
                 <div className="mb-3 sm:mb-3.5">
                   <div
                     style={{
@@ -406,7 +406,35 @@ export default function RetroTerminalFrame({
                   </div>
                   <div style={{ maxWidth: 360 }}>{courseSelector}</div>
                 </div>
-              )}
+              ) : courseLabel ? (
+                <div className="mb-3 sm:mb-3.5">
+                  <div
+                    style={{
+                      color: PHOSPHOR_DIM,
+                      fontSize: "0.92em",
+                      marginBottom: 4,
+                      letterSpacing: "0.02em",
+                    }}
+                  >
+                    {">"} Course
+                  </div>
+                  <div
+                    className="w-full rounded-[4px] px-2 py-1 text-[12.5px] flex items-center justify-between"
+                    style={{
+                      maxWidth: 360,
+                      background: "rgba(8,28,16,0.55)",
+                      border: `1px solid ${PHOSPHOR_MUTED}`,
+                      color: "#E8FFF1",
+                      fontFamily:
+                        "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
+                    }}
+                  >
+                    <span className="truncate">{courseLabel}</span>
+                    <Lock className="h-3 w-3 ml-2 shrink-0" style={{ color: PHOSPHOR_MUTED }} />
+                  </div>
+                </div>
+              ) : null}
+
 
               {/* Chapter picker — disabled until course chosen */}
               <div className="mb-1">
