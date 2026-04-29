@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, ArrowUpRight, Check, ChevronDown, Lock, Target, NotebookPen, Lightbulb } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, ChevronDown, Lock, Target, NotebookPen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { ToolKey } from "@/components/dashboard/StudyToolCards";
@@ -36,14 +36,13 @@ const TERMINAL_TOOLS: TerminalTool[] = [
     cta: "Open helper",
     icon: NotebookPen,
   },
-  {
-    key: "feedback",
-    label: "Help shape what's next",
-    description: "Rank ideas or suggest a tool we should build.",
-    cta: "Share Feedback",
-    icon: Lightbulb,
-    variant: "ghost",
-  },
+];
+
+const COMING_SOON_IDEAS = [
+  "Flashcard Drill",
+  "Concept Helper",
+  "Formula Guide",
+  "Exam Cram Sheet",
 ];
 
 export interface PreviewChapter {
@@ -719,6 +718,8 @@ export default function StudyPreviewer({
                 }
                 canChangeCourse={!!courses && courses.length > 1}
                 canChangeChapter={chapterChosen && chapters.length > 1}
+                comingSoonIdeas={COMING_SOON_IDEAS}
+                onShareFeedback={onOpenFeedback}
                 onSelectTool={(key) => {
                   if (key === "feedback") {
                     onOpenFeedback();

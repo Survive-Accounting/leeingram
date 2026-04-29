@@ -53,6 +53,10 @@ interface RetroTerminalFrameProps {
   canChangeCourse?: boolean;
   /** When true, chapter is changeable via inline "Change" affordance. */
   canChangeChapter?: boolean;
+  /** Optional list of upcoming tool ideas — rendered as chips in the secondary "coming soon" section. */
+  comingSoonIdeas?: string[];
+  /** Click handler for the secondary Share Feedback link. */
+  onShareFeedback?: () => void;
 }
 
 /**
@@ -76,6 +80,8 @@ export default function RetroTerminalFrame({
   courseSelector = null,
   canChangeCourse = false,
   canChangeChapter = false,
+  comingSoonIdeas,
+  onShareFeedback,
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
   const [editingCourse, setEditingCourse] = useState(false);
@@ -513,7 +519,7 @@ export default function RetroTerminalFrame({
               {tools && tools.length > 0 && (
                 <div
                   key={`toolgrid-${activeToolKey ?? "idle"}-${canPickTool ? "ready" : "wait"}`}
-                  className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 sa-toolgrid-reveal"
+                  className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 sa-toolgrid-reveal"
                 >
                   {tools.map((tool) => {
                     const isActive = activeToolKey === tool.key;
@@ -703,6 +709,100 @@ export default function RetroTerminalFrame({
                       </button>
                     );
                   })}
+                </div>
+              )}
+
+              {/* Secondary "more tools coming" section — visually lighter than the primary tools above */}
+              {(comingSoonIdeas?.length || onShareFeedback) && (
+                <div
+                  className="mt-5 rounded-md"
+                  style={{
+                    padding: "10px 12px 12px",
+                    border: `1px dashed rgba(124,255,176,0.22)`,
+                    background: "transparent",
+                    fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace",
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex flex-col gap-0.5">
+                      <div
+                        style={{
+                          color: PHOSPHOR_DIM,
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          letterSpacing: "0.12em",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {">"} More study tools are coming
+                      </div>
+                      <div
+                        style={{
+                          color: PHOSPHOR_MUTED,
+                          fontSize: 10,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        Help shape what we build next. Vote on ideas or suggest a tool you'd actually use.
+                      </div>
+                    </div>
+                    {onShareFeedback && (
+                      <button
+                        type="button"
+                        onClick={onShareFeedback}
+                        className="transition-colors"
+                        style={{
+                          color: PHOSPHOR,
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          letterSpacing: "0.10em",
+                          textTransform: "uppercase",
+                          padding: "6px 10px",
+                          borderRadius: 4,
+                          border: `1px solid rgba(124,255,176,0.35)`,
+                          background: "rgba(124,255,176,0.06)",
+                          textShadow: `0 0 6px ${PHOSPHOR_GLOW}`,
+                          cursor: "pointer",
+                          fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(124,255,176,0.12)";
+                          e.currentTarget.style.borderColor = "rgba(124,255,176,0.6)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "rgba(124,255,176,0.06)";
+                          e.currentTarget.style.borderColor = "rgba(124,255,176,0.35)";
+                        }}
+                      >
+                        Share Feedback ▸
+                      </button>
+                    )}
+                  </div>
+
+                  {comingSoonIdeas && comingSoonIdeas.length > 0 && (
+                    <div className="mt-2.5 flex flex-wrap gap-1.5">
+                      {comingSoonIdeas.map((idea) => (
+                        <span
+                          key={idea}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "3px 8px",
+                            borderRadius: 999,
+                            border: `1px dashed rgba(124,255,176,0.28)`,
+                            color: PHOSPHOR_MUTED,
+                            fontSize: 10,
+                            letterSpacing: "0.04em",
+                            fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace",
+                          }}
+                        >
+                          <span aria-hidden style={{ opacity: 0.7 }}>+</span>
+                          {idea}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
