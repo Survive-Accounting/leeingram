@@ -1,48 +1,90 @@
-# Guided Helper — Reorder + AI icon with tooltip
+# Beta Dashboard — Standalone page + Student Signups list
 
-Two small, scoped tweaks inside the right-column "Guided Helper" panel in `src/pages/v2/SolutionsViewerV2.tsx`.
+Two changes to `/beta-spring2026`:
 
-## 1. Move "Help responses" above "Try new beta tools"
+1. Make it a **standalone page** (no sidebar, no domain shell, no other dashboard chrome).
+2. Add a **Student Signups** section at the bottom — a sortable list of every signup with email, campus, course, and engagement stats.
 
-Today the panel renders in this order:
+## 1. Standalone page
 
-```text
-[ Header: Guided Helper · Beta ]
-[ Walk me through it (red CTA) ]
-[ Full solution (secondary CTA) ]
-[ BetaToolsDisclosure — "Try new beta tools" ]
-[ Response window — "Help responses appear here" ]
-```
+Today the page is wrapped in `<SurviveSidebarLayout>` (the "Survive Accounting Admin" shell with the left nav, course/chapter pickers, and clocks). Strip that wrapper.
 
-Change the order so the response window sits directly under the two primary CTAs and the Beta Lab disclosure drops to the bottom of the panel:
+Replace the layout with a minimal full-bleed shell rendered directly inside the route element:
 
 ```text
-[ Header: Guided Helper · Beta ]
-[ Walk me through it (red CTA) ]
-[ Full solution (secondary CTA) ]
-[ Response window — "Help responses appear here" ]
-[ BetaToolsDisclosure — "Try new beta tools" ]
+<AccessRestrictedGuard>
+  <div min-h-screen bg-muted/20>
+    <header>  ← thin top strip: "Spring 2026 Beta Dashboard · Internal" + "← Exit" link to /domains
+    <main max-w-[1400px] mx-auto px-6 py-6>
+      ...existing dashboard content (header card, metrics, AI themes, feedback inbox, NEW signups list)
+    </main>
+  </div>
+</AccessRestrictedGuard>
 ```
 
-Implementation: in the JSX block around lines 1979–2037, render the response window (`<div className="relative px-4 py-4 flex-1 ...">` block, currently ~lines 2055–end of response area) before `<BetaToolsDisclosure />`. The "Try new beta tools" disclosure becomes the last item in the panel.
+- No sidebar, no chapter picker, no clocks, no other admin nav.
+- Keep `AccessRestrictedGuard` so only Lee/admins reach it.
+- Keep `ProtectedRoute` wrapper in `App.tsx` as-is (auth gate).
+- Tiny "Exit" link in the corner that returns to `/domains` (the dashboard selector) so Lee isn't stranded.
 
-No styling changes — keep the existing radial gradient, dot-matrix texture, blinking cursor empty state, and the response container's `flex-1 min-h-[200px]` so it still fills available space.
+Files touched:
+- `src/pages/BetaSpring2026Dashboard.tsx` — remove `SurviveSidebarLayout` import + wrapper, add minimal shell.
 
-## 2. Add AI icon + tooltip on "Guided Helper" header
+## 2. Student Signups section
 
-In the header row (~lines 1957–1977), prepend an AI-style icon to the left of the "Guided Helper" label and wrap the icon+label in a tooltip.
+New section rendered as the last block on the page (below Feedback Inbox).
 
-- Icon: `Sparkles` from lucide-react (already imported), 14px, brand-red tint (`rgba(206,17,38,0.85)`) to match the existing accent.
-- Tooltip uses the existing shadcn `Tooltip` / `TooltipProvider` / `TooltipContent` components (already imported at line 5).
-- Tooltip copy: **"All help buttons are AI-assisted and designed to mimic Lee's real tutoring sessions."**
-- Trigger area: the icon + "Guided Helper" text (cursor: help). The "Beta" badge stays as-is, outside the tooltip trigger.
+### Columns
 
-## Files touched
+| Column | Source |
+|---|---|
+| # | `student_onboarding.beta_number` (global beta #) |
+| Email | `student_onboarding.email` |
+| Name | `student_onboarding.display_name` |
+| Campus | `campuses.name` (via `student_onboarding.campus_id`) |
+| Course | `courses.course_name` (via `student_onboarding.course_id`) — fall back to `getCourseLabel` |
+| Signed up | `student_onboarding.created_at` (relative + absolute on hover) |
+| Last login | `profiles.last_login_at` |
+| Logins | count of `student_events` rows where `event_type IN ('login','session_start')` for that email/user_id |
+| Tool opens | count of `student_events` rows where `event_type LIKE 'study_tool_%'` or `'helper_%'` |
+| Helper clicks | count of `student_events` rows where `event_type = 'helper_click'` (or matching keys already used) |
+| Paid? | green check if a `student_purchases` row exists for that email; tooltip shows `purchase_type` + price |
+| Confidence | `student_onboarding.confidence_1_10` (small bar) |
 
-- `src/pages/v2/SolutionsViewerV2.tsx` — header markup + JSX reorder inside the Guided Helper panel only. No logic, state, or API changes.
+### Behavior
+
+- Default sort: most recent signup first.
+- Toolbar: search by email/name, filter by campus, filter by paid/unpaid, CSV export button.
+- Pagination: 50 rows per page (signup volume is low — pagination is just a guard).
+- Click a row → expand to show: greek_org, syllabus on file (yes/no), beta number, last 5 events.
+
+### Data path
+
+Add a new endpoint to the existing edge function `beta-dashboard-query`:
+
+- New action `signups` (or extend the current response with a `signups` array).
+- Service-role query joins:
+  ```
+  student_onboarding
+    LEFT JOIN campuses ON campus_id
+    LEFT JOIN courses ON course_id
+    LEFT JOIN profiles ON user_id
+  ```
+  filtered to `is_legacy = false` (real beta users only), ordered by `created_at DESC`.
+- Engagement counts come from a single `student_events` aggregate query grouped by `email`, then merged into the signup rows in JS. Limited to events since `2026-04-01` (beta start) so counts stay meaningful.
+- Paid lookup: one `student_purchases` query for the same email set; reduce to a `Map<email, purchase>`.
+
+Page-side: render in a new `<SignupsTable />` component inside `BetaSpring2026Dashboard.tsx` (or a sibling file `src/components/beta-dashboard/SignupsTable.tsx` — sibling preferred for readability).
+
+CSV export: client-side, builds a CSV from the loaded rows and triggers download (no new dependencies).
+
+Files touched:
+- `src/pages/BetaSpring2026Dashboard.tsx` — render the new section.
+- `src/components/beta-dashboard/SignupsTable.tsx` — new component (table, search, filter, CSV export, row expand).
+- `supabase/functions/beta-dashboard-query/index.ts` — add `signups` payload to the existing response (single function call still feeds the whole page).
 
 ## Out of scope
 
-- No copy changes to the CTAs or Beta Lab disclosure.
-- No layout changes to the left column (problem text).
-- No new dependencies.
+- No schema changes (all data already exists).
+- No new RLS policies (queries run service-role inside the edge function; page is admin-gated client-side).
+- No design system changes — reuse existing card / table primitives and the navy/red palette already on this page.
