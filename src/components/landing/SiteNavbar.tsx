@@ -9,6 +9,8 @@ const NAVY = "#14213D";
 
 export default function SiteNavbar() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
   const [aboutOpen, setAboutOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
