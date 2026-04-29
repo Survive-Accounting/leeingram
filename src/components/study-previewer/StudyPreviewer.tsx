@@ -677,7 +677,7 @@ export default function StudyPreviewer({
                     ? `Ch ${selectedChapter.chapter_number} — ${selectedChapter.chapter_name}`
                     : null
                 }
-                tools={TERMINAL_TOOLS}
+                tools={dashboardMode ? DASHBOARD_TERMINAL_TOOLS : TERMINAL_TOOLS}
                 activeToolKey={activeTool}
                 canPickTool={chapterChosen}
                 loading={chapterLoading}
