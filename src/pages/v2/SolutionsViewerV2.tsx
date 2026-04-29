@@ -3442,19 +3442,27 @@ export default function SolutionsViewerV2() {
 
       {/* Sticky bottom nav */}
       {!loading && asset && (
-        <nav className="fixed bottom-0 inset-x-0 z-20 bg-background/95 backdrop-blur border-t">
-          <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
-            <Button
-              variant="outline"
-              size="sm"
+        <nav
+          className="fixed bottom-0 inset-x-0 z-20 bg-background/95 backdrop-blur border-t"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 sm:h-14 flex items-center justify-between gap-2">
+            <button
+              type="button"
               disabled={!prev}
               onClick={() => prev && navigate(`/v2/solutions/${prev.asset_name}`)}
-              className="gap-1"
+              aria-label="Previous problem"
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg h-11 min-w-[44px] sm:min-w-0 sm:h-9 px-3 sm:px-3 text-sm font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                color: "rgba(255,255,255,0.92)",
+              }}
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-5 w-5 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Previous</span>
               {prev?.source_ref && <span className="font-mono text-xs text-muted-foreground hidden md:inline">{prev.source_ref}</span>}
-            </Button>
+            </button>
 
             <div className="text-xs text-muted-foreground font-mono">
               {siblings.length > 0 && asset
@@ -3466,7 +3474,8 @@ export default function SolutionsViewerV2() {
               type="button"
               disabled={!next}
               onClick={() => next && navigate(`/v2/solutions/${next.asset_name}`)}
-              className="inline-flex items-center gap-1.5 rounded-lg px-4 h-9 text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.99] disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
+              aria-label="Next problem"
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg h-11 min-w-[44px] sm:h-9 px-4 text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.99] disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
               style={{
                 background: "linear-gradient(180deg, #E63950 0%, #CE1126 50%, #A30E1F 100%)",
                 boxShadow:
@@ -3475,7 +3484,7 @@ export default function SolutionsViewerV2() {
             >
               {next?.source_ref && <span className="font-mono text-xs hidden md:inline opacity-90">{next.source_ref}</span>}
               <span className="hidden sm:inline">Next</span>
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-5 w-5 sm:h-4 sm:w-4" />
             </button>
           </div>
         </nav>
