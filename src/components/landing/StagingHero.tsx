@@ -375,7 +375,8 @@ export default function StagingHero({ onGetStartedClick }: StagingHeroProps) {
                   WebkitBackdropFilter: "blur(8px)",
                 }}
               >
-                See how it works
+                <span className="sm:hidden">See what's inside</span>
+                <span className="hidden sm:inline">See how it works</span>
               </button>
             </div>
 
