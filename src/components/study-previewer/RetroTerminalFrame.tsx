@@ -107,6 +107,17 @@ export default function RetroTerminalFrame({
   const [crtSweepKey, setCrtSweepKey] = useState(0);
   // Track which row was just clicked so it briefly flashes
   const [flashedToolKey, setFlashedToolKey] = useState<string | null>(null);
+  const [chapterError, setChapterError] = useState(false);
+
+  // Clear the inline chapter error as soon as a chapter is picked.
+  useEffect(() => {
+    if (canPickTool) setChapterError(false);
+  }, [canPickTool]);
+
+  const nudgeChapter = () => {
+    setChapterError(true);
+    onNudgeChapter?.();
+  };
   const firstPulseRef = useRef(true);
   useEffect(() => {
     if (firstPulseRef.current) { firstPulseRef.current = false; return; }
@@ -143,7 +154,7 @@ export default function RetroTerminalFrame({
       const tool = tools[n - 1];
       if (!tool || tool.disabled) return;
       if (!canPickTool) {
-        onNudgeChapter?.();
+        nudgeChapter();
         return;
       }
       triggerToolPulse(tool.key);
@@ -466,28 +477,30 @@ export default function RetroTerminalFrame({
                     </div>
                   )}
                 </div>
+                {/* Inline error — appears only after a chapter-required action */}
+                {chapterError && !canPickTool && (
+                  <div
+                    role="alert"
+                    className="mt-2"
+                    style={{
+                      color: "#FFB86B",
+                      fontSize: 11,
+                      letterSpacing: "0.03em",
+                      fontFamily:
+                        "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
+                    }}
+                  >
+                    {">"} Please choose a chapter first.
+                  </div>
+                )}
               </div>
 
-
-              {/* Helper hint when locked */}
-              {tools && tools.length > 0 && !canPickTool && (
-                <div
-                  className="mt-4 mb-1 text-center"
-                  style={{
-                    color: PHOSPHOR_MUTED,
-                    fontSize: 11,
-                    letterSpacing: "0.04em",
-                  }}
-                >
-                  {">"} Choose a course and chapter first.
-                </div>
-              )}
 
               {/* Tool grid — always visible. Buttons mute until course + chapter chosen. */}
               {tools && tools.length > 0 && (
                 <div
                   key={`toolgrid-${activeToolKey ?? "idle"}-${canPickTool ? "ready" : "wait"}`}
-                  className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 sa-toolgrid-reveal"
+                  className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 sa-toolgrid-reveal"
                 >
                   {tools.map((tool) => {
                     const isActive = activeToolKey === tool.key;
@@ -537,7 +550,7 @@ export default function RetroTerminalFrame({
                         onClick={() => {
                           if (isDisabled) return;
                           if (!canPickTool) {
-                            onNudgeChapter?.();
+                            nudgeChapter();
                             return;
                           }
                           triggerToolPulse(tool.key);
@@ -561,7 +574,7 @@ export default function RetroTerminalFrame({
                             : locked
                             ? "not-allowed"
                             : "wait",
-                          opacity: isDisabled ? 0.45 : locked ? 0.55 : isGhost ? 0.72 : 1,
+                          opacity: isDisabled ? 0.45 : locked ? 0.78 : isGhost ? 0.72 : 1,
                           transform: isActive ? "translateY(1px)" : "translateY(0)",
                           transition:
                             "background 160ms ease-out, border-color 160ms ease-out, box-shadow 200ms ease-out, transform 120ms ease-out, opacity 200ms ease-out",
@@ -604,14 +617,7 @@ export default function RetroTerminalFrame({
                           ) : (
                             <span aria-hidden style={{ width: 16, height: 16 }} />
                           )}
-                          {locked && (
-                            <Lock
-                              size={11}
-                              strokeWidth={2}
-                              aria-hidden
-                              style={{ color: PHOSPHOR_MUTED, opacity: 0.7 }}
-                            />
-                          )}
+                          {/* lock icon removed — cards stay inviting; inline error guides instead */}
                         </div>
 
                         {/* Title */}
