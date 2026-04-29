@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsStaff } from "@/hooks/useIsStaff";
-import { useDevToolFlag } from "@/lib/devToolFlags";
+import { useDevToolFlag, setDevToolFlag } from "@/lib/devToolFlags";
 import { supabase } from "@/integrations/supabase/client";
 import { copyToClipboard } from "@/lib/clipboardFallback";
 import { toast } from "sonner";
@@ -465,9 +465,9 @@ export function PromptBuilderWidget() {
             {sessionAlive ? <Mic className="h-5 w-5 animate-pulse" /> : <Zap className="h-5 w-5" />}
           </button>
           <button
-            onClick={() => setHidden(true)}
+            onClick={() => setDevToolFlag("promptBuilder", false)}
             className="opacity-60 hover:opacity-100 rounded-full bg-background/90 backdrop-blur p-1 text-muted-foreground border border-border shadow-sm transition-opacity"
-            title="Hide"
+            title="Hide — re-enable from Admin Toolbox"
             aria-label="Hide Prompt Builder"
           >
             <EyeOff className="h-3 w-3" />
@@ -488,9 +488,10 @@ export function PromptBuilderWidget() {
             Prompt Builder
           </button>
           <button
-            onClick={() => setHidden(true)}
+            onClick={() => setDevToolFlag("promptBuilder", false)}
             className="opacity-0 group-hover:opacity-100 rounded-full bg-background/90 backdrop-blur p-1.5 text-muted-foreground hover:text-foreground border border-border shadow-sm transition-opacity"
-            title="Hide (Shift+⌘K to toggle)"
+            title="Hide — re-enable from Admin Toolbox"
+            aria-label="Hide Prompt Builder"
           >
             <EyeOff className="h-3 w-3" />
           </button>

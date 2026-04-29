@@ -139,6 +139,7 @@ export function StyleExportToolbar() {
             <ChevronDown className="h-3.5 w-3.5 opacity-60" />
           </Button>
         </PopoverTrigger>
+        <HideEyeButton onHide={() => setDevToolFlag("styleExport", false)} />
         <PopoverContent
           align="start"
           side="right"
@@ -213,20 +214,10 @@ export function StyleExportToolbar() {
             </div>
           )}
 
-          <div className="border-t border-border mt-2 pt-1.5 px-1 flex items-center justify-between">
+          <div className="border-t border-border mt-2 pt-1.5 px-1">
             <span className="text-[10px] text-muted-foreground">
               Lee-only · landing routes
             </span>
-            <button
-              onClick={() => {
-                setOpen(false);
-                setDevToolFlag("styleExport", false);
-              }}
-              title="Hide — re-enable from Admin Tools menu"
-              className="text-[10px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-            >
-              <EyeOff className="h-3 w-3" /> Hide
-            </button>
           </div>
         </PopoverContent>
       </Popover>
@@ -258,6 +249,20 @@ function ToolbarItem({
           <span className="block text-[10px] text-muted-foreground truncate">{sub}</span>
         )}
       </span>
+    </button>
+  );
+}
+
+function HideEyeButton({ onHide }: { onHide: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onHide}
+      className="opacity-0 group-hover:opacity-100 rounded-full bg-background/90 backdrop-blur p-1.5 text-muted-foreground hover:text-foreground border border-border shadow-sm transition-opacity"
+      title="Hide — re-enable from Admin Toolbox"
+      aria-label="Hide Style Export"
+    >
+      <EyeOff className="h-3 w-3" />
     </button>
   );
 }
