@@ -9,7 +9,7 @@ import FeedbackToolModal from "@/components/dashboard/FeedbackToolModal";
 import { WelcomeVideoModal } from "@/components/dashboard/WelcomeVideoCard";
 
 import StudyPreviewer from "@/components/study-previewer/StudyPreviewer";
-import { RetroBreadcrumbs, type BreadcrumbCrumb } from "@/components/study-previewer/RetroBreadcrumbs";
+
 
 import { getCourseLabel } from "@/lib/courseLabel";
 import { useDevToolFlag, setDevToolFlag } from "@/lib/devToolFlags";
