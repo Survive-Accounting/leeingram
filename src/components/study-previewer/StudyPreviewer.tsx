@@ -738,20 +738,12 @@ export default function StudyPreviewer({
                       >
                         {activeTool === "practice" && viewerAssetCode && !iframeError && (
                           <>
-                            {/* Skeleton sits behind the iframe and is covered as the iframe paints */}
-                            {!iframeLoaded && showSkeleton && (
-                              <div
-                                aria-hidden
-                                className="absolute inset-0 flex flex-col gap-3 px-6 py-6 z-0"
-                                style={{ background: "#fff" }}
-                              >
-                                <div className="h-4 w-1/3 rounded bg-slate-100 animate-pulse" />
-                                <div className="h-3 w-2/3 rounded bg-slate-100 animate-pulse" />
-                                <div className="h-3 w-1/2 rounded bg-slate-100 animate-pulse" />
-                                <div className="mt-4 h-40 w-full rounded bg-slate-100 animate-pulse" />
-                                <div className="h-3 w-2/5 rounded bg-slate-100 animate-pulse" />
-                                <div className="h-3 w-1/3 rounded bg-slate-100 animate-pulse" />
-                              </div>
+                            {/* Branded loader sits behind the iframe and is covered as the iframe paints */}
+                            {!iframeLoaded && (
+                              <BrandedLoader
+                                surface="navy"
+                                subtitle={showSlowStatus ? "Preparing tool…" : undefined}
+                              />
                             )}
 
                             <iframe
@@ -766,16 +758,6 @@ export default function StudyPreviewer({
                               onLoad={() => { setIframeLoaded(true); setStageLockHeight(null); }}
                               onError={() => setIframeError(true)}
                             />
-
-                            {!iframeLoaded && showSlowStatus && (
-                              <div
-                                className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[11px] tracking-wide z-20"
-                                style={{ color: "#94A3B8", fontFamily: "Inter, sans-serif" }}
-                                role="status"
-                              >
-                                Preparing tool…
-                              </div>
-                            )}
                           </>
                         )}
 
