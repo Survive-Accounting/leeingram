@@ -93,10 +93,10 @@ export function AdminToolsMenu() {
               type="button"
               data-no-drag
               className="inline-flex items-center gap-1.5 rounded-full pl-1 pr-3 py-1 text-xs font-semibold text-foreground hover:bg-muted transition-colors"
-              title="Admin tools"
+              title="Admin Toolbox"
             >
               <Wrench className="h-3.5 w-3.5" />
-              Admin Tools
+              Admin Toolbox
               <ChevronDown className="h-3 w-3 opacity-60" />
             </button>
           </PopoverTrigger>
