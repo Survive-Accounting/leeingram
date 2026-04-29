@@ -307,7 +307,7 @@ function SecondaryActionsRow({
       />
       <SecondaryDarkCard
         variant="feedback"
-        eyebrow="Help shape it"
+        
         title="Send Lee feedback"
         sub="Tell me what's helpful, confusing, or missing — I read every note."
         cta="Share feedback"
