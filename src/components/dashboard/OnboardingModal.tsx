@@ -195,7 +195,32 @@ export default function OnboardingModal({
         style={{ border: "1px solid #E0E7F0" }}
       >
         {/* Header / progress */}
-        <div className="px-6 pt-6 pb-3">
+        <div className="px-6 pt-6 pb-3 relative">
+          {simulate && (
+            <div className="absolute top-3 right-3 flex items-center gap-2">
+              <span
+                className="inline-flex items-center gap-1 rounded-full px-2 py-[3px] text-[10px] font-semibold uppercase tracking-wider"
+                style={{
+                  background: "#FEF3C7",
+                  color: "#92400E",
+                  border: "1px solid #FCD34D",
+                }}
+                title="Simulate mode — nothing is being saved"
+              >
+                🧪 Simulate
+              </span>
+              {onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Close simulator"
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          )}
           <div className="flex items-center gap-1.5">
             {[1, 2, 3].map((n) => (
               <div
