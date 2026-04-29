@@ -182,37 +182,47 @@ function DashNavbar({
 /* ─── Secondary Card ─── */
 
 function SecondaryCard({
-  label,
+  title,
   sub,
+  cta,
   onClick,
-  highlight = false,
+  ctaDone,
 }: {
-  label: string;
+  title: string;
   sub: string;
+  cta: string;
   onClick: () => void;
-  highlight?: boolean;
+  /** When set, replaces CTA label briefly (e.g. "Copied"). */
+  ctaDone?: string | null;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="text-left rounded-xl px-4 py-3.5 transition-all hover:-translate-y-0.5 hover:shadow-md"
+    <div
+      className="rounded-lg p-3.5 flex flex-col h-full"
       style={{
         background: "#fff",
-        border: highlight
-          ? `1px solid ${RED}33`
-          : "1px solid rgba(20,33,61,0.10)",
-        boxShadow: "0 2px 8px rgba(20,33,61,0.04)",
+        border: "1px solid rgba(20,33,61,0.08)",
+        boxShadow: "0 1px 4px rgba(20,33,61,0.03)",
         fontFamily: "Inter, sans-serif",
       }}
     >
-      <div className="text-[13.5px] font-semibold" style={{ color: highlight ? RED : NAVY }}>
-        {label}
+      <div className="text-[12.5px] font-semibold" style={{ color: NAVY }}>
+        {title}
       </div>
-      <div className="mt-0.5 text-[11.5px]" style={{ color: "#64748B" }}>
+      <div
+        className="mt-1 text-[11.5px] leading-snug flex-1"
+        style={{ color: "#64748B" }}
+      >
         {sub}
       </div>
-    </button>
+      <button
+        type="button"
+        onClick={onClick}
+        className="mt-2.5 self-start text-[11.5px] font-semibold hover:opacity-70 transition-opacity"
+        style={{ color: ctaDone ? "#16A34A" : NAVY }}
+      >
+        {ctaDone ?? cta} ▸
+      </button>
+    </div>
   );
 }
 
