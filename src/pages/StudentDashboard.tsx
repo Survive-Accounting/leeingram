@@ -208,29 +208,23 @@ function DashNavbar({
 /* ─── Secondary Card (dark navy band variant) ─── */
 
 function SecondaryDarkCard({
-  eyebrow,
   title,
   sub,
   cta,
   onClick,
   ctaDone,
-  variant,
 }: {
-  eyebrow: string;
   title: string;
   sub: string;
   cta: string;
   onClick: () => void;
   ctaDone?: string | null;
-  variant: "share" | "feedback";
+  variant?: "share" | "feedback";
 }) {
-  const accent = RED; // brand red used for both, per request
-  const isShare = variant === "share";
+  const accent = RED;
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group relative rounded-xl p-5 text-left transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+    <div
+      className="group relative rounded-xl p-5 text-left transition-all"
       style={{
         background:
           "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
@@ -240,20 +234,13 @@ function SecondaryDarkCard({
         color: "#fff",
       }}
     >
-      {/* Accent bar */}
       <div
         aria-hidden
         className="absolute left-0 top-4 bottom-4 rounded-r"
         style={{ width: 3, background: accent, boxShadow: `0 0 12px ${accent}80` }}
       />
       <div
-        className="text-[10.5px] font-bold uppercase tracking-[0.18em] pl-3"
-        style={{ color: accent }}
-      >
-        {eyebrow}
-      </div>
-      <div
-        className="mt-1.5 text-[16px] sm:text-[17px] font-bold leading-snug pl-3"
+        className="text-[16px] sm:text-[17px] font-bold leading-snug pl-3"
         style={{ color: "#fff" }}
       >
         {title}
@@ -264,14 +251,21 @@ function SecondaryDarkCard({
       >
         {sub}
       </div>
-      <div
-        className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold pl-3 transition-transform group-hover:translate-x-0.5"
-        style={{ color: ctaDone ? "#86EFAC" : accent }}
-      >
-        {ctaDone ?? cta}
-        <span aria-hidden>→</span>
+      <div className="mt-4 pl-3">
+        <button
+          type="button"
+          onClick={onClick}
+          className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] font-semibold text-white transition-all hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+          style={{
+            background: ctaDone ? "#16A34A" : accent,
+            boxShadow: `0 6px 16px ${ctaDone ? "#16A34A" : accent}55`,
+          }}
+        >
+          {ctaDone ?? cta}
+          <span aria-hidden>→</span>
+        </button>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -304,7 +298,7 @@ function SecondaryActionsRow({
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
       <SecondaryDarkCard
         variant="share"
-        eyebrow="Spread the word"
+        
         title="Share the beta with a friend"
         sub="Know someone taking accounting? Send them free finals access."
         cta="Copy your share link"
@@ -313,7 +307,7 @@ function SecondaryActionsRow({
       />
       <SecondaryDarkCard
         variant="feedback"
-        eyebrow="Help shape it"
+        
         title="Send Lee feedback"
         sub="Tell me what's helpful, confusing, or missing — I read every note."
         cta="Share feedback"
