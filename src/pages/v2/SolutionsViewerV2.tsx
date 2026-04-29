@@ -2948,7 +2948,7 @@ export default function SolutionsViewerV2() {
 
 
       <main
-        className="relative max-w-6xl mx-auto px-4 pt-6 pb-32"
+        className="relative max-w-6xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-32"
         style={{
           backgroundImage:
             "radial-gradient(ellipse 60% 40% at 30% 15%, rgba(99,52,180,0.035) 0%, transparent 65%), radial-gradient(ellipse 50% 35% at 75% 60%, rgba(80,130,255,0.03) 0%, transparent 70%)",
