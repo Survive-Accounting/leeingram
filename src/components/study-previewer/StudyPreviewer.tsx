@@ -130,7 +130,7 @@ export default function StudyPreviewer({
   const courseChosen = courses
     ? !!selectedCourseId
     : !!fixedCourseLabel;
-  const chapterChosen = !!selectedChapterId && !chapterLoading;
+  // chapterChosen is computed below, after chapterLoading is derived.
 
   // Restore from localStorage on mount — only restore the chapter id; the
   // first-asset codes will be filled in by the TanStack RPC hook below.
