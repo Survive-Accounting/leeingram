@@ -246,7 +246,7 @@ export default function FeedbackToolModal({
               className="text-[10.5px] uppercase tracking-[0.18em] font-bold"
               style={{ color: "#FCA5AF" }}
             >
-              Help shape what we build next
+              Vote on Future Tools
             </p>
             <h3
               className="mt-1.5 text-[22px] sm:text-[24px] leading-tight"
