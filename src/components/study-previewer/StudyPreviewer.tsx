@@ -7,6 +7,7 @@ import RetroTerminalFrame, {
   type TerminalTool,
 } from "@/components/study-previewer/RetroTerminalFrame";
 import { BrandedLoader } from "@/components/study-previewer/BrandedLoader";
+import JEHelperPanel from "@/components/study-previewer/JEHelperPanel";
 
 const NAVY = "#14213D";
 const RED = "#CE1126";
