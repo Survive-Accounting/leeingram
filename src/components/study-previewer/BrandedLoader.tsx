@@ -1,123 +1,166 @@
 import React from "react";
+import leeHeadshot from "@/assets/lee-headshot-original.png";
 
-const PHOSPHOR = "#39FF7A";
-const PHOSPHOR_FAINT = "rgba(57,255,122,0.18)";
-const NAVY = "#0F1A2E";
+const PHOSPHOR = "#7CFFB0";
+const PHOSPHOR_DIM = "rgba(124,255,176,0.55)";
+const PHOSPHOR_GLOW = "rgba(124,255,176,0.45)";
+const PHOSPHOR_FAINT = "rgba(124,255,176,0.18)";
+const CRT_BG =
+  "radial-gradient(120% 80% at 50% 30%, #052810 0%, #03130A 60%, #010904 100%)";
+const MONO =
+  "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace";
 
 interface BrandedLoaderProps {
-  /** Optional contextual sub-line below the wordmark, e.g. "Loading Entry Builder…". */
+  /** Optional contextual sub-line below the credit, e.g. "Loading problem…". */
   subtitle?: string;
-  /** Visual style: "navy" (dark) or "white" (light embed wrappers). Defaults to navy. */
+  /** Kept for API compat; both surfaces now render the same CRT look so the
+   *  loader visually continues the retro screen until the tool itself paints. */
   surface?: "navy" | "white";
   /** Absolute fill the parent container vs. simply centering in flow. Defaults to true. */
   absolute?: boolean;
 }
 
 /**
- * Branded loading screen used across the previewer iframes and embedded tools.
- * Centers the Survive Accounting wordmark + "Built by Lee Ingram" credit with
- * a phosphor-green dual-arc spinner that matches the retro terminal aesthetic.
- *
- * Fades in over 200ms so quick loads don't flash.
+ * Branded loader styled to look like the same retro CRT screen used in the
+ * study previewer. Centers Lee's circular headshot with a phosphor spinner
+ * orbiting it, "Built by Lee Ingram" credit underneath, and an optional
+ * monospace subtitle. No "Survive Accounting" wordmark — color-saturated UI
+ * (navy/red) only appears once the underlying tool paints.
  */
 export function BrandedLoader({
   subtitle,
-  surface = "navy",
+  // surface is intentionally accepted for API compat but not used — both
+  // surfaces render the same CRT look now.
+  surface: _surface = "navy",
   absolute = true,
 }: BrandedLoaderProps) {
-  const isNavy = surface === "navy";
-  const bg = isNavy ? NAVY : "#FFFFFF";
-  const wordmarkColor = isNavy ? "rgba(255,255,255,0.92)" : "#14213D";
-  const creditColor = isNavy ? "rgba(255,255,255,0.45)" : "rgba(20,33,61,0.55)";
-  const subtitleColor = isNavy ? "rgba(255,255,255,0.55)" : "rgba(20,33,61,0.6)";
-  const spinnerColor = isNavy ? PHOSPHOR : "#CE1126";
-  const trackColor = isNavy ? PHOSPHOR_FAINT : "rgba(206,17,38,0.12)";
-
   return (
     <div
       role="status"
       aria-live="polite"
-      aria-label={subtitle ? `${subtitle}` : "Loading"}
-      className={`${absolute ? "absolute inset-0" : "w-full"} flex flex-col items-center justify-center text-center px-6 z-0 sa-branded-loader`}
+      aria-label={subtitle ? subtitle : "Loading"}
+      className={`${absolute ? "absolute inset-0" : "w-full"} relative flex flex-col items-center justify-center text-center px-6 z-0 overflow-hidden sa-branded-loader`}
       style={{
-        background: bg,
+        background: CRT_BG,
         animation: "sa-loader-fade 200ms ease-out both",
       }}
     >
-      {/* Spinner — two concentric SVG arcs counter-rotating */}
-      <div className="relative" style={{ width: 64, height: 64, marginBottom: 18 }}>
+      {/* Scanlines */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 1px, transparent 1px, transparent 3px)",
+          mixBlendMode: "multiply",
+        }}
+      />
+      {/* Aperture grille */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(90deg, rgba(124,255,176,0.035) 0px, rgba(124,255,176,0.035) 1px, transparent 1px, transparent 3px)",
+          mixBlendMode: "screen",
+          opacity: 0.55,
+        }}
+      />
+      {/* Edge vignette */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          boxShadow:
+            "inset 0 0 60px rgba(0,0,0,0.45), inset 0 0 140px rgba(0,0,0,0.35)",
+        }}
+      />
+
+      {/* Headshot + orbiting spinner */}
+      <div className="relative" style={{ width: 96, height: 96 }}>
+        {/* Outer orbit arc — clockwise */}
         <svg
-          width="64"
-          height="64"
-          viewBox="0 0 64 64"
+          width="96"
+          height="96"
+          viewBox="0 0 96 96"
           fill="none"
           aria-hidden="true"
           style={{ position: "absolute", inset: 0 }}
         >
-          {/* Track */}
-          <circle cx="32" cy="32" r="26" stroke={trackColor} strokeWidth="2" />
-          {/* Outer arc — clockwise 1.4s */}
+          <circle cx="48" cy="48" r="44" stroke={PHOSPHOR_FAINT} strokeWidth="1.5" />
           <circle
-            cx="32"
-            cy="32"
-            r="26"
-            stroke={spinnerColor}
-            strokeWidth="2"
+            cx="48"
+            cy="48"
+            r="44"
+            stroke={PHOSPHOR}
+            strokeWidth="1.75"
             strokeLinecap="round"
-            strokeDasharray="60 200"
+            strokeDasharray="80 220"
             style={{
-              transformOrigin: "32px 32px",
-              animation: "sa-loader-spin 1.4s linear infinite",
-              filter: isNavy ? `drop-shadow(0 0 6px ${spinnerColor}aa)` : undefined,
+              transformOrigin: "48px 48px",
+              animation: "sa-loader-spin 1.6s linear infinite",
+              filter: `drop-shadow(0 0 6px ${PHOSPHOR_GLOW})`,
             }}
           />
         </svg>
+        {/* Inner orbit arc — counter-clockwise */}
         <svg
-          width="64"
-          height="64"
-          viewBox="0 0 64 64"
+          width="96"
+          height="96"
+          viewBox="0 0 96 96"
           fill="none"
           aria-hidden="true"
           style={{ position: "absolute", inset: 0 }}
         >
-          {/* Inner arc — counter-clockwise 2.2s */}
           <circle
-            cx="32"
-            cy="32"
-            r="18"
-            stroke={spinnerColor}
-            strokeWidth="1.5"
+            cx="48"
+            cy="48"
+            r="38"
+            stroke={PHOSPHOR}
+            strokeWidth="1.25"
             strokeLinecap="round"
-            strokeDasharray="28 120"
+            strokeDasharray="32 160"
             opacity="0.7"
             style={{
-              transformOrigin: "32px 32px",
-              animation: "sa-loader-spin-rev 2.2s linear infinite",
+              transformOrigin: "48px 48px",
+              animation: "sa-loader-spin-rev 2.4s linear infinite",
             }}
           />
         </svg>
+        {/* Headshot */}
+        <div
+          className="absolute rounded-full overflow-hidden"
+          style={{
+            inset: 14,
+            border: `1px solid ${PHOSPHOR_DIM}`,
+            boxShadow: `0 0 10px ${PHOSPHOR_GLOW}, inset 0 0 8px rgba(0,0,0,0.45)`,
+            background: "#03130A",
+          }}
+        >
+          <img
+            src={leeHeadshot}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover"
+            style={{
+              objectPosition: "center 15%",
+              filter:
+                "grayscale(0.3) brightness(0.95) sepia(0.15) hue-rotate(60deg) saturate(1.1)",
+            }}
+          />
+        </div>
       </div>
 
       <div
         style={{
-          fontFamily: '"DM Serif Display", Georgia, serif',
-          fontSize: 22,
-          lineHeight: 1.1,
-          color: wordmarkColor,
-          letterSpacing: "0.005em",
-        }}
-      >
-        Survive Accounting
-      </div>
-      <div
-        style={{
-          marginTop: 6,
-          fontFamily: "Inter, system-ui, sans-serif",
+          marginTop: 16,
+          fontFamily: MONO,
           fontSize: 10.5,
-          letterSpacing: "0.16em",
+          letterSpacing: "0.18em",
           textTransform: "uppercase",
-          color: creditColor,
-          fontWeight: 500,
+          color: PHOSPHOR_DIM,
+          textShadow: `0 0 4px ${PHOSPHOR_GLOW}`,
         }}
       >
         Built by Lee Ingram
@@ -126,10 +169,10 @@ export function BrandedLoader({
       {subtitle ? (
         <div
           style={{
-            marginTop: 16,
-            fontFamily: '"JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, Menlo, Consolas, monospace',
+            marginTop: 12,
+            fontFamily: MONO,
             fontSize: 11,
-            color: subtitleColor,
+            color: "rgba(124,255,176,0.45)",
           }}
         >
           {subtitle}

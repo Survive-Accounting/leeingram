@@ -2869,38 +2869,20 @@ export default function SolutionsViewerV2() {
         }}
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
-          {/* LEFT — Brand wordmark + Built by Lee Ingram (desktop only) */}
+          {/* LEFT — Compact Spring '26 Beta chip (desktop only) */}
           <div className="hidden sm:flex items-center justify-start min-w-0">
             <Link
               to="/my-dashboard"
-              className="group inline-flex flex-col min-w-0 max-w-full leading-tight"
+              className="group inline-flex items-center min-w-0 max-w-full"
               data-embed-allow="true"
-              aria-label="Survive Accounting Beta · Built by Lee Ingram — back to dashboard"
-              title="Survive Accounting Beta · Spring '26"
+              aria-label="Spring '26 Beta — back to dashboard"
+              title="Spring '26 Beta"
             >
               <span
-                className="truncate transition-colors"
-                style={{
-                  fontFamily: '"DM Serif Display", Georgia, serif',
-                  fontSize: 13,
-                  color: "rgba(255,255,255,0.85)",
-                  lineHeight: 1.15,
-                }}
+                className="truncate text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors group-hover:text-white"
+                style={{ color: "rgba(255,255,255,0.55)" }}
               >
-                Survive Accounting · <span style={{ color: "#FF8A95" }}>Beta</span>
-              </span>
-              <span
-                className="truncate text-[11px] font-medium tracking-wide transition-colors"
-                style={{ color: "rgba(255,255,255,0.45)", marginTop: 1 }}
-              >
-                Built by{" "}
-                <span
-                  className="font-semibold transition-colors group-hover:text-white"
-                  style={{ color: "rgba(255,255,255,0.72)" }}
-                >
-                  Lee Ingram
-                </span>{" "}
-                · Spring '26
+                Spring '26 <span style={{ color: "#FF8A95" }}>Beta</span>
               </span>
             </Link>
           </div>
