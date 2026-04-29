@@ -6298,6 +6298,7 @@ export type Database = {
           instruction_4: string | null
           instruction_5: string | null
           instruction_list: string | null
+          je_transaction_labels: Json | null
           journal_entry_block: string | null
           journal_entry_completed_json: Json | null
           journal_entry_template_json: Json | null
@@ -6422,6 +6423,7 @@ export type Database = {
           instruction_4?: string | null
           instruction_5?: string | null
           instruction_list?: string | null
+          je_transaction_labels?: Json | null
           journal_entry_block?: string | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null
@@ -6546,6 +6548,7 @@ export type Database = {
           instruction_4?: string | null
           instruction_5?: string | null
           instruction_list?: string | null
+          je_transaction_labels?: Json | null
           journal_entry_block?: string | null
           journal_entry_completed_json?: Json | null
           journal_entry_template_json?: Json | null

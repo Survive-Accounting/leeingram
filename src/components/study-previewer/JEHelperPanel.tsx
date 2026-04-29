@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import { Menu, MessageCircleQuestion, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Menu, MessageCircleQuestion, Loader2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { RetroBreadcrumbs } from "@/components/study-previewer/RetroBreadcrumbs";
 import { JETooltip } from "@/components/JETooltip";
 import {
   isCanonicalJE,
-  formatAmount,
   type CanonicalJEPayload,
   type CanonicalJERow,
 } from "@/lib/journalEntryParser";
@@ -24,12 +23,22 @@ interface JEHelperPanelProps {
 }
 
 interface FlatEntry {
+  /** `<assetId>-<si>-<ei>` */
   key: string;
-  /** Transaction description (or fallback) */
-  description: string;
-  /** Small muted source line, e.g. "E15.10 · Part (a) · Dec 31, 2026" */
-  source: string;
+  /** Stable label key inside an asset, `<si>-<ei>` */
+  labelKey: string;
+  assetId: string;
+  assetCode: string | null;
+  sourceNumber: string | null;
+  /** Heuristic fallback used until AI label arrives */
+  fallbackDescription: string;
+  /** AI/cached transaction description; may be undefined while loading */
+  aiDescription?: string;
   rows: CanonicalJERow[];
+  /** Internal: passed to the AI request */
+  scenarioLabel: string;
+  instructionsSnippet: string | null;
+  date: string | null;
 }
 
 interface AssetRow {
@@ -38,9 +47,9 @@ interface AssetRow {
   source_number: string | null;
   instruction_list: string | null;
   journal_entry_completed_json: any;
+  je_transaction_labels: Record<string, string> | null;
 }
 
-/** Format a YYYY-MM-DD into "Mon D, YYYY" without UTC drift */
 function fmtDate(raw?: string | null): string {
   if (!raw) return "";
   const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -50,25 +59,19 @@ function fmtDate(raw?: string | null): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-/** Pull a short "transaction description" from the scenario label / instructions. */
-function deriveDescription(scenarioLabel: string, instructions: string | null, dateLabel: string): string {
+/** Heuristic fallback used while AI labels are loading. */
+function deriveFallback(scenarioLabel: string, instructions: string | null, dateLabel: string): string {
   const label = (scenarioLabel || "").trim();
-  // Long-form labels are usually descriptive — use them.
   if (label && label.split(/\s+/).length >= 4) return label;
-
-  // Try to extract the matching part letter, e.g. "(a)" -> first sentence after "(a)" in instructions.
   const partMatch = label.match(/\(([a-z])\)/i);
   if (partMatch && instructions) {
     const re = new RegExp(`\\(${partMatch[1]}\\)\\s*([^()\\n]+)`, "i");
     const m = instructions.match(re);
     if (m && m[1]) {
       const sentence = m[1].trim().replace(/\s+/g, " ").split(/(?<=[.?!])\s/)[0];
-      if (sentence && sentence.length > 8) {
-        return sentence.replace(/[.,;:]+$/, "");
-      }
+      if (sentence && sentence.length > 8) return sentence.replace(/[.,;:]+$/, "");
     }
   }
-
   if (label) return label;
   return dateLabel ? `Entry — ${dateLabel}` : "Journal Entry";
 }
@@ -82,17 +85,23 @@ function flattenAssets(assets: AssetRow[]): FlatEntry[] {
     canonical.scenario_sections.forEach((sc, si) => {
       sc.entries_by_date.forEach((entry, ei) => {
         if (!entry.rows || entry.rows.length === 0) return;
-        const dateLabel = fmtDate((entry as any).entry_date ?? (entry as any).date);
-        const description = deriveDescription(sc.label, a.instruction_list, dateLabel);
-        const sourceParts: string[] = [];
-        if (a.source_number) sourceParts.push(a.source_number);
-        if (sc.label && sc.label !== description) sourceParts.push(sc.label);
-        if (dateLabel) sourceParts.push(dateLabel);
+        const rawDate = (entry as any).entry_date ?? (entry as any).date ?? null;
+        const dateLabel = fmtDate(rawDate);
+        const fallback = deriveFallback(sc.label, a.instruction_list, dateLabel);
+        const labelKey = `${si}-${ei}`;
+        const cached = a.je_transaction_labels?.[labelKey];
         out.push({
           key: `${a.id}-${si}-${ei}`,
-          description,
-          source: sourceParts.join("  ·  "),
+          labelKey,
+          assetId: a.id,
+          assetCode: a.asset_name,
+          sourceNumber: a.source_number,
+          fallbackDescription: fallback,
+          aiDescription: cached,
           rows: entry.rows,
+          scenarioLabel: sc.label,
+          instructionsSnippet: a.instruction_list,
+          date: rawDate,
         });
       });
     });
@@ -107,16 +116,18 @@ export default function JEHelperPanel({
   onGoChapter,
 }: JEHelperPanelProps) {
   const [loading, setLoading] = useState(true);
-  const [assets, setAssets] = useState<AssetRow[]>([]);
+  const [entries, setEntries] = useState<FlatEntry[]>([]);
+  const generatedRef = useRef<Set<string>>(new Set()); // assetIds we've generated for this session
 
   useEffect(() => {
-    if (!chapter?.id) { setAssets([]); setLoading(false); return; }
+    if (!chapter?.id) { setEntries([]); setLoading(false); return; }
     let cancelled = false;
     setLoading(true);
+    generatedRef.current = new Set();
     (async () => {
       const { data, error } = await supabase
         .from("teaching_assets")
-        .select("id, asset_name, source_number, instruction_list, journal_entry_completed_json")
+        .select("id, asset_name, source_number, instruction_list, journal_entry_completed_json, je_transaction_labels")
         .eq("chapter_id", chapter.id)
         .not("journal_entry_completed_json", "is", null)
         .order("source_number", { ascending: true, nullsFirst: false })
@@ -124,16 +135,78 @@ export default function JEHelperPanel({
       if (cancelled) return;
       if (error) {
         console.error("[JEHelperPanel] fetch error", error);
-        setAssets([]);
-      } else {
-        setAssets((data ?? []) as AssetRow[]);
+        setEntries([]);
+        setLoading(false);
+        return;
       }
+      const flat = flattenAssets((data ?? []) as AssetRow[]);
+      setEntries(flat);
       setLoading(false);
+
+      // Kick off label generation for entries missing an AI description.
+      const missing = flat.filter((e) => !e.aiDescription);
+      if (missing.length === 0) return;
+
+      // Batch by 10
+      const BATCH = 10;
+      for (let i = 0; i < missing.length; i += BATCH) {
+        if (cancelled) return;
+        const batch = missing.slice(i, i + BATCH);
+        try {
+          const { data: resp, error: fnErr } = await supabase.functions.invoke(
+            "generate-je-transaction-labels",
+            {
+              body: {
+                entries: batch.map((e) => ({
+                  key: e.key,
+                  scenario_label: e.scenarioLabel,
+                  instructions_snippet: e.instructionsSnippet ?? "",
+                  date: e.date,
+                  rows: e.rows.map((r) => ({
+                    account_name: r.account_name,
+                    side: (r.credit != null && r.credit !== 0) ? "credit" : "debit",
+                  })),
+                })),
+              },
+            },
+          );
+          if (fnErr) { console.error("[JEHelperPanel] label fn error", fnErr); continue; }
+          const labels: { key: string; description: string }[] = resp?.labels ?? [];
+          if (labels.length === 0) continue;
+          if (cancelled) return;
+
+          // Merge into UI
+          const labelMap = new Map(labels.map((l) => [l.key, l.description]));
+          setEntries((prev) =>
+            prev.map((e) => labelMap.has(e.key) ? { ...e, aiDescription: labelMap.get(e.key) } : e),
+          );
+
+          // Persist per-asset
+          const byAsset = new Map<string, Record<string, string>>();
+          for (const e of batch) {
+            const desc = labelMap.get(e.key);
+            if (!desc) continue;
+            const existing = byAsset.get(e.assetId) ?? {};
+            existing[e.labelKey] = desc;
+            byAsset.set(e.assetId, existing);
+          }
+          for (const [assetId, newLabels] of byAsset) {
+            // Merge with whatever's already cached on the row
+            const existing = (data ?? []).find((d: any) => d.id === assetId);
+            const existingLabels = (existing?.je_transaction_labels ?? {}) as Record<string, string>;
+            const merged = { ...existingLabels, ...newLabels };
+            await supabase
+              .from("teaching_assets")
+              .update({ je_transaction_labels: merged })
+              .eq("id", assetId);
+          }
+        } catch (err) {
+          console.error("[JEHelperPanel] label batch failed", err);
+        }
+      }
     })();
     return () => { cancelled = true; };
   }, [chapter?.id]);
-
-  const entries = useMemo(() => flattenAssets(assets), [assets]);
 
   return (
     <div className="w-full flex justify-center px-2 sm:px-6 py-6 sm:py-10 animate-fade-in">
@@ -163,7 +236,7 @@ export default function JEHelperPanel({
               minHeight: "clamp(380px, 56vw, 560px)",
             }}
           >
-            {/* Header — mirrors V2 viewer header */}
+            {/* Header */}
             <header
               className="grid items-center gap-2 px-3 sm:px-5 h-12"
               style={{
@@ -294,6 +367,11 @@ export default function JEHelperPanel({
 /* ─── Per-entry card ─── */
 
 function JECard({ entry }: { entry: FlatEntry }) {
+  const description = entry.aiDescription ?? entry.fallbackDescription;
+  const isPending = !entry.aiDescription;
+  const sourceLabel = entry.sourceNumber ?? "Open problem";
+  const href = entry.assetCode ? `/v2/solutions/${encodeURIComponent(entry.assetCode)}` : null;
+
   return (
     <div
       className="rounded-lg overflow-hidden"
@@ -303,14 +381,32 @@ function JECard({ entry }: { entry: FlatEntry }) {
         boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset",
       }}
     >
-      <div className="px-4 sm:px-5 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <p className="text-[14px] font-semibold leading-snug" style={{ color: "#F1F5F9" }}>
-          {entry.description}
+      <div
+        className="px-4 sm:px-5 py-3 flex items-start gap-3"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+      >
+        <p
+          className="text-[14px] font-semibold leading-snug flex-1"
+          style={{ color: isPending ? "rgba(241,245,249,0.55)" : "#F1F5F9" }}
+        >
+          {description}
         </p>
-        {entry.source && (
-          <p className="mt-0.5 text-[11px] tracking-wide" style={{ color: "rgba(241,245,249,0.45)" }}>
-            {entry.source}
-          </p>
+        {href && (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-medium shrink-0 transition-colors hover:bg-white/[0.1]"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "rgba(241,245,249,0.85)",
+            }}
+            title="Open this problem in the Practice Problem Helper"
+          >
+            <span>{sourceLabel}</span>
+            <ExternalLink className="h-3 w-3" style={{ color: "rgba(241,245,249,0.7)" }} />
+          </a>
         )}
       </div>
       <div className="px-2 sm:px-3 py-2">
@@ -351,18 +447,18 @@ function JECard({ entry }: { entry: FlatEntry }) {
                     {row.account_name}
                     {reason && <JETooltip text={reason} variant="solutions" />}
                   </td>
-                  <td className="text-right px-3 py-1.5 font-mono" style={{ color: "#F1F5F9" }}>
-                    {!isCredit && row.debit != null ? (
+                  <td className="text-right px-3 py-1.5 font-mono" style={{ color: "rgba(241,245,249,0.55)" }}>
+                    {!isCredit ? (
                       <span>
-                        {formatAmount(row.debit)}
+                        ???
                         {amountSource && <JETooltip text={amountSource} variant="solutions" />}
                       </span>
                     ) : ""}
                   </td>
-                  <td className="text-right px-3 py-1.5 font-mono" style={{ color: "#F1F5F9" }}>
+                  <td className="text-right px-3 py-1.5 font-mono" style={{ color: "rgba(241,245,249,0.55)" }}>
                     {isCredit ? (
                       <span>
-                        {formatAmount(row.credit)}
+                        ???
                         {amountSource && <JETooltip text={amountSource} variant="solutions" />}
                       </span>
                     ) : ""}
