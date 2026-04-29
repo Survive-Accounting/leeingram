@@ -12,6 +12,7 @@ import { Copy, RefreshCw, Sparkles, MessageSquare, Bug, Lightbulb, Heart, AlertT
 import { SignupsTable, type SignupRow } from "@/components/beta-dashboard/SignupsTable";
 import { FeedbackInboxSection } from "@/components/beta-dashboard/FeedbackInboxSection";
 import { FeedbackAISummarySection } from "@/components/beta-dashboard/FeedbackAISummarySection";
+import { InsightsSections } from "@/components/beta-dashboard/InsightsSections";
 import { useEventTracking } from "@/hooks/useEventTracking";
 import { BETA_EVENTS } from "@/lib/betaEvents";
 
@@ -368,6 +369,8 @@ export default function BetaSpring2026Dashboard() {
           <FeedbackInboxSection />
           {/* AI Feedback Summary */}
           <FeedbackAISummarySection />
+          {/* Top Confusing Chapters + Top Used Tools */}
+          <InsightsSections startDate={rangeStart(range).toISOString()} />
           {/* Student Signups */}
           <SignupsTable signups={signups} loading={loading} />
         </div>
