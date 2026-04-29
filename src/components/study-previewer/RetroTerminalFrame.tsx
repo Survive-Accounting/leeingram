@@ -57,6 +57,14 @@ interface RetroTerminalFrameProps {
   comingSoonIdeas?: string[];
   /** Click handler for the secondary Share Feedback link. */
   onShareFeedback?: () => void;
+  /** Dashboard-only: campus name to display as a read-only terminal line. When set,
+   *  course is also rendered as a read-only line (no dropdown, no lock icon). */
+  campusLabel?: string | null;
+  /** Dashboard-only: when true, render the simplified read-only Course/Campus context
+   *  lines and use "Choose Textbook Chapter" wording instead of "Choose Chapter". */
+  dashboardMode?: boolean;
+  /** Dashboard-only: optional short beta note rendered under the welcome line. */
+  betaNote?: string | null;
 }
 
 /**
@@ -82,6 +90,9 @@ export default function RetroTerminalFrame({
   canChangeChapter = false,
   comingSoonIdeas,
   onShareFeedback,
+  campusLabel = null,
+  dashboardMode = false,
+  betaNote = null,
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
   const [editingCourse, setEditingCourse] = useState(false);
@@ -421,8 +432,58 @@ export default function RetroTerminalFrame({
                 </div>
               )}
 
-              {/* Course picker (or read-only display when fixed) */}
-              {courseSelector ? (
+              {/* Optional short beta note (dashboard only) */}
+              {dashboardMode && betaNote && (
+                <div
+                  style={{
+                    color: PHOSPHOR_DIM,
+                    fontFamily:
+                      "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
+                    fontSize: "0.82em",
+                    lineHeight: 1.55,
+                    marginBottom: "1.1em",
+                    opacity: 0.85,
+                    maxWidth: 520,
+                  }}
+                >
+                  {betaNote}
+                </div>
+              )}
+
+              {/* Course / Campus context — dashboard mode renders simple read-only
+                  terminal lines; landing keeps the original course dropdown. */}
+              {dashboardMode ? (
+                <div className="mb-3 sm:mb-3.5" style={{ lineHeight: 1.7 }}>
+                  <div
+                    style={{
+                      color: PHOSPHOR_DIM,
+                      fontFamily:
+                        "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
+                      fontSize: "0.95em",
+                      letterSpacing: "0.01em",
+                    }}
+                  >
+                    {">"} Course:{" "}
+                    <span style={{ color: "#E8FFF1" }}>
+                      {courseLabel || "Not specified"}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      color: PHOSPHOR_DIM,
+                      fontFamily:
+                        "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
+                      fontSize: "0.95em",
+                      letterSpacing: "0.01em",
+                    }}
+                  >
+                    {">"} Campus:{" "}
+                    <span style={{ color: "#E8FFF1" }}>
+                      {campusLabel || "Not specified"}
+                    </span>
+                  </div>
+                </div>
+              ) : courseSelector ? (
                 <div className="mb-3 sm:mb-3.5">
                   <div
                     style={{
@@ -477,7 +538,7 @@ export default function RetroTerminalFrame({
                     transition: "color 240ms ease-out",
                   }}
                 >
-                  {">"} Choose Chapter
+                  {">"} {dashboardMode ? "Choose Textbook Chapter" : "Choose Chapter"}
                 </div>
                 <div style={{ maxWidth: 360, opacity: courseLabel ? 1 : 0.5 }}>
                   {chapterSelector ?? (

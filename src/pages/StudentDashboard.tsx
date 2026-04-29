@@ -540,7 +540,10 @@ export default function StudentDashboard() {
 
             <StudyPreviewer
               chapters={chapters}
-              fixedCourseLabel={courseLabel ?? campusName ?? null}
+              fixedCourseLabel={courseLabel ?? null}
+              campusLabel={campusName}
+              dashboardMode
+              betaNote="Free beta access is open through finals. Try the tools and tell us what helps."
               onOpenFeedback={() => setFeedbackOpen(true)}
               persistChapterKey={SELECTED_CHAPTER_KEY}
               welcomeName={firstName || null}

@@ -86,6 +86,15 @@ interface StudyPreviewerProps {
   /** When true, greets as returning ("Welcome back"); otherwise as new ("Welcome"). */
   isReturning?: boolean;
 
+  /** Dashboard-only: campus name shown as a read-only terminal line. */
+  campusLabel?: string | null;
+  /** Dashboard-only: enables simplified read-only Course/Campus context lines and
+   *  "Choose Textbook Chapter" wording. Off by default so the landing preview
+   *  retains the full course-picker experience. */
+  dashboardMode?: boolean;
+  /** Dashboard-only: optional short beta note rendered under the welcome. */
+  betaNote?: string | null;
+
   /** Fires when chapter selection or active tool changes — for breadcrumbs etc. */
   onSelectionChange?: (state: {
     chapter: PreviewChapter | null;
@@ -107,6 +116,9 @@ export default function StudyPreviewer({
   resetSignal,
   welcomeName,
   isReturning,
+  campusLabel,
+  dashboardMode = false,
+  betaNote,
   onSelectionChange,
   closeToolSignal,
 }: StudyPreviewerProps) {
@@ -653,6 +665,9 @@ export default function StudyPreviewer({
                 loading={chapterLoading}
                 welcomeName={welcomeName ?? null}
                 isReturning={!!isReturning}
+                dashboardMode={dashboardMode}
+                campusLabel={campusLabel ?? null}
+                betaNote={betaNote ?? null}
                 chapterSelector={
                   courseChosen ? (
                     <SelectShell
