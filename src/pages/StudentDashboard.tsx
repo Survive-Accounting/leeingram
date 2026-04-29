@@ -608,6 +608,17 @@ export default function StudentDashboard() {
         />
       )}
 
+      {/* Staff-only onboarding simulator. Toggled via the Admin Tools menu
+          (Simulate Onboarding). Skips all validation, never writes to the DB —
+          purely for QA-ing the modal's UI/UX. */}
+      <OnboardingSimulator
+        userId={userId}
+        email={email}
+        campusId={campusId}
+        courseId={purchase?.course_id ?? null}
+        fallbackFirstName={fallbackFirstName}
+      />
+
       {verifying && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md"
