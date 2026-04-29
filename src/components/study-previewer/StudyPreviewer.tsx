@@ -718,6 +718,8 @@ export default function StudyPreviewer({
                 }
                 canChangeCourse={!!courses && courses.length > 1}
                 canChangeChapter={chapterChosen && chapters.length > 1}
+                comingSoonIdeas={COMING_SOON_IDEAS}
+                onShareFeedback={onOpenFeedback}
                 onSelectTool={(key) => {
                   if (key === "feedback") {
                     onOpenFeedback();
