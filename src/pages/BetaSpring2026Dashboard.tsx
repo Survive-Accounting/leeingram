@@ -17,6 +17,7 @@ import { InactiveSignupsSection } from "@/components/beta-dashboard/InactiveSign
 import { ProblemReportsSection } from "@/components/beta-dashboard/ProblemReportsSection";
 import { FeatureSuggestionsSection } from "@/components/beta-dashboard/FeatureSuggestionsSection";
 import { BetaSystemEmailsSection } from "@/components/beta-dashboard/BetaSystemEmailsSection";
+import { CollapsibleSection } from "@/components/beta-dashboard/CollapsibleSection";
 import { useEventTracking } from "@/hooks/useEventTracking";
 import { BETA_EVENTS } from "@/lib/betaEvents";
 
