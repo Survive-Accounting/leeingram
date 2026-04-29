@@ -1,5 +1,9 @@
 // Validates onboarding payload, stores it, classifies legacy vs new beta user,
 // and (for new beta users) atomically claims a global + per-campus beta number.
+//
+// Spring 2026 beta v1: drastically simplified. Only first/last name and a role
+// question are required. Accounting major question is asked only when role is
+// "student". Greek question removed. Campus is never typed in here.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -9,18 +13,32 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+type UserRole = "student" | "parent" | "professor" | "cpa_professional" | "other";
+type MajorStatus = "yes" | "no" | "not_sure";
+
 interface Payload {
-  display_name: string;
-  campus_id: string | null;
+  // New v1 fields
+  first_name?: string;
+  last_name?: string;
+  user_role?: UserRole;
+  accounting_major_status?: MajorStatus | null;
+  onboarding_version?: string;
+
+  // Legacy fields (kept for back-compat with anything still posting them)
+  display_name?: string;
+  campus_id?: string | null;
   campus_other?: string | null;
-  course_id: string | null;
+  course_id?: string | null;
   syllabus_file_path?: string | null;
-  is_accounting_major: "yes" | "no" | "definitely_not";
-  is_in_greek_life: boolean;
+  is_accounting_major?: "yes" | "no" | "definitely_not" | "not_sure";
+  is_in_greek_life?: boolean;
   greek_org_id?: string | null;
   greek_org_other?: string | null;
-  confidence_1_10: number;
+  confidence_1_10?: number;
 }
+
+const VALID_ROLES: UserRole[] = ["student", "parent", "professor", "cpa_professional", "other"];
+const VALID_MAJOR: MajorStatus[] = ["yes", "no", "not_sure"];
 
 function bad(message: string, status = 400) {
   return new Response(JSON.stringify({ error: message }), {
@@ -29,18 +47,16 @@ function bad(message: string, status = 400) {
   });
 }
 
-function validate(p: Partial<Payload>): string | null {
-  if (!p.display_name || p.display_name.trim().length < 1) return "Name is required";
-  if (p.display_name.length > 120) return "Name too long";
-  if (!p.is_accounting_major || !["yes", "no", "definitely_not"].includes(p.is_accounting_major)) {
-    return "Major answer required";
-  }
-  if (typeof p.is_in_greek_life !== "boolean") return "Greek-life answer required";
-  if (p.is_in_greek_life && !p.greek_org_id && !(p.greek_org_other && p.greek_org_other.trim())) {
-    return "Pick a fraternity/sorority or use 'Add other'";
-  }
-  if (typeof p.confidence_1_10 !== "number" || p.confidence_1_10 < 1 || p.confidence_1_10 > 10) {
-    return "Confidence (1-10) required";
+function validate(p: Payload): string | null {
+  const first = (p.first_name ?? "").trim();
+  if (!first) return "First name is required";
+  if (first.length > 80) return "First name too long";
+  if ((p.last_name ?? "").length > 80) return "Last name too long";
+  if (!p.user_role || !VALID_ROLES.includes(p.user_role)) return "Please pick who you are";
+  if (p.user_role === "student") {
+    if (!p.accounting_major_status || !VALID_MAJOR.includes(p.accounting_major_status)) {
+      return "Please answer the accounting major question";
+    }
   }
   return null;
 }
@@ -57,7 +73,6 @@ Deno.serve(async (req) => {
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-  // Verify the user's JWT via the anon client
   const userClient = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: `Bearer ${jwt}` } },
   });
@@ -81,6 +96,14 @@ Deno.serve(async (req) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  const firstName = (body.first_name ?? "").trim().slice(0, 80);
+  const lastName = (body.last_name ?? "").trim().slice(0, 80);
+  const displayName = [firstName, lastName].filter(Boolean).join(" ") || firstName;
+  const role = body.user_role!;
+  const majorStatus = role === "student" ? (body.accounting_major_status ?? null) : null;
+  const version = body.onboarding_version || "spring_2026_beta_v1";
+  const campusId = body.campus_id ?? null;
+
   // Determine legacy: any LW-enrolled purchase that predates today
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
@@ -97,25 +120,27 @@ Deno.serve(async (req) => {
         new Date(p.created_at as string) < today,
     );
 
-  // Upsert onboarding row
+  // Map new major status to legacy is_accounting_major for back-compat
+  // ('not_sure' is now allowed by the relaxed CHECK constraint)
+  const legacyMajor =
+    majorStatus === "yes" ? "yes" :
+    majorStatus === "no" ? "no" :
+    majorStatus === "not_sure" ? "not_sure" : null;
+
   const { error: upsertErr } = await admin
     .from("student_onboarding")
     .upsert(
       {
         user_id: user.id,
         email,
-        display_name: body.display_name.trim().slice(0, 120),
-        campus_id: body.campus_id,
-        campus_other: body.campus_other?.trim() || null,
-        course_id: body.course_id,
-        syllabus_file_path: body.syllabus_file_path || null,
-        is_accounting_major: body.is_accounting_major,
-        is_in_greek_life: body.is_in_greek_life,
-        greek_org_id: body.is_in_greek_life ? body.greek_org_id : null,
-        greek_org_other: body.is_in_greek_life
-          ? (body.greek_org_other?.trim() || null)
-          : null,
-        confidence_1_10: Math.round(body.confidence_1_10),
+        first_name: firstName || null,
+        last_name: lastName || null,
+        display_name: displayName || null,
+        user_role: role,
+        accounting_major_status: majorStatus,
+        is_accounting_major: legacyMajor,
+        campus_id: campusId,
+        onboarding_version: version,
         is_legacy: isLegacy,
         completed_at: new Date().toISOString(),
       },
@@ -133,7 +158,7 @@ Deno.serve(async (req) => {
   if (!isLegacy) {
     const { data: claimed, error: claimErr } = await admin.rpc(
       "claim_beta_number",
-      { p_user_id: user.id, p_campus_id: body.campus_id },
+      { p_user_id: user.id, p_campus_id: campusId },
     );
     if (claimErr) {
       console.error("[complete-onboarding] claim:", claimErr);
@@ -143,13 +168,12 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Look up campus name for the welcome card
   let campus_name: string | null = null;
-  if (body.campus_id) {
+  if (campusId) {
     const { data: c } = await admin
       .from("campuses")
       .select("name")
-      .eq("id", body.campus_id)
+      .eq("id", campusId)
       .maybeSingle();
     campus_name = c?.name ?? null;
   }
