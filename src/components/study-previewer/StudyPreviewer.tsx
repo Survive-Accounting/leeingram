@@ -80,6 +80,14 @@ interface StudyPreviewerProps {
   welcomeName?: string | null;
   /** When true, greets as returning ("Welcome back"); otherwise as new ("Welcome"). */
   isReturning?: boolean;
+
+  /** Fires when chapter selection or active tool changes — for breadcrumbs etc. */
+  onSelectionChange?: (state: {
+    chapter: PreviewChapter | null;
+    activeTool: ToolKey | null;
+  }) => void;
+  /** External signal to clear the active tool only (chapter stays selected). */
+  closeToolSignal?: number;
 }
 
 export default function StudyPreviewer({
@@ -94,6 +102,8 @@ export default function StudyPreviewer({
   resetSignal,
   welcomeName,
   isReturning,
+  onSelectionChange,
+  closeToolSignal,
 }: StudyPreviewerProps) {
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
   const [chapterLoading, setChapterLoading] = useState(false);
@@ -258,6 +268,17 @@ export default function StudyPreviewer({
     () => chapters.find((c) => c.id === selectedChapterId) ?? null,
     [chapters, selectedChapterId],
   );
+
+  // Emit selection state up so the parent can render breadcrumbs.
+  useEffect(() => {
+    onSelectionChange?.({ chapter: selectedChapter, activeTool });
+  }, [selectedChapter, activeTool, onSelectionChange]);
+
+  // External signal to close the active tool only (chapter stays selected).
+  useEffect(() => {
+    if (closeToolSignal === undefined) return;
+    setActiveTool(null);
+  }, [closeToolSignal]);
 
   const selectedCourseLabel = useMemo(
     () => courses?.find((c) => c.id === selectedCourseId)?.fullName ?? null,
