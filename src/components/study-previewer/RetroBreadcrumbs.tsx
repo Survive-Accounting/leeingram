@@ -49,23 +49,39 @@ export function RetroBreadcrumbs({ crumbs }: RetroBreadcrumbsProps) {
           {crumbs.map((c, i) => {
             const isLast = i === crumbs.length - 1;
             const isMiddle = !isLast && i > 0;
+            const middleClass = isMiddle ? "truncate min-w-0 max-w-[40vw] sm:max-w-none" : "";
+            const lastClass = isLast ? "max-w-[55vw] sm:max-w-none" : "";
+            const interactive = !isLast && (c.to || c.onClick);
+            const enter = (e: React.MouseEvent<HTMLElement>) =>
+              (e.currentTarget.style.color = PHOSPHOR);
+            const leave = (e: React.MouseEvent<HTMLElement>) =>
+              (e.currentTarget.style.color = PHOSPHOR_DIM);
             return (
               <div key={`${c.label}-${i}`} className="flex items-center gap-1.5 min-w-0">
-                {c.to && !isLast ? (
+                {interactive && c.to ? (
                   <Link
                     to={c.to}
-                    className={`hover:underline transition-colors shrink-0 ${
-                      isMiddle ? "truncate min-w-0 max-w-[40vw] sm:max-w-none" : ""
-                    }`}
+                    className={`hover:underline transition-colors shrink-0 ${middleClass}`}
                     style={{ color: PHOSPHOR_DIM, textDecorationColor: PHOSPHOR_FAINT }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = PHOSPHOR)}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = PHOSPHOR_DIM)}
+                    onMouseEnter={enter}
+                    onMouseLeave={leave}
                   >
                     {c.label.toLowerCase()}
                   </Link>
+                ) : interactive && c.onClick ? (
+                  <button
+                    type="button"
+                    onClick={c.onClick}
+                    className={`hover:underline transition-colors shrink-0 cursor-pointer bg-transparent p-0 border-0 ${middleClass}`}
+                    style={{ color: PHOSPHOR_DIM, fontFamily: "inherit", fontSize: "inherit" }}
+                    onMouseEnter={enter}
+                    onMouseLeave={leave}
+                  >
+                    {c.label.toLowerCase()}
+                  </button>
                 ) : (
                   <span
-                    className={`truncate min-w-0 ${isLast ? "max-w-[55vw] sm:max-w-none" : ""}`}
+                    className={`truncate min-w-0 ${lastClass}`}
                     style={{ color: isLast ? PHOSPHOR : PHOSPHOR_DIM }}
                     aria-current={isLast ? "page" : undefined}
                   >
