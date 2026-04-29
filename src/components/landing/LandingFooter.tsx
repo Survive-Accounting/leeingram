@@ -25,6 +25,7 @@ export default function LandingFooter({
   const [aboutOpen, setAboutOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
+  const isStaff = useIsStaff();
 
   const linkClass =
     "block text-[13px] text-left no-underline hover:underline transition-colors";
