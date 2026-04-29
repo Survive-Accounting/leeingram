@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import StudyPreviewer, { type PreviewChapter } from "@/components/study-previewer/StudyPreviewer";
+import { useChapters, usePrefetchStudyConsole } from "@/hooks/useStudyConsoleData";
 import BetaPaywallModal from "./BetaPaywallModal";
 import FeedbackToolModal from "@/components/dashboard/FeedbackToolModal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
