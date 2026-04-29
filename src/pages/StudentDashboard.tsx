@@ -586,6 +586,8 @@ export default function StudentDashboard() {
 
           <a
             href="https://surviveaccounting.com"
+            target="_blank"
+            rel="noopener noreferrer"
             className="mt-4 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-[13px] sm:text-[14px] font-semibold transition-all hover:-translate-y-0.5 hover:shadow-md"
             style={{
               background: "#fff",
