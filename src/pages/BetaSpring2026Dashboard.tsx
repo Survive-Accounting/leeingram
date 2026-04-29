@@ -16,6 +16,7 @@ import { InsightsSections } from "@/components/beta-dashboard/InsightsSections";
 import { InactiveSignupsSection } from "@/components/beta-dashboard/InactiveSignupsSection";
 import { ProblemReportsSection } from "@/components/beta-dashboard/ProblemReportsSection";
 import { FeatureSuggestionsSection } from "@/components/beta-dashboard/FeatureSuggestionsSection";
+import { BetaSystemEmailsSection } from "@/components/beta-dashboard/BetaSystemEmailsSection";
 import { useEventTracking } from "@/hooks/useEventTracking";
 import { BETA_EVENTS } from "@/lib/betaEvents";
 
@@ -387,6 +388,10 @@ export default function BetaSpring2026Dashboard() {
             </CardContent>
           </Card>
 
+          {/* System Emails (preview/test/send beta nurture emails) */}
+          <BetaSystemEmailsSection
+            candidateRecipients={signups.map((s) => ({ email: s.email, label: s.email }))}
+          />
           {/* Problem Reports (auto-classified bug/issue queue) */}
           <ProblemReportsSection />
           {/* Feature Suggestions */}
