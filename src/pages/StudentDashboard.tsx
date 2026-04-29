@@ -5,7 +5,7 @@ import { Loader2, ArrowRight, Menu } from "lucide-react";
 import { toast } from "sonner";
 import OnboardingModal from "@/components/dashboard/OnboardingModal";
 
-import FeedbackToolModal from "@/components/dashboard/FeedbackToolModal";
+import ShareFeedbackModal from "@/components/dashboard/ShareFeedbackModal";
 import { WelcomeVideoModal } from "@/components/dashboard/WelcomeVideoCard";
 
 import StudyPreviewer from "@/components/study-previewer/StudyPreviewer";
