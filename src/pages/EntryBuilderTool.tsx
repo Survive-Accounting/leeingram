@@ -44,6 +44,7 @@ export default function EntryBuilderTool() {
   const [searchParams] = useSearchParams();
   const chapterId = searchParams.get("chapter_id");
   const isPreview = searchParams.get("preview") === "true";
+  const isEmbed = searchParams.get("embed") === "1";
 
   const [setData, setSetData] = useState<{ id: string; plays: number; completions: number } | null>(null);
   const [items, setItems] = useState<EntryItem[]>([]);
