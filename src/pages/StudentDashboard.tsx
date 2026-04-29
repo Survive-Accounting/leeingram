@@ -4,12 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ArrowRight, Menu } from "lucide-react";
 import { toast } from "sonner";
 import OnboardingModal from "@/components/dashboard/OnboardingModal";
-import BetaCountdownStrip from "@/components/dashboard/BetaCountdownStrip";
+
 import FeedbackToolModal from "@/components/dashboard/FeedbackToolModal";
 import { WelcomeVideoModal } from "@/components/dashboard/WelcomeVideoCard";
 
 import StudyPreviewer from "@/components/study-previewer/StudyPreviewer";
-import { RetroBreadcrumbs, type BreadcrumbCrumb } from "@/components/study-previewer/RetroBreadcrumbs";
+
 
 import { getCourseLabel } from "@/lib/courseLabel";
 import { useDevToolFlag, setDevToolFlag } from "@/lib/devToolFlags";
@@ -65,6 +65,17 @@ function DashNavbar({
     return () => window.removeEventListener("mousedown", handler);
   }, [accountOpen]);
 
+  const BETA_END = new Date("2026-05-15T23:59:59Z").getTime();
+  const [betaDaysLeft, setBetaDaysLeft] = useState<number>(() =>
+    Math.max(0, Math.ceil((BETA_END - Date.now()) / (1000 * 60 * 60 * 24))),
+  );
+  useEffect(() => {
+    const t = setInterval(() => {
+      setBetaDaysLeft(Math.max(0, Math.ceil((BETA_END - Date.now()) / (1000 * 60 * 60 * 24))));
+    }, 60_000);
+    return () => clearInterval(t);
+  }, [BETA_END]);
+
   const initial = (email?.[0] ?? "?").toUpperCase();
 
   const linkStyle: React.CSSProperties = {
@@ -86,11 +97,37 @@ function DashNavbar({
       <nav className="max-w-6xl mx-auto h-16 px-5 sm:px-8 flex items-center justify-between">
         <button
           onClick={() => navigate("/")}
-          className="text-[11px] font-bold uppercase tracking-[0.18em] hover:opacity-70 transition-opacity"
+          className="flex items-baseline gap-2 hover:opacity-80 transition-opacity text-left"
           style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
           aria-label="Spring 2026 Beta — home"
         >
-          Spring 2026 Beta
+          <span className="text-[11px] font-bold uppercase tracking-[0.18em] whitespace-nowrap">
+            Spring 2026 Beta
+          </span>
+          <span
+            className="hidden sm:inline text-[11px]"
+            style={{ color: "rgba(20,33,61,0.35)" }}
+          >
+            ·
+          </span>
+          <span
+            className="hidden sm:inline text-[11.5px]"
+            style={{ color: "rgba(20,33,61,0.65)", fontWeight: 500 }}
+          >
+            Expires May 15, 2026
+          </span>
+          <span
+            className="hidden sm:inline text-[11px]"
+            style={{ color: "rgba(20,33,61,0.35)" }}
+          >
+            ·
+          </span>
+          <span
+            className="hidden sm:inline text-[11.5px] font-semibold"
+            style={{ color: RED }}
+          >
+            {betaDaysLeft} {betaDaysLeft === 1 ? "day" : "days"} left
+          </span>
         </button>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -510,7 +547,6 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: BG_GRADIENT }}>
-      <BetaCountdownStrip />
       <DashNavbar
         email={email}
         onStudyTools={scrollToPreviewer}
@@ -520,6 +556,22 @@ export default function StudentDashboard() {
       />
 
       <main className="flex-1 w-full mx-auto pt-2 sm:pt-4 pb-16">
+        {/* Welcome heading — sits above the retro console */}
+        <div className="px-5 sm:px-8 pt-4 sm:pt-6 pb-3 sm:pb-4 max-w-6xl mx-auto w-full">
+          <h1
+            className="text-[22px] sm:text-[28px] font-bold leading-tight"
+            style={{ color: NAVY, fontFamily: "Inter, sans-serif" }}
+          >
+            {greeting}.
+          </h1>
+          <p
+            className="mt-1 text-[14px] sm:text-[15px]"
+            style={{ color: "rgba(20,33,61,0.7)", fontFamily: "Inter, sans-serif" }}
+          >
+            Test out the free study tools below.
+          </p>
+        </div>
+
         {/* Previewer entry — the centerpiece (full-bleed navy hero band) */}
         <div
           ref={previewerRef}
@@ -540,41 +592,6 @@ export default function StudentDashboard() {
             }}
           />
           <div className="relative mx-auto" style={{ maxWidth: 1080 }}>
-
-            {/* Retro breadcrumbs above the terminal screen */}
-            {(() => {
-              const TOOL_LABEL: Record<"practice" | "je", string> = {
-                practice: "practice problem helper",
-                je: "journal entry helper",
-              };
-              const { chapter, activeTool } = previewerState;
-              const hasSelection = !!chapter || !!activeTool;
-              const crumbs: BreadcrumbCrumb[] = [
-                {
-                  label: "home",
-                  ...(hasSelection
-                    ? { onClick: () => setResetSignal((n) => n + 1) }
-                    : {}),
-                },
-              ];
-              if (chapter) {
-                crumbs.push({
-                  label: `ch ${chapter.chapter_number} ${chapter.chapter_name}`,
-                  ...(activeTool
-                    ? { onClick: () => setCloseToolSignal((n) => n + 1) }
-                    : {}),
-                });
-              }
-              if (activeTool) {
-                crumbs.push({ label: TOOL_LABEL[activeTool] });
-              }
-              return (
-                <div className="mb-3">
-                  <RetroBreadcrumbs crumbs={crumbs} />
-                </div>
-              );
-            })()}
-
             <StudyPreviewer
               chapters={chapters}
               fixedCourseLabel={courseLabel ?? null}
@@ -583,7 +600,7 @@ export default function StudentDashboard() {
               betaNote="Free beta access is open through finals. Try the tools and tell us what helps."
               onOpenFeedback={() => setFeedbackOpen(true)}
               persistChapterKey={SELECTED_CHAPTER_KEY}
-              welcomeName={firstName || null}
+              welcomeName={null}
               isReturning={isReturning}
               onSelectionChange={setPreviewerState}
               resetSignal={resetSignal}
