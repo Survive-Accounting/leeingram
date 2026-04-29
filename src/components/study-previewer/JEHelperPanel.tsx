@@ -43,7 +43,6 @@ interface FlatEntry {
 
 interface AssetRow {
   id: string;
-  asset_code: string | null;
   asset_name: string;
   source_number: string | null;
   instruction_list: string | null;
@@ -95,7 +94,7 @@ function flattenAssets(assets: AssetRow[]): FlatEntry[] {
           key: `${a.id}-${si}-${ei}`,
           labelKey,
           assetId: a.id,
-          assetCode: a.asset_code,
+          assetCode: a.asset_name,
           sourceNumber: a.source_number,
           fallbackDescription: fallback,
           aiDescription: cached,
@@ -128,7 +127,7 @@ export default function JEHelperPanel({
     (async () => {
       const { data, error } = await supabase
         .from("teaching_assets")
-        .select("id, asset_code, asset_name, source_number, instruction_list, journal_entry_completed_json, je_transaction_labels")
+        .select("id, asset_name, source_number, instruction_list, journal_entry_completed_json, je_transaction_labels")
         .eq("chapter_id", chapter.id)
         .not("journal_entry_completed_json", "is", null)
         .order("source_number", { ascending: true, nullsFirst: false })
