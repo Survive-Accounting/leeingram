@@ -434,7 +434,7 @@ export default function StudentDashboard() {
             }}
           />
           <div className="relative mx-auto" style={{ maxWidth: 1080 }}>
-            <div className="text-center mb-16 sm:mb-20" style={{ maxWidth: 760, margin: "0 auto" }}>
+            <div className="text-center mb-10 sm:mb-12" style={{ maxWidth: 760, margin: "0 auto" }}>
               <div
                 className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4"
                 style={{ color: "#FF6B7A", letterSpacing: "0.16em" }}
@@ -446,22 +446,24 @@ export default function StudentDashboard() {
                 FREE BETA · OPEN FOR FEEDBACK
               </div>
               <h2
-                className="text-[28px] sm:text-[38px] leading-[1.1]"
+                className="text-[26px] sm:text-[34px] leading-[1.1]"
                 style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: "#FFFFFF" }}
               >
-                Free accounting study tools for finals.
+                {firstName ? `${greeting}.` : `${greeting}.`}
               </h2>
               <p
-                className="mt-4 text-[15px] sm:text-[16px]"
-                style={{ color: "rgba(255,255,255,0.72)", fontFamily: "Inter, sans-serif" }}
+                className="mt-3 text-[14px] sm:text-[15px]"
+                style={{ color: "rgba(255,255,255,0.78)", fontFamily: "Inter, sans-serif" }}
               >
-                Choose a course and chapter to enter your study console.
+                {courseLabel
+                  ? `${courseLabel} is loaded. Pick a chapter below to open your study console.`
+                  : "Pick a chapter below to open your study console."}
               </p>
               <p
-                className="mt-3 text-[11px]"
+                className="mt-2 text-[11px]"
                 style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}
               >
-                Free access expires May 31st
+                Free beta access expires May 31st
               </p>
             </div>
 
