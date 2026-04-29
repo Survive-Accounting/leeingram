@@ -90,6 +90,9 @@ export default function RetroTerminalFrame({
   canChangeChapter = false,
   comingSoonIdeas,
   onShareFeedback,
+  campusLabel = null,
+  dashboardMode = false,
+  betaNote = null,
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
   const [editingCourse, setEditingCourse] = useState(false);
