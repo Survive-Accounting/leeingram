@@ -67,7 +67,19 @@ export function AdminToolsMenu() {
       });
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const onToggle = () => {
+      setHidden((prev) => {
+        const next = !prev;
+        try { localStorage.setItem(HIDDEN_STORAGE_KEY, next ? "1" : "0"); } catch { /* noop */ }
+        if (next) setOpen(false);
+        return next;
+      });
+    };
+    window.addEventListener("admin-tools:toggle", onToggle);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("admin-tools:toggle", onToggle);
+    };
   }, []);
 
   if (!isStaff) return null;
