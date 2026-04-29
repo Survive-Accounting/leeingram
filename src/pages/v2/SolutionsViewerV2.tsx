@@ -30,6 +30,8 @@ import { buildShareUrl, captureRefFromUrl, logShareClick, attachReferrerOnConver
 import { toYouPerspective } from "@/utils/youPerspective";
 import leeHeadshotImg from "@/assets/lee-headshot-original.png";
 import { ViewerOnboardingModal } from "@/pages/v2/ViewerOnboardingModal";
+import { RetroBreadcrumbs } from "@/components/study-previewer/RetroBreadcrumbs";
+import { FileText, Brain } from "lucide-react";
 
 type Asset = {
   id: string;
@@ -2849,11 +2851,9 @@ export default function SolutionsViewerV2() {
           boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 20px -8px rgba(0,0,0,0.4)",
         }}
       >
-        <div className="max-w-6xl mx-auto px-6 h-14 grid grid-cols-3 items-center gap-4">
-          {/* LEFT — Subtle "Built by Lee Ingram" attribution. Course name
-              now lives above the viewer (e.g., the COURSE • ACTIVE pill on
-              the landing mockup), so the header stays calm and personal. */}
-          <div className="flex items-center justify-start min-w-0">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
+          {/* LEFT — "Built by Lee Ingram" (desktop only; mobile hides to reduce noise) */}
+          <div className="hidden sm:flex items-center justify-start min-w-0">
             <Link
               to="/my-dashboard"
               className="group inline-flex items-center min-w-0 max-w-full"
@@ -2862,7 +2862,7 @@ export default function SolutionsViewerV2() {
               title="Built by Lee Ingram"
             >
               <span
-                className="truncate text-[11px] sm:text-[12px] font-medium tracking-wide transition-colors"
+                className="truncate text-[12px] font-medium tracking-wide transition-colors"
                 style={{ color: "rgba(255,255,255,0.45)" }}
               >
                 Built by{" "}
@@ -2875,6 +2875,8 @@ export default function SolutionsViewerV2() {
               </span>
             </Link>
           </div>
+          {/* Mobile: empty placeholder so Switch Problem stays centered */}
+          <div className="sm:hidden" />
 
           {/* CENTER — Switch Problem (primary nav) */}
           <div className="flex items-center justify-center min-w-0">
@@ -2909,29 +2911,44 @@ export default function SolutionsViewerV2() {
             </button>
           </div>
 
-          {/* RIGHT — Share Feedback */}
+          {/* RIGHT — Share Feedback (icon-only on mobile) */}
           <div className="flex items-center gap-2 justify-end">
             <button
               type="button"
               onClick={() => setFeedbackChooserOpen(true)}
               data-embed-allow="true"
               aria-label="Share feedback about this problem"
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium transition-colors hover:bg-white/[0.06]"
+              className="inline-flex items-center justify-center gap-1.5 h-9 w-9 sm:w-auto sm:px-3 rounded-full text-xs font-medium transition-colors hover:bg-white/[0.06]"
               style={{
                 background: "rgba(255,255,255,0.03)",
                 border: "1px solid rgba(255,255,255,0.12)",
                 color: "rgba(255,255,255,0.85)",
               }}
             >
-              <MessageCircleQuestion className="h-3.5 w-3.5" style={{ color: "rgba(255,255,255,0.7)" }} />
+              <MessageCircleQuestion className="h-4 w-4 sm:h-3.5 sm:w-3.5" style={{ color: "rgba(255,255,255,0.7)" }} />
               <span className="hidden sm:inline">Share Feedback</span>
             </button>
           </div>
         </div>
       </header>
 
+      {/* Retro breadcrumb strip — mobile + desktop */}
+      <RetroBreadcrumbs
+        crumbs={[
+          { label: "home", to: "/" },
+          ...(chapter
+            ? [{
+                label: `ch ${chapter.chapter_number} ${chapter.chapter_name}`,
+                to: `/cram/${chapter.id}`,
+              }]
+            : []),
+          { label: "practice problem helper" },
+        ]}
+      />
+
+
       <main
-        className="relative max-w-6xl mx-auto px-4 pt-6 pb-32"
+        className="relative max-w-6xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-32"
         style={{
           backgroundImage:
             "radial-gradient(ellipse 60% 40% at 30% 15%, rgba(99,52,180,0.035) 0%, transparent 65%), radial-gradient(ellipse 50% 35% at 75% 60%, rgba(80,130,255,0.03) 0%, transparent 70%)",
@@ -2957,7 +2974,46 @@ export default function SolutionsViewerV2() {
 
         {!loading && asset && (
           <>
-            {/* Mobile Problem/Helper toggle removed for cleaner UI */}
+            {/* Mobile Problem ↔ Helper toggle. Stacked, full-width, large tap targets.
+                Tapping the active button switches to the OTHER pane (acts as a toggle). */}
+            {isMobileViewport && (
+              <div className="md:hidden mb-4 grid grid-cols-2 gap-2" role="tablist" aria-label="View mode">
+                {([
+                  { key: "problem" as const, Icon: FileText, label: "Problem" },
+                  { key: "helper" as const, Icon: Brain, label: "Guided Helper" },
+                ]).map(({ key, Icon, label }) => {
+                  const active = mobileTab === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => {
+                        // Click the active tab → switch to the other one (toggle behavior)
+                        if (active) {
+                          setMobileTab(key === "problem" ? "helper" : "problem");
+                        } else {
+                          setMobileTab(key);
+                        }
+                      }}
+                      className="inline-flex items-center justify-center gap-2 h-11 rounded-md text-sm font-semibold transition-all active:scale-[0.98]"
+                      style={{
+                        background: active ? "#CE1126" : "rgba(255,255,255,0.04)",
+                        border: `1px solid ${active ? "#CE1126" : "rgba(255,255,255,0.12)"}`,
+                        color: active ? "#fff" : "rgba(255,255,255,0.85)",
+                        boxShadow: active
+                          ? "0 4px 14px -4px rgba(206,17,38,0.5), 0 1px 0 rgba(255,255,255,0.15) inset"
+                          : "none",
+                      }}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Desktop: floating view-mode toolbar */}
             <div className="hidden md:flex justify-end mb-3">
@@ -3078,7 +3134,7 @@ export default function SolutionsViewerV2() {
             >
               {/* Card 1: Problem */}
               <section
-                className="rounded-[10px] p-8"
+                className="rounded-[10px] p-5 sm:p-8"
                 style={{
                   background: "#1A2B5C",
                   border: "1px solid rgba(255,255,255,0.08)",
@@ -3386,19 +3442,27 @@ export default function SolutionsViewerV2() {
 
       {/* Sticky bottom nav */}
       {!loading && asset && (
-        <nav className="fixed bottom-0 inset-x-0 z-20 bg-background/95 backdrop-blur border-t">
-          <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
-            <Button
-              variant="outline"
-              size="sm"
+        <nav
+          className="fixed bottom-0 inset-x-0 z-20 bg-background/95 backdrop-blur border-t"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 sm:h-14 flex items-center justify-between gap-2">
+            <button
+              type="button"
               disabled={!prev}
               onClick={() => prev && navigate(`/v2/solutions/${prev.asset_name}`)}
-              className="gap-1"
+              aria-label="Previous problem"
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg h-11 min-w-[44px] sm:min-w-0 sm:h-9 px-3 sm:px-3 text-sm font-semibold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                color: "rgba(255,255,255,0.92)",
+              }}
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-5 w-5 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Previous</span>
               {prev?.source_ref && <span className="font-mono text-xs text-muted-foreground hidden md:inline">{prev.source_ref}</span>}
-            </Button>
+            </button>
 
             <div className="text-xs text-muted-foreground font-mono">
               {siblings.length > 0 && asset
@@ -3410,7 +3474,8 @@ export default function SolutionsViewerV2() {
               type="button"
               disabled={!next}
               onClick={() => next && navigate(`/v2/solutions/${next.asset_name}`)}
-              className="inline-flex items-center gap-1.5 rounded-lg px-4 h-9 text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.99] disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
+              aria-label="Next problem"
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg h-11 min-w-[44px] sm:h-9 px-4 text-sm font-semibold text-white transition-all hover:scale-[1.02] active:scale-[0.99] disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
               style={{
                 background: "linear-gradient(180deg, #E63950 0%, #CE1126 50%, #A30E1F 100%)",
                 boxShadow:
@@ -3419,7 +3484,7 @@ export default function SolutionsViewerV2() {
             >
               {next?.source_ref && <span className="font-mono text-xs hidden md:inline opacity-90">{next.source_ref}</span>}
               <span className="hidden sm:inline">Next</span>
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-5 w-5 sm:h-4 sm:w-4" />
             </button>
           </div>
         </nav>
