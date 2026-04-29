@@ -1697,6 +1697,8 @@ function InlineExplanation({
         <button
           type="button"
           onClick={() => handleToolboxClick("walk_through")}
+          onMouseEnter={() => prefetchToolbox("walk_through")}
+          onFocus={() => prefetchToolbox("walk_through")}
           className={cn(
             "w-full inline-flex items-center justify-center gap-2 rounded-md h-11 px-4 text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-[0.99]",
             activeSection === "walk_through" && "ring-1 ring-[#CE1126]/60",
@@ -1720,6 +1722,8 @@ function InlineExplanation({
                 key={k}
                 type="button"
                 onClick={() => handleToolboxClick(k)}
+                onMouseEnter={() => prefetchToolbox(k)}
+                onFocus={() => prefetchToolbox(k)}
                 title={TOOLBOX_META[k].subtitle}
                 className="inline-flex items-center justify-start gap-2 h-9 px-3 rounded-md text-xs sm:text-[13px] font-medium transition-colors"
                 style={{
@@ -1741,6 +1745,8 @@ function InlineExplanation({
         <button
           type="button"
           onClick={() => handleToolboxClick("full_solution")}
+          onMouseEnter={() => prefetchToolbox("full_solution")}
+          onFocus={() => prefetchToolbox("full_solution")}
           title={TOOLBOX_META.full_solution.subtitle}
           className="w-full inline-flex items-center justify-start gap-2 h-9 px-3 rounded-md text-xs sm:text-[13px] font-medium transition-colors"
           style={{
