@@ -665,6 +665,9 @@ export default function StudyPreviewer({
                 loading={chapterLoading}
                 welcomeName={welcomeName ?? null}
                 isReturning={!!isReturning}
+                dashboardMode={dashboardMode}
+                campusLabel={campusLabel ?? null}
+                betaNote={betaNote ?? null}
                 chapterSelector={
                   courseChosen ? (
                     <SelectShell
