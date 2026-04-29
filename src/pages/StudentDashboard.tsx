@@ -508,16 +508,12 @@ export default function StudentDashboard() {
         onSignOut={handleSignOut}
       />
 
-      <main className="flex-1 w-full mx-auto pt-6 md:pt-8 pb-16">
+      <main className="flex-1 w-full mx-auto pt-3 sm:pt-6 md:pt-8 pb-16">
         {/* Previewer entry — the centerpiece (full-bleed navy hero band) */}
         <div
           ref={previewerRef}
-          className="relative scroll-mt-24"
+          className="relative scroll-mt-24 px-3 sm:px-4 pt-5 sm:pt-12 pb-8 sm:pb-16"
           style={{
-            paddingLeft: "1rem",
-            paddingRight: "1rem",
-            paddingTop: "3rem",
-            paddingBottom: "4rem",
             background: `radial-gradient(120% 80% at 50% 0%, #1A2A4F 0%, ${NAVY} 55%, #0E1830 100%)`,
             borderTop: "1px solid rgba(255,255,255,0.06)",
             borderBottom: "1px solid rgba(0,0,0,0.25)",
@@ -533,9 +529,9 @@ export default function StudentDashboard() {
             }}
           />
           <div className="relative mx-auto" style={{ maxWidth: 1080 }}>
-            <div className="text-center mb-10 sm:mb-12" style={{ maxWidth: 760, margin: "0 auto" }}>
+            <div className="text-center mb-5 sm:mb-12" style={{ maxWidth: 760, margin: "0 auto" }}>
               <div
-                className="inline-flex items-center gap-2 text-[11px] font-bold uppercase mb-4"
+                className="inline-flex items-center gap-2 text-[10.5px] sm:text-[11px] font-bold uppercase mb-2 sm:mb-4"
                 style={{ color: "#FF6B7A", letterSpacing: "0.16em" }}
               >
                 <span
@@ -545,13 +541,13 @@ export default function StudentDashboard() {
                 FREE BETA · OPEN FOR FEEDBACK
               </div>
               <h2
-                className="text-[26px] sm:text-[34px] leading-[1.1]"
+                className="text-[22px] sm:text-[34px] leading-[1.1]"
                 style={{ fontFamily: LOGO_FONT, fontWeight: 400, color: "#FFFFFF" }}
               >
                 {firstName ? `${greeting}.` : `${greeting}.`}
               </h2>
               <p
-                className="mt-3 text-[14px] sm:text-[15px]"
+                className="mt-2 sm:mt-3 text-[13px] sm:text-[15px] hidden sm:block"
                 style={{ color: "rgba(255,255,255,0.78)", fontFamily: "Inter, sans-serif" }}
               >
                 {courseLabel
@@ -559,7 +555,7 @@ export default function StudentDashboard() {
                   : "Pick a chapter below to open your study console."}
               </p>
               <p
-                className="mt-2 text-[11px]"
+                className="mt-1 sm:mt-2 text-[11px]"
                 style={{ color: "rgba(255,255,255,0.45)", fontFamily: "Inter, sans-serif" }}
               >
                 Free beta access expires May 31st
