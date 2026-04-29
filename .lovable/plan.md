@@ -1,123 +1,98 @@
-## Four changes to the V2 viewer + previewer experience
+## Goal
 
-### 1. Bring back the "Survive Accounting Beta · Spring '26" brand line
+Three small but consistent polish items across the study previewer + V2 viewer:
 
-Add a small wordmark to the V2 viewer's sticky top bar in `src/pages/v2/SolutionsViewerV2.tsx` (around line 2856–2878, the LEFT cell that currently holds "Built by Lee Ingram"). Two-line stacked layout in the same cell:
+1. Add a persistent **top-left label** inside the retro CRT screen: `Accounting Study Tools (Spring '26 Beta)`.
+2. Simplify the V2 viewer top-bar wordmark — replace the two-line "Survive Accounting · Beta / Built by Lee Ingram · Spring '26" with just `Spring '26 Beta`.
+3. Rework the `BrandedLoader` so it looks like the **same retro CRT screen** (phosphor green on near-black, scanlines, monospace) and shows only Lee's circular headshot + `Built by Lee Ingram` + the spinner. Drop the "Survive Accounting" wordmark from the loader. Color-saturated (navy/red) UI only appears once the tool itself paints.
 
-```text
-Survive Accounting · Beta              ← display font, white 80%
-Built by Lee Ingram · Spring '26       ← inter, white 45%
-```
+---
 
-- Display line uses `'DM Serif Display'`, 13px, `rgba(255,255,255,0.85)`
-- Sub-line keeps the existing "Built by Lee Ingram" link styling (12px, dim white) and appends "· Spring '26"
-- Stays a clickable link to `/my-dashboard`
-- Hidden on mobile (matches current `hidden sm:flex`) — mobile already hides this cell to keep the Switch Problem button centered
+## Files to edit
 
-This restores the brand identity without occupying any new vertical space.
+### 1. `src/components/study-previewer/RetroTerminalFrame.tsx`
 
-### 2. Shorten breadcrumb chapter crumb to "ch #" only
+Add a small phosphor header label at the very top of the CRT terminal content (above the welcome line / course picker). Renders on every state — chapter not chosen, chapter chosen, tool active.
 
-In `SolutionsViewerV2.tsx` around line 2941–2945 the chapter crumb is currently:
+Insert just before the existing `{welcomeName && (...)}` block around line 381:
 
 ```tsx
-label: `ch ${chapter.chapter_number} ${chapter.chapter_name}`,
+<div
+  style={{
+    fontFamily: "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
+    color: PHOSPHOR_DIM,
+    fontSize: "0.78em",
+    letterSpacing: "0.18em",
+    textTransform: "uppercase",
+    marginBottom: "1.1em",
+    textShadow: `0 0 4px ${PHOSPHOR_GLOW}`,
+  }}
+>
+  Accounting Study Tools <span style={{ opacity: 0.7 }}>(Spring '26 Beta)</span>
+</div>
 ```
 
-Change to:
+This sits at the top-left of the green tube (matches the user's first screenshot).
+
+### 2. `src/pages/v2/SolutionsViewerV2.tsx` (lines ~2872-2906)
+
+Replace the two-line Brand wordmark block with a single compact `Spring '26 Beta` chip. Keeps the same `<Link to="/my-dashboard">` behavior so it still navigates back when clicked.
 
 ```tsx
-label: `ch ${chapter.chapter_number}`,
+<Link
+  to="/my-dashboard"
+  className="group inline-flex items-center min-w-0 max-w-full"
+  data-embed-allow="true"
+  aria-label="Spring '26 Beta — back to dashboard"
+  title="Spring '26 Beta"
+>
+  <span
+    className="truncate text-[11px] font-semibold uppercase tracking-[0.18em] transition-colors group-hover:text-white"
+    style={{ color: "rgba(255,255,255,0.55)" }}
+  >
+    Spring '26 <span style={{ color: "#FF8A95" }}>Beta</span>
+  </span>
+</Link>
 ```
 
-Result on mobile and desktop:
+### 3. `src/components/study-previewer/BrandedLoader.tsx`
 
-```text
-> home  /  ch 13  /  practice problem helper        👁 view
-```
+Rebuild as a CRT-themed loader. Keep the component API (`subtitle`, `surface`, `absolute`) but in practice we only use the dark surface now (the embedded white-screen iframe wrapper will pass `surface="navy"` so the loader keeps the dark/CRT feel until the colored UI paints).
 
-Much less horizontal pressure on small screens. The full chapter name is still visible in the Switch Problem button's `title` attribute and via the chapter tooltip.
+Layout (top → bottom, centered):
+- Lee's circular headshot (`@/assets/lee-headshot-original.png`), 56px, ringed in phosphor (matches the small headshot in `RetroTerminalFrame` lines 703-724).
+- Phosphor dual-arc spinner (kept from current implementation, retuned to sit *around* the headshot as a thin orbit ring instead of being separate).
+- Caption: `BUILT BY LEE INGRAM` in JetBrains Mono uppercase, phosphor-dim.
+- Optional `subtitle` (e.g. "Loading problem…") in monospace below.
+- Background: same radial dark-green gradient as the CRT screen (`#052810 → #03130A → #010904`).
+- Add scanlines overlay + faint vignette so it reads as the same hardware.
+- Remove the "Survive Accounting" `DM Serif Display` wordmark entirely.
 
-### 3. Make breadcrumb home/chapter actually return to the previewer "home"
-
-Today the V2 viewer renders inside an iframe on both `/` (landing demo) and `/my-dashboard`. The breadcrumb crumbs use plain `to` links, so clicking them navigates **inside the iframe** to `/` or `/cram/:chapterId` — neither of which lands the student back on the retro terminal "Choose your course / Choose your chapter" screen.
-
-Use the existing `postMessage` channel (already wired for `sa-embed-paywall` at lines 1577 and 2439) to bubble navigation intent up to the parent.
-
-**A. In `SolutionsViewerV2.tsx`** — replace the two crumb objects with `onClick` handlers that detect iframe context and post messages, falling back to direct navigation when standalone:
+Pseudostructure:
 
 ```tsx
-const inIframe = typeof window !== "undefined" && window.top !== window.self;
-
-const goHome = () => {
-  if (inIframe) {
-    window.parent?.postMessage({ type: "sa-viewer-go-home" }, "*");
-  } else {
-    navigate("/");
-  }
-};
-
-const goChapter = () => {
-  if (inIframe) {
-    window.parent?.postMessage({ type: "sa-viewer-go-chapter" }, "*");
-  } else if (chapter) {
-    navigate(`/cram/${chapter.id}`);
-  }
-};
+<div role="status" style={{ background: CRT_RADIAL, fontFamily: MONO, color: PHOSPHOR }}>
+  <ScanlinesOverlay />
+  <Vignette />
+  <div className="relative" style={{ width: 96, height: 96 }}>
+    <SpinnerArcs />          {/* orbits the headshot */}
+    <HeadshotCircle src={leeHeadshot} className="absolute inset-2 rounded-full" />
+  </div>
+  <div className="mt-4 text-[10px] tracking-[0.18em] uppercase">Built by Lee Ingram</div>
+  {subtitle && <div className="mt-3 text-[11px] opacity-70">{subtitle}</div>}
+</div>
 ```
 
-Crumbs become:
+The `surface="white"` branch can stay for safety (used by `EntryBuilderTool.tsx`) but should also drop the wordmark — only headshot + spinner + "Built by Lee Ingram" + subtitle. We will keep both surfaces but route the previewer's overlay loader to `surface="navy"` so it visually continues the CRT.
 
-```tsx
-{ label: "home", onClick: goHome },
-{ label: `ch ${chapter.chapter_number}`, onClick: goChapter },
-{ label: "practice problem helper" },
-```
+No call-site changes are required in `StudyPreviewer.tsx` or `EntryBuilderTool.tsx` — the prop API stays the same.
 
-(`RetroBreadcrumbs` already supports both `to` and `onClick`.)
+---
 
-**B. In `src/components/study-previewer/StudyPreviewer.tsx`** — add a parent-side listener that handles those two messages:
+## Visual outcome
 
-- `sa-viewer-go-home` → call the existing reset path: `setActiveTool(null); setSelectedChapterId(null); setViewerAssetCode(null);` and clear `persistChapterKey` from localStorage. This lands on the bare "Choose course / Choose chapter" terminal.
-- `sa-viewer-go-chapter` → only reset the active tool (`setActiveTool(null)`), keeping the chapter selected. This lands on the tool-selection state for the same chapter (Practice / JE Helper / Help shape what's next).
+- **Home screen (retro):** top-left of the CRT now reads `ACCOUNTING STUDY TOOLS (SPRING '26 BETA)` in dim phosphor monospace.
+- **Loading state when launching a tool:** screen looks like the same green CRT — Lee's headshot in the center with the spinner orbiting it and `BUILT BY LEE INGRAM` underneath. No "Survive Accounting" wordmark, no navy/red.
+- **Tool loaded (V2 viewer):** top-left now just shows a compact `SPRING '26 BETA` chip instead of the two-line wordmark, matching the user's request to declutter.
 
-Course selection is already persisted, so the prefilled-course requirement is satisfied automatically — we just don't touch `selectedCourseId`.
-
-**C. Listener cleanup** — register inside a `useEffect` with `window.addEventListener("message", …)` and a cleanup that removes it. Validate `event.data?.type` before acting.
-
-This gives students two redundant paths home (Switch Problem button + breadcrumb) without ever leaving the parent page.
-
-### 4. Better loading screen — "Built by Lee Ingram" branded spinner
-
-Today, three loading states overlap awkwardly inside the laptop chassis:
-
-- The previewer iframe wrapper shows a white skeleton with placeholder bars.
-- The V2 viewer (or Entry Builder tool) renders its own dark loading screen with raw text like "Loading Entry Builder…".
-- A "Preparing tool…" status floats at the bottom after 2s.
-
-Build one shared component `src/components/study-previewer/BrandedLoader.tsx` and use it in three places.
-
-**Component design:**
-- Centered in the available area, dark navy background (`#0F1A2E`) so it looks intentional whether the iframe has painted yet or not
-- Wordmark: "Survive Accounting" in DM Serif Display (24px, white 90%)
-- Sub-line: "Built by Lee Ingram" in Inter (11px, white 45%, letter-spacing 0.1em uppercase)
-- Spinner: a custom phosphor-green ring rotating around the wordmark — uses two concentric SVG arcs, the outer arc rotating at 1.4s, the inner arc counter-rotating at 2.2s. Color matches the existing terminal phosphor `#39FF7A` with a subtle glow filter. Fades in over 200ms so quick loads don't flash.
-- Optional `subtitle` prop for context like "Loading Entry Builder…" or "Preparing tool…"
-
-**Wire into:**
-1. `StudyPreviewer.tsx` — replace the white-bar skeleton block (lines ~718–731 for Practice and ~798–814 for JE) with `<BrandedLoader subtitle="Preparing tool…" />`. Drop the now-unused `showSkeleton` / `showSlowStatus` text — the loader is its own polished default and doesn't need a separate "slow" variant. Keep the 12s timeout that flips to `iframeError`.
-2. `EntryBuilderTool.tsx` — replace the line-213 `<div className="text-white/60 text-sm animate-pulse">Loading Entry Builder...</div>` with `<BrandedLoader subtitle="Loading Entry Builder…" />` so the embedded view matches.
-3. `SolutionsViewerV2.tsx` — at the top-level `loading` block (~lines 2956–2964) currently rendering generic shadcn `<Skeleton>` strips, swap in `<BrandedLoader subtitle="Loading problem…" />`. (Keep skeletons elsewhere if any cell-level loading remains.)
-
-This removes the duplicated raw "Loading…" text, eliminates the white-flash skeleton, and gives every loading state the same branded identity. Image 3's "two stacked Admin Tools badges" is the Lovable Visual Edit overlay — not real UI — so it'll disappear in the published build regardless.
-
-### Out of scope
-
-- Mobile viewer header (already minimal — Switch Problem stays centered).
-- The keyboard shortcut layer for view modes.
-- Changing the V1 standalone `/tools/entry-builder` page outside the embed.
-- Course-prefill UI for the home reset — already handled by existing `selectedCourseId` persistence in the parent components; no extra work needed.
-
-### Open question
-
-For the spinner, do you want **phosphor green** (matches the retro terminal aesthetic the previewer already uses) or **brand red `#CE1126`** (matches the rest of the V2 viewer chrome)? My default is phosphor green because the loader is most visible inside the laptop chassis where the breadcrumb bar is already green — it'll feel like one cohesive system. Tell me if you'd rather it be red.
+No data, route, or behavior changes — purely presentational.
