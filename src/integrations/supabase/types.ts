@@ -823,6 +823,146 @@ export type Database = {
           },
         ]
       }
+      beta_email_schedule: {
+        Row: {
+          enabled: boolean
+          last_run_at: string | null
+          template_slug: string
+          trigger_type: string
+          trigger_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          last_run_at?: string | null
+          template_slug: string
+          trigger_type?: string
+          trigger_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          last_run_at?: string | null
+          template_slug?: string
+          trigger_type?: string
+          trigger_value?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beta_email_schedule_template_slug_fkey"
+            columns: ["template_slug"]
+            isOneToOne: true
+            referencedRelation: "beta_email_templates"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      beta_email_sends: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          is_test: boolean
+          recipient_email: string
+          resend_id: string | null
+          sent_by_user_id: string | null
+          status: string
+          student_id: string | null
+          subject: string | null
+          template_slug: string
+          triggered_by: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          is_test?: boolean
+          recipient_email: string
+          resend_id?: string | null
+          sent_by_user_id?: string | null
+          status: string
+          student_id?: string | null
+          subject?: string | null
+          template_slug: string
+          triggered_by?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          is_test?: boolean
+          recipient_email?: string
+          resend_id?: string | null
+          sent_by_user_id?: string | null
+          status?: string
+          student_id?: string | null
+          subject?: string | null
+          template_slug?: string
+          triggered_by?: string
+        }
+        Relationships: []
+      }
+      beta_email_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          enabled: boolean
+          from_email: string
+          from_name: string
+          html_body: string
+          id: string
+          is_managed: boolean
+          name: string
+          preheader: string | null
+          reply_to: string
+          slug: string
+          sort_order: number
+          subject: string
+          text_body: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          from_email?: string
+          from_name?: string
+          html_body: string
+          id?: string
+          is_managed?: boolean
+          name: string
+          preheader?: string | null
+          reply_to?: string
+          slug: string
+          sort_order?: number
+          subject: string
+          text_body?: string | null
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          from_email?: string
+          from_name?: string
+          html_body?: string
+          id?: string
+          is_managed?: boolean
+          name?: string
+          preheader?: string | null
+          reply_to?: string
+          slug?: string
+          sort_order?: number
+          subject?: string
+          text_body?: string | null
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Relationships: []
+      }
       beta_feedback_summaries: {
         Row: {
           categories: Json | null
