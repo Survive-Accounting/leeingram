@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import StagingNavbar from "@/components/landing/StagingNavbar";
 import StagingTestimonialsSection from "@/components/landing/StagingTestimonialsSection";
+import WelcomeVideoSection from "@/components/landing/WelcomeVideoSection";
 import ContactForm from "@/components/landing/ContactForm";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { useEventTracking, setStoredEmail } from "@/hooks/useEventTracking";
@@ -296,6 +297,10 @@ export default function StagingLandingPage() {
 
       <div data-export-id="social-proof" data-export-label="Social Proof Strip">
         <SocialProofStrip />
+      </div>
+
+      <div data-export-id="welcome-video" data-export-label="Welcome Video">
+        <WelcomeVideoSection />
       </div>
 
       <div data-export-id="testimonials" data-export-label="Testimonials">
