@@ -462,6 +462,8 @@ export default function RetroTerminalFrame({
                         "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
                       fontSize: "0.95em",
                       letterSpacing: "0.01em",
+                      wordBreak: "break-word",
+                      overflowWrap: "anywhere",
                     }}
                   >
                     {">"} Course:{" "}
@@ -476,6 +478,8 @@ export default function RetroTerminalFrame({
                         "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace",
                       fontSize: "0.95em",
                       letterSpacing: "0.01em",
+                      wordBreak: "break-word",
+                      overflowWrap: "anywhere",
                     }}
                   >
                     {">"} Campus:{" "}
@@ -541,7 +545,7 @@ export default function RetroTerminalFrame({
                 >
                   {">"} {dashboardMode ? "Choose Textbook Chapter" : "Choose Chapter"}
                 </div>
-                <div style={{ maxWidth: 360, opacity: courseLabel ? 1 : 0.5 }}>
+                <div className="w-full sm:max-w-[360px]" style={{ opacity: courseLabel ? 1 : 0.5 }}>
                   {chapterSelector ?? (
                     <div
                       className="w-full rounded-[4px] px-2 py-1 text-[12.5px] flex items-center justify-between"
