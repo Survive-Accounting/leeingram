@@ -80,6 +80,8 @@ export default function RetroTerminalFrame({
   courseSelector = null,
   canChangeCourse = false,
   canChangeChapter = false,
+  comingSoonIdeas,
+  onShareFeedback,
 }: RetroTerminalFrameProps) {
   const [bootStep, setBootStep] = useState(0);
   const [editingCourse, setEditingCourse] = useState(false);
