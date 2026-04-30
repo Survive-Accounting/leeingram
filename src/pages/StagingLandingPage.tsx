@@ -303,14 +303,14 @@ export default function StagingLandingPage() {
         <WelcomeVideoSection />
       </div>
 
-      <div data-export-id="testimonials" data-export-label="Testimonials">
-        <StagingTestimonialsSection onCtaClick={() => requestAccess({ course: defaultCourse.slug })} />
-      </div>
-
       <div ref={coursesRef} id="demo-section" data-export-id="courses" data-export-label="Study Previewer">
         <LandingStudyPreviewerSection
           onJoinBeta={(slug) => requestAccess({ course: slug })}
         />
+      </div>
+
+      <div data-export-id="testimonials" data-export-label="Testimonials">
+        <StagingTestimonialsSection onCtaClick={() => requestAccess({ course: defaultCourse.slug })} />
       </div>
 
 
