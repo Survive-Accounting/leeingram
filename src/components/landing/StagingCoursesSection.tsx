@@ -216,6 +216,12 @@ export default function StagingCoursesSection({
 
       {/* Section heading */}
       <div className="mx-auto text-center mb-8" style={{ maxWidth: 640 }}>
+        <p
+          className="mb-2 text-[11px] sm:text-[12px] font-semibold tracking-[0.14em] uppercase"
+          style={{ color: RED, fontFamily: "Inter, sans-serif" }}
+        >
+          Explore what you’ll get below
+        </p>
         <h2
           className="text-[28px] sm:text-[36px] leading-tight"
           style={{ fontFamily: "'DM Serif Display', serif", fontWeight: 400, color: NAVY }}
