@@ -29,7 +29,7 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="w-[calc(100%-2rem)] sm:max-w-[960px] max-h-[92vh] overflow-y-auto p-0 border-0 [&>button]:hidden data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-300"
+        className="w-[calc(100%-2rem)] sm:max-w-[960px] max-h-[92vh] overflow-y-auto p-0 border-0 [&>button.absolute.right-4.top-4]:hidden data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-300"
         style={{ borderRadius: 20, background: "#14213D", overflow: "hidden" }}
       >
         <DialogHeader className="sr-only">
@@ -40,20 +40,20 @@ export function AboutLeeModal({ open, onOpenChange }: AboutLeeModalProps) {
         {/* Custom close button — large, circular, high contrast */}
         <DialogClose
           aria-label="Close"
-          className="absolute z-20 flex items-center justify-center rounded-full transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          className="fixed sm:absolute z-50 flex items-center justify-center rounded-full transition-all hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
           style={{
             top: 14,
             right: 14,
-            width: 36,
-            height: 36,
-            background: "rgba(20,33,61,0.85)",
+            width: 40,
+            height: 40,
+            background: "rgba(20,33,61,0.92)",
             color: "#fff",
             backdropFilter: "blur(8px)",
-            border: "1px solid rgba(255,255,255,0.18)",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.35)",
+            border: "1px solid rgba(255,255,255,0.25)",
+            boxShadow: "0 4px 14px rgba(0,0,0,0.45)",
           }}
         >
-          <X className="w-[18px] h-[18px]" strokeWidth={2.25} />
+          <X className="w-[20px] h-[20px]" strokeWidth={2.5} />
         </DialogClose>
 
         <div
