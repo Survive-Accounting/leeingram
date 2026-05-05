@@ -61,27 +61,6 @@ export default function WelcomeVideoSection() {
                 loading="eager"
                 decoding="async"
               />
-              <div
-                className="absolute inset-0 flex items-center justify-center"
-                style={{ background: "rgba(20,33,61,0.18)" }}
-              >
-                <span
-                  className="flex items-center justify-center rounded-full transition-transform group-hover:scale-105"
-                  style={{
-                    width: 78,
-                    height: 78,
-                    background: RED,
-                    boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
-                  }}
-                >
-                  <Play
-                    className="w-8 h-8"
-                    fill="#FFFFFF"
-                    color="#FFFFFF"
-                    style={{ marginLeft: 4 }}
-                  />
-                </span>
-              </div>
             </button>
           )}
         </div>
