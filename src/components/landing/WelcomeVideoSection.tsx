@@ -56,7 +56,7 @@ export default function WelcomeVideoSection() {
             >
               <img
                 src={welcomeThumbnail}
-                alt="Lee Ingram at sunrise"
+                alt="Play video"
                 className="absolute inset-0 w-full h-full object-cover"
                 loading="eager"
                 decoding="async"
